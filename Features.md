@@ -3,7 +3,7 @@
 > Implementation-level breakdown of all features to be developed.
 > Status values: `To Do` · `In Progress` · `Done`
 > Cross-reference: [Requirements.md](Requirements.md)
-> Last updated: 2026-06-30
+> Last updated: 2026-07-26
 
 ---
 
@@ -21,7 +21,7 @@
 | INF-08 | Prisma schema — `Pet` model (id, userId, storeItemId, happiness, hunger, lastInteractedAt) | Database | To Do |
 | INF-09 | Prisma schema — `TelemetryEvent` model (id, userId, eventType, payload JSON, createdAt) | Database | To Do |
 | INF-10 | Prisma schema — `UserEconomy` model (id, userId, coins, xp, level, streak, lastStreakDate, dailyCoinsEarned, dailyXpEarned, dailyCapResetAt) | Database | To Do |
-| INF-11 | NextAuth configuration (credential provider, JWT strategy, session callbacks) | Backend | To Do |
+| INF-11 | NextAuth configuration (credential provider, JWT strategy, session callbacks) | Backend | Done |
 | INF-12 | Global layout component — header with persistent coin balance, XP bar, and level indicator | Frontend | To Do |
 | INF-13 | Responsive layout system — mobile and desktop breakpoints using Tailwind | Frontend | To Do |
 | INF-14 | WCAG AA compliance pass — contrast ratios, keyboard navigation, focus states, colour-independent signals | Frontend | To Do |
@@ -35,11 +35,11 @@
 
 | # | Feature | Type | Status |
 |---|---------|------|--------|
-| AUTH-01 | Register page — form with email and password fields | Frontend | To Do |
+| AUTH-01 | Register page — form with email and password fields | Frontend | Done |
 | AUTH-02 | Login page — form with email and password fields | Frontend | To Do |
 | AUTH-03 | Logout button and action in global header | Frontend | To Do |
-| AUTH-04 | `POST /api/auth/register` — create user, hash password, assign A/B group randomly, initialise `UserEconomy` record | Backend | To Do |
-| AUTH-05 | NextAuth sign-in handler (`POST /api/auth/[...nextauth]`) — validate credentials, issue JWT | Backend | To Do |
+| AUTH-04 | `POST /api/auth/register` — create user, hash password, assign A/B group randomly, initialise `UserEconomy` record | Backend | In Progress — mocked against an in-memory store; needs Prisma (INF-01, INF-10) |
+| AUTH-05 | NextAuth sign-in handler (`POST /api/auth/[...nextauth]`) — validate credentials, issue JWT | Backend | Done |
 | AUTH-06 | Protected route middleware — redirect unauthenticated users to login | Backend | To Do |
 
 ---

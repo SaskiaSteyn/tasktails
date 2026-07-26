@@ -9,18 +9,18 @@ INF-07,Prisma schema — Transaction model (id userId storeItemId coinSpent purc
 INF-08,Prisma schema — Pet model (id userId storeItemId happiness hunger lastInteractedAt),Infrastructure & Database,Database,To Do
 INF-09,Prisma schema — TelemetryEvent model (id userId eventType payload createdAt),Infrastructure & Database,Database,To Do
 INF-10,Prisma schema — UserEconomy model (id userId coins xp level streak lastStreakDate dailyCoinsEarned dailyXpEarned dailyCapResetAt),Infrastructure & Database,Database,To Do
-INF-11,NextAuth configuration (credential provider JWT strategy session callbacks),Infrastructure & Database,Backend,To Do
+INF-11,NextAuth configuration (credential provider JWT strategy session callbacks),Infrastructure & Database,Backend,Done
 INF-12,Global layout component — header with persistent coin balance XP bar and level indicator,Infrastructure & Database,Frontend,To Do
 INF-13,Responsive layout system — mobile and desktop breakpoints using Tailwind,Infrastructure & Database,Frontend,To Do
 INF-14,WCAG AA compliance pass — contrast ratios keyboard navigation focus states colour-independent signals,Infrastructure & Database,Frontend,To Do
 INF-15,Docker container configuration for EC2 deployment (Dockerfile + docker-compose),Infrastructure & Database,Infrastructure,To Do
 INF-16,Environment variable configuration (.env.example for Vercel and AWS connection strings),Infrastructure & Database,Infrastructure,To Do
 INF-17,A/B group assignment middleware — enforces Group A/B isolation on all store API routes server-side,Infrastructure & Database,Backend,To Do
-AUTH-01,Register page — form with email and password fields,Authentication,Frontend,To Do
+AUTH-01,Register page — form with email and password fields,Authentication,Frontend,Done
 AUTH-02,Login page — form with email and password fields,Authentication,Frontend,To Do
 AUTH-03,Logout button and action in global header,Authentication,Frontend,To Do
-AUTH-04,POST /api/auth/register — create user hash password assign A/B group randomly initialise UserEconomy record,Authentication,Backend,To Do
-AUTH-05,NextAuth sign-in handler (POST /api/auth/[...nextauth]) — validate credentials issue JWT,Authentication,Backend,To Do
+AUTH-04,POST /api/auth/register — create user hash password assign A/B group randomly initialise UserEconomy record,Authentication,Backend,In Progress
+AUTH-05,NextAuth sign-in handler (POST /api/auth/[...nextauth]) — validate credentials issue JWT,Authentication,Backend,Done
 AUTH-06,Protected route middleware — redirect unauthenticated users to login,Authentication,Backend,To Do
 TASK-01,Task list view — displays all user tasks with title due date complexity badge and completion state,TODO App,Frontend,To Do
 TASK-02,Create task form — fields: title (required) due date (optional) complexity tier (required 5-option select),TODO App,Frontend,To Do
