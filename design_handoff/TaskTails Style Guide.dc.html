@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F1E9DC;color:#2E2A26;font-family:Nunito,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  *{box-sizing:border-box}
+  a{color:#E27A54;text-decoration:none}
+  a:hover{color:#C9633F}
+</style>
+</helmet>
+
+<div style="max-width:1080px;margin:0 auto;padding:52px 40px 100px">
+
+  <!-- Masthead -->
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+    <div style="width:52px;height:52px;border-radius:16px;background:#E27A54;position:relative;flex:none">
+      <div style="position:absolute;top:15px;left:15px;width:7px;height:7px;border-radius:50%;background:#fff"></div>
+      <div style="position:absolute;top:15px;right:15px;width:7px;height:7px;border-radius:50%;background:#fff"></div>
+      <div style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:14px;height:7px;border-radius:0 0 9px 9px;background:#fff"></div>
+    </div>
+    <div>
+      <div style="font-family:Fredoka;font-weight:600;font-size:34px;line-height:1">TaskTails — Style Guide</div>
+      <div style="font-size:14px;color:#8A8178;margin-top:3px">Warm flat UI · design tokens, type scale &amp; component specs · IMY761</div>
+    </div>
+  </div>
+  <div style="height:1px;background:#DED4C5;margin:26px 0 40px"></div>
+
+  <!-- ===== FONTS ===== -->
+  <div style="font-family:Fredoka;font-weight:600;font-size:24px;margin-bottom:4px">01 · Typography</div>
+  <div style="font-size:13px;color:#8A8178;margin-bottom:22px">Two Google Fonts. <b>Fredoka</b> for display, headings &amp; numerals (rounded, warm). <b>Nunito</b> for body, labels &amp; all UI text.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:26px">
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:22px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:6px">DISPLAY / HEADINGS</div>
+      <div style="font-family:Fredoka;font-weight:600;font-size:40px;line-height:1">Fredoka</div>
+      <div style="font-size:12px;color:#8A8178;margin:10px 0 4px">Weights: 400 · 500 · 600</div>
+      <div style="font-family:Fredoka;font-weight:400;font-size:18px">Fredoka Regular 400</div>
+      <div style="font-family:Fredoka;font-weight:500;font-size:18px">Fredoka Medium 500</div>
+      <div style="font-family:Fredoka;font-weight:600;font-size:18px">Fredoka Semibold 600 (default)</div>
+    </div>
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:22px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:6px">BODY / UI</div>
+      <div style="font-family:Nunito;font-weight:800;font-size:40px;line-height:1">Nunito</div>
+      <div style="font-size:12px;color:#8A8178;margin:10px 0 4px">Weights: 400 · 600 · 700 · 800</div>
+      <div style="font-weight:400;font-size:15px">Nunito Regular 400 — body copy</div>
+      <div style="font-weight:700;font-size:15px">Nunito Bold 700 — task titles, values</div>
+      <div style="font-weight:800;font-size:15px">Nunito Extrabold 800 — labels, badges</div>
+    </div>
+  </div>
+
+  <!-- Type scale -->
+  <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:8px 22px;margin-bottom:44px">
+    <div style="display:flex;align-items:baseline;gap:16px;padding:14px 0;border-bottom:1px solid #F1EADF"><div style="font-family:Fredoka;font-weight:600;font-size:34px;flex:1">Page / brand title</div><div style="font-size:12px;color:#8A8178;text-align:right;width:220px">Fredoka 600 · 32–34px</div></div>
+    <div style="display:flex;align-items:baseline;gap:16px;padding:14px 0;border-bottom:1px solid #F1EADF"><div style="font-family:Fredoka;font-weight:600;font-size:24px;flex:1">Section heading</div><div style="font-size:12px;color:#8A8178;text-align:right;width:220px">Fredoka 600 · 22–24px</div></div>
+    <div style="display:flex;align-items:baseline;gap:16px;padding:14px 0;border-bottom:1px solid #F1EADF"><div style="font-family:Fredoka;font-weight:600;font-size:19px;flex:1">Screen / card title</div><div style="font-size:12px;color:#8A8178;text-align:right;width:220px">Fredoka 600 · 17–19px</div></div>
+    <div style="display:flex;align-items:baseline;gap:16px;padding:14px 0;border-bottom:1px solid #F1EADF"><div style="font-family:Fredoka;font-weight:600;font-size:22px;flex:1">140 <span style="font-size:13px;font-family:Nunito;color:#8A8178;font-weight:400">— stat / numeral</span></div><div style="font-size:12px;color:#8A8178;text-align:right;width:220px">Fredoka 600 · 17–22px</div></div>
+    <div style="display:flex;align-items:baseline;gap:16px;padding:14px 0;border-bottom:1px solid #F1EADF"><div style="font-weight:700;font-size:14px;flex:1">Body / task title — the quick brown fox</div><div style="font-size:12px;color:#8A8178;text-align:right;width:220px">Nunito 700 · 13–14px</div></div>
+    <div style="display:flex;align-items:baseline;gap:16px;padding:14px 0;border-bottom:1px solid #F1EADF"><div style="font-weight:400;font-size:13px;flex:1;color:#8A8178">Secondary / helper copy</div><div style="font-size:12px;color:#8A8178;text-align:right;width:220px">Nunito 400 · 12–13px · #8A8178</div></div>
+    <div style="display:flex;align-items:baseline;gap:16px;padding:14px 0"><div style="font-weight:800;font-size:11px;letter-spacing:.5px;color:#8A8178;flex:1">LABEL / OVERLINE</div><div style="font-size:12px;color:#8A8178;text-align:right;width:220px">Nunito 800 · 10–12px · UPPER · +0.4px</div></div>
+  </div>
+
+  <!-- ===== COLOR ===== -->
+  <div style="font-family:Fredoka;font-weight:600;font-size:24px;margin-bottom:4px">02 · Colour</div>
+  <div style="font-size:13px;color:#8A8178;margin-bottom:22px">Warm neutral base + four accents (each carries a fill, a soft tint, and a readable dark text variant). Red is reserved exclusively for Group&nbsp;B urgency.</div>
+
+  <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:12px">NEUTRALS &amp; SURFACES</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff"><div style="height:66px;background:#F1E9DC"></div><div style="padding:10px 12px"><div style="font-weight:800;font-size:12.5px">Board bg</div><div style="font-size:12px;color:#8A8178">#F1E9DC</div></div></div>
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff"><div style="height:66px;background:#FBF6EF"></div><div style="padding:10px 12px"><div style="font-weight:800;font-size:12.5px">Warm surface</div><div style="font-size:12px;color:#8A8178">#FBF6EF</div></div></div>
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff"><div style="height:66px;background:#FFFFFF;border-bottom:1px solid #EFE7DA"></div><div style="padding:10px 12px"><div style="font-weight:800;font-size:12.5px">Surface / card</div><div style="font-size:12px;color:#8A8178">#FFFFFF</div></div></div>
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff"><div style="height:66px;background:#F6F1E9"></div><div style="padding:10px 12px"><div style="font-weight:800;font-size:12.5px">Input fill</div><div style="font-size:12px;color:#8A8178">#F6F1E9</div></div></div>
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff"><div style="height:66px;background:#2E2A26"></div><div style="padding:10px 12px"><div style="font-weight:800;font-size:12.5px">Ink (text)</div><div style="font-size:12px;color:#8A8178">#2E2A26</div></div></div>
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff"><div style="height:66px;background:#8A8178"></div><div style="padding:10px 12px"><div style="font-weight:800;font-size:12.5px">Ink soft</div><div style="font-size:12px;color:#8A8178">#8A8178</div></div></div>
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff"><div style="height:66px;background:#B8AFA4"></div><div style="padding:10px 12px"><div style="font-weight:800;font-size:12.5px">Ink faint</div><div style="font-size:12px;color:#8A8178">#B8AFA4</div></div></div>
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff"><div style="height:66px;background:#EFE7DA;border-bottom:1px solid #E3D9C9"></div><div style="padding:10px 12px"><div style="font-weight:800;font-size:12.5px">Border / track</div><div style="font-size:12px;color:#8A8178">#EFE7DA</div></div></div>
+  </div>
+
+  <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:12px">ACCENTS</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+    <!-- terracotta -->
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff">
+      <div style="height:66px;background:#E27A54;display:flex;align-items:flex-end;padding:8px"><span style="font-size:11px;font-weight:800;color:#fff">PRIMARY</span></div>
+      <div style="padding:11px 12px"><div style="font-weight:800;font-size:13px">Terracotta</div><div style="font-size:12px;color:#8A8178">#E27A54 · hover #C9633F</div>
+        <div style="display:flex;gap:6px;margin-top:8px"><div style="flex:1;height:20px;border-radius:5px;background:#FBEAE3" title="tint #FBEAE3"></div><div style="flex:1;height:20px;border-radius:5px;background:#C9633F"></div></div>
+        <div style="font-size:10px;color:#A89E92;margin-top:5px">tint #FBEAE3 · dark #C9633F</div>
+      </div>
+    </div>
+    <!-- sage -->
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff">
+      <div style="height:66px;background:#5FA97E;display:flex;align-items:flex-end;padding:8px"><span style="font-size:11px;font-weight:800;color:#fff">SUCCESS</span></div>
+      <div style="padding:11px 12px"><div style="font-weight:800;font-size:13px">Sage green</div><div style="font-size:12px;color:#8A8178">#5FA97E</div>
+        <div style="display:flex;gap:6px;margin-top:8px"><div style="flex:1;height:20px;border-radius:5px;background:#E7F0E9"></div><div style="flex:1;height:20px;border-radius:5px;background:#3F8C63"></div></div>
+        <div style="font-size:10px;color:#A89E92;margin-top:5px">tint #E7F0E9 · text #3F8C63</div>
+      </div>
+    </div>
+    <!-- amber -->
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff">
+      <div style="height:66px;background:#E5A93C;display:flex;align-items:flex-end;padding:8px"><span style="font-size:11px;font-weight:800;color:#fff">COINS</span></div>
+      <div style="padding:11px 12px"><div style="font-weight:800;font-size:13px">Amber</div><div style="font-size:12px;color:#8A8178">#E5A93C · ring #F2C879</div>
+        <div style="display:flex;gap:6px;margin-top:8px"><div style="flex:1;height:20px;border-radius:5px;background:#FCEBD3"></div><div style="flex:1;height:20px;border-radius:5px;background:#B67F1E"></div></div>
+        <div style="font-size:10px;color:#A89E92;margin-top:5px">tint #FCEBD3 · text #B67F1E</div>
+      </div>
+    </div>
+    <!-- violet -->
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff">
+      <div style="height:66px;background:#8478C4;display:flex;align-items:flex-end;padding:8px"><span style="font-size:11px;font-weight:800;color:#fff">XP / LEVEL</span></div>
+      <div style="padding:11px 12px"><div style="font-weight:800;font-size:13px">Violet</div><div style="font-size:12px;color:#8A8178">#8478C4</div>
+        <div style="display:flex;gap:6px;margin-top:8px"><div style="flex:1;height:20px;border-radius:5px;background:#EEE9F5"></div><div style="flex:1;height:20px;border-radius:5px;background:#5C5470"></div></div>
+        <div style="font-size:10px;color:#A89E92;margin-top:5px">tint #EEE9F5 · text #5C5470</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- urgency -->
+  <div style="display:grid;grid-template-columns:1fr 3fr;gap:14px;margin-bottom:44px">
+    <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;background:#fff">
+      <div style="height:66px;background:#DB4C3F;display:flex;align-items:flex-end;padding:8px"><span style="font-size:11px;font-weight:800;color:#fff">GROUP B ONLY</span></div>
+      <div style="padding:11px 12px"><div style="font-weight:800;font-size:13px">Urgency red</div><div style="font-size:12px;color:#8A8178">#DB4C3F</div>
+        <div style="display:flex;gap:6px;margin-top:8px"><div style="flex:1;height:20px;border-radius:5px;background:#FDE7E3"></div><div style="flex:1;height:20px;border-radius:5px;background:#C23B2E"></div></div>
+        <div style="font-size:10px;color:#A89E92;margin-top:5px">tint #FDE7E3 · text #C23B2E</div>
+      </div>
+    </div>
+    <div style="border:1px solid #EFE7DA;border-radius:14px;background:#FBF6EF;padding:16px 18px;display:flex;flex-direction:column;justify-content:center">
+      <div style="font-weight:800;font-size:14px;color:#C23B2E;margin-bottom:6px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Reserved usage</div>
+      <div style="font-size:13px;color:#5C5470;line-height:1.55">Red appears <b>only</b> on Group&nbsp;B false-urgency elements (countdowns, "Only 3 left!", "Last chance") and destructive actions (delete). Group&nbsp;A and all neutral UI must never use it — keeping the accent exclusive is what makes the urgency stimuli legible in the study.</div>
+    </div>
+  </div>
+
+  <!-- Tier ramp -->
+  <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:12px">TASK COMPLEXITY RAMP</div>
+  <div style="display:flex;gap:10px;margin-bottom:48px">
+    <div style="flex:1;border:1px solid #EFE7DA;border-radius:12px;background:#fff;padding:12px;text-align:center"><div style="height:8px;border-radius:4px;background:#98A2AE;margin-bottom:9px"></div><div style="font-weight:800;font-size:12.5px">Trivial</div><div style="font-size:11px;color:#8A8178">#98A2AE · 5c/8xp</div></div>
+    <div style="flex:1;border:1px solid #EFE7DA;border-radius:12px;background:#fff;padding:12px;text-align:center"><div style="height:8px;border-radius:4px;background:#5FA97E;margin-bottom:9px"></div><div style="font-weight:800;font-size:12.5px">Small</div><div style="font-size:11px;color:#8A8178">#5FA97E · 15c/20xp</div></div>
+    <div style="flex:1;border:1px solid #EFE7DA;border-radius:12px;background:#fff;padding:12px;text-align:center"><div style="height:8px;border-radius:4px;background:#E5A93C;margin-bottom:9px"></div><div style="font-weight:800;font-size:12.5px">Medium</div><div style="font-size:11px;color:#8A8178">#E5A93C · 35c/45xp</div></div>
+    <div style="flex:1;border:1px solid #EFE7DA;border-radius:12px;background:#fff;padding:12px;text-align:center"><div style="height:8px;border-radius:4px;background:#E27A54;margin-bottom:9px"></div><div style="font-weight:800;font-size:12.5px">Large</div><div style="font-size:11px;color:#8A8178">#E27A54 · 75c/100xp</div></div>
+    <div style="flex:1;border:1px solid #EFE7DA;border-radius:12px;background:#fff;padding:12px;text-align:center"><div style="height:8px;border-radius:4px;background:#8478C4;margin-bottom:9px"></div><div style="font-weight:800;font-size:12.5px">Epic</div><div style="font-size:11px;color:#8A8178">#8478C4 · 150c/200xp</div></div>
+  </div>
+
+  <!-- ===== TOKENS ===== -->
+  <div style="font-family:Fredoka;font-weight:600;font-size:24px;margin-bottom:22px">03 · Radius, spacing, shadow &amp; icons</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px">
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">CORNER RADIUS</div>
+      <div style="display:flex;align-items:flex-end;gap:14px">
+        <div style="text-align:center"><div style="width:50px;height:50px;background:#FBEAE3;border:1px solid #E9CFC4;border-radius:8px"></div><div style="font-size:11px;color:#8A8178;margin-top:6px">8 chip</div></div>
+        <div style="text-align:center"><div style="width:50px;height:50px;background:#FBEAE3;border:1px solid #E9CFC4;border-radius:12px"></div><div style="font-size:11px;color:#8A8178;margin-top:6px">12 input</div></div>
+        <div style="text-align:center"><div style="width:50px;height:50px;background:#FBEAE3;border:1px solid #E9CFC4;border-radius:16px"></div><div style="font-size:11px;color:#8A8178;margin-top:6px">14–18 card</div></div>
+        <div style="text-align:center"><div style="width:50px;height:50px;background:#FBEAE3;border:1px solid #E9CFC4;border-radius:25px"></div><div style="font-size:11px;color:#8A8178;margin-top:6px">pill / 34 frame</div></div>
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">ELEVATION</div>
+      <div style="display:flex;gap:20px;align-items:center">
+        <div style="text-align:center"><div style="width:70px;height:50px;background:#fff;border:1px solid #EFE7DA;border-radius:12px;box-shadow:0 16px 34px rgba(46,42,38,.10)"></div><div style="font-size:11px;color:#8A8178;margin-top:12px">Card<br>0 16 34 / .10</div></div>
+        <div style="text-align:center"><div style="width:70px;height:50px;background:#E27A54;border-radius:12px;box-shadow:0 6px 14px rgba(226,122,84,.35)"></div><div style="font-size:11px;color:#8A8178;margin-top:12px">Button<br>0 6 14 / .35 tinted</div></div>
+      </div>
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px;margin-bottom:22px">
+    <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:6px">SPACING SCALE</div>
+    <div style="font-size:13px;color:#5C5470;margin-bottom:14px">4-based, tight. Common gaps: <b>6 · 8 · 10 · 14 · 16</b>. Screen padding 16–24. Layout uses flex/grid + <code style="background:#F6F1E9;padding:1px 5px;border-radius:4px">gap</code>, never per-element margins.</div>
+    <div style="display:flex;align-items:flex-end;gap:10px">
+      <div style="width:6px;height:6px;background:#E5A93C;border-radius:2px"></div><span style="font-size:10px;color:#8A8178">6</span>
+      <div style="width:8px;height:8px;background:#E5A93C;border-radius:2px"></div><span style="font-size:10px;color:#8A8178">8</span>
+      <div style="width:10px;height:10px;background:#E5A93C;border-radius:2px"></div><span style="font-size:10px;color:#8A8178">10</span>
+      <div style="width:14px;height:14px;background:#E5A93C;border-radius:2px"></div><span style="font-size:10px;color:#8A8178">14</span>
+      <div style="width:16px;height:16px;background:#E5A93C;border-radius:2px"></div><span style="font-size:10px;color:#8A8178">16</span>
+      <div style="width:24px;height:24px;background:#E5A93C;border-radius:3px"></div><span style="font-size:10px;color:#8A8178">24</span>
+    </div>
+  </div>
+  <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:16px;padding:18px 20px;margin-bottom:48px;font-size:13px;color:#5C5470;line-height:1.55">
+    <b>Icons are flat CSS shapes</b> — circles, rounded rectangles, diamonds (45°-rotated squares) and CSS-border triangles. No detailed illustration. Coins = amber circle + lighter ring; checkmark = rotated 2px border-corner; ears = border triangles. Pets are built from the same primitives (head circle, triangle ears, dot eyes, border-arc mouth). Keep colour never the sole signal — always pair with text or an icon (WCAG&nbsp;AA).
+  </div>
+
+  <!-- ===== COMPONENTS ===== -->
+  <div style="font-family:Fredoka;font-weight:600;font-size:24px;margin-bottom:22px">04 · Components</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+    <!-- Buttons -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">BUTTONS</div>
+      <div style="display:flex;flex-direction:column;gap:11px">
+        <div style="height:48px;border-radius:13px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.35);cursor:pointer;transition:all .12s" style-hover="background:#C9633F;box-shadow:0 9px 20px rgba(226,122,84,.45);transform:translateY(-1px)" style-active="background:#B85838;box-shadow:0 3px 8px rgba(226,122,84,.4);transform:translateY(1px)">Primary — hover me</div>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1;height:44px;border-radius:12px;background:#5FA97E;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 12px rgba(95,169,126,.32);cursor:pointer;transition:all .12s" style-hover="background:#4E9670;box-shadow:0 8px 16px rgba(95,169,126,.42);transform:translateY(-1px)" style-active="background:#437F60;transform:translateY(1px)">Positive</div>
+          <div style="flex:1;height:44px;border-radius:12px;background:#fff;border:1.5px solid #E27A54;color:#E27A54;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s" style-hover="background:#FBEAE3;border-color:#C9633F;color:#C9633F" style-active="background:#F6DBCF">Secondary</div>
+        </div>
+      </div>
+      <!-- state ladder (static, PDF-safe) -->
+      <div style="margin-top:16px;font-size:10.5px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:9px">PRIMARY — STATE LADDER</div>
+      <div style="display:flex;gap:9px">
+        <div style="flex:1;text-align:center"><div style="height:42px;border-radius:12px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.35)">Rest</div><div style="font-size:10px;color:#A89E92;margin-top:6px">#E27A54</div></div>
+        <div style="flex:1;text-align:center"><div style="height:42px;border-radius:12px;background:#C9633F;color:#fff;font-family:Fredoka;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 9px 20px rgba(226,122,84,.45);transform:translateY(-1px)">Hover</div><div style="font-size:10px;color:#A89E92;margin-top:6px">#C9633F ↑1</div></div>
+        <div style="flex:1;text-align:center"><div style="height:42px;border-radius:12px;background:#B85838;color:#fff;font-family:Fredoka;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(226,122,84,.4);transform:translateY(1px)">Press</div><div style="font-size:10px;color:#A89E92;margin-top:6px">#B85838 ↓1</div></div>
+        <div style="flex:1;text-align:center"><div style="height:42px;border-radius:12px;background:#EAC3B4;color:#fff;font-family:Fredoka;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center">Disab</div><div style="font-size:10px;color:#A89E92;margin-top:6px">40% · no shadow</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:14px">
+        <div style="width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid #EBD9D2;color:#DB6A54;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all .12s" style-hover="background:#FDE7E3;border-color:#E9B8AD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></div>
+        <div style="width:44px;height:44px;border-radius:50%;background:#E27A54;color:#fff;font-size:24px;font-weight:300;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(226,122,84,.4);cursor:pointer;transition:all .12s" style-hover="background:#C9633F;transform:translateY(-1px) scale(1.04)" style-active="transform:translateY(1px) scale(.97)">+</div>
+        <div style="font-size:12px;color:#8A8178">Icon (destructive) · FAB — try them</div>
+      </div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5"><b>Hover:</b> fill darkens ~10% (#E27A54→#C9633F), shadow grows, lifts 1px. <b>Pressed:</b> darkens further (#B85838), sinks 1px, shadow shrinks. <b>Secondary:</b> white fill, 1.5px #E27A54 stroke + terracotta text; hover tints to #FBEAE3. <b>Disabled:</b> 40% tint, no shadow, no cursor. 120ms ease on all.</div>
+    </div>
+
+    <!-- Inputs -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">INPUTS</div>
+      <label style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px">DEFAULT / FILLED</label>
+      <div style="margin:6px 0 12px;height:44px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 13px;font-size:14px">Filled value</div>
+      <label style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px">PLACEHOLDER</label>
+      <div style="margin:6px 0 12px;height:44px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 13px;font-size:14px;color:#B8AFA4">Placeholder text</div>
+      <label style="font-size:11px;font-weight:800;color:#E27A54;letter-spacing:.4px">ACTIVE / FOCUSED</label>
+      <div style="margin:6px 0 12px;height:44px;border-radius:12px;background:#fff;border:2px solid #E27A54;box-shadow:0 0 0 4px rgba(226,122,84,.16);display:flex;align-items:center;padding:0 12px;font-size:14px">Email my supervi<span style="display:inline-block;width:2px;height:18px;background:#E27A54;margin-left:1px"></span></div>
+      <label style="font-size:11px;font-weight:800;color:#C23B2E;letter-spacing:.4px">ERROR</label>
+      <div style="margin:6px 0 4px;height:44px;border-radius:12px;background:#fff;border:2px solid #DB4C3F;box-shadow:0 0 0 4px rgba(219,76,63,.14);display:flex;align-items:center;padding:0 12px;font-size:14px">not-an-email</div>
+      <div style="font-size:11px;color:#C23B2E;font-weight:700">Enter a valid email address.</div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5">Resting: fill #F6F1E9 · 1px #EBE2D5. <b>Focused:</b> white fill, 2px #E27A54 border, 4px focus ring (#E27A54 @16%), caret + terracotta label. Error swaps to #DB4C3F with a message. Radius 12 · height 44 throughout.</div>
+    </div>
+
+    <!-- Header stat pills -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">STAT PILLS (HEADER)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div style="display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #EFE7DA;border-radius:20px;padding:5px 10px 5px 6px"><div style="width:18px;height:18px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:13px;color:#B67F1E">245</span></div>
+        <div style="width:34px;height:34px;border-radius:50%;background:#8478C4;color:#fff;font-family:Fredoka;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center">Lv4</div>
+        <div style="display:flex;align-items:center;gap:4px;background:#FBEAE3;border-radius:20px;padding:5px 11px"><span style="font-weight:800;font-size:13px;color:#E27A54"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>5</span></div>
+      </div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5">Coin pill (amber circle+ring, #B67F1E text) · level disc (violet) · streak pill (terracotta on #FBEAE3). Pill radius 20.</div>
+    </div>
+
+    <!-- Chips -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">CHIPS &amp; TAGS</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:800;padding:5px 12px;border-radius:20px;background:#E27A54;color:#fff">All</span>
+        <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #EBE2D5;color:#8A8178">Food</span>
+        <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #EBE2D5;color:#8A8178">Toys</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;color:#E27A54;background:#E27A5422">Large</span>
+        <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;color:#5FA97E;background:#5FA97E22">Small</span>
+        <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;color:#8478C4;background:#8478C422">Epic</span>
+      </div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5">Filter chip: active = solid primary; idle = white/1px border. Tier tag: colour at 13% alpha bg, radius 6.</div>
+    </div>
+
+    <!-- Task row -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">TASK ROW</div>
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;align-items:center;gap:11px;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:14px;padding:11px 12px">
+          <div style="width:22px;height:22px;border-radius:50%;background:#5FA97E;flex:none;position:relative"><div style="position:absolute;left:7px;top:5px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)"></div></div>
+          <div style="flex:1"><div style="font-weight:700;font-size:13.5px;text-decoration:line-through;color:#B8AFA4">Reply to email</div><div style="display:flex;gap:7px;margin-top:4px"><span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;color:#98A2AE;background:#98A2AE22">Trivial</span><span style="font-size:11px;color:#A89E92">Done</span></div></div>
+          <div style="display:flex;align-items:center;gap:3px"><div style="width:13px;height:13px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">5</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:11px;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:14px;padding:11px 12px">
+          <div style="width:22px;height:22px;border-radius:50%;border:2px solid #D8CEC0;flex:none"></div>
+          <div style="flex:1"><div style="font-weight:700;font-size:13.5px">Draft methodology</div><div style="display:flex;gap:7px;margin-top:4px"><span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;color:#E27A54;background:#E27A5422">Large</span><span style="font-size:11px;color:#A89E92">Due today</span></div></div>
+          <div style="display:flex;align-items:center;gap:3px"><div style="width:13px;height:13px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">75</span></div>
+        </div>
+      </div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5">Card #FBF6EF, radius 14. Checkbox 22px circle → sage-filled + white check when done; title strikes to #B8AFA4.</div>
+    </div>
+
+    <!-- Store card -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">STORE ITEM CARD</div>
+      <div style="display:flex;gap:11px">
+        <div style="width:120px;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:15px;padding:12px 11px">
+          <div style="height:44px;border-radius:11px;background:#FCEBD3;display:flex;align-items:center;justify-content:center;margin-bottom:9px"><div style="width:22px;height:22px;border-radius:6px;background:#E5A93C"></div></div>
+          <div style="font-weight:800;font-size:12.5px">Sunflower</div>
+          <div style="font-size:10.5px;color:#A89E92;margin-bottom:8px">Basic food</div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:3px"><div style="width:12px;height:12px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">40</span></div><div style="width:26px;height:26px;border-radius:8px;background:#E27A54;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">+</div></div>
+        </div>
+        <div style="width:120px;background:#F2EEE7;border:1px solid #EFE7DA;border-radius:15px;padding:12px 11px">
+          <div style="height:44px;border-radius:11px;background:#E9E3D9;display:flex;align-items:center;justify-content:center;margin-bottom:9px"><div style="width:18px;height:22px;border-radius:5px;background:#B8AFA4;position:relative"><div style="position:absolute;top:-7px;left:4px;width:10px;height:10px;border:3px solid #B8AFA4;border-bottom:none;border-radius:6px 6px 0 0"></div></div></div>
+          <div style="font-weight:800;font-size:12.5px;color:#9891864a">Fox kit</div>
+          <div style="font-size:10.5px;color:#A89E92;margin-bottom:8px">2nd animal</div>
+          <div style="text-align:center;font-size:10px;font-weight:800;color:#8A8178;background:#E9E3D9;border-radius:8px;padding:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Lvl 7</div>
+        </div>
+      </div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5">Neutral (Group A) vs locked. Icon well uses the accent's tint. Locked cards desaturate + show required level (STORE-6).</div>
+    </div>
+
+    <!-- Progress bars -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">PROGRESS BARS</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div><div style="font-size:10.5px;font-weight:800;color:#8A8178;margin-bottom:5px">XP · violet</div><div style="height:8px;border-radius:5px;background:#EFE7DA;overflow:hidden"><div style="width:76%;height:100%;background:#8478C4;border-radius:5px"></div></div></div>
+        <div><div style="font-size:10.5px;font-weight:800;color:#8A8178;margin-bottom:5px">Happiness · sage</div><div style="height:8px;border-radius:5px;background:#EFE7DA;overflow:hidden"><div style="width:60%;height:100%;background:#5FA97E;border-radius:5px"></div></div></div>
+        <div><div style="font-size:10.5px;font-weight:800;color:#8A8178;margin-bottom:5px">Hunger · amber</div><div style="height:8px;border-radius:5px;background:#EFE7DA;overflow:hidden"><div style="width:35%;height:100%;background:#E5A93C;border-radius:5px"></div></div></div>
+      </div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5">Track #EFE7DA, height 8, radius 5. Fill colour is semantic (XP violet · happiness sage · hunger amber).</div>
+    </div>
+
+    <!-- Nav -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">BOTTOM NAV</div>
+      <div style="display:flex;justify-content:center;gap:14px;align-items:center;padding:12px 16px">
+        <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+        <div style="width:46px;height:46px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(226,122,84,.4)"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg></div>
+        <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg></div>
+        <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      </div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5">Floating round buttons, centered with 14px gap (Uber-Eats style). 4 tabs (Tasks, Store, Zoo, Profile) + a raised terracotta <b>+</b> add-task button in the middle, reachable from every screen. Active tab = filled terracotta 42px circle; idle = white circle, #8A8178 Lucide icon, 1px border + shadow. All <code style="background:#F6F1E9;padding:1px 5px;border-radius:4px">flex:none</code> so they stay perfectly round.</div>
+    </div>
+
+    <!-- Date picker -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">DATE PICKER (INLINE POPOVER)</div>
+      <div style="height:38px;border-radius:11px 11px 0 0;background:#fff;border:2px solid #E27A54;border-bottom:none;display:flex;align-items:center;justify-content:space-between;padding:0 12px"><div style="display:flex;align-items:center;gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E27A54" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg><span style="font-size:13px;font-weight:700">Jul 21, 2026</span></div><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E27A54" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div style="border:2px solid #E27A54;border-top:1px solid #F3D9CE;border-radius:0 0 13px 13px;padding:10px;box-shadow:0 14px 26px rgba(46,42,38,.12)">
+        <div style="display:flex;gap:6px;margin-bottom:10px"><span style="flex:1;text-align:center;font-size:10px;font-weight:800;padding:6px 0;border-radius:8px;background:#F6F1E9;border:1px solid #EBE2D5;color:#8A8178">Today</span><span style="flex:1;text-align:center;font-size:10px;font-weight:800;padding:6px 0;border-radius:8px;background:#F6F1E9;border:1px solid #EBE2D5;color:#8A8178">Tomorrow</span><span style="flex:1;text-align:center;font-size:10px;font-weight:800;padding:6px 0;border-radius:8px;background:#F6F1E9;border:1px solid #EBE2D5;color:#8A8178">Weekend</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="width:26px;height:26px;border-radius:8px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8A8178" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></div><div style="font-family:Fredoka;font-weight:600;font-size:13px">July 2026</div><div style="width:26px;height:26px;border-radius:8px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8A8178" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div></div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-bottom:2px"><div style="text-align:center;font-size:9px;font-weight:800;color:#B8AFA4;padding:2px 0">M</div><div style="text-align:center;font-size:9px;font-weight:800;color:#B8AFA4;padding:2px 0">T</div><div style="text-align:center;font-size:9px;font-weight:800;color:#B8AFA4;padding:2px 0">W</div><div style="text-align:center;font-size:9px;font-weight:800;color:#B8AFA4;padding:2px 0">T</div><div style="text-align:center;font-size:9px;font-weight:800;color:#B8AFA4;padding:2px 0">F</div><div style="text-align:center;font-size:9px;font-weight:800;color:#B8AFA4;padding:2px 0">S</div><div style="text-align:center;font-size:9px;font-weight:800;color:#B8AFA4;padding:2px 0">S</div></div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px"><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;color:#D8CEC0">30</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">1</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">2</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">3</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">4</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">5</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">6</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">7</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">8</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">9</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">10</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">11</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">12</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">13</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">14</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">15</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">16</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">17</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">18</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#E27A54;border:1.5px solid #E27A54;border-radius:50%">19</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">20</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;background:#E27A54;border-radius:50%;box-shadow:0 4px 10px rgba(226,122,84,.4)">21</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">22</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">23</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">24</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">25</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">26</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">27</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">28</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">29</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">30</div><div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">31</div></div>
+      </div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5">Expands <b>under the Due-date field</b> (not a separate modal) — the active field keeps its terracotta border and the panel attaches seamlessly below it. Quick chips (Today/Tomorrow/Weekend), today = terracotta ring, selected = filled terracotta circle.</div>
+    </div>
+
+    <!-- Store header -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:14px">STORE HEADER</div>
+      <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden">
+        <div style="padding:12px 14px;background:#FBF6EF">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
+            <div style="font-family:Fredoka;font-weight:600;font-size:18px">Store</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#fff;border:1px solid #EFE7DA;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A8178" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-7.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></div>
+              <div style="display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #EFE7DA;border-radius:20px;padding:5px 10px 5px 6px"><div style="width:18px;height:18px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:13px;color:#B67F1E">245</span></div>
+            </div>
+          </div>
+          <div style="height:36px;border-radius:11px;background:#fff;border:1px solid #EBE2D5;display:flex;align-items:center;gap:8px;padding:0 12px;margin-bottom:10px"><div style="width:14px;height:14px;border-radius:50%;border:2px solid #C7BDB0"></div><span style="font-size:13px;color:#B8AFA4">Search items…</span></div>
+          <div style="display:flex;gap:6px">
+            <span style="font-size:11px;font-weight:800;padding:5px 12px;border-radius:20px;background:#E27A54;color:#fff">All</span>
+            <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #EBE2D5;color:#8A8178">Food</span>
+            <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #EBE2D5;color:#8A8178">Toys</span>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5">Warm #FBF6EF header: title + <b>history</b> icon button (route to Purchase history) + coin pill, then a search field and category chips (active chip = solid terracotta). Same header for Group A &amp; B; Group B adds the flash-sale banner below it.</div>
+    </div>
+
+    <!-- Urgency badges -->
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:20px">
+      <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:6px">URGENCY BADGES <span style="color:#C23B2E">· GROUP B ONLY</span></div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px">
+        <span style="font-size:10px;font-weight:800;background:#DB4C3F;color:#fff;padding:3px 9px;border-radius:20px">Only 3 left!</span>
+        <span style="font-size:10px;font-weight:800;background:#E5A93C;color:#fff;padding:3px 9px;border-radius:20px">5 in carts</span>
+        <span style="font-size:10px;font-weight:800;background:#8478C4;color:#fff;padding:3px 9px;border-radius:20px">Buy 2 get 1</span>
+        <span style="font-size:10px;font-weight:800;color:#DB4C3F"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> 8 sold / hr</span>
+      </div>
+      <div style="margin-top:12px;background:#DB4C3F;border-radius:11px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;color:#fff"><span style="font-size:12px;font-weight:800"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg> Flash sale</span><span style="font-family:Fredoka;font-weight:600;font-size:14px;background:rgba(0,0,0,.18);padding:2px 8px;border-radius:7px">14:32</span></div>
+      <div style="font-size:11.5px;color:#A89E92;margin-top:14px;line-height:1.5">Pill radius 20, 10px/800. Countdown value in Fredoka on a translucent-black chip. All data fabricated (§4).</div>
+    </div>
+  </div>
+
+  <div style="height:1px;background:#DED4C5;margin:44px 0 20px"></div>
+  <div style="font-size:12px;color:#A89E92;text-align:center">TaskTails design tokens · pair with the screen board for live component context. All colours meet WCAG AA on their intended surfaces.</div>
+
+</div>
+</x-dc>
+</body>
+</html>
