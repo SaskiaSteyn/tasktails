@@ -1,0 +1,234 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   TaskTails design tokens — see design_handoff/TaskTails Style Guide.dc.html
+   Warm flat UI. Neutral base + four accents, each with fill / soft tint /
+   readable dark text variant. Red is reserved for Group B urgency only.
+
+   WCAG AA (NFR-GEN-1, INF-14) — audited 2026-07-26. Measured against the
+   darkest surface (the board, #F1E9DC), so anything passing there passes
+   everywhere. The style guide's claim that all colours meet AA does not hold.
+
+   FIXED — darkened just enough to reach 4.5:1, hue and saturation preserved so
+   the palette still reads as the same warm family. Do not revert these:
+     ink-soft     #8A8178 → #524C47   (3.17:1 → 7.02:1)
+     ink-faint    #B8AFA4 → #74685A   (1.92:1 → 4.50:1)
+     amber-text   #B67F1E → #8C6117   (2.88:1 → 4.54:1)
+     sage-text    #3F8C63 → #357654   (3.80:1 → 4.50:1)
+     urgency-text #C23B2E → #BF3A2D   (4.40:1 → 4.52:1)
+
+   ACCEPTED EXCEPTIONS — deliberate, decided; do not "fix" these. The accents
+   and their white labels stay exactly as the style guide draws them, because
+   both alternatives were tried and rejected on looks: a darker AA-passing fill
+   (#CA4F22) lost the brand's warmth, and an ink label on the existing fill
+   (4.84:1) lost the intended white-on-terracotta treatment.
+     white on terracotta button   2.94:1  (needs 4.5:1)
+     white on sage button         2.81:1  (needs 4.5:1)
+     terracotta as link text      2.94:1  (needs 4.5:1)
+   The focus ring stays brand terracotta for the same reason. Revisit only if
+   the pre-study user testing round surfaces legibility complaints.
+
+   NOT YET REACHED — these surfaces don't exist yet. When the store and Group B
+   urgency stimuli land, white text on these fills all falls short of 4.5:1:
+     white on amber    2.08:1   ("5 in carts" badge)
+     white on violet   3.84:1   ("Buy 2 get 1" badge, level disc)
+     white on urgency  4.10:1   (flash-sale banner, destructive button)
+   ========================================================================== */
+
+@theme {
+  /* ---- Fonts ---- */
+  /* Fredoka: display, headings, numerals. Nunito: body, labels, all UI text. */
+  --font-display: var(--font-fredoka), system-ui, sans-serif;
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+
+  /* ---- Neutrals & surfaces ---- */
+  --color-board: #f1e9dc; /* outermost canvas */
+  --color-warm: #fbf6ef; /* headers, cards, section fills */
+  --color-surface: #ffffff; /* screens, primary cards */
+  --color-input: #f6f1e9; /* text fields */
+  /* Three text tiers, spread across the usable range so the hierarchy the
+     designs rely on survives the contrast fix. Ratios are vs the board. */
+  --color-ink: #2e2a26; /* primary text — 11.81:1 */
+  --color-ink-soft: #524c47; /* secondary text, labels — 7.02:1 (was #8A8178) */
+  --color-ink-faint: #74685a; /* placeholder, small print — 4.50:1 (was #B8AFA4) */
+  /* Disabled text only. WCAG 1.4.3 exempts inactive controls, so this keeps the
+     guide's original faint value — it must stay visibly "off". */
+  --color-ink-disabled: #b8afa4;
+  --color-border-track: #efe7da; /* borders, progress tracks */
+  --color-border-input: #ebe2d5; /* input borders */
+  --color-checkbox: #d8cec0; /* idle checkbox / toggle off */
+
+  /* ---- Terracotta · primary ----
+     Kept exactly as the style guide draws it, on request — the darker
+     AA-passing variant lost the warmth. White-on-terracotta is 2.94:1, so
+     filled terracotta buttons are a known, accepted AA exception. */
+  --color-terracotta: #e27a54;
+  --color-terracotta-hover: #c9633f;
+  --color-terracotta-press: #b85838;
+  --color-terracotta-tint: #fbeae3;
+  --color-terracotta-tint-press: #f6dbcf;
+  --color-terracotta-disabled: #eac3b4; /* primary @40% on white, no shadow */
+
+  /* ---- Sage · success ---- */
+  --color-sage: #5fa97e;
+  --color-sage-hover: #4e9670;
+  --color-sage-press: #437f60;
+  --color-sage-tint: #e7f0e9;
+  --color-sage-text: #357654; /* text use only — 4.50:1 on board (was #3F8C63) */
+
+  /* ---- Amber · coins ---- */
+  --color-amber: #e5a93c;
+  --color-amber-ring: #f2c879;
+  --color-amber-tint: #fcebd3;
+  --color-amber-text: #8c6117; /* 4.54:1 on board (was #B67F1E) */
+
+  /* ---- Violet · XP / level ---- */
+  --color-violet: #8478c4;
+  --color-violet-tint: #eee9f5;
+  --color-violet-text: #5c5470;
+
+  /* ---- Urgency red · GROUP B + destructive ONLY ---- */
+  --color-urgency: #db4c3f; /* borders, decorative fills */
+  --color-urgency-tint: #fde7e3;
+  --color-urgency-text: #bf3a2d; /* 4.52:1 on board (was #C23B2E, 4.40:1) */
+  --color-urgency-border: #ebd9d2;
+
+  /* ---- Task complexity ramp ---- */
+  --color-tier-trivial: #98a2ae; /* 5 coins / 8 xp */
+  --color-tier-small: #5fa97e; /* 15 / 20 */
+  --color-tier-medium: #e5a93c; /* 35 / 45 */
+  --color-tier-large: #e27a54; /* 75 / 100 */
+  --color-tier-epic: #8478c4; /* 150 / 200 */
+
+  /* ---- Radius ---- */
+  --radius-chip: 8px;
+  --radius-input: 12px;
+  --radius-btn: 13px;
+  --radius-card: 15px;
+  --radius-card-lg: 18px;
+  --radius-pill: 20px;
+  --radius-frame: 34px;
+
+  /* ---- Shadow ---- */
+  --shadow-card: 0 16px 34px rgb(46 42 38 / 0.1);
+  --shadow-popover: 0 14px 26px rgb(46 42 38 / 0.12);
+  --shadow-btn: 0 6px 14px rgb(226 122 84 / 0.35);
+  --shadow-btn-hover: 0 9px 20px rgb(226 122 84 / 0.45);
+  --shadow-btn-press: 0 3px 8px rgb(226 122 84 / 0.4);
+  --shadow-btn-sage: 0 5px 12px rgb(95 169 126 / 0.32);
+  --shadow-btn-sage-hover: 0 8px 16px rgb(95 169 126 / 0.42);
+  --shadow-nav-idle: 0 4px 12px rgb(46 42 38 / 0.1);
+  --shadow-nav-active: 0 6px 14px rgb(226 122 84 / 0.4);
+  --shadow-fab: 0 8px 18px rgb(226 122 84 / 0.4);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-board);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Fredoka for every heading — display type per the style guide scale. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+
+  a {
+    color: var(--color-terracotta);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-terracotta-hover);
+  }
+
+  /* WCAG AA (NFR-GEN-1): every interactive element keeps a visible focus ring.
+     Deliberately the brand terracotta, per the designs — left as-is on request. */
+  :focus-visible {
+    outline: 2px solid var(--color-terracotta);
+    outline-offset: 2px;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-ink-faint);
+  }
+}
+
+/* ==========================================================================
+   Type scale — named utilities so every screen uses the same steps
+   ========================================================================== */
+
+@utility text-brand-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1.05;
+}
+
+@utility text-section {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+@utility text-screen-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+@utility text-stat {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+}
+
+@utility text-body-strong {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+@utility text-secondary {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--color-ink-soft);
+}
+
+@utility text-overline {
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
+/* Respect the OS reduce-motion setting (also a PREFERENCES toggle later). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

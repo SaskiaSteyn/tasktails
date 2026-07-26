@@ -16,7 +16,9 @@ metadata:
 - **Angular** — enterprise/large team standard
 
 ### Confirmed Stack for This Project
-Next.js (React) + Tailwind CSS + shadcn/ui + PostgreSQL + Prisma + NextAuth + Vercel + AWS. This aligns with industry standards.
+Next.js (React) + Tailwind CSS + PostgreSQL + Prisma + NextAuth + Vercel + AWS. This aligns with industry standards.
+
+> **Updated 2026-07-26:** shadcn/ui was in the original stack but is **not being used**. See "Design System Used in This Project" below.
 
 ### Cost-Effective Hosting for Students
 | Option | Cost | Notes |
@@ -138,7 +140,11 @@ From apps like Habitica, Forest, Finch, Todoist:
 - Dark mode must independently pass contrast checks (desaturate accent colors ~20%)
 
 ### Design System Used in This Project
-**shadcn/ui + Tailwind CSS** — matches industry standard. shadcn/ui components are copied into project (not npm-installed), giving full customization control. Built on Radix UI primitives for accessibility.
+**Custom components + Tailwind CSS v4.** Design tokens from `design_handoff/TaskTails Style Guide.dc.html` live in `src/app/globals.css` as Tailwind `@theme` variables; shared primitives are hand-built in `src/components/ui/`.
+
+**shadcn/ui is not used** (decided 2026-07-26, while building AUTH-01). It was the original plan and the research below still stands on its merits, but TaskTails has a complete bespoke design system, and shadcn's own token layer conflicted with the style guide's. Hand-building the primitives was less work than restyling shadcn's. Since shadcn components are copied in per-component rather than installed as a dependency, individual ones can still be added later if a complex widget warrants it.
+
+Original research note, kept for reference: *shadcn/ui components are copied into the project (not npm-installed), giving full customization control. Built on Radix UI primitives for accessibility.* Radix is worth revisiting if a future ticket needs a hard-to-get-right primitive (dialog focus trapping, combobox); accessibility for the current hand-built components is covered by the INF-14 pass.
 
 ---
 
