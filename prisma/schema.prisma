@@ -31,6 +31,7 @@ model User {
   inventoryItems InventoryItem[]
   cartItems      CartItem[]
   transactions   Transaction[]
+  pets           Pet[]
 }
 
 /// INF-02.
@@ -83,6 +84,7 @@ model StoreItem {
   inventoryItems InventoryItem[]
   cartItems      CartItem[]
   transactions   Transaction[]
+  pets           Pet[]
 }
 
 /// INF-05.
@@ -93,9 +95,9 @@ model InventoryItem {
   storeItemId String
   storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
 
-  /// FK to the future Pet model (INF-08) — not a relation yet since Pet
-  /// doesn't exist until INF-08 lands. Null while unequipped.
+  /// Null while unequipped.
   equippedToPetId String?
+  equippedToPet   Pet?    @relation(fields: [equippedToPetId], references: [id], onDelete: SetNull)
 
   quantity Int @default(1)
 }
@@ -121,4 +123,19 @@ model Transaction {
 
   coinSpent   Int
   purchasedAt DateTime @default(now())
+}
+
+/// INF-08.
+model Pet {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  happiness        Int
+  hunger           Int
+  lastInteractedAt DateTime
+
+  equippedItems InventoryItem[]
 }
