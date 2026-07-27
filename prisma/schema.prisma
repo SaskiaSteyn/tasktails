@@ -33,6 +33,7 @@ model User {
   transactions    Transaction[]
   pets            Pet[]
   telemetryEvents TelemetryEvent[]
+  economy         UserEconomy?
 }
 
 /// INF-02.
@@ -153,4 +154,26 @@ model TelemetryEvent {
   eventType String
   payload   Json
   createdAt DateTime @default(now())
+}
+
+/// INF-10. One record per user (AUTH-04 initialises it at 0 coins, 0 XP,
+/// level 1, streak 0). See economy_system.md for the coin/XP rules that
+/// operate on these fields (ECO-01..ECO-05).
+model UserEconomy {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  coins Int @default(0)
+  xp    Int @default(0)
+  level Int @default(1)
+
+  /// Consecutive streak-day count; a streak day = at least 1 task completed.
+  streak         Int       @default(0)
+  lastStreakDate DateTime?
+
+  /// Daily cap tracking — 300 coins / 500 XP max per day (NFR-TASK-2).
+  dailyCoinsEarned Int      @default(0)
+  dailyXpEarned    Int      @default(0)
+  dailyCapResetAt  DateTime @default(now())
 }
