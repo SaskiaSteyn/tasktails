@@ -10,24 +10,26 @@ import { Divider } from "@/components/ui/divider";
 import { GoogleMark } from "@/components/ui/google-mark";
 import { PasswordField } from "@/components/ui/password-field";
 import { TextField } from "@/components/ui/text-field";
-import { fieldErrors, registerSchema } from "@/lib/validation/auth";
+import { fieldErrors, loginSchema } from "@/lib/validation/auth";
+
+type Errors = Partial<Record<"email" | "password", string>>;
 
 /**
- * Where a new account lands once its session exists: the username step, which
- * hands off to the welcome screen (ONB-1) once it is answered or skipped.
+ * AUTH-02 — credentials sign-in against the NextAuth handler (AUTH-05).
+ *
+ * `callbackUrl` is validated on the server (see the page) and is where the
+ * session lands once the JWT is issued.
  */
-const AFTER_REGISTER = "/onboarding/username";
-
-type Errors = Partial<Record<"email" | "password" | "confirmPassword", string>>;
-
-export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function LoginForm({
+  googleEnabled,
+  callbackUrl,
+}: {
+  googleEnabled: boolean;
+  callbackUrl: string;
+}) {
   const router = useRouter();
 
-  const [values, setValues] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+  const [values, setValues] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -45,7 +47,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
     event.preventDefault();
     if (pending) return;
 
-    const parsed = registerSchema.safeParse(values);
+    const parsed = loginSchema.safeParse(values);
     if (!parsed.success) {
       setErrors(fieldErrors(parsed.error));
       return;
@@ -56,35 +58,20 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
     setFormError(null);
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => null);
-        if (body?.fieldErrors) {
-          setErrors(body.fieldErrors as Errors);
-        } else {
-          setFormError(body?.error ?? "Couldn't create your account. Try again.");
-        }
-        return;
-      }
-
-      // Sign straight in so the new account has a session (AUTH-4, JWT).
       const result = await signIn("credentials", {
         email: parsed.data.email,
         password: parsed.data.password,
         redirect: false,
       });
 
-      if (result?.error) {
-        setFormError("Account created, but signing in failed. Try logging in.");
+      if (!result || result.error) {
+        // One message for both a wrong password and an unknown address — which
+        // of the two it was is not something a sign-in form should disclose.
+        setFormError("That email and password don't match an account.");
         return;
       }
 
-      router.push(AFTER_REGISTER);
+      router.push(callbackUrl);
     } catch {
       setFormError("Can't reach TaskTails. Check your connection and try again.");
     } finally {
@@ -95,7 +82,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
   return (
     <>
       <form noValidate onSubmit={handleSubmit} className="flex flex-col">
-        <div className="flex flex-col gap-[11px]">
+        <div className="flex flex-col gap-[14px]">
           <TextField
             label="Email"
             type="email"
@@ -111,27 +98,20 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
           <PasswordField
             label="Password"
             name="password"
-            autoComplete="new-password"
-            placeholder="At least 8 characters"
+            autoComplete="current-password"
+            placeholder="Your password"
             value={values.password}
             onChange={(event) => update("password")(event.target.value)}
             error={errors.password}
             disabled={pending}
           />
-          <PasswordField
-            label="Confirm password"
-            name="confirmPassword"
-            autoComplete="new-password"
-            placeholder="Repeat your password"
-            value={values.confirmPassword}
-            onChange={(event) => update("confirmPassword")(event.target.value)}
-            error={errors.confirmPassword}
-            disabled={pending}
-          />
         </div>
 
+        {/* The frame draws a "Forgot password?" link above this button. It is
+            omitted until a reset flow exists to link to — there is no ticket
+            for one — rather than shipping a control that goes nowhere. */}
         <Button type="submit" disabled={pending} className="mt-[14px]">
-          {pending ? "Creating account…" : "Create account"}
+          {pending ? "Logging in…" : "Log in"}
         </Button>
 
         {formError ? (
@@ -144,13 +124,13 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
         ) : null}
       </form>
 
-      <Divider label="or sign up with" className="my-3" />
+      <Divider label="or continue with" className="my-[18px]" />
 
       <Button
         variant="oauth"
         disabled={!googleEnabled || pending}
         aria-describedby={googleEnabled ? undefined : "google-unavailable"}
-        onClick={() => signIn("google", { redirectTo: AFTER_REGISTER })}
+        onClick={() => signIn("google", { redirectTo: callbackUrl })}
       >
         <GoogleMark />
         Continue with Google
@@ -165,15 +145,10 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
         </p>
       )}
 
-      <p className="mt-[10px] text-center text-[10.5px] leading-[1.4] text-ink-faint">
-        You&apos;ll be randomly placed in a study group — this can&apos;t be changed
-        during the study.
-      </p>
-
       <div className="min-h-2 flex-1" />
 
       <p className="text-center text-[13px] text-ink-soft">
-        Already have an account? <Link href="/login">Log in</Link>
+        New here? <Link href="/register">Create an account</Link>
       </p>
     </>
   );

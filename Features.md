@@ -36,11 +36,12 @@
 | # | Feature | Type | Status |
 |---|---------|------|--------|
 | AUTH-01 | Register page — form with email and password fields | Frontend | Done |
-| AUTH-02 | Login page — form with email and password fields | Frontend | To Do |
+| AUTH-02 | Login page — form with email and password fields | Frontend | Done |
 | AUTH-03 | Logout button and action in global header | Frontend | To Do |
 | AUTH-04 | `POST /api/auth/register` — create user, hash password, assign A/B group randomly, initialise `UserEconomy` record | Backend | In Progress — mocked against an in-memory store; needs Prisma (INF-01, INF-10) |
 | AUTH-05 | NextAuth sign-in handler (`POST /api/auth/[...nextauth]`) — validate credentials, issue JWT | Backend | Done |
 | AUTH-06 | Protected route middleware — redirect unauthenticated users to login | Backend | To Do |
+| AUTH-07 | Change username from the profile — inline editor with the same live availability check as the onboarding step | Frontend | Done |
 
 ---
 
@@ -91,6 +92,8 @@
 | ONB-01 | Onboarding checklist widget — displays three goals ("Complete 3 tasks", "Buy 1 animal", "Feed 3 animals today") with live completion status | Frontend | To Do |
 | ONB-02 | Goal completion celebration — visual feedback when each onboarding goal is met | Frontend | To Do |
 | ONB-03 | `GET /api/onboarding` — return current completion status of the three onboarding goals for the authenticated user | Backend | To Do |
+| ONB-04 | Username step — step dots, live availability check, suggestion chips, and a skip that assigns an auto-generated handle | Frontend | Done |
+| ONB-05 | `POST /api/user/username` (availability) and `PUT` (claim) — session-scoped, enforces uniqueness | Backend | In Progress — mocked against the in-memory store; needs Prisma and a unique index (INF-01) |
 
 ---
 

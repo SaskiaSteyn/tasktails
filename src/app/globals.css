@@ -54,6 +54,8 @@
   /* Disabled text only. WCAG 1.4.3 exempts inactive controls, so this keeps the
      guide's original faint value — it must stay visibly "off". */
   --color-ink-disabled: #b8afa4;
+  --color-scrim: rgb(46 42 38 / 0.42); /* behind modals and sheets */
+  --color-step-idle: #e7ddcc; /* step dots not yet reached */
   --color-border-track: #efe7da; /* borders, progress tracks */
   --color-border-input: #ebe2d5; /* input borders */
   --color-checkbox: #d8cec0; /* idle checkbox / toggle off */
@@ -107,14 +109,17 @@
   --radius-card: 15px;
   --radius-card-lg: 18px;
   --radius-pill: 20px;
+  --radius-modal: 22px;
   --radius-frame: 34px;
 
   /* ---- Shadow ---- */
   --shadow-card: 0 16px 34px rgb(46 42 38 / 0.1);
+  --shadow-modal: 0 20px 44px rgb(46 42 38 / 0.28);
   --shadow-popover: 0 14px 26px rgb(46 42 38 / 0.12);
   --shadow-btn: 0 6px 14px rgb(226 122 84 / 0.35);
   --shadow-btn-hover: 0 9px 20px rgb(226 122 84 / 0.45);
   --shadow-btn-press: 0 3px 8px rgb(226 122 84 / 0.4);
+  --shadow-btn-danger: 0 6px 14px rgb(219 76 63 / 0.35);
   --shadow-btn-sage: 0 5px 12px rgb(95 169 126 / 0.32);
   --shadow-btn-sage-hover: 0 8px 16px rgb(95 169 126 / 0.42);
   --shadow-nav-idle: 0 4px 12px rgb(46 42 38 / 0.1);

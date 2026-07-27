@@ -17,11 +17,12 @@ INF-15,Docker container configuration for EC2 deployment (Dockerfile + docker-co
 INF-16,Environment variable configuration (.env.example for Vercel and AWS connection strings),Infrastructure & Database,Infrastructure,To Do
 INF-17,A/B group assignment middleware — enforces Group A/B isolation on all store API routes server-side,Infrastructure & Database,Backend,To Do
 AUTH-01,Register page — form with email and password fields,Authentication,Frontend,Done
-AUTH-02,Login page — form with email and password fields,Authentication,Frontend,To Do
+AUTH-02,Login page — form with email and password fields,Authentication,Frontend,Done
 AUTH-03,Logout button and action in global header,Authentication,Frontend,To Do
 AUTH-04,POST /api/auth/register — create user hash password assign A/B group randomly initialise UserEconomy record,Authentication,Backend,In Progress
 AUTH-05,NextAuth sign-in handler (POST /api/auth/[...nextauth]) — validate credentials issue JWT,Authentication,Backend,Done
 AUTH-06,Protected route middleware — redirect unauthenticated users to login,Authentication,Backend,To Do
+AUTH-07,Change username from the profile — inline editor with the same live availability check as the onboarding step,Authentication,Frontend,Done
 TASK-01,Task list view — displays all user tasks with title due date complexity badge and completion state,TODO App,Frontend,To Do
 TASK-02,Create task form — fields: title (required) due date (optional) complexity tier (required 5-option select),TODO App,Frontend,To Do
 TASK-03,Edit task modal — pre-filled form for title due date complexity,TODO App,Frontend,To Do
@@ -48,6 +49,8 @@ SUB-05,POST /api/tasks/[id]/subtasks/[subId]/complete — mark subtask complete 
 ONB-01,Onboarding checklist widget — displays three goals with live completion status,TODO App,Frontend,To Do
 ONB-02,Goal completion celebration — visual feedback when each onboarding goal is met,TODO App,Frontend,To Do
 ONB-03,GET /api/onboarding — return current completion status of the three onboarding goals for the authenticated user,TODO App,Backend,To Do
+ONB-04,Username step — step dots live availability check suggestion chips and a skip that assigns an auto-generated handle,TODO App,Frontend,Done
+ONB-05,POST /api/user/username (availability) and PUT (claim) — session-scoped enforces uniqueness,TODO App,Backend,In Progress
 STOR-01,Store listing page — grid of item cards showing name image coin price level requirement and availability,Store,Frontend,To Do
 STOR-02,Item search bar — filters visible items by name in real time,Store,Frontend,To Do
 STOR-03,Category filter — filters visible items by category (food accessories animals decorations),Store,Frontend,To Do

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function RegisterPage() {
   return (
     <AuthScreen>
-      <AuthBrandMark />
+      <AuthBrandMark className="mt-[2px] mb-[14px]" />
 
       <h1 className="text-center font-display text-[23px] leading-[1.1] font-semibold">
         Create your account

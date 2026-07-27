@@ -11,7 +11,7 @@ export default async function OnboardingPage() {
     <main className="flex flex-1 items-center justify-center bg-board p-6">
       <div className="flex w-full max-w-[400px] flex-col gap-2 rounded-card-lg border border-border-track bg-surface p-6 shadow-card">
         <p className="text-overline text-terracotta">
-          Welcome{session?.user?.email ? `, ${session.user.email}` : ""}
+          Welcome{session?.user?.name ? `, ${session.user.name}` : ""}
         </p>
         <h1 className="text-section">Your first three quests</h1>
         <p className="text-secondary">
