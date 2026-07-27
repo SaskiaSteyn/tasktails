@@ -29,6 +29,7 @@ model User {
   createdAt      DateTime        @default(now())
   tasks          Task[]
   inventoryItems InventoryItem[]
+  cartItems      CartItem[]
 }
 
 /// INF-02.
@@ -79,6 +80,7 @@ model StoreItem {
   coinPrice      Int
   imageUrl       String
   inventoryItems InventoryItem[]
+  cartItems      CartItem[]
 }
 
 /// INF-05.
@@ -92,6 +94,17 @@ model InventoryItem {
   /// FK to the future Pet model (INF-08) — not a relation yet since Pet
   /// doesn't exist until INF-08 lands. Null while unequipped.
   equippedToPetId String?
+
+  quantity Int @default(1)
+}
+
+/// INF-06.
+model CartItem {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
 
   quantity Int @default(1)
 }
