@@ -27,4 +27,23 @@ model User {
   passwordHash String?
   abGroup      AbGroup
   createdAt    DateTime @default(now())
+  tasks        Task[]
+}
+
+/// INF-02.
+model Task {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title String
+
+  /// Self-reported tier 1-5 (Trivial/Small/Medium/Large/Epic) — see
+  /// economy_system.md's tier table. Trusted input; the anti-spam guardrail
+  /// (ECO-02) is the only check against abuse (Requirements §3.2).
+  complexityTier Int
+
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
 }
