@@ -17,6 +17,26 @@ export const passwordSchema = z
   .min(8, "Use at least 8 characters.")
   .max(72, "Use 72 characters or fewer.");
 
+/**
+ * The username step. A handle, so it must be unique and typeable — the alphabet
+ * is deliberately narrow (the addendum renders it as `@nico`). Case is not
+ * significant; the store lowercases on write.
+ *
+ * The 3–20 character bounds are ours: the addendum specifies the look and the
+ * availability behaviour but no length rule.
+ */
+export const usernameSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3, "Use at least 3 characters.")
+    .max(20, "Use 20 characters or fewer.")
+    .regex(/^[a-z0-9_]+$/, "Letters, numbers and underscores only."),
+});
+
+export type UsernameInput = z.infer<typeof usernameSchema>;
+
 export const registerSchema = z
   .object({
     email: emailSchema,
@@ -29,6 +49,18 @@ export const registerSchema = z
   });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+/**
+ * Login deliberately does *not* reuse `passwordSchema`. Echoing the sign-up
+ * rules back at someone signing in leaks them, and an account made before the
+ * rules change still has to get in — length is the credentials provider's call.
+ */
+export const loginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, "Enter your password."),
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;
 
 /** Flattens a Zod error into `{ field: firstMessage }` for the form state. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {

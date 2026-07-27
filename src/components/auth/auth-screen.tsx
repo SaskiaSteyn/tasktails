@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+import { cn } from "@/lib/cn";
+
 /**
  * Shell shared by the auth screens (Register, Login).
  *
@@ -17,8 +19,12 @@ export function AuthScreen({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The terracotta fox-in-badge mark that heads each auth screen. */
-export function AuthBrandMark() {
+/**
+ * The terracotta fox-in-badge mark that heads each auth screen. The two frames
+ * space it differently (Register 2/14, Login 24/16), so the margins are the
+ * screen's to pass in.
+ */
+export function AuthBrandMark({ className }: { className?: string }) {
   return (
     <Image
       src="/brand/icon.svg"
@@ -26,7 +32,7 @@ export function AuthBrandMark() {
       width={60}
       height={60}
       priority
-      className="mx-auto mt-[2px] mb-[14px] block size-[60px]"
+      className={cn("mx-auto block size-[60px]", className)}
     />
   );
 }

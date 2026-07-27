@@ -62,7 +62,10 @@ export function TextField({
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           className={cn(
-            "h-[42px] w-full rounded-input border px-[14px] text-[14px] text-ink",
+            // 44px per the style guide's INPUTS card and the Login frame; the
+            // Register frame's 42px is the outlier, and a shared primitive
+            // follows the component spec.
+            "h-[44px] w-full rounded-input border px-[14px] text-[14px] text-ink",
             "outline-none transition-[background-color,border-color,box-shadow] duration-120",
             trailing ? "pr-[42px]" : null,
             error
