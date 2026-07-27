@@ -30,6 +30,7 @@ model User {
   tasks          Task[]
   inventoryItems InventoryItem[]
   cartItems      CartItem[]
+  transactions   Transaction[]
 }
 
 /// INF-02.
@@ -81,6 +82,7 @@ model StoreItem {
   imageUrl       String
   inventoryItems InventoryItem[]
   cartItems      CartItem[]
+  transactions   Transaction[]
 }
 
 /// INF-05.
@@ -107,4 +109,16 @@ model CartItem {
   storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
 
   quantity Int @default(1)
+}
+
+/// INF-07.
+model Transaction {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  coinSpent   Int
+  purchasedAt DateTime @default(now())
 }
