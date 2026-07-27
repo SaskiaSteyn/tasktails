@@ -46,4 +46,15 @@ model Task {
   dueDate     DateTime?
   completedAt DateTime?
   createdAt   DateTime  @default(now())
+  subtasks    Subtask[]
+}
+
+/// INF-03.
+model Subtask {
+  id     String @id @default(cuid())
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  title       String
+  completedAt DateTime?
 }
