@@ -58,3 +58,23 @@ model Subtask {
   title       String
   completedAt DateTime?
 }
+
+/// Fixed category set per Features.md STOR-03.
+enum StoreItemCategory {
+  FOOD
+  ACCESSORIES
+  ANIMALS
+  DECORATIONS
+}
+
+/// INF-04.
+model StoreItem {
+  id       String            @id @default(cuid())
+  name     String
+  category StoreItemCategory
+
+  /// Level gate — see economy_system.md's store gate table (1, 3, 5, 7, 10).
+  levelRequired Int
+  coinPrice     Int
+  imageUrl      String
+}
