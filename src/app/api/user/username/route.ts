@@ -5,11 +5,11 @@ import {
   isUsernameAvailable,
   setUsername,
   UsernameTakenError,
-} from "@/lib/mock/users";
+} from "@/lib/users";
 import { fieldErrors, usernameSchema } from "@/lib/validation/auth";
 
 /**
- * MOCK username endpoints (ONB-04/ONB-05, AUTH-07).
+ * Username endpoints (ONB-04/ONB-05, AUTH-07).
  *
  * `PUT` claims a handle, `POST` only reports whether one is free — the
  * debounced check behind the availability line on the username step.
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     username: result.username,
-    available: isUsernameAvailable(result.username, result.email),
+    available: await isUsernameAvailable(result.username, result.email),
   });
 }
 
@@ -81,7 +81,7 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const user = setUsername(result.email, result.username);
+    const user = await setUsername(result.email, result.username);
     if (!user) {
       return NextResponse.json({ error: "Account not found." }, { status: 404 });
     }

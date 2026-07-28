@@ -1,0 +1,32 @@
+# Local development database (INF-01, AUTH-04).
+#
+# The app itself is not containerised yet — that is INF-15, which adds a
+# Dockerfile and an `app` service here for the EC2 deployment. For now this
+# exists so `npx prisma migrate dev` and `npm run dev` have a Postgres to talk
+# to:
+#
+#   docker compose up -d
+#
+# Credentials are deliberately trivial and local-only. Nothing in this file is a
+# secret; the deployed database gets its URL from the environment (INF-16).
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: tasktails-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tasktails
+      POSTGRES_PASSWORD: tasktails
+      POSTGRES_DB: tasktails
+    ports:
+      - "5432:5432"
+    volumes:
+      - tasktails-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tasktails -d tasktails"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  tasktails-db-data:

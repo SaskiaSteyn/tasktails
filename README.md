@@ -21,8 +21,8 @@ with it. UI primitives are hand-built in `src/components/ui/` against the tokens
 in `src/app/globals.css`. Individual shadcn components can still be copied in
 later if a complex widget warrants it.
 
-Prisma + PostgreSQL are planned (INF-01…INF-10) but not wired up yet — see
-[Mocked for now](#mocked-for-now).
+Prisma 7 + PostgreSQL back the accounts (INF-01, INF-10, AUTH-04); the rest of
+the models are migrated but nothing writes to them yet.
 
 ## Getting started
 
@@ -40,6 +40,12 @@ cp .env.example .env.local
 
 ```bash
 npx auth secret
+```
+
+Start the database (needs Docker running) and apply the migrations:
+
+```bash
+docker compose up -d && npx prisma migrate dev
 ```
 
 Then:
@@ -66,6 +72,7 @@ renders disabled with a note explaining why.
 | `npm start` | Serve the production build |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run postinstall` | Regenerate the Prisma client (runs automatically after `npm install`) |
 
 ## Design system
 
@@ -91,16 +98,30 @@ time, so the page can't drift from the code, and it computes the WCAG contrast
 ratio for each text token against every surface — use it to check AA compliance
 (NFR-GEN-1 / INF-14) after any palette change. It isn't linked from the app.
 
-## Mocked for now
+## Database
 
-There is no database yet. [`src/lib/mock/users.ts`](src/lib/mock/users.ts) is an
-in-memory stand-in for the planned `User` + `UserEconomy` models: accounts are
-process-local, so they disappear when the dev server restarts and are not shared
-between serverless instances. Passwords are hashed with `node:crypto` `scrypt`.
+Local development runs the Postgres in [`docker-compose.yml`](docker-compose.yml)
+(`docker compose up -d`). Passwords are hashed with `node:crypto` `scrypt` — no
+bcrypt dependency.
 
-Swapping in Prisma should only mean replacing the exported functions in that one
-module — `src/auth.ts` and `src/app/api/auth/register/route.ts` call into it and
-otherwise know nothing about storage.
+Two Prisma 7 details worth knowing, because both changed from Prisma 6:
+
+- The connection string is **not** in `datasource db` any more. The CLI reads it
+  from [`prisma.config.ts`](prisma.config.ts) (which loads `.env.local`, since
+  Prisma only reads `.env` on its own), and the runtime client gets it through
+  the `PrismaPg` adapter in [`src/lib/prisma.ts`](src/lib/prisma.ts).
+- The client is generated into `src/generated/prisma`, which is gitignored — so
+  `npm install` runs `prisma generate` for you via `postinstall`.
+
+All account access goes through [`src/lib/users.ts`](src/lib/users.ts); nothing
+else touches `prisma.user` directly.
+
+| Command | Purpose |
+|---|---|
+| `docker compose up -d` | Start Postgres |
+| `npx prisma migrate dev` | Apply / create migrations |
+| `npx prisma studio` | Browse the data |
+| `docker compose down -v` | Stop and wipe the database |
 
 ## Project layout
 
@@ -111,10 +132,16 @@ src/
     (auth)/login/           AUTH-02 — placeholder
     onboarding/             ONB-01  — placeholder
     api/auth/[...nextauth]/ AUTH-05 — NextAuth handlers
-    api/auth/register/      AUTH-04 — mock register endpoint
+    api/auth/register/      AUTH-04 — register endpoint
+    profile/                AUTH-07 — profile (partial)
+    settings/               AUTH-03 — settings + log out (partial)
     globals.css             design tokens + type scale
   auth.ts                   INF-11  — NextAuth configuration
+  auth.config.ts            the DB-free half, shared with the proxy
+  proxy.ts                  AUTH-06 — protected routes (was middleware.ts pre-Next 16)
   components/ui/            shared primitives (button, text field, …)
-  lib/mock/                 in-memory stand-in for the database
+  generated/prisma/         generated Prisma client (gitignored)
+  lib/prisma.ts             INF-01  — Prisma client singleton
+  lib/users.ts              every account read and write
   lib/validation/           shared Zod schemas
 ```

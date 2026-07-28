@@ -1,5 +1,5 @@
 ID,Title,Module,Type,Status
-INF-01,Prisma schema — User model (id email passwordHash abGroup createdAt),Infrastructure & Database,Database,To Do
+INF-01,Prisma schema — User model (id email passwordHash username displayName avatarUrl role abGroup createdAt),Infrastructure & Database,Database,Done
 INF-02,Prisma schema — Task model (id userId title complexityTier dueDate completedAt createdAt),Infrastructure & Database,Database,To Do
 INF-03,Prisma schema — Subtask model (id taskId title completedAt),Infrastructure & Database,Database,To Do
 INF-04,Prisma schema — StoreItem model (id name category levelRequired coinPrice imageUrl),Infrastructure & Database,Database,To Do
@@ -8,24 +8,31 @@ INF-06,Prisma schema — CartItem model (id userId storeItemId quantity),Infrast
 INF-07,Prisma schema — Transaction model (id userId storeItemId coinSpent purchasedAt),Infrastructure & Database,Database,To Do
 INF-08,Prisma schema — Pet model (id userId storeItemId happiness hunger lastInteractedAt),Infrastructure & Database,Database,To Do
 INF-09,Prisma schema — TelemetryEvent model (id userId eventType payload createdAt),Infrastructure & Database,Database,To Do
-INF-10,Prisma schema — UserEconomy model (id userId coins xp level streak lastStreakDate dailyCoinsEarned dailyXpEarned dailyCapResetAt),Infrastructure & Database,Database,To Do
-INF-11,NextAuth configuration (credential provider JWT strategy session callbacks),Infrastructure & Database,Backend,Done
+INF-10,Prisma schema — UserEconomy model (id userId coins xp level streak lastStreakDate dailyCoinsEarned dailyXpEarned dailyCapResetAt),Infrastructure & Database,Database,Done
+INF-11,NextAuth configuration (credential and Google providers JWT strategy session callbacks),Infrastructure & Database,Backend,Done
 INF-12,Global layout component — header with persistent coin balance XP bar and level indicator,Infrastructure & Database,Frontend,To Do
 INF-13,Responsive layout system — mobile and desktop breakpoints using Tailwind,Infrastructure & Database,Frontend,To Do
 INF-14,WCAG AA compliance pass — contrast ratios keyboard navigation focus states colour-independent signals,Infrastructure & Database,Frontend,To Do
 INF-15,Docker container configuration for EC2 deployment (Dockerfile + docker-compose),Infrastructure & Database,Infrastructure,To Do
 INF-16,Environment variable configuration (.env.example for Vercel and AWS connection strings),Infrastructure & Database,Infrastructure,To Do
 INF-17,A/B group assignment middleware — enforces Group A/B isolation on all store API routes server-side,Infrastructure & Database,Backend,To Do
+INF-18,Prisma schema — UserSettings model (id userId dailyReminder streakAlert soundEffects reduceMotion),Infrastructure & Database,Database,To Do
+INF-19,Prisma schema — Achievement and UserAchievement models (id key name description criteria unlockedAt),Infrastructure & Database,Database,To Do
+INF-20,StoreItem catalogue seed script — populate the store with the design handoff catalogue and animal artwork,Infrastructure & Database,Database,To Do
+INF-21,Level threshold table — shared XP-per-level constant consumed by the level-up service and the XP bar,Infrastructure & Database,Backend,To Do
+INF-22,Desktop adaptation pass — adapt the mobile-first app screens to wide viewports (max-width centred column bottom nav to side rail two-column dashboard and store grid). Low priority — the study runs on mobile,Infrastructure & Database,Frontend,To Do
 AUTH-01,Register page — form with email and password fields,Authentication,Frontend,Done
 AUTH-02,Login page — form with email and password fields,Authentication,Frontend,Done
-AUTH-03,Logout button and action in global header,Authentication,Frontend,To Do
-AUTH-04,POST /api/auth/register — create user hash password assign A/B group randomly initialise UserEconomy record,Authentication,Backend,In Progress
+AUTH-03,Logout button and action in global header,Authentication,Frontend,Done
+AUTH-04,POST /api/auth/register — create user hash password assign A/B group randomly initialise UserEconomy record,Authentication,Backend,Done
 AUTH-05,NextAuth sign-in handler (POST /api/auth/[...nextauth]) — validate credentials issue JWT,Authentication,Backend,Done
-AUTH-06,Protected route middleware — redirect unauthenticated users to login,Authentication,Backend,To Do
+AUTH-06,Protected route middleware — redirect unauthenticated users to login,Authentication,Backend,Done
 AUTH-07,Change username from the profile — inline editor with the same live availability check as the onboarding step,Authentication,Frontend,Done
+AUTH-08,Continue with Google button on register and login — full-width OAuth button hidden when the OAuth env vars are absent,Authentication,Frontend,Done
+AUTH-09,Google OAuth provider — NextAuth Google provider upserts the account on first sign-in and assigns the permanent study group,Authentication,Backend,Done
 TASK-01,Task list view — displays all user tasks with title due date complexity badge and completion state,TODO App,Frontend,To Do
 TASK-02,Create task form — fields: title (required) due date (optional) complexity tier (required 5-option select),TODO App,Frontend,To Do
-TASK-03,Edit task modal — pre-filled form for title due date complexity,TODO App,Frontend,To Do
+TASK-03,Task detail / edit screen — pre-filled title due date complexity chips subtask list reward footer and delete,TODO App,Frontend,To Do
 TASK-04,Delete task action — confirmation prompt before deletion,TODO App,Frontend,To Do
 TASK-05,Complete task action — checkbox or button triggers reward animation and coin/XP update,TODO App,Frontend,To Do
 TASK-06,Task dashboard stats bar — current level XP progress bar streak counter coin balance,TODO App,Frontend,To Do
@@ -50,7 +57,7 @@ ONB-01,Onboarding checklist widget — displays three goals with live completion
 ONB-02,Goal completion celebration — visual feedback when each onboarding goal is met,TODO App,Frontend,To Do
 ONB-03,GET /api/onboarding — return current completion status of the three onboarding goals for the authenticated user,TODO App,Backend,To Do
 ONB-04,Username step — step dots live availability check suggestion chips and a skip that assigns an auto-generated handle,TODO App,Frontend,Done
-ONB-05,POST /api/user/username (availability) and PUT (claim) — session-scoped enforces uniqueness,TODO App,Backend,In Progress
+ONB-05,POST /api/user/username (availability) and PUT (claim) — session-scoped enforces uniqueness,TODO App,Backend,Done
 STOR-01,Store listing page — grid of item cards showing name image coin price level requirement and availability,Store,Frontend,To Do
 STOR-02,Item search bar — filters visible items by name in real time,Store,Frontend,To Do
 STOR-03,Category filter — filters visible items by category (food accessories animals decorations),Store,Frontend,To Do
@@ -98,3 +105,32 @@ ADM-07,GET /api/admin/users/[id]/telemetry — detailed telemetry for a single p
 ADM-08,GET /api/admin/aggregate — aggregated Group A vs Group B metrics computed from TelemetryEvent records,Admin Dashboard,Backend,To Do
 ADM-09,Admin role middleware — reject non-admin users from all /api/admin/* routes with 403,Admin Dashboard,Backend,To Do
 ADM-10,Session telemetry logging — log SESSION_START and SESSION_END events and record time-on-page for store pages,Admin Dashboard,Backend,To Do
+ADM-11,AI insight callout — generate and render a short summary of the Group A vs Group B divergence on the overview,Admin Dashboard,Backend,To Do
+ADM-12,Trust metric capture — per-participant trust rating feeding the overview comparison bar (instrument to be decided),Admin Dashboard,Backend,To Do
+PRO-01,Profile page — avatar name email LEVEL and STUDY GROUP badges and the entry point to settings,Profile & Settings,Frontend,To Do
+PRO-02,Avatar upload — circular user-uploadable avatar with an upload placeholder as the default,Profile & Settings,Frontend,To Do
+PRO-03,POST /api/user/avatar — validate and store the uploaded image and set avatarUrl on the User record,Profile & Settings,Backend,To Do
+PRO-04,Lifetime stats grid — tasks done coins earned day streak and animals owned,Profile & Settings,Frontend,To Do
+PRO-05,GET /api/user/stats — aggregate lifetime totals for the authenticated user,Profile & Settings,Backend,To Do
+PRO-06,Buy XP card — violet 100 coins to 40 XP card with a Convert action calling the buy-xp endpoint,Profile & Settings,Frontend,To Do
+PRO-07,Achievements grid — earned and locked badge tiles,Profile & Settings,Frontend,To Do
+PRO-08,GET /api/user/achievements — list all achievements with per-user unlocked state,Profile & Settings,Backend,To Do
+PRO-09,Achievement unlock service — evaluate criteria on task completion purchase and pet interaction,Profile & Settings,Backend,To Do
+PRO-10,Settings page — grouped account notification and preference list cards with back navigation,Profile & Settings,Frontend,To Do
+PRO-11,Change password form — current and new password fields with validation and error states,Profile & Settings,Frontend,To Do
+PRO-12,POST /api/user/password — verify the current password and store the new hash,Profile & Settings,Backend,To Do
+PRO-13,Notification preference toggles — daily task reminder and streak at risk alert,Profile & Settings,Frontend,To Do
+PRO-14,App preference toggles — sound effects and reduce motion,Profile & Settings,Frontend,To Do
+PRO-15,GET and PATCH /api/user/settings — read and persist the notification and preference toggles,Profile & Settings,Backend,To Do
+PRO-16,Research consent note — participant note with the researcher withdrawal contact on settings,Profile & Settings,Frontend,To Do
+PRO-17,Reminder delivery — send the daily task reminder and streak at risk notifications honouring the toggles (channel to be decided),Profile & Settings,Backend,To Do
+SHR-01,Bottom nav — four floating tab circles plus a raised central add button on every logged-in screen; the central + opens the create-task sheet,Shared UI & States,Frontend,To Do
+SHR-02,Inline date-picker popover — attaches beneath the due-date field with quick chips month nav and a square-cell month grid,Shared UI & States,Frontend,To Do
+SHR-03,Confirm modal component — one shared component with destructive and non-destructive variants stacked full-width actions and scrim dismiss,Shared UI & States,Frontend,To Do
+SHR-04,Empty state — tasks (All clear! with a New task action),Shared UI & States,Frontend,To Do
+SHR-05,Empty state — cart (Cart's empty with a Go to store action),Shared UI & States,Frontend,To Do
+SHR-06,Locked-by-level state — violet lock heading level progress bar and levels-to-go label,Shared UI & States,Frontend,To Do
+SHR-07,Error / offline state — Can't reach TaskTails message with a Retry action,Shared UI & States,Frontend,To Do
+MKT-01,Marketing site — desktop nav hero with CTAs avatar stack social proof and the hero phone,Marketing & Public Site,Frontend,To Do
+MKT-02,Marketing site — three-column feature grid how-it-works steps closing CTA and dark footer,Marketing & Public Site,Frontend,To Do
+MKT-03,Landing / welcome screen — full terracotta screen fox badge feature chips Get started and Log in,Marketing & Public Site,Frontend,To Do

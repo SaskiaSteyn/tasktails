@@ -14,6 +14,7 @@ export type ButtonVariant =
   | "positive"
   | "secondary"
   | "destructive"
+  | "destructive-outline"
   | "oauth";
 export type ButtonSize = "full" | "inline" | "dialog";
 
@@ -66,6 +67,16 @@ const variants: Record<ButtonVariant, string> = {
     "hover:not-disabled:bg-urgency-text hover:not-disabled:-translate-y-px",
     "active:not-disabled:translate-y-px",
     "disabled:bg-urgency/40",
+  ),
+  // The quieter destructive treatment the designs use for a whole-row action
+  // that is not data loss — Settings' "Log out". White fill, 1px warm-red
+  // border, red label; hover tints the fill. No shadow and no lift: it should
+  // never read as the primary thing on the screen.
+  "destructive-outline": cn(
+    "border border-urgency-border bg-surface text-urgency-text",
+    "hover:not-disabled:border-urgency-border-hover hover:not-disabled:bg-urgency-tint",
+    "active:not-disabled:translate-y-px",
+    "disabled:text-urgency-text/40",
   ),
   // White fill + 1.5px terracotta stroke and terracotta text — never a grey fill.
   secondary: cn(

@@ -94,6 +94,7 @@
   --color-urgency-tint: #fde7e3;
   --color-urgency-text: #bf3a2d; /* 4.52:1 on board (was #C23B2E, 4.40:1) */
   --color-urgency-border: #ebd9d2;
+  --color-urgency-border-hover: #e9b8ad; /* outlined destructive, hovered */
 
   /* ---- Task complexity ramp ---- */
   --color-tier-trivial: #98a2ae; /* 5 coins / 8 xp */

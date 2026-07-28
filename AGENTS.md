@@ -10,6 +10,47 @@ Research instrument for the IMY761 false-urgency study. See [README.md](README.m
 for setup, [Requirements.md](Requirements.md) for the spec and
 [Features.md](Features.md) for ticket status.
 
+## Update the ticket status when you finish
+
+Tickets live in **two** files that must agree:
+
+- `Features.md` — the readable table; the `Status` column is the last cell.
+- `Features.csv` — the same 135 rows, `ID,Title,Module,Type,Status`. It seeds
+  GitHub issues via `scripts/sync-issues.sh`.
+
+**Both, every time.** Updating only the `.md` is the easy mistake, and it has
+already happened once. After changing either, verify they still agree:
+
+```bash
+python3 - <<'PY'
+import re, csv
+md = {}
+for line in open('Features.md'):
+    m = re.match(r'\|\s*([A-Z]+-\d+)\s*\|.*\|\s*([^|]+?)\s*\|\s*$', line)
+    if m: md[m.group(1)] = m.group(2).split('—')[0].strip()
+cs = {r[0]: r[4].strip() for r in csv.reader(open('Features.csv'))
+      if len(r) == 5 and re.match(r'^[A-Z]+-\d+$', r[0])}
+bad = [k for k in md if k in cs and md[k] != cs[k]]
+print("mismatches:", bad or "none")
+PY
+```
+
+Rules of thumb:
+
+- Mark `Done` only once you have **run** the thing and seen it work — not when
+  the code merely compiles. Say what you verified in the response, not in the
+  table.
+- In `Features.md` you may append a short note after the status
+  (`Done — on Settings, not the header`) when the implementation differs from the
+  ticket's wording or the reader would otherwise be surprised. Keep the first
+  word one of `To Do` / `In Progress` / `Done`; the sync check above reads it.
+  The `.csv` takes the bare status only — it has no notes column.
+- If finishing your ticket also completes or unblocks another, say so rather
+  than silently ticking it off. Flip someone else's ticket only when you have
+  actually exercised it.
+- A `Done` whose status note still names a blocker that no longer exists is a
+  stale row — fix it when you notice.
+
 ## Match the designs
 
 `design_handoff/` is authoritative. Before building a screen, read the relevant
@@ -40,8 +81,14 @@ the design system is bespoke and shadcn's token layer conflicts with it. Build
 against the `@theme` tokens instead. (Copying in a single shadcn component for a
 genuinely hard widget is fine; installing it as the base layer is not.)
 
-## Storage is mocked
+## Storage
 
-There is no database yet. `src/lib/mock/users.ts` is an in-memory stand-in for the
-planned Prisma models; it is process-local. Keep storage access inside that module
-so INF-01 can replace it in one place.
+Prisma 7 + PostgreSQL, via the Docker Postgres in `docker-compose.yml`. Two
+things differ from Prisma 6 and will bite you if you assume otherwise: the
+connection URL lives in `prisma.config.ts` and the adapter in `src/lib/prisma.ts`
+(**not** in `datasource db`), and the client is generated to
+`src/generated/prisma`, which is gitignored.
+
+Account reads and writes go through `src/lib/users.ts` — nothing else touches
+`prisma.user`. Keep new storage access behind a module like it rather than
+calling Prisma from routes and pages.

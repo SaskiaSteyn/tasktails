@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { createUser, EmailInUseError } from "@/lib/mock/users";
+import { createUser, EmailInUseError } from "@/lib/users";
 import { fieldErrors, registerSchema } from "@/lib/validation/auth";
 
 /**
- * MOCK `POST /api/auth/register` (AUTH-04).
+ * `POST /api/auth/register` (AUTH-04).
  *
  * Creates the account, hashes the password, assigns the random A/B group and
- * initialises the economy record — all against the in-memory store in
- * `@/lib/mock/users`. Replace that module with Prisma calls when INF-01 lands;
- * this handler should not need to change.
+ * initialises the `UserEconomy` record — the last three all inside
+ * `createUser`, so an account can never exist half-built.
  */
 export async function POST(request: Request) {
   let body: unknown;
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const user = createUser(parsed.data.email, parsed.data.password);
+    const user = await createUser(parsed.data.email, parsed.data.password);
 
     // The group is deliberately not returned — participants must not learn their
     // assignment, and the study screens read it from the session instead.
