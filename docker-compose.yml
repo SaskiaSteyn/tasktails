@@ -43,7 +43,14 @@ services:
       target: migrator
     container_name: tasktails-migrate
     restart: "no"
+    env_file:
+      - path: .env.local
+        required: false
+      - path: .env
+        required: false
     environment:
+      # Overrides whatever the env files said, deliberately — see the note on the
+      # app service below.
       DATABASE_URL: ${DATABASE_URL:-postgresql://tasktails:tasktails@db:5432/tasktails?schema=public}
     depends_on:
       db:
@@ -60,24 +67,27 @@ services:
       # Host port is overridable so the container can run alongside `npm run dev`,
       # which already holds 3000. The container always listens on 3000.
       - "${APP_PORT:-3000}:3000"
+    # Read straight from the dev env files so the container needs no second copy
+    # of AUTH_SECRET or the Google credentials. Both are optional: on EC2 neither
+    # file exists and the values come from the instance environment instead.
+    #
+    # Later files win, so `.env` overrides `.env.local` if you want the container
+    # to differ from `npm run dev` — a separate session secret, say.
+    env_file:
+      - path: .env.local
+        required: false
+      - path: .env
+        required: false
     environment:
-      # Defaults point at the `db` service on the compose network. On EC2 every
-      # one of these comes from the instance environment instead; see
-      # .env.example for what each is and how to generate it.
-      DATABASE_URL: ${DATABASE_URL:-postgresql://tasktails:tasktails@db:5432/tasktails?schema=public}
-      # Required — put it in a `.env` beside this file, or export it. Generate
-      # one with `npx auth secret`.
+      # These four OVERRIDE the env files above (compose applies `environment`
+      # last), which is the point: `.env.local` holds values that are correct for
+      # the dev server and wrong for a container.
       #
-      # Not `${AUTH_SECRET:?...}`: compose interpolates every service in the file
-      # regardless of profile, so a required-variable marker here breaks plain
-      # `docker compose up -d db` — the everyday dev command that has nothing to
-      # do with this service. Left unset, the container still starts and serves
-      # pages, but every auth request logs `MissingSecret` and sign-in is dead.
-      AUTH_SECRET: ${AUTH_SECRET:-}
-      # Absent by default; the "Continue with Google" button hides itself when
-      # they are not set (see isGoogleEnabled in src/auth.ts).
-      AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID:-}
-      AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET:-}
+      # DATABASE_URL above all — `.env.local` points at localhost:5432, and inside
+      # the container localhost is the container. Forcing the `db` service host
+      # here is what stops a copied env file from silently breaking the app. Set
+      # DATABASE_URL in the shell or in `.env` to point somewhere else (RDS, Neon).
+      DATABASE_URL: ${DATABASE_URL:-postgresql://tasktails:tasktails@db:5432/tasktails?schema=public}
       # Behind a proxy or load balancer NextAuth cannot infer its own public
       # origin, and OAuth callbacks go to the wrong host without it.
       AUTH_URL: ${AUTH_URL:-http://localhost:3000}

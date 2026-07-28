@@ -9,6 +9,19 @@ export const metadata: Metadata = {
   description: "Turn your to-dos into tail wags.",
 };
 
+/**
+ * `isGoogleEnabled` reads the environment, so this page has to render per
+ * request rather than be prerendered (AUTH-08).
+ *
+ * Without this the page was static, which meant the answer was decided during
+ * `next build` — and the Docker build deliberately carries no credentials, so
+ * the button shipped permanently disabled no matter what the container was
+ * given at runtime. Invisible locally, where `.env.local` is present at build
+ * time and the two happen to agree. `/login` never had the bug: it reads
+ * `searchParams`, which already made it dynamic.
+ */
+export const dynamic = "force-dynamic";
+
 /** AUTH-01 — Register page. */
 export default function RegisterPage() {
   return (
