@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { AppShell } from "@/components/layout/app-shell";
 
 export const metadata: Metadata = {
   title: "Settings · TaskTails",
@@ -25,9 +26,10 @@ export default async function SettingsPage() {
   if (!session?.user?.email) redirect("/login");
 
   return (
-    <main className="flex flex-1 justify-center bg-board sm:items-center sm:p-6">
-      <div className="flex w-full flex-col bg-surface sm:min-h-[640px] sm:max-w-[400px] sm:overflow-hidden sm:rounded-frame sm:border sm:border-[rgb(46_42_38/0.06)] sm:shadow-card">
-        <header className="flex items-center gap-3 border-b border-border-track px-[18px] pt-2 pb-[14px]">
+    <AppShell
+      className="px-4 pt-[10px] pb-[14px]"
+      header={
+        <header className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] pt-2 pb-[14px]">
           <Link
             href="/profile"
             aria-label="Back to profile"
@@ -39,23 +41,20 @@ export default async function SettingsPage() {
             Settings
           </h1>
         </header>
+      }
+    >
+      <p className="text-center text-[10.5px] leading-[1.4] text-ink-faint">
+        Account, notification and preference settings are still to be built.
+      </p>
 
-        <div className="flex flex-1 flex-col px-4 pt-[10px] pb-[14px]">
-          <p className="text-center text-[10.5px] leading-[1.4] text-ink-faint">
-            Account, notification and preference settings are still to be built.
-          </p>
+      <div className="min-h-2 flex-1" />
 
-          <div className="min-h-2 flex-1" />
+      <p className="mb-2 rounded-[11px] bg-violet-tint px-[11px] py-[9px] text-[10.5px] leading-[1.45] text-violet-text">
+        <b className="font-extrabold">Research participant.</b> Anonymous usage
+        is logged for the IMY761 study. Contact the researcher to withdraw.
+      </p>
 
-          <p className="mb-2 rounded-[11px] bg-violet-tint px-[11px] py-[9px] text-[10.5px] leading-[1.45] text-violet-text">
-            <b className="font-extrabold">Research participant.</b> Anonymous
-            usage is logged for the IMY761 study. Contact the researcher to
-            withdraw.
-          </p>
-
-          <LogoutButton />
-        </div>
-      </div>
-    </main>
+      <LogoutButton />
+    </AppShell>
   );
 }

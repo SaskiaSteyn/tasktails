@@ -4,6 +4,7 @@ import { Settings } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { AppShell } from "@/components/layout/app-shell";
 import { UsernameCard } from "@/components/profile/username-card";
 import { displayNameFor, findUserByEmail } from "@/lib/users";
 
@@ -33,9 +34,10 @@ export default async function ProfilePage() {
   if (!record) redirect("/login");
 
   return (
-    <main className="flex flex-1 justify-center bg-board sm:items-center sm:p-6">
-      <div className="flex w-full flex-col bg-surface sm:min-h-[640px] sm:max-w-[400px] sm:overflow-hidden sm:rounded-frame sm:border sm:border-[rgb(46_42_38/0.06)] sm:shadow-card">
-        <header className="flex items-center gap-[13px] border-b border-border-track bg-warm px-[18px] pt-[14px] pb-4">
+    <AppShell
+      className="px-4 pt-4 pb-[14px]"
+      header={
+        <header className="flex flex-none items-center gap-[13px] border-b border-border-track bg-warm px-[18px] pt-[14px] pb-4">
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-[19px] leading-[1.1] font-semibold">
               {displayNameFor(record)}
@@ -53,18 +55,16 @@ export default async function ProfilePage() {
             <Settings size={18} strokeWidth={2} aria-hidden />
           </Link>
         </header>
+      }
+    >
+      <UsernameCard username={record.username ?? displayNameFor(record)} />
 
-        <div className="flex flex-1 flex-col px-4 pt-4 pb-[14px]">
-          <UsernameCard username={record.username ?? displayNameFor(record)} />
+      <div className="min-h-2 flex-1" />
 
-          <div className="min-h-2 flex-1" />
-
-          <p className="text-center text-[10.5px] leading-[1.4] text-ink-faint">
-            The rest of this screen — your photo, stats, achievements and your
-            sanctuary — is still to be built.
-          </p>
-        </div>
-      </div>
-    </main>
+      <p className="text-center text-[10.5px] leading-[1.4] text-ink-faint">
+        The rest of this screen — your photo, stats, achievements and your
+        sanctuary — is still to be built.
+      </p>
+    </AppShell>
   );
 }

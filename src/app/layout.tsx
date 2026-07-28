@@ -23,6 +23,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#F1E9DC",
+  // Lets the board colour run under a notch and the home indicator, which is
+  // what makes the `env(safe-area-inset-*)` padding in AppShell and AppHeader do
+  // anything at all — without `cover` the insets are always zero (INF-13).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

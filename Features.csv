@@ -10,8 +10,8 @@ INF-08,Prisma schema — Pet model (id userId storeItemId happiness hunger lastI
 INF-09,Prisma schema — TelemetryEvent model (id userId eventType payload createdAt),Infrastructure & Database,Database,To Do
 INF-10,Prisma schema — UserEconomy model (id userId coins xp level streak lastStreakDate dailyCoinsEarned dailyXpEarned dailyCapResetAt),Infrastructure & Database,Database,Done
 INF-11,NextAuth configuration (credential and Google providers JWT strategy session callbacks),Infrastructure & Database,Backend,Done
-INF-12,Global layout component — header with persistent coin balance XP bar and level indicator,Infrastructure & Database,Frontend,To Do
-INF-13,Responsive layout system — mobile and desktop breakpoints using Tailwind,Infrastructure & Database,Frontend,To Do
+INF-12,Global layout component — header with persistent coin balance XP bar and level indicator,Infrastructure & Database,Frontend,Done
+INF-13,Responsive layout system — mobile and desktop breakpoints using Tailwind,Infrastructure & Database,Frontend,Done
 INF-14,WCAG AA compliance pass — contrast ratios keyboard navigation focus states colour-independent signals,Infrastructure & Database,Frontend,To Do
 INF-15,Docker container configuration for EC2 deployment (Dockerfile + docker-compose),Infrastructure & Database,Infrastructure,To Do
 INF-16,Environment variable configuration (.env.example for Vercel and AWS connection strings),Infrastructure & Database,Infrastructure,To Do

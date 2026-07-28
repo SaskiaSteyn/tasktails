@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { AuthScreen } from "@/components/auth/auth-screen";
 import { UsernameStep } from "@/components/onboarding/username-step";
 import {
   findUserByEmail,
@@ -34,13 +35,8 @@ export default async function UsernamePage() {
   ]);
 
   return (
-    <main className="flex flex-1 justify-center bg-board sm:items-center sm:p-6">
-      <div className="flex w-full flex-col bg-surface px-6 py-[26px] sm:min-h-[640px] sm:max-w-[400px] sm:rounded-frame sm:border sm:border-[rgb(46_42_38/0.06)] sm:shadow-card">
-        <UsernameStep
-          suggestions={suggestions}
-          skipUsername={skipUsername}
-        />
-      </div>
-    </main>
+    <AuthScreen>
+      <UsernameStep suggestions={suggestions} skipUsername={skipUsername} />
+    </AuthScreen>
   );
 }
