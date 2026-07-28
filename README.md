@@ -63,6 +63,39 @@ client. Add `http://localhost:3000/api/auth/callback/google` as an authorised
 redirect URI. Until both variables are set, the "Continue with Google" button
 renders disabled with a note explaining why.
 
+### Environment variables (INF-16)
+
+[`.env.example`](.env.example) is the reference — every variable, which file it
+belongs in, and connection-string recipes for AWS RDS, Neon and Vercel.
+
+| Variable | Required | Notes |
+|---|---|---|
+| `AUTH_SECRET` | yes | `npx auth secret`. Different per environment; rotating it logs every participant out |
+| `DATABASE_URL` | yes | See the recipes in `.env.example` |
+| `AUTH_GOOGLE_ID` / `_SECRET` | no | Google button hides itself without them |
+| `AUTH_URL` | deployed | Public origin. Vercel sets it itself |
+| `AUTH_TRUST_HOST` | behind a proxy | Compose sets it for the container |
+| `APP_PORT` | no | Host port for the container only |
+
+Which file the values go in differs by target, and the wrong one is a common
+half-hour:
+
+- **local dev** → `.env.local` (Next reads it; `prisma.config.ts` points the
+  Prisma CLI at it)
+- **Docker Compose** → `.env` (Compose does *not* read `.env.local`)
+- **EC2 / Vercel** → the environment itself, never a file in the image
+
+One trap worth naming: if you copy `.env.example` into a `.env` for Compose,
+delete or edit the `DATABASE_URL` line. It points at `localhost`, which inside
+the container is the container — the app service already defaults to the right
+host (`db`) when the variable is absent.
+
+**SSL.** Prisma 7 reaches Postgres through the `pg` driver adapter, so
+node-postgres parses the URL and `sslmode` behaves the way `pg` defines it, not
+the way libpq does: `sslmode=require` currently means *verify-full* and prints a
+deprecation warning. Say `sslmode=verify-full` explicitly — it is what you
+want against RDS and Neon, and it survives the pg 9 change of meaning.
+
 ## Scripts
 
 | Command | Purpose |
