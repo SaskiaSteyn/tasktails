@@ -38,6 +38,13 @@ export type AppHeaderProps = {
   showProgress?: boolean;
   /** Trailing control in the right cluster, before the coin pill. */
   action?: ReactNode;
+  /**
+   * Heading level for `title`. The screen title is the page's `h1`, which is the
+   * default and almost always right — override it only where the header is
+   * embedded in a page that already has one, as the style guide's samples are
+   * (INF-14: a second `h1` breaks the document outline).
+   */
+  titleAs?: "h1" | "h2";
   className?: string;
 };
 
@@ -73,6 +80,7 @@ export function AppHeader({
   economy,
   showProgress = !title,
   action,
+  titleAs: Heading = "h1",
   className,
 }: AppHeaderProps) {
   return (
@@ -87,9 +95,9 @@ export function AppHeader({
     >
       <div className="flex items-center justify-between gap-3">
         {title ? (
-          <h1 className="min-w-0 truncate font-display text-[19px] leading-[1.15] font-semibold">
+          <Heading className="min-w-0 truncate font-display text-[19px] leading-[1.15] font-semibold">
             {title}
-          </h1>
+          </Heading>
         ) : (
           <div className="min-w-0">
             <p className="text-[12px] text-ink-soft">{greetingFor()}</p>

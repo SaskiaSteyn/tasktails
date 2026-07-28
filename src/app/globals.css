@@ -212,10 +212,29 @@
     color: var(--color-terracotta-hover);
   }
 
-  /* WCAG AA (NFR-GEN-1): every interactive element keeps a visible focus ring.
-     Deliberately the brand terracotta, per the designs — left as-is on request. */
+  /* WCAG 1.4.11 / 2.4.7 (NFR-GEN-1, INF-14): every interactive element keeps a
+     visible focus ring, and the ring itself must clear 3:1 against whatever it
+     sits on.
+
+     Was brand terracotta, which failed on every surface in the palette — 2.69 on
+     white, 2.40 on the board. Sage was considered and is worse (2.60 / 2.34): at
+     its brand value it is lighter than terracotta. Ink clears it everywhere with
+     room to spare (12.88 / 7.94 / 10.53 / 9.37).
+
+     CSS cannot sample the colour behind an element, so the ring cannot adapt on
+     its own. `--focus-ring` is the substitute: it inherits, so any container
+     drawn on a dark or saturated fill — the terracotta landing screen, Group B's
+     red banner — sets it once on itself and everything inside picks it up.
+
+     Caveat for whoever builds that landing screen: a terracotta *background* is
+     the one surface in this palette where nothing reaches 3:1 (white 2.86, ink
+     2.96). It needs a darker fill or a two-tone ring, not a token swap. */
+  :root {
+    --focus-ring: var(--color-ink);
+  }
+
   :focus-visible {
-    outline: 2px solid var(--color-terracotta);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 

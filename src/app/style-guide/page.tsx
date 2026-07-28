@@ -508,6 +508,8 @@ export default function StyleGuidePage() {
             <Frame>
               <AppHeader
                 title="Store"
+                // Sample, not the page's own title — this page already has an h1.
+                titleAs="h2"
                 economy={sampleEconomy(42, 245, 5)}
                 action={
                   <span className="flex size-[34px] items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft">
@@ -716,6 +718,7 @@ export default function StyleGuidePage() {
               <div key={w} className="flex flex-col gap-1.5">
                 <iframe
                   src="/login"
+                  // Its own document, so its h1 does not join this page's outline.
                   title={`Login at ${w}px`}
                   loading="lazy"
                   className="rounded-chip border border-border-track bg-board"

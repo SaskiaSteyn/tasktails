@@ -145,11 +145,14 @@ export function UsernameStep({
               {pending ? "Saving…" : "Continue"}
             </Button>
 
+            {/* WCAG 2.2 SC 2.5.8 — the label alone is a 20px-tall target. The
+                padding takes it to 32px and the top margin drops by the same 6px,
+                so the gap the design draws is unchanged (INF-14). */}
             <button
               type="button"
               disabled={pending}
               onClick={() => setSkipOpen(true)}
-              className="mt-3 text-center text-[13px] font-bold text-ink-soft hover:text-ink"
+              className="mt-[6px] py-[6px] text-center text-[13px] font-bold text-ink-soft hover:text-ink"
             >
               Skip for now
             </button>
