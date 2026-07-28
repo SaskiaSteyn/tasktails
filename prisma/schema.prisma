@@ -1,0 +1,179 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// A/B study group — assigned once at account creation, permanent (AUTH-5, NFR-TASK-3).
+enum AbGroup {
+  A
+  B
+}
+
+/// INF-01. Mirrors the shape of the mock store in src/lib/mock/users.ts, which
+/// this model is intended to replace.
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  /// scrypt hash as "salt:derivedKey". Null for OAuth-only accounts.
+  passwordHash    String?
+  abGroup         AbGroup
+  createdAt       DateTime         @default(now())
+  tasks           Task[]
+  inventoryItems  InventoryItem[]
+  cartItems       CartItem[]
+  transactions    Transaction[]
+  pets            Pet[]
+  telemetryEvents TelemetryEvent[]
+  economy         UserEconomy?
+}
+
+/// INF-02.
+model Task {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title String
+
+  /// Self-reported tier 1-5 (Trivial/Small/Medium/Large/Epic) — see
+  /// economy_system.md's tier table. Trusted input; the anti-spam guardrail
+  /// (ECO-02) is the only check against abuse (Requirements §3.2).
+  complexityTier Int
+
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  subtasks    Subtask[]
+}
+
+/// INF-03.
+model Subtask {
+  id     String @id @default(cuid())
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  title       String
+  completedAt DateTime?
+}
+
+/// Fixed category set per Features.md STOR-03.
+enum StoreItemCategory {
+  FOOD
+  ACCESSORIES
+  ANIMALS
+  DECORATIONS
+}
+
+/// INF-04.
+model StoreItem {
+  id       String            @id @default(cuid())
+  name     String
+  category StoreItemCategory
+
+  /// Level gate — see economy_system.md's store gate table (1, 3, 5, 7, 10).
+  levelRequired  Int
+  coinPrice      Int
+  imageUrl       String
+  inventoryItems InventoryItem[]
+  cartItems      CartItem[]
+  transactions   Transaction[]
+  pets           Pet[]
+}
+
+/// INF-05.
+model InventoryItem {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  /// Null while unequipped.
+  equippedToPetId String?
+  equippedToPet   Pet?    @relation(fields: [equippedToPetId], references: [id], onDelete: SetNull)
+
+  quantity Int @default(1)
+}
+
+/// INF-06.
+model CartItem {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  quantity Int @default(1)
+}
+
+/// INF-07.
+model Transaction {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  coinSpent   Int
+  purchasedAt DateTime @default(now())
+}
+
+/// INF-08.
+model Pet {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  happiness        Int
+  hunger           Int
+  lastInteractedAt DateTime
+
+  equippedItems InventoryItem[]
+}
+
+/// INF-09.
+model TelemetryEvent {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Open-ended — e.g. STORE_VISIT, ITEM_VIEWED, ITEM_PURCHASED, SESSION_START,
+  /// SESSION_END (STOR-18, ADM-10). Not an enum: new event types are expected
+  /// as later tickets add logging.
+  eventType String
+  payload   Json
+  createdAt DateTime @default(now())
+}
+
+/// INF-10. One record per user (AUTH-04 initialises it at 0 coins, 0 XP,
+/// level 1, streak 0). See economy_system.md for the coin/XP rules that
+/// operate on these fields (ECO-01..ECO-05).
+model UserEconomy {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  coins Int @default(0)
+  xp    Int @default(0)
+  level Int @default(1)
+
+  /// Consecutive streak-day count; a streak day = at least 1 task completed.
+  streak         Int       @default(0)
+  lastStreakDate DateTime?
+
+  /// Daily cap tracking — 300 coins / 500 XP max per day (NFR-TASK-2).
+  dailyCoinsEarned Int      @default(0)
+  dailyXpEarned    Int      @default(0)
+  dailyCapResetAt  DateTime @default(now())
+}
