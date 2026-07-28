@@ -45,7 +45,7 @@ npx auth secret
 Start the database (needs Docker running) and apply the migrations:
 
 ```bash
-docker compose up -d && npx prisma migrate dev
+docker compose up -d db && npx prisma migrate dev
 ```
 
 Then:
@@ -118,10 +118,37 @@ else touches `prisma.user` directly.
 
 | Command | Purpose |
 |---|---|
-| `docker compose up -d` | Start Postgres |
+| `docker compose up -d db` | Start Postgres |
 | `npx prisma migrate dev` | Apply / create migrations |
 | `npx prisma studio` | Browse the data |
 | `docker compose down -v` | Stop and wipe the database |
+| `docker compose --profile app up -d --build` | Run the whole stack containerised, as deployed |
+
+## Running the container (INF-15)
+
+The app image is behind a compose profile, so the everyday `docker compose up -d db`
+never waits on a build. To run the stack the way EC2 does:
+
+```bash
+docker compose --profile app up -d --build
+```
+
+`AUTH_SECRET` has to be set — put it in a `.env` beside `docker-compose.yml`
+(compose reads that file automatically) or export it. Without it the container
+starts and serves pages, but every auth request logs `MissingSecret`.
+
+`APP_PORT` overrides the published port if `npm run dev` already holds 3000:
+
+```bash
+APP_PORT=3001 docker compose --profile app up -d --build
+```
+
+A one-shot `migrate` service applies pending migrations and must exit cleanly
+before `app` starts, so a container can never serve against a stale schema.
+
+Behind a reverse proxy, set `AUTH_URL` to the public origin and make sure the
+proxy forwards `Host` (or `X-Forwarded-Host`) and `X-Forwarded-Proto` — the
+sign-in redirect in [`src/proxy.ts`](src/proxy.ts) is built from those.
 
 ## Project layout
 

@@ -28,5 +28,21 @@ function createClient() {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 }
 
-export const prisma: PrismaClient = (globalThis.__tasktailsPrisma ??=
-  createClient());
+/**
+ * Constructed on first use, not on import (INF-15).
+ *
+ * `next build` imports every route module to collect page data, so a client
+ * built at module scope made `DATABASE_URL` a *build-time* requirement — the
+ * Docker build could not run without being handed a connection string it has no
+ * business knowing, and CI would need a database to compile. Deferring behind a
+ * proxy means the variable is only needed when a query actually runs.
+ *
+ * The receiver passed to `Reflect.get` is the real client, not the proxy, so
+ * model delegates (`prisma.user`) and methods keep their `this`.
+ */
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, property) {
+    const client = (globalThis.__tasktailsPrisma ??= createClient());
+    return Reflect.get(client, property, client);
+  },
+});

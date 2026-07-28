@@ -38,6 +38,36 @@ const PUBLIC_PATHS = new Set([
  */
 const PUBLIC_API_PREFIX = "/api/auth";
 
+/**
+ * The origin the browser actually used, which is not `request.nextUrl.origin`
+ * (INF-15).
+ *
+ * Inside a container `nextUrl.origin` is the address the server itself listens
+ * on — `http://localhost:3000` — no matter what host the request arrived at. It
+ * ignores `Host` and `X-Forwarded-Host` alike, so a signed-out visitor to
+ * https://<the study domain>/profile was being redirected to
+ * http://localhost:3000/login. Invisible in development, where the two happen to
+ * be the same thing.
+ *
+ * A relative `Location` header would sidestep the question entirely, but Next's
+ * proxy layer parses the header as an absolute URL and 500s on a path.
+ *
+ * Trusting `X-Forwarded-Host` means trusting the proxy in front of this to set
+ * it — the same assumption `AUTH_TRUST_HOST` already makes for the deployment.
+ * Nothing here redirects anywhere but a fixed path on that origin.
+ */
+function externalOrigin(request: { headers: Headers; nextUrl: URL }): string {
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (!host) return request.nextUrl.origin;
+
+  const protocol =
+    request.headers.get("x-forwarded-proto") ??
+    request.nextUrl.protocol.replace(":", "");
+
+  return `${protocol}://${host}`;
+}
+
 export default auth((request) => {
   const { pathname, search } = request.nextUrl;
 
@@ -56,7 +86,7 @@ export default auth((request) => {
 
   // Send people back where they were heading once they sign in; the login page
   // validates this is a same-origin path before using it (AUTH-02).
-  const login = new URL("/login", request.nextUrl);
+  const login = new URL("/login", externalOrigin(request));
   login.searchParams.set("callbackUrl", `${pathname}${search}`);
   return NextResponse.redirect(login);
 });
