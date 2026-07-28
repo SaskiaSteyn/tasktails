@@ -62,11 +62,15 @@ export type LevelProgress = {
   xp: number;
   /** Next level, or null at the cap. */
   nextLevel: number | null;
-  /** Total XP that next level needs, or null at the cap. */
+  /** Lifetime XP that next level needs, or null at the cap. */
   xpForNextLevel: number | null;
-  /** XP still to earn. 0 at the cap. */
+  /** XP earned since the current level began — the bar's numerator. */
+  xpIntoLevel: number;
+  /** Width of the current level's band — the bar's denominator. Null at the cap. */
+  xpLevelSpan: number | null;
+  /** XP still to earn before the next level. 0 at the cap. */
   xpToNext: number;
-  /** Bar fill, 0-100. 100 at the cap. */
+  /** Bar fill, 0-100, within the current level. 100 at the cap. */
   percent: number;
   isMaxLevel: boolean;
 };
@@ -74,14 +78,22 @@ export type LevelProgress = {
 /**
  * Resolves an XP total into what the header draws (INF-12).
  *
- * `percent` is measured against the *cumulative* threshold, not the span since
- * the current level began — the design's dashboard header reads "XP TO LVL 5 ·
- * 42 / 55 XP" with the bar at 42/55, so the bar never resets to empty on
- * level-up. That is deliberate in the mock; keep it.
+ * `percent` measures progress *within the current level* — the bar empties on
+ * level-up and fills again. This deviates from the mock, whose dashboard header
+ * draws the bar against the cumulative threshold ("42 / 55 XP" at 76% full on
+ * level 4); a per-level bar puts that same user at 35%. Chosen deliberately:
+ * against the cumulative total the later bands read as almost-full the instant
+ * you arrive in them (level 9 starts at 70%), so the bar stops conveying
+ * progress exactly where the curve gets punishing.
+ *
+ * The consequence for INF-12: the header's numeric label has to read
+ * `xpIntoLevel / xpLevelSpan` ("7 / 20 XP"), not the mock's `xp /
+ * xpForNextLevel` — a relative bar beside an absolute label would disagree.
  */
 export function levelProgress(xp: number): LevelProgress {
   const total = Math.max(0, Math.floor(xp));
   const level = levelForXp(total);
+  const levelStart = xpForLevel(level);
 
   if (level >= MAX_LEVEL) {
     return {
@@ -89,6 +101,8 @@ export function levelProgress(xp: number): LevelProgress {
       xp: total,
       nextLevel: null,
       xpForNextLevel: null,
+      xpIntoLevel: total - levelStart,
+      xpLevelSpan: null,
       xpToNext: 0,
       percent: 100,
       isMaxLevel: true,
@@ -97,14 +111,17 @@ export function levelProgress(xp: number): LevelProgress {
 
   const nextLevel = level + 1;
   const xpForNextLevel = xpForLevel(nextLevel);
+  const xpLevelSpan = xpForNextLevel - levelStart;
 
   return {
     level,
     xp: total,
     nextLevel,
     xpForNextLevel,
+    xpIntoLevel: total - levelStart,
+    xpLevelSpan,
     xpToNext: xpForNextLevel - total,
-    percent: Math.min(100, (total / xpForNextLevel) * 100),
+    percent: ((total - levelStart) / xpLevelSpan) * 100,
     isMaxLevel: false,
   };
 }
