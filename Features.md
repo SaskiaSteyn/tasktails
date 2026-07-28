@@ -3,7 +3,7 @@
 > Implementation-level breakdown of all features to be developed.
 > Status values: `To Do` · `In Progress` · `Done`
 > Cross-reference: [Requirements.md](Requirements.md)
-> Last updated: 2026-07-26
+> Last updated: 2026-07-28
 
 ---
 
@@ -11,7 +11,7 @@
 
 | # | Feature | Type | Status |
 |---|---------|------|--------|
-| INF-01 | Prisma schema — `User` model (id, email, password hash, A/B group, createdAt) | Database | To Do |
+| INF-01 | Prisma schema — `User` model (id, email, password hash, username, displayName, avatarUrl, role, A/B group, createdAt) | Database | Done — migrated; Postgres in `docker-compose.yml` |
 | INF-02 | Prisma schema — `Task` model (id, userId, title, complexity tier, dueDate, completedAt, createdAt) | Database | To Do |
 | INF-03 | Prisma schema — `Subtask` model (id, taskId, title, completedAt) | Database | To Do |
 | INF-04 | Prisma schema — `StoreItem` model (id, name, category, levelRequired, coinPrice, imageUrl) | Database | To Do |
@@ -20,14 +20,19 @@
 | INF-07 | Prisma schema — `Transaction` model (id, userId, storeItemId, coinSpent, purchasedAt) | Database | To Do |
 | INF-08 | Prisma schema — `Pet` model (id, userId, storeItemId, happiness, hunger, lastInteractedAt) | Database | To Do |
 | INF-09 | Prisma schema — `TelemetryEvent` model (id, userId, eventType, payload JSON, createdAt) | Database | To Do |
-| INF-10 | Prisma schema — `UserEconomy` model (id, userId, coins, xp, level, streak, lastStreakDate, dailyCoinsEarned, dailyXpEarned, dailyCapResetAt) | Database | To Do |
-| INF-11 | NextAuth configuration (credential provider, JWT strategy, session callbacks) | Backend | Done |
+| INF-10 | Prisma schema — `UserEconomy` model (id, userId, coins, xp, level, streak, lastStreakDate, dailyCoinsEarned, dailyXpEarned, dailyCapResetAt) | Database | Done — migrated; AUTH-04 creates the row with the user |
+| INF-11 | NextAuth configuration (credential + Google providers, JWT strategy, session callbacks) | Backend | Done |
 | INF-12 | Global layout component — header with persistent coin balance, XP bar, and level indicator | Frontend | To Do |
 | INF-13 | Responsive layout system — mobile and desktop breakpoints using Tailwind | Frontend | To Do |
 | INF-14 | WCAG AA compliance pass — contrast ratios, keyboard navigation, focus states, colour-independent signals | Frontend | To Do |
 | INF-15 | Docker container configuration for EC2 deployment (Dockerfile + docker-compose) | Infrastructure | To Do |
 | INF-16 | Environment variable configuration (`.env.example` for Vercel + AWS connection strings) | Infrastructure | To Do |
 | INF-17 | A/B group assignment middleware — enforces Group A/B isolation on all store API routes server-side | Backend | To Do |
+| INF-18 | Prisma schema — `UserSettings` model (id, userId, dailyReminder, streakAlert, soundEffects, reduceMotion) | Database | To Do |
+| INF-19 | Prisma schema — `Achievement` + `UserAchievement` models (id, key, name, description, criteria, unlockedAt) | Database | To Do |
+| INF-20 | `StoreItem` catalogue seed script — populate the store with the `design_handoff` catalogue and animal artwork. Nothing else in the store module writes `StoreItem` rows | Database | To Do |
+| INF-21 | Level threshold table — shared XP-per-level constant consumed by ECO-05 and the header XP bar | Backend | To Do |
+| INF-22 | **Desktop adaptation pass** *(low priority)* — adapt the mobile-first app screens to wide viewports: max-width centred column, bottom nav → side rail, two-column dashboard, wider store grid. Distinct from INF-13, which builds the breakpoint system; this is the per-screen pass that uses it. Satisfies the desktop half of NFR-GEN-2. **Deprioritised:** `design_handoff` only specifies phone frames (300×640) for the app — the desktop layouts would be invented, and participants use the study on mobile. The marketing site (MKT-01/02) and admin cards (ADM-01/02) are already desktop-first and are *not* in scope here | Frontend | To Do |
 
 ---
 
@@ -37,11 +42,17 @@
 |---|---------|------|--------|
 | AUTH-01 | Register page — form with email and password fields | Frontend | Done |
 | AUTH-02 | Login page — form with email and password fields | Frontend | Done |
-| AUTH-03 | Logout button and action in global header | Frontend | To Do |
-| AUTH-04 | `POST /api/auth/register` — create user, hash password, assign A/B group randomly, initialise `UserEconomy` record | Backend | In Progress — mocked against an in-memory store; needs Prisma (INF-01, INF-10) |
-| AUTH-05 | NextAuth sign-in handler (`POST /api/auth/[...nextauth]`) — validate credentials, issue JWT | Backend | Done |
-| AUTH-06 | Protected route middleware — redirect unauthenticated users to login | Backend | To Do |
+| AUTH-03 | Logout button and action in global header | Frontend | Done — on Settings (`/settings`), where the designs put it, reached from a gear in the Profile banner |
+| AUTH-04 | `POST /api/auth/register` — create user, hash password, assign A/B group randomly, initialise `UserEconomy` record | Backend | Done — backed by Prisma + Postgres |
+| AUTH-05 | NextAuth sign-in handler (`POST /api/auth/[...nextauth]`) — validate credentials, issue JWT | Backend | Done — the A/B group is deliberately **not** on the session; read it with `currentStudyGroup()` |
+| AUTH-06 | Protected route middleware — redirect unauthenticated users to login | Backend | Done — `src/proxy.ts` (Next 16 renamed middleware to proxy); everything is protected unless allowlisted |
 | AUTH-07 | Change username from the profile — inline editor with the same live availability check as the onboarding step | Frontend | Done |
+| AUTH-08 | "Continue with Google" button on Register and Login — full-width OAuth button, hidden when the OAuth env vars are absent | Frontend | Done |
+| AUTH-09 | Google OAuth provider — NextAuth Google provider; upserts the account on first sign-in and assigns the permanent study group | Backend | Done |
+
+> **Out of scope:** the Login design shows a "Forgot password?" link. Password
+> reset is deliberately not ticketed — participants are onboarded directly and
+> the study has no mail infrastructure. Remove the link when building AUTH-02.
 
 ---
 
@@ -53,7 +64,7 @@
 |---|---------|------|--------|
 | TASK-01 | Task list view — displays all user tasks with title, due date, complexity badge, and completion state | Frontend | To Do |
 | TASK-02 | Create task form — fields: title (required), due date (optional), complexity tier (required, 5-option select) | Frontend | To Do |
-| TASK-03 | Edit task modal — pre-filled form for title, due date, complexity | Frontend | To Do |
+| TASK-03 | Task detail / edit screen — pre-filled title, due date, complexity chips, subtask list, reward footer, and delete. The designs use a full screen here, not a modal | Frontend | To Do |
 | TASK-04 | Delete task action — confirmation prompt before deletion | Frontend | To Do |
 | TASK-05 | Complete task action — checkbox or button; triggers reward animation and coin/XP update | Frontend | To Do |
 | TASK-06 | Task dashboard stats bar — current level, XP progress bar, streak counter, coin balance | Frontend | To Do |
@@ -93,7 +104,7 @@
 | ONB-02 | Goal completion celebration — visual feedback when each onboarding goal is met | Frontend | To Do |
 | ONB-03 | `GET /api/onboarding` — return current completion status of the three onboarding goals for the authenticated user | Backend | To Do |
 | ONB-04 | Username step — step dots, live availability check, suggestion chips, and a skip that assigns an auto-generated handle | Frontend | Done |
-| ONB-05 | `POST /api/user/username` (availability) and `PUT` (claim) — session-scoped, enforces uniqueness | Backend | In Progress — mocked against the in-memory store; needs Prisma and a unique index (INF-01) |
+| ONB-05 | `POST /api/user/username` (availability) and `PUT` (claim) — session-scoped, enforces uniqueness | Backend | Done — Prisma-backed; uniqueness enforced by the `User.username` index |
 
 ---
 
@@ -125,6 +136,12 @@
 ### False Urgency — Group B Only
 
 All urgency data is fabricated. No real stock, social, or deadline data exists.
+
+> **Reading the group (NFR-TASK-3).** The A/B assignment is not on the session
+> and must never be sent to the browser — `/api/auth/session` is public JSON, and
+> a participant who can read their arm is a compromised participant. Use
+> `currentStudyGroup()` (`src/lib/study-group.ts`), which reads the database, and
+> branch on the server so the losing variant never reaches the client bundle.
 
 | # | Feature | Type | Status |
 |---|---------|------|--------|
@@ -171,3 +188,62 @@ All urgency data is fabricated. No real stock, social, or deadline data exists.
 | ADM-08 | `GET /api/admin/aggregate` — aggregated Group A vs Group B metrics computed from `TelemetryEvent` records | Backend | To Do |
 | ADM-09 | Admin role middleware — reject non-admin users from all `/api/admin/*` routes with 403 | Backend | To Do |
 | ADM-10 | Session telemetry logging — log `SESSION_START` and `SESSION_END` events; record time-on-page for store pages | Backend | To Do |
+| ADM-11 | AI insight callout — generate and render the short violet summary of the Group A vs Group B divergence on the overview | Backend | To Do |
+| ADM-12 | Trust metric capture — per-participant trust rating feeding the "trust 5.3 vs 3.7" comparison bar. **The instrument is undecided** — nothing in the app currently collects this | Backend | To Do |
+
+---
+
+## Module 6 — Profile & Settings
+
+The designs put logout, consent and all preferences on Settings (frame 17), reached
+from the Profile banner. See also AUTH-03 (log out) and AUTH-07 (change username).
+
+| # | Feature | Type | Status |
+|---|---------|------|--------|
+| PRO-01 | Profile page — avatar, name, email, "LEVEL 4" + "STUDY GROUP B" badges, and the entry point to Settings | Frontend | To Do |
+| PRO-02 | Avatar upload — circular user-uploadable avatar; the default is an upload placeholder | Frontend | To Do |
+| PRO-03 | `POST /api/user/avatar` — validate and store the uploaded image; set `avatarUrl` on the `User` record | Backend | To Do |
+| PRO-04 | Lifetime stats grid — tasks done, coins earned, day streak, animals owned (2×2) | Frontend | To Do |
+| PRO-05 | `GET /api/user/stats` — aggregate lifetime totals for the authenticated user | Backend | To Do |
+| PRO-06 | Buy XP card — violet 100 coins → 40 XP card with a "Convert" action calling ECO-06 | Frontend | To Do |
+| PRO-07 | Achievements grid — earned and locked badge tiles | Frontend | To Do |
+| PRO-08 | `GET /api/user/achievements` — list all achievements with per-user unlocked state | Backend | To Do |
+| PRO-09 | Achievement unlock service — evaluate criteria on task completion, purchase, and pet interaction | Backend | To Do |
+| PRO-10 | Settings page — grouped ACCOUNT / NOTIFICATIONS / PREFERENCES list cards with back navigation | Frontend | To Do |
+| PRO-11 | Change password form — current and new password fields with validation and error states | Frontend | To Do |
+| PRO-12 | `POST /api/user/password` — verify the current password and store the new hash | Backend | To Do |
+| PRO-13 | Notification preference toggles — "Daily task reminder" and "Streak at risk alert" (both ON by default) | Frontend | To Do |
+| PRO-14 | App preference toggles — "Sound effects" and "Reduce motion" (both OFF by default; reduce-motion pairs with INF-14) | Frontend | To Do |
+| PRO-15 | `GET` and `PATCH /api/user/settings` — read and persist the notification and preference toggles | Backend | To Do |
+| PRO-16 | Research consent note — participant note with the researcher withdrawal contact on Settings | Frontend | To Do |
+| PRO-17 | Reminder delivery — actually send the daily reminder and streak-at-risk notifications, honouring PRO-13. **Channel undecided** (web push vs email); without this the toggles control nothing | Backend | To Do |
+
+---
+
+## Module 7 — Shared UI & States
+
+Components and screen states specified in the designs that no feature ticket owned.
+INF-12 covers the persistent header; SHR-01 covers the other half of the app chrome.
+
+| # | Feature | Type | Status |
+|---|---------|------|--------|
+| SHR-01 | Bottom nav — four floating 42px tab circles (Tasks, Store, Zoo, Profile) plus a raised 46px terracotta "+" in the middle, on every logged-in screen. The "+" opens the create-task sheet (TASK-02); it replaces the old floating FAB | Frontend | To Do |
+| SHR-02 | Inline date-picker popover — **not a modal**; attaches beneath the due-date field with quick chips (Today / Tomorrow / Weekend), month nav, and a square-cell month grid. Consumed by TASK-02 and TASK-03 | Frontend | To Do |
+| SHR-03 | Confirm modal component — one shared component with destructive and non-destructive variants, stacked full-width actions, scrim dismiss. Consumed by TASK-04 and AUTH-03 (see `design_handoff/ADDENDUM-username-modals.md`) | Frontend | To Do |
+| SHR-04 | Empty state — tasks ("All clear!" + "New task" action) | Frontend | To Do |
+| SHR-05 | Empty state — cart ("Cart's empty" + secondary "Go to store") | Frontend | To Do |
+| SHR-06 | Locked-by-level state — violet lock, "Locked — Level 7", level progress bar and levels-to-go label. Distinct from the locked *card* variant in STOR-04 | Frontend | To Do |
+| SHR-07 | Error / offline state — "Can't reach TaskTails" with a Retry action | Frontend | To Do |
+
+---
+
+## Module 8 — Marketing & Public Site
+
+Unauthenticated entry points. Desktop-first for MKT-01/02 (the only part of the
+product that is), mobile for MKT-03.
+
+| # | Feature | Type | Status |
+|---|---------|------|--------|
+| MKT-01 | Marketing site — desktop nav (logo, Features / How it works / The zoo / Log in, "Get started free"), hero with CTAs, avatar-stack social proof, and the hero phone | Frontend | To Do |
+| MKT-02 | Marketing site — three-column feature grid, "Three steps" how-it-works, closing CTA, dark footer | Frontend | To Do |
+| MKT-03 | Landing / welcome screen — full terracotta screen, light fox badge, three translucent feature chips, white "Get started" + "Log in" link | Frontend | To Do |
