@@ -31,7 +31,7 @@
 | INF-18 | Prisma schema — `UserSettings` model (id, userId, dailyReminder, streakAlert, soundEffects, reduceMotion) | Database | To Do |
 | INF-19 | Prisma schema — `Achievement` + `UserAchievement` models (id, key, name, description, criteria, unlockedAt) | Database | To Do |
 | INF-20 | `StoreItem` catalogue seed script — populate the store with the `design_handoff` catalogue and animal artwork. Nothing else in the store module writes `StoreItem` rows | Database | To Do |
-| INF-21 | Level threshold table — shared XP-per-level constant consumed by ECO-05 and the header XP bar | Backend | To Do |
+| INF-21 | Level threshold table — shared XP-per-level constant consumed by ECO-05 and the header XP bar | Backend | Done — `src/lib/levels.ts`; the bar fills against the cumulative threshold (42/55), as the mock draws it, so it never resets on level-up |
 | INF-22 | **Desktop adaptation pass** *(low priority)* — adapt the mobile-first app screens to wide viewports: max-width centred column, bottom nav → side rail, two-column dashboard, wider store grid. Distinct from INF-13, which builds the breakpoint system; this is the per-screen pass that uses it. Satisfies the desktop half of NFR-GEN-2. **Deprioritised:** `design_handoff` only specifies phone frames (300×640) for the app — the desktop layouts would be invented, and participants use the study on mobile. The marketing site (MKT-01/02) and admin cards (ADM-01/02) are already desktop-first and are *not* in scope here | Frontend | To Do |
 
 ---
