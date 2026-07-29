@@ -3,6 +3,7 @@ import Image from "next/image";
 import { History } from "lucide-react";
 
 import { AuthBrandMark } from "@/components/auth/auth-screen";
+import { LevelUpDemo } from "@/components/economy/level-up-demo";
 import { AppHeader } from "@/components/layout/app-header";
 import { Button } from "@/components/ui/button";
 import { CoinPill } from "@/components/ui/coin";
@@ -730,6 +731,16 @@ export default function StyleGuidePage() {
               </div>
             ))}
           </div>
+        </Card>
+      </Section>
+
+      <Section
+        n="08"
+        title="Level-up celebration"
+        blurb="ECO-07, per design_handoff/ADDENDUM-levelup.md. Full-bleed terracotta, medallion, confetti — a dialog, so it opens rather than sitting on the page. A terracotta ground is the one surface in this palette where nothing reaches 3:1, so every value here is a documented AA exception: white on terracotta 2.86, #FBE3D8 on terracotta 2.54, terracotta on white 2.69, white on the 16% tile 2.40 (BPCA). The focus ring switches to white with a dark halo, which is the two-tone treatment the --focus-ring note in globals.css asks for."
+      >
+        <Card label="Open the real component">
+          <LevelUpDemo />
         </Card>
       </Section>
 
