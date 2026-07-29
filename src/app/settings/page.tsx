@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { AppShell } from "@/components/layout/app-shell";
+import { BottomNav } from "@/components/layout/bottom-nav";
 
 export const metadata: Metadata = {
   title: "Settings · TaskTails",
@@ -28,6 +29,7 @@ export default async function SettingsPage() {
   return (
     <AppShell
       className="px-4 pt-[10px] pb-[14px]"
+      nav={<BottomNav />}
       header={
         <header className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] pt-2 pb-[14px]">
           <Link
