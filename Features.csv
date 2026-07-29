@@ -15,7 +15,7 @@ INF-13,Responsive layout system — mobile and desktop breakpoints using Tailwin
 INF-14,WCAG AA compliance pass — contrast ratios keyboard navigation focus states colour-independent signals,Infrastructure & Database,Frontend,Done
 INF-15,Docker container configuration for EC2 deployment (Dockerfile + docker-compose),Infrastructure & Database,Infrastructure,Done
 INF-16,Environment variable configuration (.env.example for Vercel and AWS connection strings),Infrastructure & Database,Infrastructure,Done
-INF-17,A/B group assignment middleware — enforces Group A/B isolation on all store API routes server-side,Infrastructure & Database,Backend,To Do
+INF-17,A/B group assignment middleware — enforces Group A/B isolation on all store API routes server-side,Infrastructure & Database,Backend,Done
 INF-18,Prisma schema — UserSettings model (id userId dailyReminder streakAlert soundEffects reduceMotion),Infrastructure & Database,Database,Done
 INF-19,Prisma schema — Achievement and UserAchievement models (id key name description criteria unlockedAt),Infrastructure & Database,Database,Done
 INF-20,StoreItem catalogue seed script — populate the store with the design handoff catalogue and animal artwork,Infrastructure & Database,Database,To Do
