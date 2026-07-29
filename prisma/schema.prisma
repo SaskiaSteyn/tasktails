@@ -55,6 +55,8 @@ model User {
   pets            Pet[]
   telemetryEvents TelemetryEvent[]
   economy         UserEconomy?
+  settings        UserSettings?
+  achievements    UserAchievement[]
 }
 
 /// INF-02.
@@ -197,4 +199,74 @@ model UserEconomy {
   dailyCoinsEarned Int      @default(0)
   dailyXpEarned    Int      @default(0)
   dailyCapResetAt  DateTime @default(now())
+}
+
+/// INF-18. One record per user, created with the account so the settings screen
+/// (PRO-10) and its API (PRO-15) can always update a row rather than upsert one.
+///
+/// The four defaults are what the Settings frame draws and what PRO-13/PRO-14
+/// specify: notifications on, preferences off. They live here rather than in
+/// application code so a row created any other way still matches the design.
+model UserSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// "Daily task reminder" (PRO-13).
+  dailyReminder Boolean @default(true)
+  /// "Streak at risk alert" (PRO-13).
+  streakAlert   Boolean @default(true)
+
+  /// "Sound effects" (PRO-14).
+  soundEffects Boolean @default(false)
+  /// "Reduce motion" (PRO-14). Independent of the OS setting, which globals.css
+  /// already honours via `prefers-reduced-motion` — this is the in-app override
+  /// on top of it, so the two are OR-ed, never overwritten.
+  reduceMotion Boolean @default(false)
+}
+
+/// INF-19. The catalogue — one row per badge that exists, the same for everyone.
+/// Rendered by PRO-07 and evaluated by PRO-09.
+///
+/// Deliberately not seeded: the design draws six badge tiles but names none of
+/// them, so the catalogue has no source yet. PRO-09 owns what the badges are.
+model Achievement {
+  id String @id @default(cuid())
+
+  /// Stable slug the unlock service refers to — e.g. `first_task`. Code keys off
+  /// this, never off `id` or `name`, so copy can change without breaking logic.
+  key String @unique
+
+  name        String
+  description String
+
+  /// What has to happen, as a discriminated shape the unlock service reads:
+  ///   { "type": "TASKS_COMPLETED", "threshold": 10 }
+  ///   { "type": "LEVEL_REACHED",   "threshold": 5 }
+  ///   { "type": "STREAK_DAYS",     "threshold": 7 }
+  ///   { "type": "ITEMS_PURCHASED", "threshold": 1 }
+  ///
+  /// JSON rather than columns because the trigger set is not settled — PRO-09
+  /// evaluates on task completion, purchase *and* pet interaction, and pinning
+  /// that to an enum now would mean a migration per new badge idea.
+  criteria Json
+
+  unlockedBy UserAchievement[]
+}
+
+/// INF-19. The join: a row exists only once someone has earned the badge, so
+/// absence is what "locked" means. Nothing writes a locked row.
+model UserAchievement {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  unlockedAt DateTime @default(now())
+
+  /// Earned once. The constraint is what makes PRO-09 idempotent — it can
+  /// re-evaluate criteria on every event without checking first.
+  @@unique([userId, achievementId])
 }

@@ -10,6 +10,7 @@ import { Divider } from "@/components/ui/divider";
 import { GoogleMark } from "@/components/ui/google-mark";
 import { PasswordField } from "@/components/ui/password-field";
 import { TextField } from "@/components/ui/text-field";
+import { focusFirstInvalid } from "@/lib/focus";
 import { fieldErrors, registerSchema } from "@/lib/validation/auth";
 
 /**
@@ -47,7 +48,12 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
 
     const parsed = registerSchema.safeParse(values);
     if (!parsed.success) {
-      setErrors(fieldErrors(parsed.error));
+      const found = fieldErrors(parsed.error);
+      setErrors(found);
+      // Move to the first thing that needs fixing rather than leaving focus on
+      // the submit button, where the errors that just appeared are out of reach
+      // for anyone not using a mouse (INF-14).
+      focusFirstInvalid(event.currentTarget, found);
       return;
     }
 

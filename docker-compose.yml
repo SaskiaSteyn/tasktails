@@ -1,14 +1,18 @@
-# Local development database (INF-01, AUTH-04).
+# TaskTails — Postgres for local development, plus the containerised app for the
+# EC2 deployment (INF-01, INF-15).
 #
-# The app itself is not containerised yet — that is INF-15, which adds a
-# Dockerfile and an `app` service here for the EC2 deployment. For now this
-# exists so `npx prisma migrate dev` and `npm run dev` have a Postgres to talk
-# to:
+# Two ways to use this file:
 #
-#   docker compose up -d
+#   docker compose up -d db          # just the database, for `npm run dev`
+#   docker compose --profile app up -d --build   # the whole stack, as deployed
 #
-# Credentials are deliberately trivial and local-only. Nothing in this file is a
-# secret; the deployed database gets its URL from the environment (INF-16).
+# The app is behind a profile so the everyday `docker compose up -d` stays what
+# it has always been — a database for the dev server to talk to — and nobody
+# waits on an image build to run `npx prisma migrate dev`.
+#
+# The db credentials below are deliberately trivial and local-only. Nothing in
+# this file is a secret: the app reads DATABASE_URL and AUTH_SECRET from the
+# environment, and on EC2 those come from the instance, not from here (INF-16).
 services:
   db:
     image: postgres:17-alpine
@@ -27,6 +31,72 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # One-shot: applies pending migrations, then exits. The app waits for it to
+  # complete successfully, so a container can never serve against a schema older
+  # than its code. `migrate deploy` only replays committed migrations — it never
+  # generates or resets, so it is safe to run on every boot.
+  migrate:
+    profiles: ["app"]
+    build:
+      context: .
+      target: migrator
+    container_name: tasktails-migrate
+    restart: "no"
+    env_file:
+      - path: .env.local
+        required: false
+      - path: .env
+        required: false
+    environment:
+      # Overrides whatever the env files said, deliberately — see the note on the
+      # app service below.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://tasktails:tasktails@db:5432/tasktails?schema=public}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    profiles: ["app"]
+    build:
+      context: .
+      target: runner
+    container_name: tasktails-app
+    restart: unless-stopped
+    ports:
+      # Host port is overridable so the container can run alongside `npm run dev`,
+      # which already holds 3000. The container always listens on 3000.
+      - "${APP_PORT:-3000}:3000"
+    # Read straight from the dev env files so the container needs no second copy
+    # of AUTH_SECRET or the Google credentials. Both are optional: on EC2 neither
+    # file exists and the values come from the instance environment instead.
+    #
+    # Later files win, so `.env` overrides `.env.local` if you want the container
+    # to differ from `npm run dev` — a separate session secret, say.
+    env_file:
+      - path: .env.local
+        required: false
+      - path: .env
+        required: false
+    environment:
+      # These four OVERRIDE the env files above (compose applies `environment`
+      # last), which is the point: `.env.local` holds values that are correct for
+      # the dev server and wrong for a container.
+      #
+      # DATABASE_URL above all — `.env.local` points at localhost:5432, and inside
+      # the container localhost is the container. Forcing the `db` service host
+      # here is what stops a copied env file from silently breaking the app. Set
+      # DATABASE_URL in the shell or in `.env` to point somewhere else (RDS, Neon).
+      DATABASE_URL: ${DATABASE_URL:-postgresql://tasktails:tasktails@db:5432/tasktails?schema=public}
+      # Behind a proxy or load balancer NextAuth cannot infer its own public
+      # origin, and OAuth callbacks go to the wrong host without it.
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      AUTH_TRUST_HOST: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   tasktails-db-data:

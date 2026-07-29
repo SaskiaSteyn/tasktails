@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -49,6 +49,12 @@ export function Modal({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
 
+  // Generated, not hardcoded: two modals mounted at once would otherwise both
+  // claim id="modal-title", and an aria-labelledby that resolves to a duplicate
+  // id is undefined behaviour (INF-14).
+  const titleId = useId();
+  const bodyId = useId();
+
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
@@ -66,7 +72,10 @@ export function Modal({
       onClick={(event) => {
         if (event.target === ref.current) onCancel();
       }}
-      aria-labelledby="modal-title"
+      aria-labelledby={titleId}
+      // The body carries the actual consequence of confirming, so it is part of
+      // the dialog's announcement rather than something to go hunting for.
+      aria-describedby={bodyId}
       className={cn(
         "m-auto w-[calc(100%-2.5rem)] max-w-[300px] bg-transparent p-0 text-ink",
         "backdrop:bg-scrim",
@@ -83,13 +92,16 @@ export function Modal({
         </div>
 
         <h2
-          id="modal-title"
+          id={titleId}
           className="text-center font-display text-[20px] font-semibold"
         >
           {title}
         </h2>
 
-        <p className="mt-2 text-center text-[13px] leading-[1.5] text-ink-soft">
+        <p
+          id={bodyId}
+          className="mt-2 text-center text-[13px] leading-[1.5] text-ink-soft"
+        >
           {body}
         </p>
 

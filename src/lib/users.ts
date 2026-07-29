@@ -188,8 +188,9 @@ export class EmailInUseError extends Error {
 
 /**
  * Creates a credentials account (AUTH-04) — hashes the password, assigns the
- * permanent study group and initialises the economy record in one transaction,
- * so an account can never exist without the economy the rest of the app assumes.
+ * permanent study group and initialises the economy and settings records in one
+ * transaction, so an account can never exist without the rows the rest of the
+ * app assumes are there.
  *
  * Throws {@link EmailInUseError} on a duplicate.
  */
@@ -204,6 +205,9 @@ export async function createUser(
         passwordHash: hashPassword(password),
         abGroup: assignStudyGroup(),
         economy: { create: {} },
+        // Empty on purpose — every default lives in the schema (INF-18), so the
+        // row matches the Settings frame without repeating the values here.
+        settings: { create: {} },
       },
     });
   } catch (error) {
@@ -233,6 +237,7 @@ export async function upsertOAuthUser(
       displayName: name ?? null,
       abGroup: assignStudyGroup(),
       economy: { create: {} },
+      settings: { create: {} },
     },
   });
 }

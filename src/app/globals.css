@@ -5,37 +5,85 @@
    Warm flat UI. Neutral base + four accents, each with fill / soft tint /
    readable dark text variant. Red is reserved for Group B urgency only.
 
-   WCAG AA (NFR-GEN-1, INF-14) — audited 2026-07-26. Measured against the
-   darkest surface (the board, #F1E9DC), so anything passing there passes
-   everywhere. The style guide's claim that all colours meet AA does not hold.
+   WCAG AA (NFR-GEN-1, INF-14) — audited 2026-07-26, re-measured 2026-07-28.
+   Measured against the darkest surface (the board, #F1E9DC), so anything passing
+   there passes everywhere. The style guide's claim that all colours meet AA does
+   not hold.
+
+   METHOD CHANGE — ratios are now BPCA (a bridge for WCAG 2 contrast using APCA),
+   not plain WCAG 2. See src/lib/contrast.ts. WCAG 2's formula ignores perception
+   and is badly calibrated in exactly the mid-tone range this warm palette lives
+   in; BPCA measures perceived lightness and re-expresses it as a WCAG 2 style
+   ratio, so 4.5:1 still means what it always meant. Every number below is BPCA.
 
    FIXED — darkened just enough to reach 4.5:1, hue and saturation preserved so
    the palette still reads as the same warm family. Do not revert these:
-     ink-soft     #8A8178 → #524C47   (3.17:1 → 7.02:1)
-     ink-faint    #B8AFA4 → #74685A   (1.92:1 → 4.50:1)
-     amber-text   #B67F1E → #8C6117   (2.88:1 → 4.54:1)
-     sage-text    #3F8C63 → #357654   (3.80:1 → 4.50:1)
-     urgency-text #C23B2E → #BF3A2D   (4.40:1 → 4.52:1)
+     ink-soft     #8A8178 → #524C47   (7.02 WCAG 2 → 5.20 BPCA, passes)
+
+   REGRESSED BY THE METHOD CHANGE — these four were darkened to land just on
+   4.5:1 under WCAG 2, which means they were tuned to the wrong ruler. All four
+   clear AA on white but fall short on the three darker surfaces:
+                    on board:  WCAG 2   BPCA     would need
+     ink-faint      #74685A     4.50     3.68     #61574B
+     amber-text     #8C6117     4.54     3.69     #755113
+     sage-text      #357654     4.50     3.66     #2C6246
+     urgency-text   #BF3A2D     4.52     3.59     #9C2F25
+   Not applied — the current values were a deliberate call and darkening them
+   again is a visible change to the palette. INF-14 decides.
 
    ACCEPTED EXCEPTIONS — deliberate, decided; do not "fix" these. The accents
    and their white labels stay exactly as the style guide draws them, because
    both alternatives were tried and rejected on looks: a darker AA-passing fill
    (#CA4F22) lost the brand's warmth, and an ink label on the existing fill
-   (4.84:1) lost the intended white-on-terracotta treatment.
-     white on terracotta button   2.94:1  (needs 4.5:1)
-     white on sage button         2.81:1  (needs 4.5:1)
-     terracotta as link text      2.94:1  (needs 4.5:1)
+   lost the intended white-on-terracotta treatment. BPCA agrees these fail; it
+   just puts them slightly lower than WCAG 2 did:
+     white on terracotta button   2.86  (was 2.94 under WCAG 2)
+     white on sage button         2.76  (was 2.81)
+     terracotta as link text      2.69  (was 2.94)
    The focus ring stays brand terracotta for the same reason. Revisit only if
    the pre-study user testing round surfaces legibility complaints.
 
+   UNDECIDED — shipped by INF-12's persistent header, drawn exactly as the
+   handoff frames specify, and awaiting the INF-14 pass. Measured, not guessed;
+   see /style-guide §06. Each is the same trade already accepted above — an
+   accent at its brand value carrying small text:
+     white on violet             3.79   (34px level disc, "Lv4")
+     terracotta on t-tint        2.43   (streak pill, flame + count)
+     terracotta on surface       2.69   (streak card numeral)
+   The palette has no in-family fix for the streak pill: terracotta-press on the
+   same tint only reaches 3.38, so passing it means a new darker token or a
+   different treatment, not a swap. The level disc does have one — the pill
+   variant of `LevelBadge` (violet-text on violet-tint) is 4.59.
+
    NOT YET REACHED — these surfaces don't exist yet. When the store and Group B
-   urgency stimuli land, white text on these fills all falls short of 4.5:1:
-     white on amber    2.08:1   ("5 in carts" badge)
-     white on violet   3.84:1   ("Buy 2 get 1" badge, level disc)
-     white on urgency  4.10:1   (flash-sale banner, destructive button)
+   urgency stimuli land, white text on these fills all falls short of 4.5:
+     white on amber    2.05   ("5 in carts" badge)
+     white on violet   3.79   ("Buy 2 get 1" badge)
+     white on urgency  3.94   (flash-sale banner, destructive button)
    ========================================================================== */
 
 @theme {
+  /* ---- Breakpoints & layout (INF-13, NFR-GEN-2) ----
+     Tailwind's sm/md/lg/xl defaults are kept as-is; `frame` is added below them.
+
+     Every app screen is drawn in a 300×640 phone frame, so the app is built
+     mobile-first and adapts upward. `frame` is the width at which the screen
+     stops going edge-to-edge and becomes a centred card on the board: 480px,
+     just past the widest phone in portrait (430px, iPhone Pro Max). Stretching a
+     300px-wide design across 500-639px of tablet — which is what using `sm` for
+     this did — leaves the fixed paddings looking sparse and the lines too long.
+
+     `sm` and up stay for genuinely wide layouts: the style guide's two-column
+     grids, the marketing site (MKT-01) and the admin cards (ADM-01/02), all of
+     which are desktop-first and are not phone frames.
+
+     Per-screen desktop adaptation — side rail, two-column dashboard — is INF-22,
+     which consumes this scale rather than adding to it. */
+  --breakpoint-frame: 30rem; /* 480px — phone frame becomes a centred card */
+
+  /* The frame's own width, matching the design's proportions at 400px. */
+  --container-app: 25rem; /* 400px — `max-w-app` */
+
   /* ---- Fonts ---- */
   /* Fredoka: display, headings, numerals. Nunito: body, labels, all UI text. */
   --font-display: var(--font-fredoka), system-ui, sans-serif;
@@ -48,9 +96,9 @@
   --color-input: #f6f1e9; /* text fields */
   /* Three text tiers, spread across the usable range so the hierarchy the
      designs rely on survives the contrast fix. Ratios are vs the board. */
-  --color-ink: #2e2a26; /* primary text — 11.81:1 */
-  --color-ink-soft: #524c47; /* secondary text, labels — 7.02:1 (was #8A8178) */
-  --color-ink-faint: #74685a; /* placeholder, small print — 4.50:1 (was #B8AFA4) */
+  --color-ink: #2e2a26; /* primary text — 7.94 BPCA on board */
+  --color-ink-soft: #524c47; /* secondary text, labels — 5.20 BPCA on board */
+  --color-ink-faint: #74685a; /* placeholder, small print — 3.68 BPCA, see audit */
   /* Disabled text only. WCAG 1.4.3 exempts inactive controls, so this keeps the
      guide's original faint value — it must stay visibly "off". */
   --color-ink-disabled: #b8afa4;
@@ -62,7 +110,7 @@
 
   /* ---- Terracotta · primary ----
      Kept exactly as the style guide draws it, on request — the darker
-     AA-passing variant lost the warmth. White-on-terracotta is 2.94:1, so
+     AA-passing variant lost the warmth. White-on-terracotta is 2.86, so
      filled terracotta buttons are a known, accepted AA exception. */
   --color-terracotta: #e27a54;
   --color-terracotta-hover: #c9633f;
@@ -76,13 +124,13 @@
   --color-sage-hover: #4e9670;
   --color-sage-press: #437f60;
   --color-sage-tint: #e7f0e9;
-  --color-sage-text: #357654; /* text use only — 4.50:1 on board (was #3F8C63) */
+  --color-sage-text: #357654; /* text use only — 3.66 BPCA on board, see audit */
 
   /* ---- Amber · coins ---- */
   --color-amber: #e5a93c;
   --color-amber-ring: #f2c879;
   --color-amber-tint: #fcebd3;
-  --color-amber-text: #8c6117; /* 4.54:1 on board (was #B67F1E) */
+  --color-amber-text: #8c6117; /* 3.69 BPCA on board, see audit */
 
   /* ---- Violet · XP / level ---- */
   --color-violet: #8478c4;
@@ -92,7 +140,7 @@
   /* ---- Urgency red · GROUP B + destructive ONLY ---- */
   --color-urgency: #db4c3f; /* borders, decorative fills */
   --color-urgency-tint: #fde7e3;
-  --color-urgency-text: #bf3a2d; /* 4.52:1 on board (was #C23B2E, 4.40:1) */
+  --color-urgency-text: #bf3a2d; /* 3.59 BPCA on board, see audit */
   --color-urgency-border: #ebd9d2;
   --color-urgency-border-hover: #e9b8ad; /* outlined destructive, hovered */
 
@@ -164,10 +212,29 @@
     color: var(--color-terracotta-hover);
   }
 
-  /* WCAG AA (NFR-GEN-1): every interactive element keeps a visible focus ring.
-     Deliberately the brand terracotta, per the designs — left as-is on request. */
+  /* WCAG 1.4.11 / 2.4.7 (NFR-GEN-1, INF-14): every interactive element keeps a
+     visible focus ring, and the ring itself must clear 3:1 against whatever it
+     sits on.
+
+     Was brand terracotta, which failed on every surface in the palette — 2.69 on
+     white, 2.40 on the board. Sage was considered and is worse (2.60 / 2.34): at
+     its brand value it is lighter than terracotta. Ink clears it everywhere with
+     room to spare (12.88 / 7.94 / 10.53 / 9.37).
+
+     CSS cannot sample the colour behind an element, so the ring cannot adapt on
+     its own. `--focus-ring` is the substitute: it inherits, so any container
+     drawn on a dark or saturated fill — the terracotta landing screen, Group B's
+     red banner — sets it once on itself and everything inside picks it up.
+
+     Caveat for whoever builds that landing screen: a terracotta *background* is
+     the one surface in this palette where nothing reaches 3:1 (white 2.86, ink
+     2.96). It needs a darker fill or a two-tone ring, not a token swap. */
+  :root {
+    --focus-ring: var(--color-ink);
+  }
+
   :focus-visible {
-    outline: 2px solid var(--color-terracotta);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 

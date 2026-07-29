@@ -88,7 +88,15 @@ export function TextField({
       </div>
 
       {error ? (
-        <p id={errorId} className="text-[11px] font-bold text-urgency-text">
+        // role="alert" so the message is announced the moment it appears. Without
+        // it, `aria-describedby` alone is only read when focus reaches the input
+        // — and on a failed submit focus is still on the button, so a screen
+        // reader user got nothing at all (INF-14).
+        <p
+          id={errorId}
+          role="alert"
+          className="text-[11px] font-bold text-urgency-text"
+        >
           {error}
         </p>
       ) : null}

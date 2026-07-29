@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { AbGroup } from "@/generated/prisma/client";
 import { findUserByEmail, type StudyGroup } from "@/lib/users";
 
 /**
@@ -23,4 +24,24 @@ export async function currentStudyGroup(): Promise<StudyGroup | null> {
 
   const record = await findUserByEmail(email);
   return record?.abGroup ?? null;
+}
+
+/**
+ * The single enforcement point for Group A/B isolation on store data
+ * (INF-17, NFR-TASK-3).
+ *
+ * Store routes that serve Group-B-only content (STOR-09/STOR-10,
+ * URG-01..08) call this instead of branching on `currentStudyGroup()`
+ * themselves, so there is exactly one place the isolation rule lives.
+ * Group A — and anyone signed out — gets `null`; only Group B gets
+ * `forGroupB`'s result. Nothing about the request is otherwise blocked:
+ * a Group A user still gets a normal response, just without the
+ * fabricated urgency data mixed in.
+ */
+export async function groupGatedData<T>(
+  forGroupB: () => T | Promise<T>,
+): Promise<T | null> {
+  const group = await currentStudyGroup();
+  if (group !== AbGroup.B) return null;
+  return forGroupB();
 }

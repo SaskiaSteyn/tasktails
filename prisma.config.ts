@@ -23,4 +23,8 @@ export default defineConfig({
   datasource: {
     url: env("DATABASE_URL"),
   },
+  // INF-20 — `npx prisma db seed` / auto-run after `migrate dev` and `migrate reset`.
+  migrations: {
+    seed: "tsx prisma/seed.ts",
+  },
 });

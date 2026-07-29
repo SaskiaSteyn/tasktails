@@ -42,10 +42,10 @@ const sizes: Record<ButtonSize, string> = {
 };
 
 // Filled buttons follow the style guide exactly: accent fill, white label,
-// hover/press darken the fill. An ink label was tried for contrast (4.84:1 on
-// terracotta vs white's 2.94:1) and rejected — white is the intended look.
-// White-on-terracotta and white-on-sage are accepted AA exceptions; see the
-// audit block at the top of globals.css.
+// hover/press darken the fill. An ink label was tried for contrast and rejected
+// — white is the intended look. White-on-terracotta (2.86) and white-on-sage
+// (2.76) are accepted AA exceptions; see the audit block at the top of
+// globals.css. Figures are BPCA, per src/lib/contrast.ts.
 const variants: Record<ButtonVariant, string> = {
   primary: cn(
     "bg-terracotta text-white shadow-btn",

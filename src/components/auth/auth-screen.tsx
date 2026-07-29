@@ -1,22 +1,18 @@
 import Image from "next/image";
 
+import { AppShell } from "@/components/layout/app-shell";
 import { cn } from "@/lib/cn";
 
 /**
- * Shell shared by the auth screens (Register, Login).
+ * Shell shared by the auth screens (Register, Login, the username step).
  *
- * The designs are drawn in a 300×640 phone frame. Mobile-first, that means the
- * white surface goes edge-to-edge; from `sm` up it becomes a centred card of the
- * same proportions sitting on the warm board background (NFR-GEN-2).
+ * The frame itself — edge-to-edge on a phone, a centred 400px card from `frame:`
+ * up — is `AppShell`, so the auth screens and the app screens cannot drift apart
+ * (INF-13, NFR-GEN-2). All this adds is the screens' own padding, and the
+ * absence of a header or a nav.
  */
 export function AuthScreen({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="flex flex-1 justify-center bg-board sm:items-center sm:p-6">
-      <div className="flex w-full flex-col bg-surface px-6 py-[26px] sm:min-h-[640px] sm:max-w-[400px] sm:rounded-frame sm:border sm:border-[rgb(46_42_38/0.06)] sm:shadow-card">
-        {children}
-      </div>
-    </main>
-  );
+  return <AppShell className="px-6 py-[26px]">{children}</AppShell>;
 }
 
 /**

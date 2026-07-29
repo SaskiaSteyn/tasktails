@@ -45,7 +45,7 @@ npx auth secret
 Start the database (needs Docker running) and apply the migrations:
 
 ```bash
-docker compose up -d && npx prisma migrate dev
+docker compose up -d db && npx prisma migrate dev
 ```
 
 Then:
@@ -62,6 +62,39 @@ The app runs at http://localhost:3000 (`/` redirects to `/register`).
 client. Add `http://localhost:3000/api/auth/callback/google` as an authorised
 redirect URI. Until both variables are set, the "Continue with Google" button
 renders disabled with a note explaining why.
+
+### Environment variables (INF-16)
+
+[`.env.example`](.env.example) is the reference — every variable, which file it
+belongs in, and connection-string recipes for AWS RDS, Neon and Vercel.
+
+| Variable | Required | Notes |
+|---|---|---|
+| `AUTH_SECRET` | yes | `npx auth secret`. Different per environment; rotating it logs every participant out |
+| `DATABASE_URL` | yes | See the recipes in `.env.example` |
+| `AUTH_GOOGLE_ID` / `_SECRET` | no | Google button hides itself without them |
+| `AUTH_URL` | deployed | Public origin. Vercel sets it itself |
+| `AUTH_TRUST_HOST` | behind a proxy | Compose sets it for the container |
+| `APP_PORT` | no | Host port for the container only |
+
+Which file the values go in differs by target, and the wrong one is a common
+half-hour:
+
+- **local dev** → `.env.local` (Next reads it; `prisma.config.ts` points the
+  Prisma CLI at it)
+- **Docker Compose** → `.env` (Compose does *not* read `.env.local`)
+- **EC2 / Vercel** → the environment itself, never a file in the image
+
+One trap worth naming: if you copy `.env.example` into a `.env` for Compose,
+delete or edit the `DATABASE_URL` line. It points at `localhost`, which inside
+the container is the container — the app service already defaults to the right
+host (`db`) when the variable is absent.
+
+**SSL.** Prisma 7 reaches Postgres through the `pg` driver adapter, so
+node-postgres parses the URL and `sslmode` behaves the way `pg` defines it, not
+the way libpq does: `sslmode=require` currently means *verify-full* and prints a
+deprecation warning. Say `sslmode=verify-full` explicitly — it is what you
+want against RDS and Neon, and it survives the pg 9 change of meaning.
 
 ## Scripts
 
@@ -118,10 +151,37 @@ else touches `prisma.user` directly.
 
 | Command | Purpose |
 |---|---|
-| `docker compose up -d` | Start Postgres |
+| `docker compose up -d db` | Start Postgres |
 | `npx prisma migrate dev` | Apply / create migrations |
 | `npx prisma studio` | Browse the data |
 | `docker compose down -v` | Stop and wipe the database |
+| `docker compose --profile app up -d --build` | Run the whole stack containerised, as deployed |
+
+## Running the container (INF-15)
+
+The app image is behind a compose profile, so the everyday `docker compose up -d db`
+never waits on a build. To run the stack the way EC2 does:
+
+```bash
+docker compose --profile app up -d --build
+```
+
+`AUTH_SECRET` has to be set — put it in a `.env` beside `docker-compose.yml`
+(compose reads that file automatically) or export it. Without it the container
+starts and serves pages, but every auth request logs `MissingSecret`.
+
+`APP_PORT` overrides the published port if `npm run dev` already holds 3000:
+
+```bash
+APP_PORT=3001 docker compose --profile app up -d --build
+```
+
+A one-shot `migrate` service applies pending migrations and must exit cleanly
+before `app` starts, so a container can never serve against a stale schema.
+
+Behind a reverse proxy, set `AUTH_URL` to the public origin and make sure the
+proxy forwards `Host` (or `X-Forwarded-Host`) and `X-Forwarded-Proto` — the
+sign-in redirect in [`src/proxy.ts`](src/proxy.ts) is built from those.
 
 ## Project layout
 

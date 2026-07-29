@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -25,10 +26,16 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "bridge-pca": "^0.1.6",
+    "colorparsley": "^0.1.8",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "jsdom": "^29.1.1",
     "prisma": "^7.9.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.1",
+    "typescript": "^5",
+    "vitest": "^4.1.10",
+    "vitest-mock-extended": "^5.1.0"
   }
 }

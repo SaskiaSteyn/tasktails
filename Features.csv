@@ -1,25 +1,25 @@
 ID,Title,Module,Type,Status
 INF-01,Prisma schema — User model (id email passwordHash username displayName avatarUrl role abGroup createdAt),Infrastructure & Database,Database,Done
-INF-02,Prisma schema — Task model (id userId title complexityTier dueDate completedAt createdAt),Infrastructure & Database,Database,To Do
-INF-03,Prisma schema — Subtask model (id taskId title completedAt),Infrastructure & Database,Database,To Do
-INF-04,Prisma schema — StoreItem model (id name category levelRequired coinPrice imageUrl),Infrastructure & Database,Database,To Do
-INF-05,Prisma schema — InventoryItem model (id userId storeItemId equippedToPetId quantity),Infrastructure & Database,Database,To Do
-INF-06,Prisma schema — CartItem model (id userId storeItemId quantity),Infrastructure & Database,Database,To Do
-INF-07,Prisma schema — Transaction model (id userId storeItemId coinSpent purchasedAt),Infrastructure & Database,Database,To Do
-INF-08,Prisma schema — Pet model (id userId storeItemId happiness hunger lastInteractedAt),Infrastructure & Database,Database,To Do
-INF-09,Prisma schema — TelemetryEvent model (id userId eventType payload createdAt),Infrastructure & Database,Database,To Do
+INF-02,Prisma schema — Task model (id userId title complexityTier dueDate completedAt createdAt),Infrastructure & Database,Database,Done
+INF-03,Prisma schema — Subtask model (id taskId title completedAt),Infrastructure & Database,Database,Done
+INF-04,Prisma schema — StoreItem model (id name category levelRequired coinPrice imageUrl),Infrastructure & Database,Database,Done
+INF-05,Prisma schema — InventoryItem model (id userId storeItemId equippedToPetId quantity),Infrastructure & Database,Database,Done
+INF-06,Prisma schema — CartItem model (id userId storeItemId quantity),Infrastructure & Database,Database,Done
+INF-07,Prisma schema — Transaction model (id userId storeItemId coinSpent purchasedAt),Infrastructure & Database,Database,Done
+INF-08,Prisma schema — Pet model (id userId storeItemId happiness hunger lastInteractedAt),Infrastructure & Database,Database,Done
+INF-09,Prisma schema — TelemetryEvent model (id userId eventType payload createdAt),Infrastructure & Database,Database,Done
 INF-10,Prisma schema — UserEconomy model (id userId coins xp level streak lastStreakDate dailyCoinsEarned dailyXpEarned dailyCapResetAt),Infrastructure & Database,Database,Done
 INF-11,NextAuth configuration (credential and Google providers JWT strategy session callbacks),Infrastructure & Database,Backend,Done
-INF-12,Global layout component — header with persistent coin balance XP bar and level indicator,Infrastructure & Database,Frontend,To Do
-INF-13,Responsive layout system — mobile and desktop breakpoints using Tailwind,Infrastructure & Database,Frontend,To Do
-INF-14,WCAG AA compliance pass — contrast ratios keyboard navigation focus states colour-independent signals,Infrastructure & Database,Frontend,To Do
-INF-15,Docker container configuration for EC2 deployment (Dockerfile + docker-compose),Infrastructure & Database,Infrastructure,To Do
-INF-16,Environment variable configuration (.env.example for Vercel and AWS connection strings),Infrastructure & Database,Infrastructure,To Do
-INF-17,A/B group assignment middleware — enforces Group A/B isolation on all store API routes server-side,Infrastructure & Database,Backend,To Do
-INF-18,Prisma schema — UserSettings model (id userId dailyReminder streakAlert soundEffects reduceMotion),Infrastructure & Database,Database,To Do
-INF-19,Prisma schema — Achievement and UserAchievement models (id key name description criteria unlockedAt),Infrastructure & Database,Database,To Do
-INF-20,StoreItem catalogue seed script — populate the store with the design handoff catalogue and animal artwork,Infrastructure & Database,Database,To Do
-INF-21,Level threshold table — shared XP-per-level constant consumed by the level-up service and the XP bar,Infrastructure & Database,Backend,To Do
+INF-12,Global layout component — header with persistent coin balance XP bar and level indicator,Infrastructure & Database,Frontend,Done
+INF-13,Responsive layout system — mobile and desktop breakpoints using Tailwind,Infrastructure & Database,Frontend,Done
+INF-14,WCAG AA compliance pass — contrast ratios keyboard navigation focus states colour-independent signals,Infrastructure & Database,Frontend,Done
+INF-15,Docker container configuration for EC2 deployment (Dockerfile + docker-compose),Infrastructure & Database,Infrastructure,Done
+INF-16,Environment variable configuration (.env.example for Vercel and AWS connection strings),Infrastructure & Database,Infrastructure,Done
+INF-17,A/B group assignment middleware — enforces Group A/B isolation on all store API routes server-side,Infrastructure & Database,Backend,Done
+INF-18,Prisma schema — UserSettings model (id userId dailyReminder streakAlert soundEffects reduceMotion),Infrastructure & Database,Database,Done
+INF-19,Prisma schema — Achievement and UserAchievement models (id key name description criteria unlockedAt),Infrastructure & Database,Database,Done
+INF-20,StoreItem catalogue seed script — populate the store with the design handoff catalogue and animal artwork,Infrastructure & Database,Database,Done
+INF-21,Level threshold table — shared XP-per-level constant consumed by the level-up service and the XP bar,Infrastructure & Database,Backend,Done
 INF-22,Desktop adaptation pass — adapt the mobile-first app screens to wide viewports (max-width centred column bottom nav to side rail two-column dashboard and store grid). Low priority — the study runs on mobile,Infrastructure & Database,Frontend,To Do
 AUTH-01,Register page — form with email and password fields,Authentication,Frontend,Done
 AUTH-02,Login page — form with email and password fields,Authentication,Frontend,Done
