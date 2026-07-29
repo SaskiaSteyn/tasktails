@@ -26,10 +26,10 @@ import type { Task } from "@/lib/tasks";
  * `router.refresh()` needed the way TASK-02's sheet needs one to update the
  * page it stays on.
  *
- * Delete is still stubbed: TASK-10 (`DELETE /api/tasks/[id]`) doesn't exist
- * yet, but the confirm step is real — `Modal`'s (SHR-03) second consumer,
- * after the onboarding username step. Confirming it stops on a visible
- * notice rather than deleting anything.
+ * Delete `DELETE`s TASK-10's `/api/tasks/[id]` for real too (wired the same
+ * day that ticket shipped) — `Modal`'s (SHR-03) second consumer, after the
+ * onboarding username step, now actually removes the task on confirm and
+ * returns to `/tasks` rather than stopping on a notice.
  */
 export function EditTaskForm({ task }: { task: Task }) {
   const router = useRouter();
@@ -47,7 +47,8 @@ export function EditTaskForm({ task }: { task: Task }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteStubNotice, setDeleteStubNotice] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>();
 
   const reward = taskTier(tier);
 
@@ -76,6 +77,33 @@ export function EditTaskForm({ task }: { task: Task }) {
       setSubmitError("Couldn't reach TaskTails. Check your connection and try again.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError(undefined);
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        // Closed either way: an error sitting behind an open confirm dialog
+        // is invisible until the dialog is dismissed, so the footer message
+        // is more useful shown immediately than kept waiting.
+        setDeleteOpen(false);
+        setDeleteError("Couldn't delete the task. Try again.");
+        return;
+      }
+
+      setDeleteOpen(false);
+      router.push("/tasks");
+    } catch {
+      setDeleteOpen(false);
+      setDeleteError("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -169,9 +197,9 @@ export function EditTaskForm({ task }: { task: Task }) {
             {submitError}
           </p>
         ) : null}
-        {deleteStubNotice ? (
-          <p className="mt-2 text-center text-[11px] text-ink-soft">
-            Deleting isn&apos;t connected yet (TASK-10). Nothing was removed.
+        {deleteError ? (
+          <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
+            {deleteError}
           </p>
         ) : null}
       </div>
@@ -182,13 +210,10 @@ export function EditTaskForm({ task }: { task: Task }) {
         iconTint="destructive"
         title="Delete this task?"
         body="This can't be undone — any progress on it is lost."
-        confirmLabel="Delete task"
+        confirmLabel={deleting ? "Deleting…" : "Delete task"}
         confirmVariant="destructive"
         cancelLabel="Keep task"
-        onConfirm={() => {
-          setDeleteOpen(false);
-          setDeleteStubNotice(true);
-        }}
+        onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
       />
     </>

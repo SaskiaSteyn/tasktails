@@ -8,10 +8,6 @@ import { prisma } from "@/lib/prisma";
  * module touches `prisma.task`, so the writes (TASK-08..11) land in one place
  * when they arrive.
  *
- * TASK-10 (delete) doesn't exist yet, so there's still no write side here
- * for TASK-03's delete confirm to call — see its own file for the stubbed
- * delete this is deliberately missing.
- *
  * SERVER ONLY — imports Prisma.
  */
 
@@ -89,4 +85,24 @@ export async function updateTask(
   });
 
   return count === 0 ? null : taskForUser(userId, taskId);
+}
+
+/**
+ * Deletes a task, scoped to its owner (TASK-10). `deleteMany`, same reason
+ * as `updateTask()`'s `updateMany` — a mismatched owner fails as "0 rows"
+ * rather than a thrown "record not found". Subtasks cascade at the schema
+ * level (`Subtask.task` is `onDelete: Cascade`), so there's nothing extra
+ * to delete here for those.
+ *
+ * Returns whether a row was actually deleted, so the route can tell a real
+ * delete from "there was nothing to delete" and 404 accordingly.
+ */
+export async function deleteTask(
+  userId: string,
+  taskId: string,
+): Promise<boolean> {
+  const { count } = await prisma.task.deleteMany({
+    where: { id: taskId, userId },
+  });
+  return count > 0;
 }
