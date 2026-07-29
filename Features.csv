@@ -32,7 +32,7 @@ AUTH-08,Continue with Google button on register and login — full-width OAuth b
 AUTH-09,Google OAuth provider — NextAuth Google provider upserts the account on first sign-in and assigns the permanent study group,Authentication,Backend,Done
 TASK-01,Task list view — displays all user tasks with title due date complexity badge and completion state,TODO App,Frontend,Done
 TASK-02,Create task form — fields: title (required) due date (optional) complexity tier (required 5-option select),TODO App,Frontend,Done
-TASK-03,Task detail / edit screen — pre-filled title due date complexity chips subtask list reward footer and delete,TODO App,Frontend,To Do
+TASK-03,Task detail / edit screen — pre-filled title due date complexity chips subtask list reward footer and delete,TODO App,Frontend,Done
 TASK-04,Delete task action — confirmation prompt before deletion,TODO App,Frontend,To Do
 TASK-05,Complete task action — checkbox or button triggers reward animation and coin/XP update,TODO App,Frontend,To Do
 TASK-06,Task dashboard stats bar — current level XP progress bar streak counter coin balance,TODO App,Frontend,To Do
@@ -126,7 +126,7 @@ PRO-16,Research consent note — participant note with the researcher withdrawal
 PRO-17,Reminder delivery — send the daily task reminder and streak at risk notifications honouring the toggles (channel to be decided),Profile & Settings,Backend,To Do
 SHR-01,Bottom nav — four floating tab circles plus a raised central add button on every logged-in screen; the central + opens the create-task sheet,Shared UI & States,Frontend,Done
 SHR-02,Inline date-picker popover — attaches beneath the due-date field with quick chips month nav and a square-cell month grid,Shared UI & States,Frontend,Done
-SHR-03,Confirm modal component — one shared component with destructive and non-destructive variants stacked full-width actions and scrim dismiss,Shared UI & States,Frontend,To Do
+SHR-03,Confirm modal component — one shared component with destructive and non-destructive variants stacked full-width actions and scrim dismiss,Shared UI & States,Frontend,Done
 SHR-04,Empty state — tasks (All clear! with a New task action),Shared UI & States,Frontend,Done
 SHR-05,Empty state — cart (Cart's empty with a Go to store action),Shared UI & States,Frontend,To Do
 SHR-06,Locked-by-level state — violet lock heading level progress bar and levels-to-go label,Shared UI & States,Frontend,To Do

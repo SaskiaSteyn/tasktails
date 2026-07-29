@@ -8,6 +8,10 @@ import { prisma } from "@/lib/prisma";
  * module touches `prisma.task`, so the writes (TASK-08..11) land in one place
  * when they arrive.
  *
+ * TASK-09/TASK-10 (edit/delete) don't exist yet, so there's no write side
+ * here for TASK-03's edit screen to call — see its own file for the stubbed
+ * submit/delete this is deliberately missing.
+ *
  * SERVER ONLY — imports Prisma.
  */
 
@@ -27,4 +31,17 @@ export async function tasksForUser(userId: string): Promise<Task[]> {
       { createdAt: "asc" },
     ],
   });
+}
+
+/**
+ * A single task, scoped to its owner (TASK-03). Returns null both when the
+ * id doesn't exist and when it belongs to someone else — the caller can't
+ * tell the difference, which is the point: confirming a task id belongs to
+ * another user is its own information leak.
+ */
+export async function taskForUser(
+  userId: string,
+  taskId: string,
+): Promise<Task | null> {
+  return prisma.task.findFirst({ where: { id: taskId, userId } });
 }

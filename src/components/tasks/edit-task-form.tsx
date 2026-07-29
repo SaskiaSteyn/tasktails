@@ -1,0 +1,164 @@
+"use client";
+
+import { Trash2 } from "lucide-react";
+import { useId, useState } from "react";
+
+import { DatePicker } from "@/components/tasks/date-picker";
+import { TierSelect } from "@/components/tasks/tier-select";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { cn } from "@/lib/cn";
+import { taskTier, type TaskTier } from "@/lib/task-tiers";
+import type { Task } from "@/lib/tasks";
+
+/**
+ * TASK-03 — task detail / edit screen. Pre-filled title, due date,
+ * complexity, and a reward footer with delete + save.
+ *
+ * Subtasks are deliberately not on this screen — SUB-01/02/03 (list, add,
+ * complete) are separate, unbuilt tickets, and a partial read-only subtask
+ * list was ruled a worse middle ground than none at all.
+ *
+ * Neither action is wired to a backend yet:
+ * - Save: TASK-09 (`PATCH /api/tasks/[id]`) doesn't exist. A valid submit
+ *   validates for real and then stops on a visible notice, same as TASK-02's
+ *   create sheet.
+ * - Delete: TASK-10 (`DELETE /api/tasks/[id]`) doesn't exist, but the
+ *   confirm step is real — this is `Modal`'s (SHR-03) second consumer,
+ *   after the onboarding username step. Confirming it stops on the same
+ *   kind of notice rather than deleting anything.
+ */
+export function EditTaskForm({ task }: { task: Task }) {
+  const formId = useId();
+  const titleFieldId = useId();
+  const titleErrorId = useId();
+  const tierLabelId = useId();
+
+  const [title, setTitle] = useState(task.title);
+  const [tier, setTier] = useState<TaskTier["tier"]>(
+    task.complexityTier as TaskTier["tier"],
+  );
+  const [dueDate, setDueDate] = useState<Date | null>(task.dueDate);
+  const [titleError, setTitleError] = useState<string>();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [stubNotice, setStubNotice] = useState<"save" | "delete">();
+
+  const reward = taskTier(tier);
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    const nextTitleError = title.trim() ? undefined : "Give the task a title.";
+    setTitleError(nextTitleError);
+    if (nextTitleError) return;
+    setStubNotice("save");
+  }
+
+  return (
+    <>
+      <form
+        id={formId}
+        onSubmit={handleSubmit}
+        className="flex flex-1 flex-col overflow-y-auto px-[18px] pt-[18px] pb-2"
+      >
+        <div className="mb-4">
+          <label
+            htmlFor={titleFieldId}
+            className="text-[11px] font-extrabold tracking-[0.4px] text-ink-soft"
+          >
+            TITLE
+          </label>
+          <input
+            id={titleFieldId}
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              setTitleError(undefined);
+            }}
+            aria-invalid={titleError ? true : undefined}
+            aria-describedby={titleError ? titleErrorId : undefined}
+            className={cn(
+              "mt-[6px] h-[46px] w-full rounded-input border px-[13px] text-[14px] font-bold text-ink outline-none",
+              "transition-[background-color,border-color,box-shadow] duration-120",
+              titleError
+                ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"
+                : cn(
+                    "border-border-input bg-input",
+                    "focus:border-terracotta focus:bg-surface",
+                    "focus:shadow-[0_0_0_1px_var(--color-terracotta),0_0_0_5px_rgb(226_122_84/0.16)]",
+                  ),
+            )}
+          />
+          {titleError ? (
+            <p id={titleErrorId} role="alert" className="mt-1 text-[11px] font-bold text-urgency-text">
+              {titleError}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="mb-4">
+          <DatePicker value={dueDate} onChange={setDueDate} label="DUE DATE" />
+        </div>
+
+        <div className="mb-4">
+          <div
+            id={tierLabelId}
+            className="mb-2 text-[11px] font-extrabold tracking-[0.4px] text-ink-soft"
+          >
+            COMPLEXITY
+          </div>
+          <TierSelect value={tier} onChange={setTier} labelledBy={tierLabelId} />
+        </div>
+      </form>
+
+      <div className="flex-none border-t border-border-track bg-warm px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+        <div className="mb-[10px] flex items-center justify-between text-[12px]">
+          <span className="text-ink-soft">Reward on completion</span>
+          <span className="font-extrabold text-amber-text">
+            {reward.coins} coins · {reward.xp} XP
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            aria-label="Delete task"
+            className="flex h-[46px] w-[48px] flex-none items-center justify-center rounded-input border border-urgency-border bg-surface text-urgency-text transition-colors duration-120 hover:border-urgency-border-hover hover:bg-urgency-tint"
+          >
+            <Trash2 size={18} strokeWidth={2.2} aria-hidden />
+          </button>
+          <Button type="submit" form={formId} size="dialog" fullWidth={false} className="flex-1">
+            Save changes
+          </Button>
+        </div>
+
+        {stubNotice === "save" ? (
+          <p className="mt-2 text-center text-[11px] text-ink-soft">
+            Looks good — but saving changes isn&apos;t connected yet
+            (TASK-09). Nothing was updated.
+          </p>
+        ) : null}
+        {stubNotice === "delete" ? (
+          <p className="mt-2 text-center text-[11px] text-ink-soft">
+            Deleting isn&apos;t connected yet (TASK-10). Nothing was removed.
+          </p>
+        ) : null}
+      </div>
+
+      <Modal
+        open={deleteOpen}
+        icon={Trash2}
+        iconTint="destructive"
+        title="Delete this task?"
+        body="This can't be undone — any progress on it is lost."
+        confirmLabel="Delete task"
+        confirmVariant="destructive"
+        cancelLabel="Keep task"
+        onConfirm={() => {
+          setDeleteOpen(false);
+          setStubNotice("delete");
+        }}
+        onCancel={() => setDeleteOpen(false)}
+      />
+    </>
+  );
+}
