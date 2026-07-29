@@ -1,0 +1,120 @@
+import { StoreItemCategory } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
+
+/**
+ * INF-20 — populates `StoreItem` with the catalogue documented in
+ * `design_handoff/`. Nothing else in the store module writes `StoreItem`
+ * rows (see the AGENTS.md note on INF-20), so this is the single source for
+ * them.
+ *
+ * Deliberately small: `TaskTails Screens.dc.html` only grounds 5 items with
+ * real names and prices (Sunflower seeds, Red collar, Cosy den, Treat box,
+ * and the locked "Fox kit" example). The store gate table in
+ * `economy_system.md` prices ranges per level tier without listing every
+ * item, and doesn't cover most of the 4-category x 5-level grid at all — the
+ * rest is deliberately left unseeded rather than inventing catalogue data
+ * that isn't documented anywhere. A later ticket can expand this list.
+ *
+ * Animal count: economy_system.md frames the animal unlocks as a "second
+ * animal type" at Level 7 and a "third" at Level 10 — a deliberately scarce,
+ * timed unlock tied to the study's urgency-exposure design, not a full
+ * roster. Only 3 animal types are seeded, matching the only 3 SVGs actually
+ * staged in `public/animals/`: Koala (Level 1 starter — the "Buy 1 animal"
+ * onboarding goal needs something purchasable immediately, and the gate
+ * table's Level 1 row is the baseline tier everything else builds on), Fox
+ * (Level 7 — "Fox kit"/"2nd animal"/"Unlocks at Lvl 7" is the Store mock's
+ * own explicit label, taken over the README's looser "starter pet" aside),
+ * and Penguin (Level 10, the remaining unused asset, as the third type).
+ *
+ * `imageUrl` for the non-animal items is a lucide-react icon name, not a
+ * file path — the mock renders food/accessories/decorations as flat colour
+ * swatches, not illustrated artwork, and no such artwork exists yet. Animal
+ * items point at the real SVGs in `public/animals/`.
+ *
+ * Idempotent: looks up by `name` before writing, so re-running the seed
+ * updates the existing row instead of duplicating it. `name` isn't a unique
+ * constraint in the schema (INF-04) — enforcing that is out of scope here —
+ * so this checks in application code rather than using `upsert`.
+ */
+const catalogue: Array<{
+  name: string;
+  category: StoreItemCategory;
+  levelRequired: number;
+  coinPrice: number;
+  imageUrl: string;
+}> = [
+  {
+    name: "Sunflower seeds",
+    category: StoreItemCategory.FOOD,
+    levelRequired: 1,
+    coinPrice: 40,
+    imageUrl: "wheat",
+  },
+  {
+    name: "Red collar",
+    category: StoreItemCategory.ACCESSORIES,
+    levelRequired: 1,
+    coinPrice: 65,
+    imageUrl: "shirt",
+  },
+  {
+    name: "Treat box",
+    category: StoreItemCategory.FOOD,
+    levelRequired: 3,
+    coinPrice: 120,
+    imageUrl: "package",
+  },
+  {
+    name: "Cosy den",
+    category: StoreItemCategory.DECORATIONS,
+    levelRequired: 5,
+    coinPrice: 280,
+    imageUrl: "home",
+  },
+  {
+    name: "Koala kit",
+    category: StoreItemCategory.ANIMALS,
+    levelRequired: 1,
+    coinPrice: 200,
+    imageUrl: "/animals/koala.svg",
+  },
+  {
+    name: "Fox kit",
+    category: StoreItemCategory.ANIMALS,
+    levelRequired: 7,
+    coinPrice: 550,
+    imageUrl: "/animals/fox.svg",
+  },
+  {
+    name: "Penguin kit",
+    category: StoreItemCategory.ANIMALS,
+    levelRequired: 10,
+    coinPrice: 1200,
+    imageUrl: "/animals/penguin.svg",
+  },
+];
+
+async function main() {
+  for (const item of catalogue) {
+    const existing = await prisma.storeItem.findFirst({
+      where: { name: item.name },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await prisma.storeItem.update({ where: { id: existing.id }, data: item });
+    } else {
+      await prisma.storeItem.create({ data: item });
+    }
+  }
+  console.log(`Seeded ${catalogue.length} StoreItem rows.`);
+}
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
