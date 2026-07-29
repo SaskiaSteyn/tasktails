@@ -50,7 +50,7 @@ ECO-06,POST /api/economy/buy-xp — deduct 100 coins add 40 XP invoke level-up s
 ECO-07,Level-up notification — UI toast or modal shown when the user crosses a level threshold,TODO App,Frontend,Done
 SUB-01,Subtask list within a task card — expandable shows each subtask with completion checkbox,TODO App,Frontend,Done
 SUB-02,Add subtask inline input within a task card,TODO App,Frontend,Done
-SUB-03,Complete subtask action — triggers proportional reward,TODO App,Frontend,To Do
+SUB-03,Complete subtask action — triggers proportional reward,TODO App,Frontend,Done
 SUB-04,POST /api/tasks/[id]/subtasks — add a subtask to a task,TODO App,Backend,To Do
 SUB-05,POST /api/tasks/[id]/subtasks/[subId]/complete — mark subtask complete calculate proportional reward and auto-complete parent when all subtasks done,TODO App,Backend,To Do
 ONB-01,Onboarding checklist widget — displays three goals with live completion status,TODO App,Frontend,To Do
