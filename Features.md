@@ -69,8 +69,8 @@
 | TASK-05 | Complete task action — checkbox or button; triggers reward animation and coin/XP update | Frontend | To Do |
 | TASK-06 | Task dashboard stats bar — current level, XP progress bar, streak counter, coin balance | Frontend | To Do |
 | TASK-07 | `GET /api/tasks` — list all tasks for the authenticated user | Backend | To Do |
-| TASK-08 | `POST /api/tasks` — create a new task | Backend | To Do |
-| TASK-09 | `PATCH /api/tasks/[id]` — edit task title, due date, or complexity | Backend | To Do |
+| TASK-08 | `POST /api/tasks` — create a new task | Backend | To Do — use `createTask()` from `src/lib/tasks.ts`; it derives the `titleKey` ECO-02 matches on, so a route calling `prisma.task.create` directly will not type-check |
+| TASK-09 | `PATCH /api/tasks/[id]` — edit task title, due date, or complexity | Backend | To Do — use `updateTask()` from `src/lib/tasks.ts`; it rewrites `titleKey` on retitle and scopes the update by `userId` |
 | TASK-10 | `DELETE /api/tasks/[id]` — delete a task and its subtasks | Backend | To Do |
 | TASK-11 | `POST /api/tasks/[id]/complete` — mark task complete; invoke economy service to calculate and apply reward | Backend | To Do |
 
@@ -79,7 +79,7 @@
 | # | Feature | Type | Status |
 |---|---------|------|--------|
 | ECO-01 | Reward calculation service — base coins/XP from complexity tier, apply efficiency modifier (±% for early/late), apply streak bonus, apply anti-spam reduction, apply daily cap check | Backend | Done — `src/lib/rewards.ts`. Pure arithmetic; the two DB-backed inputs (last same-title completion, today's earnings) are parameters supplied by ECO-02/ECO-03 |
-| ECO-02 | Anti-spam check — query last completion of same task title within 72 h; apply tiered reward reduction (50% / 25% / 10%) | Backend | To Do |
+| ECO-02 | Anti-spam check — query last completion of same task title within 72 h; apply tiered reward reduction (50% / 25% / 10%) | Backend | Done — `antiSpamCheck()` / `reduceForRepeats()` in `src/lib/economy.ts`, over the new `src/lib/tasks.ts` (the module that owns `prisma.task`). Matched on title, not task id, so delete-and-recreate farming is caught. **Two deviations from NFR-TASK-1 as written, both recorded in Requirements.md**: matching is on a new normalised `Task.titleKey` column (migration `eco02_task_title_key`, backfilled) rather than on `title`, and duplicates that predate the last completion of their title are exempt up to 3 per day, so batch-planning a week of identical tasks is not graded as farming. Verified against the docker Postgres, not just the mock |
 | ECO-03 | Daily cap enforcement — reject coin/XP earnings above 300 coins and 500 XP per calendar day | Backend | To Do |
 | ECO-04 | Streak service — detect if today is a streak day; update streak counter; calculate and apply streak coin bonus (10% / 20% / 35%) | Backend | To Do |
 | ECO-05 | Level-up service — compare cumulative XP against level threshold table; update level in `UserEconomy`; return level-up event if threshold crossed | Backend | To Do |

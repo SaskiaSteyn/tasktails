@@ -13,12 +13,14 @@
  * The cap is last because it is a ceiling on what is actually banked, not an
  * input to any of the arithmetic above it.
  *
- * Everything here is pure arithmetic — no imports, no Prisma, no clock. The two
- * facts that need a database (when this title was last completed, what has
- * already been earned today) arrive as inputs, supplied by ECO-02 and ECO-03.
- * That keeps the rules testable against fixed numbers and keeps the study's
- * economy auditable from one file.
+ * Everything here is pure arithmetic — no Prisma, no clock. The two facts that
+ * need a database (how far the anti-spam guardrail reduced this completion,
+ * what has already been earned today) arrive as inputs, decided by ECO-02 and
+ * ECO-03. That keeps the rules testable against fixed numbers and keeps the
+ * study's economy auditable from one file.
  */
+
+import { calendarDaysBetween } from "@/lib/day";
 
 /** Coins and XP, always whole numbers, never negative. */
 export type Reward = {
@@ -73,6 +75,28 @@ export const ANTI_SPAM_WINDOWS = [
 /** A reduced reward never drops below this — a repeat still pays something. */
 export const ANTI_SPAM_FLOOR: Reward = { coins: 1, xp: 1 };
 
+/**
+ * How far back a repeat still counts. Derived from the window table rather than
+ * written as 72 so the lookup (ECO-02) can never search a different span from
+ * the one the reduction is graded against.
+ */
+export const ANTI_SPAM_WINDOW_HOURS = Math.max(
+  ...ANTI_SPAM_WINDOWS.map((window) => window.withinHours),
+);
+
+/**
+ * How many same-titled tasks may be completed at full reward in one day before
+ * the reduction applies regardless of when they were created.
+ *
+ * NFR-TASK-1 as written punishes a participant who plans a week of "Gym" tasks
+ * on Sunday and completes two of them inside 24 h — legitimate planning, graded
+ * as farming. ECO-02 therefore exempts duplicates that existed *before* the
+ * previous completion, and this allowance is what stops that exemption becoming
+ * a hole: creating twenty identical tasks in one batch buys three full rewards,
+ * not twenty. Deviation from Requirements §NFR-TASK-1, recorded there.
+ */
+export const FULL_REWARD_REPEATS_PER_DAY = 3;
+
 /** NFR-TASK-2 — the most anyone can bank in one calendar day. */
 export const DAILY_COIN_CAP = 300;
 export const DAILY_XP_CAP = 500;
@@ -102,19 +126,6 @@ export type Efficiency = {
   /** Whole calendar days past the due date. 0 unless `kind` is "late". */
   daysLate: number;
 };
-
-/**
- * Whole calendar days from `from` to `to`, counted on local midnights.
- *
- * Calendar days, not 24-hour blocks: a task due Monday and finished at 00:05 on
- * Tuesday is one day late, which is what a participant would say themselves.
- */
-export function calendarDaysBetween(from: Date, to: Date): number {
-  const startOfDay = (date: Date) =>
-    new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-
-  return Math.round((startOfDay(to) - startOfDay(from)) / (24 * HOUR_MS));
-}
 
 /**
  * Classifies a completion. A task with no due date is treated as on-time — it
@@ -269,8 +280,16 @@ export type RewardInput = {
   completedAt: Date;
   /** UserEconomy.streak, *after* ECO-04 has recorded today. */
   streak?: number;
-  /** Previous completion of the same title, from ECO-02. */
-  lastSameTitleCompletionAt?: Date | null;
+  /**
+   * Fraction of the reward the anti-spam guardrail lets through, from ECO-02's
+   * `antiSpamCheck`. Defaults to 1 (no reduction).
+   *
+   * Passed in rather than derived here from a timestamp: the guardrail exempts
+   * duplicates that were planned in advance, so the surviving fraction is not a
+   * function of the time gap alone. `antiSpamKeepFor` below is still the table
+   * that fraction comes from — ECO-02 decides *whether* to consult it.
+   */
+  antiSpamKeep?: number;
   /** What ECO-03 says has already been banked today. */
   earnedToday?: DailyEarnings;
   /**
@@ -316,10 +335,7 @@ export function calculateReward(input: RewardInput): RewardBreakdown {
   const streakBonus = streakBonusFor(input.streak ?? 0);
   const afterStreak = applyStreakBonus(afterEfficiency, input.streak ?? 0);
 
-  const antiSpamKeep = antiSpamKeepFor(
-    input.lastSameTitleCompletionAt,
-    input.completedAt,
-  );
+  const antiSpamKeep = input.antiSpamKeep ?? 1;
   const afterAntiSpam = applyAntiSpam(afterStreak, antiSpamKeep);
 
   const capped = applyDailyCap(afterAntiSpam, input.earnedToday);

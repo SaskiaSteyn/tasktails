@@ -105,7 +105,7 @@
 
 | # | Requirement |
 |---|-------------|
-| NFR-TASK-1 | **Anti-spam guardrail** — if a user completes a task with the same title within 24 h of a prior completion, the reward is reduced to 50% coins/XP. Within 48 h: 25%. Within 72 h: 10%. Minimum floor: 1 coin, 1 XP. |
+| NFR-TASK-1 | **Anti-spam guardrail** — if a user completes a task with the same title within 24 h of a prior completion, the reward is reduced to 50% coins/XP. Within 48 h: 25%. Within 72 h: 10%. Minimum floor: 1 coin, 1 XP. Titles are matched on a normalised key (trimmed, whitespace-collapsed, lowercased), so capitalisation and spacing cannot evade the check. **Two exemptions** (ECO-02, added after the rule as first written was found to punish honest planning): a duplicate that *already existed* when its title was last completed keeps its full reward, because a task created before the reward was seen was planned rather than spawned in response to it; that exemption lapses after 3 completions of the same title in one calendar day, so a single large batch of identical tasks cannot buy unlimited full rewards. The floor never *raises* a reward — a task already reduced to 0 coins by lateness stays at 0, or a repeat would pay more than a single completion. |
 | NFR-TASK-2 | **Daily cap** — a user may earn a maximum of 300 coins and 500 XP per day across all tasks |
 | NFR-TASK-3 | **A/B group isolation** — Group A users must never see false urgency indicators; Group B users must always see them in the store. Assignment must be enforced server-side |
 

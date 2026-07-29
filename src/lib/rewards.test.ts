@@ -180,7 +180,7 @@ describe("calculateReward", () => {
       dueDate: at(2026, 7, 21),
       completedAt: at(2026, 7, 20, 12), // early: 44 coins
       streak: 7, // +20%: 53 coins
-      lastSameTitleCompletionAt: at(2026, 7, 20, 6), // 6 h ago: keep 50%
+      antiSpamKeep: 0.5, // ECO-02 graded it a repeat
       earnedToday: { coins: 0, xp: 0 },
     });
 

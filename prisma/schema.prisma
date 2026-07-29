@@ -67,6 +67,17 @@ model Task {
 
   title String
 
+  /// Normalised copy of `title` — trimmed, inner whitespace collapsed,
+  /// lowercased — written by `src/lib/tasks.ts` and never shown to anyone.
+  ///
+  /// The anti-spam guardrail (ECO-02) matches on this rather than on `title`
+  /// because it has to catch the same task typed slightly differently: without
+  /// it, "Reply  to email" and "reply to email" are separate tasks to Postgres
+  /// and the guardrail is defeated by a stray space. A stored key rather than a
+  /// query-time expression so the match is an indexed equality, not an ILIKE
+  /// scan of every task the participant owns.
+  titleKey String
+
   /// Self-reported tier 1-5 (Trivial/Small/Medium/Large/Epic) — see
   /// economy_system.md's tier table. Trusted input; the anti-spam guardrail
   /// (ECO-02) is the only check against abuse (Requirements §3.2).
@@ -76,6 +87,11 @@ model Task {
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   subtasks    Subtask[]
+
+  /// ECO-02's two lookups: the last completion of a title, and how many times
+  /// it has been completed today. Both filter userId + titleKey and order or
+  /// range on completedAt.
+  @@index([userId, titleKey, completedAt])
 }
 
 /// INF-03.
