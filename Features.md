@@ -78,7 +78,7 @@
 
 | # | Feature | Type | Status |
 |---|---------|------|--------|
-| ECO-01 | Reward calculation service — base coins/XP from complexity tier, apply efficiency modifier (±% for early/late), apply streak bonus, apply anti-spam reduction, apply daily cap check | Backend | To Do |
+| ECO-01 | Reward calculation service — base coins/XP from complexity tier, apply efficiency modifier (±% for early/late), apply streak bonus, apply anti-spam reduction, apply daily cap check | Backend | Done — `src/lib/rewards.ts`. Pure arithmetic; the two DB-backed inputs (last same-title completion, today's earnings) are parameters supplied by ECO-02/ECO-03 |
 | ECO-02 | Anti-spam check — query last completion of same task title within 72 h; apply tiered reward reduction (50% / 25% / 10%) | Backend | To Do |
 | ECO-03 | Daily cap enforcement — reject coin/XP earnings above 300 coins and 500 XP per calendar day | Backend | To Do |
 | ECO-04 | Streak service — detect if today is a streak day; update streak counter; calculate and apply streak coin bonus (10% / 20% / 35%) | Backend | To Do |
