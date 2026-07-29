@@ -5,20 +5,22 @@ import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
 import { DatePicker } from "@/components/tasks/date-picker";
+import { SubtaskList } from "@/components/tasks/subtask-list";
 import { TierSelect } from "@/components/tasks/tier-select";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 import { taskTier, type TaskTier } from "@/lib/task-tiers";
-import type { Task } from "@/lib/tasks";
+import type { TaskWithSubtasks } from "@/lib/tasks";
 
 /**
  * TASK-03 — task detail / edit screen. Pre-filled title, due date,
- * complexity, and a reward footer with delete + save.
+ * complexity, subtask list (SUB-01), and a reward footer with delete + save.
  *
- * Subtasks are deliberately not on this screen — SUB-01/02/03 (list, add,
- * complete) are separate, unbuilt tickets, and a partial read-only subtask
- * list was ruled a worse middle ground than none at all.
+ * The subtask list is read-only here — adding one (SUB-02/04) and completing
+ * one (SUB-03/05) are separate, unbuilt tickets, so "+ Add" is an inert label
+ * and each row's checkbox just reflects `completedAt`, the same stub pattern
+ * TASK-02's create sheet used ahead of TASK-08.
  *
  * Save `PATCH`es TASK-09's `/api/tasks/[id]` for real (wired the same day
  * that ticket shipped) and returns to `/tasks` on success — the fresh
@@ -31,7 +33,7 @@ import type { Task } from "@/lib/tasks";
  * onboarding username step, now actually removes the task on confirm and
  * returns to `/tasks` rather than stopping on a notice.
  */
-export function EditTaskForm({ task }: { task: Task }) {
+export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
   const router = useRouter();
   const formId = useId();
   const titleFieldId = useId();
@@ -161,6 +163,10 @@ export function EditTaskForm({ task }: { task: Task }) {
             COMPLEXITY
           </div>
           <TierSelect value={tier} onChange={setTier} labelledBy={tierLabelId} />
+        </div>
+
+        <div className="mb-4">
+          <SubtaskList subtasks={task.subtasks} parentCoins={reward.coins} />
         </div>
       </form>
 

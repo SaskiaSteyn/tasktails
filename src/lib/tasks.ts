@@ -1,4 +1,4 @@
-import type { Task } from "@/generated/prisma/client";
+import type { Subtask, Task } from "@/generated/prisma/client";
 
 import { startOfDay, startOfNextDay } from "@/lib/day";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +14,9 @@ import { ANTI_SPAM_WINDOW_HOURS } from "@/lib/rewards";
  */
 
 export type { Task };
+
+/** A task with its subtasks attached (SUB-01's read shape for the edit screen). */
+export type TaskWithSubtasks = Task & { subtasks: Subtask[] };
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -38,12 +41,18 @@ export async function tasksForUser(userId: string): Promise<Task[]> {
  * id doesn't exist and when it belongs to someone else — the caller can't
  * tell the difference, which is the point: confirming a task id belongs to
  * another user is its own information leak.
+ *
+ * Includes subtasks (SUB-01) ordered by id — cuid ids are k-sortable, so this
+ * reads as creation order without a separate `createdAt` column on `Subtask`.
  */
 export async function taskForUser(
   userId: string,
   taskId: string,
-): Promise<Task | null> {
-  return prisma.task.findFirst({ where: { id: taskId, userId } });
+): Promise<TaskWithSubtasks | null> {
+  return prisma.task.findFirst({
+    where: { id: taskId, userId },
+    include: { subtasks: { orderBy: { id: "asc" } } },
+  });
 }
 
 /**
