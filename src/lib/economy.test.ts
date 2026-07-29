@@ -4,10 +4,14 @@ import {
   antiSpamCheck,
   dailyAllowanceOf,
   grantEarnings,
+  levelUpBetween,
   nextStreak,
   recordStreakDay,
   reduceForRepeats,
+  syncLevel,
+  xpWrite,
 } from "@/lib/economy";
+import { levelForXp } from "@/lib/levels";
 import { prismaMock } from "@/test/prisma-mock";
 
 /**
@@ -501,5 +505,181 @@ describe("recordStreakDay", () => {
 
     expect(await recordStreakDay("ghost", now)).toBeNull();
     expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * ECO-05 — level-up against INF-21's threshold table. The curve hands out
+ * levels 2–5 inside a first session (§3.6), so crossing several thresholds on
+ * one completion is the normal case here, not an edge case.
+ */
+describe("levelUpBetween", () => {
+  it("returns null when no threshold was crossed", () => {
+    expect(levelUpBetween(20, 30)).toBeNull();
+    expect(levelUpBetween(0, 7)).toBeNull();
+  });
+
+  it("reports a single crossing", () => {
+    const event = levelUpBetween(0, 8);
+
+    expect(event).toEqual({
+      from: 1,
+      to: 2,
+      levelsGained: [2],
+      xp: 8,
+      isMaxLevel: false,
+    });
+  });
+
+  it("lists every level when one completion crosses several", () => {
+    // Requirements §3.6's first-session simulation: 1 trivial + 2 small = 48 XP.
+    // That reaches level 4 (threshold 35), not level 5 (55) as the document
+    // originally claimed — the example was arithmetically wrong and has been
+    // corrected there.
+    const event = levelUpBetween(0, 48);
+
+    expect(event?.to).toBe(4);
+    expect(event?.levelsGained).toEqual([2, 3, 4]);
+
+    // A fourth small task is what actually reaches level 5.
+    expect(levelUpBetween(48, 68)?.to).toBe(5);
+  });
+
+  it("flags the top of the curve", () => {
+    const event = levelUpBetween(1400, 2000);
+
+    expect(event?.to).toBe(10);
+    expect(event?.isMaxLevel).toBe(true);
+  });
+
+  it("never reports a level-up for XP that did not move or went backwards", () => {
+    expect(levelUpBetween(55, 55)).toBeNull();
+    expect(levelUpBetween(200, 55)).toBeNull();
+  });
+});
+
+describe("grantEarnings level-up", () => {
+  const now = new Date(2026, 6, 20, 14, 0);
+
+  beforeEach(() => {
+    prismaMock.$transaction.mockImplementation(
+      (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
+    );
+    prismaMock.userEconomy.update.mockResolvedValue({
+      dailyCoinsEarned: 0,
+      dailyXpEarned: 0,
+      dailyCapResetAt: now,
+    } as never);
+  });
+
+  it("reports the crossing and writes the derived level in the same update", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      { xp: 0, dailyCoinsEarned: 0, dailyXpEarned: 0, dailyCapResetAt: now },
+    ]);
+
+    const grant = await grantEarnings("user-1", { coins: 35, xp: 45 }, now);
+
+    expect(grant?.levelUp?.from).toBe(1);
+    expect(grant?.levelUp?.to).toBe(4);
+    expect(grant?.levelUp?.levelsGained).toEqual([2, 3, 4]);
+
+    const data = prismaMock.userEconomy.update.mock.calls[0][0]
+      .data as never as { level: number };
+    expect(data.level).toBe(4);
+  });
+
+  it("reports no level-up when the grant does not reach a threshold", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      { xp: 60, dailyCoinsEarned: 0, dailyXpEarned: 0, dailyCapResetAt: now },
+    ]);
+
+    const grant = await grantEarnings("user-1", { coins: 5, xp: 8 }, now);
+
+    expect(grant?.levelUp).toBeNull();
+  });
+
+  it("levels off the capped XP, not the XP the task was worth", async () => {
+    // 495 XP already banked: the cap lets 5 through, which is not enough to
+    // reach level 2 from 0. A level-up computed off the uncapped 200 would be
+    // a threshold the participant never actually crossed.
+    prismaMock.$queryRaw.mockResolvedValue([
+      { xp: 0, dailyCoinsEarned: 0, dailyXpEarned: 495, dailyCapResetAt: now },
+    ]);
+
+    const grant = await grantEarnings("user-1", { coins: 150, xp: 200 }, now);
+
+    expect(grant?.granted.xp).toBe(5);
+    expect(grant?.levelUp).toBeNull();
+  });
+});
+
+describe("syncLevel", () => {
+  it("repairs a stale level column", async () => {
+    prismaMock.userEconomy.findUnique.mockResolvedValue({
+      xp: 220,
+      level: 3,
+    } as never);
+
+    const result = await syncLevel("user-1");
+
+    expect(result).toEqual({ level: 6, corrected: true });
+    expect(prismaMock.userEconomy.update).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      data: { level: 6 },
+    });
+  });
+
+  it("writes nothing when the column already agrees with the XP", async () => {
+    prismaMock.userEconomy.findUnique.mockResolvedValue({
+      xp: 220,
+      level: 6,
+    } as never);
+
+    const result = await syncLevel("user-1");
+
+    expect(result).toEqual({ level: 6, corrected: false });
+    expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
+  });
+
+  it("returns null when the account has no economy row", async () => {
+    prismaMock.userEconomy.findUnique.mockResolvedValue(null);
+
+    expect(await syncLevel("ghost")).toBeNull();
+  });
+});
+
+/**
+ * The invariant behind ECO-05's denormalised `level` column: XP and level are
+ * written together or not at all. Asserted directly, because a stale level is
+ * silent — the header derives its level from `xp` and looks correct while the
+ * store's level gate withholds items the participant has earned.
+ */
+describe("xpWrite", () => {
+  it("always pairs the XP increment with the level that XP earns", () => {
+    for (const [before, delta] of [
+      [0, 8],
+      [0, 200],
+      [48, 20],
+      [1990, 10],
+      [500, 0],
+    ] as const) {
+      const write = xpWrite(before, delta);
+
+      expect(write.data.xp).toEqual({ increment: delta });
+      expect(write.data.level).toBe(levelForXp(before + delta));
+    }
+  });
+
+  it("reports the crossing that the same write represents", () => {
+    expect(xpWrite(0, 8).levelUp?.to).toBe(2);
+    expect(xpWrite(0, 7).levelUp).toBeNull();
+    expect(xpWrite(48, 20).levelUp?.levelsGained).toEqual([5]);
+  });
+
+  it("never derives a level from a negative total", () => {
+    const write = xpWrite(10, -50);
+
+    expect(write.xpAfter).toBe(0);
+    expect(write.data.level).toBe(1);
   });
 });

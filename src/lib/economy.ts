@@ -6,7 +6,12 @@ import {
   startOfDay,
   startOfNextDay,
 } from "@/lib/day";
-import { levelProgress, type LevelProgress } from "@/lib/levels";
+import {
+  levelForXp,
+  levelProgress,
+  MAX_LEVEL,
+  type LevelProgress,
+} from "@/lib/levels";
 import { prisma } from "@/lib/prisma";
 import {
   antiSpamKeepFor,
@@ -202,6 +207,113 @@ export async function reduceForRepeats(
   return { reward: applyAntiSpam(reward, check.keep), check };
 }
 
+/** A threshold crossing, for the toast ECO-07 raises. */
+export type LevelUpEvent = {
+  /** Level before the XP landed. */
+  from: number;
+  /** Level after it. Always greater than `from`. */
+  to: number;
+  /**
+   * Every level reached, in order — `[2, 3, 4, 5]` when one completion crosses
+   * four thresholds at once, which the hockey-stick curve makes routine in a
+   * participant's first session (§3.6). A toast that only knew `to` would
+   * silently swallow the three levels in between.
+   */
+  levelsGained: number[];
+  /** Cumulative XP after the grant. */
+  xp: number;
+  /** True when `to` is the top of the curve and there is nothing left to reach. */
+  isMaxLevel: boolean;
+};
+
+/**
+ * The threshold crossing between two XP totals, or null if none (ECO-05).
+ *
+ * Pure — the table is INF-21's `levelForXp`, consulted here rather than copied.
+ * Both places that add XP (task completion and ECO-06's coin conversion) run
+ * through this, so there is one definition of "levelled up".
+ */
+export function levelUpBetween(
+  xpBefore: number,
+  xpAfter: number,
+): LevelUpEvent | null {
+  const from = levelForXp(Math.max(0, xpBefore));
+  const to = levelForXp(Math.max(0, xpAfter));
+  if (to <= from) return null;
+
+  return {
+    from,
+    to,
+    levelsGained: Array.from({ length: to - from }, (_, i) => from + 1 + i),
+    xp: Math.max(0, xpAfter),
+    isMaxLevel: to >= MAX_LEVEL,
+  };
+}
+
+/**
+ * The one way `xp` is ever written (ECO-05).
+ *
+ * Returns the `xp`/`level` half of an update together with the event that
+ * change represents, so a caller physically cannot move XP without moving the
+ * level with it. `grantEarnings` and ECO-06's coin conversion both go through
+ * here.
+ *
+ * This exists because a stale `level` column is *silent*: the header derives
+ * its level from `xp` and would look perfectly correct, while the store's
+ * level gate quietly withheld items the participant had earned. A bug with no
+ * visible symptom in a study instrument is worth a little structure to prevent.
+ *
+ * `xpBefore` must have been read under the transaction's row lock — the
+ * increment is relative, but the level is absolute, so an unlocked read would
+ * compute the new level from a total that has already moved.
+ */
+export function xpWrite(
+  xpBefore: number,
+  deltaXp: number,
+): {
+  data: { xp: { increment: number }; level: number };
+  xpAfter: number;
+  levelUp: LevelUpEvent | null;
+} {
+  const xpAfter = Math.max(0, xpBefore + deltaXp);
+
+  return {
+    data: { xp: { increment: deltaXp }, level: levelForXp(xpAfter) },
+    xpAfter,
+    levelUp: levelUpBetween(xpBefore, xpAfter),
+  };
+}
+
+/**
+ * Re-derives the stored `level` column from `xp`.
+ *
+ * The column is a denormalised copy: `snapshotOf` deliberately ignores it and
+ * computes the level from `xp` so the header's level disc and XP bar can never
+ * disagree. What the column is actually for is SQL-side filtering — the store's
+ * level gates (§3.7) want `WHERE "levelRequired" <= "level"` rather than every
+ * item pulled into the app to be filtered in memory.
+ *
+ * Because nothing *reads* it for display, a stale value is silent, so this
+ * exists to repair one. Normal writes keep it in step themselves.
+ *
+ * Returns null when the account has no economy row.
+ */
+export async function syncLevel(
+  userId: string,
+): Promise<{ level: number; corrected: boolean } | null> {
+  const economy = await prisma.userEconomy.findUnique({
+    where: { userId },
+    select: { xp: true, level: true },
+  });
+  if (!economy) return null;
+
+  const level = levelForXp(economy.xp);
+  if (level === economy.level) return { level, corrected: false };
+
+  await prisma.userEconomy.update({ where: { userId }, data: { level } });
+  return { level, corrected: true };
+}
+
 /** What NFR-TASK-2 allows in a day. */
 export const DAILY_CAPS: Reward = { coins: DAILY_COIN_CAP, xp: DAILY_XP_CAP };
 
@@ -284,6 +396,8 @@ export async function dailyAllowanceFor(
 export type EarningsGrant = CappedReward & {
   /** What is left of the cap *after* this grant. */
   allowance: DailyAllowance;
+  /** Set when the granted XP crossed a threshold (ECO-05). Null otherwise. */
+  levelUp: LevelUpEvent | null;
   /** The row as it now stands. */
   economy: UserEconomy;
 };
@@ -313,8 +427,8 @@ export async function grantEarnings(
   now: Date = new Date(),
 ): Promise<EarningsGrant | null> {
   return prisma.$transaction(async (tx) => {
-    const locked = await tx.$queryRaw<DailyCounters[]>`
-      SELECT "dailyCoinsEarned", "dailyXpEarned", "dailyCapResetAt"
+    const locked = await tx.$queryRaw<(DailyCounters & { xp: number })[]>`
+      SELECT "xp", "dailyCoinsEarned", "dailyXpEarned", "dailyCapResetAt"
       FROM "UserEconomy"
       WHERE "userId" = ${userId}
       FOR UPDATE`;
@@ -326,14 +440,20 @@ export async function grantEarnings(
     const before = dailyAllowanceOf(counters, now);
     const capped = applyDailyCap(reward, before.earned);
 
+    // ECO-05 inside the same statement rather than a second write: the level
+    // column is derived from the XP being written in this very update, so a
+    // separate follow-up write would leave a window where the two disagree —
+    // and would need its own lock to be safe.
+    const xp = xpWrite(counters.xp, capped.granted.xp);
+
     // A stale row is rewritten rather than incremented — the stored numbers
     // belong to a day that has ended, so adding to them would carry yesterday's
     // earnings into today's cap.
     const economy = await tx.userEconomy.update({
       where: { userId },
       data: {
+        ...xp.data,
         coins: { increment: capped.granted.coins },
-        xp: { increment: capped.granted.xp },
         dailyCoinsEarned: stale
           ? capped.granted.coins
           : { increment: capped.granted.coins },
@@ -344,7 +464,12 @@ export async function grantEarnings(
       },
     });
 
-    return { ...capped, allowance: dailyAllowanceOf(economy, now), economy };
+    return {
+      ...capped,
+      allowance: dailyAllowanceOf(economy, now),
+      levelUp: xp.levelUp,
+      economy,
+    };
   });
 }
 

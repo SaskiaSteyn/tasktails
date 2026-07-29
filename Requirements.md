@@ -198,7 +198,9 @@ Designed with a **hockey-stick curve**: Levels 1–5 arrive within a single firs
 | 9 | 1,400 | Day 9–10 |
 | 10 | 2,000 | Day 13–14 (aspirational end-goal) |
 
-**First-session simulation**: 3 tasks (1 trivial + 2 small = 8 + 20 + 20 = 48 XP) → user hits Levels 2, 3, 4, and 5 in a single sitting.
+**First-session simulation**: 3 tasks (1 trivial + 2 small = 8 + 20 + 20 = 48 XP) → user hits Levels 2, 3 and 4 in a single sitting. A fourth small task (68 XP) reaches Level 5.
+
+> Corrected during ECO-05: this example previously claimed 48 XP reached Level 5. It does not — Level 5 needs 55 XP, so 48 lands on Level 4. The threshold table above is unchanged and remains authoritative; only the worked example was wrong. Four tasks, not three, get a participant to Level 5 in their first sitting.
 
 **Study-range summary**: Low performers (~2 tasks/day) reach Level 7–8. Average performers (~5 tasks/day) reach Level 10 by study end. High performers (~8 tasks/day, larger tasks) reach Level 10 by day 9–10.
 
