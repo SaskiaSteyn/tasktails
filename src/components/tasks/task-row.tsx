@@ -2,7 +2,6 @@
 
 import { Check } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 import { Coin } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
@@ -14,21 +13,17 @@ import { taskTier, type TaskTier } from "@/lib/task-tiers";
  * Dashboard frame's task row (`design_handoff/TaskTails Screens.dc.html`).
  *
  * Two separate tap targets rather than the mock's whole-row toggle: the
- * checkbox completes/uncompletes in place, and the rest of the row (title
- * through the coin figure) links to the edit screen (TASK-03). The mock
- * only has one interaction to place, tap-anywhere-to-complete; this row has
- * two real ones now, and giving each its own target beats one stealing the
- * other's.
+ * checkbox completes in place, and the rest of the row (title through the
+ * coin figure) links to the edit screen (TASK-03). The mock only has one
+ * interaction to place, tap-anywhere-to-complete; this row has two real
+ * ones now, and giving each its own target beats one stealing the other's.
  *
- * TASK-11 (`POST /api/tasks/[id]/complete`) doesn't exist, and neither does
- * the ECO-01..05 chain it would call — so the checkbox toggles and plays the
- * reward animation for real, but nothing is persisted. `onToggle` mutates
- * local state one level up (`TaskList`), which also owns the one honest
- * "not saved" notice for the whole list rather than one per row.
- *
- * The coin/XP value shown, here and in the reward pop, is the tier's *base*
- * reward (economy_system.md) — the real payout depends on ECO-01's
- * efficiency/streak modifiers, which don't run without TASK-11.
+ * The checkbox completes for real via TASK-11 and is **forward-only** —
+ * once `done`, it's disabled rather than toggling back (see TASK-11's own
+ * file for why there's no un-complete). `TaskList` owns the fetch, the
+ * pending/celebration state, and the actual granted reward; this component
+ * is purely presentational about completion, same as it always was about
+ * everything else.
  */
 
 /** `--color-tier-*` tokens, at the README's "13% alpha bg" for the badge fill. */
@@ -51,41 +46,37 @@ export function TaskRow({
   dueDate,
   complexityTier,
   done,
-  onToggle,
+  pending,
+  celebrationReward,
+  onComplete,
 }: {
   id: string;
   title: string;
   dueDate: Date | null;
   complexityTier: number;
   done: boolean;
-  onToggle: () => void;
+  /** This row's completion request is in flight — disables the checkbox. */
+  pending: boolean;
+  /** The real granted amount from TASK-11's response, while the pop plays. */
+  celebrationReward: { coins: number; xp: number } | null;
+  onComplete: () => void;
 }) {
   const tier = taskTier(complexityTier);
-  const [celebrate, setCelebrate] = useState(false);
-
-  useEffect(() => {
-    if (!celebrate) return;
-    const timer = setTimeout(() => setCelebrate(false), 900);
-    return () => clearTimeout(timer);
-  }, [celebrate]);
-
-  function handleToggle() {
-    if (!done) setCelebrate(true);
-    onToggle();
-  }
 
   return (
     <li className="flex items-center gap-[11px] rounded-card border border-border-track bg-warm px-[12px] py-[11px]">
       <span className="relative flex-none">
         <button
           type="button"
-          onClick={handleToggle}
+          onClick={onComplete}
+          disabled={done || pending}
           aria-pressed={done}
-          aria-label={done ? `Mark "${title}" as not done` : `Mark "${title}" as done`}
+          aria-label={done ? `"${title}" is done` : `Mark "${title}" as done`}
           className={cn(
             "flex size-[22px] items-center justify-center rounded-full transition-transform duration-300 ease-out",
             done ? "bg-sage" : "border-2 border-checkbox hover:border-ink-disabled",
-            celebrate && "scale-125",
+            pending && "opacity-60",
+            celebrationReward && "scale-125",
           )}
         >
           {done ? (
@@ -93,12 +84,12 @@ export function TaskRow({
           ) : null}
         </button>
 
-        {celebrate ? (
+        {celebrationReward ? (
           <span
             aria-hidden
             className="pointer-events-none absolute top-1/2 left-1/2 [animation:task-reward-float_900ms_ease-out_forwards] text-[11px] font-extrabold whitespace-nowrap text-sage-text"
           >
-            +{tier.coins} · +{tier.xp} XP
+            +{celebrationReward.coins} · +{celebrationReward.xp} XP
           </span>
         ) : null}
       </span>

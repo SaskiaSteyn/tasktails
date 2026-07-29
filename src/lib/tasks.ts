@@ -148,6 +148,31 @@ export async function deleteTask(
   return count > 0;
 }
 
+/**
+ * Marks a task complete, scoped to its owner (TASK-11). `completedAt: null`
+ * in the `where` clause, not just a pre-check in the caller, is what makes
+ * this the actual guard against completing the same task twice — two
+ * requests racing each other both pass a "not complete yet" pre-check, but
+ * only one of them matches this `updateMany`'s where clause, since the
+ * first one's write has already flipped `completedAt` by the time the
+ * second reaches the database. Returns null (not completed) rather than
+ * throwing, so the caller can't double-grant a reward for a task that was
+ * already done — completing it forward-only, with no un-complete, keeps
+ * that guarantee simple to reason about.
+ */
+export async function markTaskComplete(
+  userId: string,
+  taskId: string,
+  completedAt: Date,
+): Promise<Task | null> {
+  const { count } = await prisma.task.updateMany({
+    where: { id: taskId, userId, completedAt: null },
+    data: { completedAt },
+  });
+
+  return count === 0 ? null : taskForUser(userId, taskId);
+}
+
 /** The shared filter behind both anti-spam lookups. */
 function sameTitleFilter(userId: string, titleKey: string, excludeTaskId?: string) {
   return {

@@ -1,58 +1,112 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import {
+  useLevelUp,
+  type LevelUpEventLike,
+} from "@/components/economy/level-up-provider";
 import { EmptyTasksState } from "@/components/tasks/empty-tasks-state";
 import { TaskRow } from "@/components/tasks/task-row";
 import type { Task } from "@/lib/tasks";
 
+/** The pieces of TASK-11's response this component actually reads. */
+type CompleteResponse = {
+  task: { completedAt: string };
+  reward: { granted: { coins: number; xp: number } } | null;
+  levelUp: LevelUpEventLike | null;
+  error?: string;
+};
+
 /**
  * TASK-01/TASK-05 — the task list, its empty state (`EmptyTasksState`,
- * SHR-04's design, built as part of TASK-01), and completion toggling.
+ * SHR-04's design, built as part of TASK-01), and completion.
  *
- * Completion state is local-only (`useState` seeded from the server-rendered
- * `tasks` prop) — TASK-11 doesn't exist, so there's nowhere to persist a
- * toggle. Reloading the page reverts to what's actually in the database.
- * Toggled rows deliberately don't re-sort to the bottom: TASK-01's ordering
- * is a server-side concern (`tasksForUser`), and jumping a row around the
- * list for a change that isn't even saved would be a strange thing to watch.
+ * Completing `POST`s TASK-11's `/api/tasks/[id]/complete` for real. There is
+ * no un-complete — TASK-11 is forward-only (see its own file for why), so a
+ * completed row's checkbox is disabled rather than toggling back.
+ * `router.refresh()` on success re-runs `tasksForUser()` *and*
+ * `currentEconomy()` for the header, so a completion updates the coin/XP/
+ * streak the participant sees without a second round trip of its own.
  *
- * Re-synced from `initialTasks` whenever that prop changes (adjusted during
- * render, not an effect — same pattern as `CreateTaskSheet`'s reset-on-open)
- * — TASK-08's create sheet calls `router.refresh()` on success, which
- * re-runs `tasksForUser()` and passes a new array down here. A stale local
- * toggle losing to that fresh fetch is correct: it was never saved either.
+ * The reward pop shows the *actual* granted amount from the response, not
+ * the tier's base figure `TaskRow` shows on the row itself — efficiency,
+ * streak, anti-spam and the daily cap can all move it, and showing the base
+ * number would be a small lie at the exact moment a participant is meant to
+ * trust the number most.
  *
- * One shared "not saved" notice for the whole list, not one per row — a
- * banner beside every row you tap would compete with the list itself for
- * attention far more than the single-instance notices TASK-02/03 show on
- * their own forms.
+ * A level-up crossing goes straight to ECO-07's `useLevelUp().celebrate()`
+ * — the provider is a no-op queue if the event is null, so this is safe to
+ * call on every completion rather than needing its own guard.
  */
 export function TaskList({ tasks: initialTasks }: { tasks: Task[] }) {
-  const [tasks, setTasks] = useState(initialTasks);
-  const [showNotice, setShowNotice] = useState(false);
+  const router = useRouter();
+  const { celebrate } = useLevelUp();
 
+  const [tasks, setTasks] = useState(initialTasks);
   const [syncedFrom, setSyncedFrom] = useState(initialTasks);
   if (initialTasks !== syncedFrom) {
     setSyncedFrom(initialTasks);
     setTasks(initialTasks);
   }
 
-  useEffect(() => {
-    if (!showNotice) return;
-    const timer = setTimeout(() => setShowNotice(false), 3000);
-    return () => clearTimeout(timer);
-  }, [showNotice]);
+  const [completingId, setCompletingId] = useState<string | null>(null);
+  const [celebration, setCelebration] = useState<{
+    taskId: string;
+    coins: number;
+    xp: number;
+  } | null>(null);
+  const [error, setError] = useState<string>();
 
-  function handleToggle(taskId: string) {
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === taskId
-          ? { ...task, completedAt: task.completedAt ? null : new Date() }
-          : task,
-      ),
-    );
-    setShowNotice(true);
+  useEffect(() => {
+    if (!celebration) return;
+    const timer = setTimeout(() => setCelebration(null), 900);
+    return () => clearTimeout(timer);
+  }, [celebration]);
+
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => setError(undefined), 4000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
+  async function handleComplete(taskId: string) {
+    setCompletingId(taskId);
+    setError(undefined);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/complete`, {
+        method: "POST",
+      });
+      const body = (await response.json()) as CompleteResponse;
+
+      if (!response.ok) {
+        setError(body.error ?? "Couldn't complete the task. Try again.");
+        return;
+      }
+
+      setTasks((current) =>
+        current.map((task) =>
+          task.id === taskId
+            ? { ...task, completedAt: new Date(body.task.completedAt) }
+            : task,
+        ),
+      );
+
+      if (body.reward) {
+        setCelebration({
+          taskId,
+          coins: body.reward.granted.coins,
+          xp: body.reward.granted.xp,
+        });
+      }
+      celebrate(body.levelUp);
+      router.refresh();
+    } catch {
+      setError("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setCompletingId(null);
+    }
   }
 
   if (tasks.length === 0) return <EmptyTasksState />;
@@ -72,18 +126,23 @@ export function TaskList({ tasks: initialTasks }: { tasks: Task[] }) {
             dueDate={task.dueDate}
             complexityTier={task.complexityTier}
             done={task.completedAt !== null}
-            onToggle={() => handleToggle(task.id)}
+            pending={completingId === task.id}
+            celebrationReward={
+              celebration?.taskId === task.id
+                ? { coins: celebration.coins, xp: celebration.xp }
+                : null
+            }
+            onComplete={() => handleComplete(task.id)}
           />
         ))}
       </ul>
 
-      {showNotice ? (
+      {error ? (
         <p
-          role="status"
-          className="mt-3 flex-none text-center text-[11px] text-ink-soft"
+          role="alert"
+          className="mt-3 flex-none text-center text-[11px] font-bold text-urgency-text"
         >
-          Completing a task isn&apos;t connected yet (TASK-11) — this won&apos;t
-          be saved.
+          {error}
         </p>
       ) : null}
     </div>
