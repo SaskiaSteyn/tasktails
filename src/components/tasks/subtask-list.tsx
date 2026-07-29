@@ -2,16 +2,24 @@
 
 import { Check, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
+import { useLevelUp } from "@/components/economy/level-up-provider";
 import { cn } from "@/lib/cn";
 import type { Subtask } from "@/generated/prisma/client";
 
+/** The pieces of SUB-05's response this component actually reads. */
+type CompleteResponse = {
+  reward: { granted: { coins: number; xp: number } } | null;
+  levelUp: Parameters<ReturnType<typeof useLevelUp>["celebrate"]>[0];
+  error?: string;
+};
+
 /**
- * SUB-01/02/04 — subtask list on the task edit screen. Matches the "Task
- * detail / edit" frame's SUBTASKS block: `bg-warm` rows, 18px completion
- * circle, strikethrough title once done, coin share on the right, "+ Add"
- * above.
+ * SUB-01/02/03/04/05 — subtask list on the task edit screen. Matches the
+ * "Task detail / edit" frame's SUBTASKS block: `bg-warm` rows, 18px
+ * completion circle, strikethrough title once done, coin share on the
+ * right, "+ Add" above.
  *
  * The list has no fixed height and simply grows with `subtasks.length`,
  * which is what the ticket's "expandable" means here — the mock has no
@@ -24,14 +32,15 @@ import type { Subtask } from "@/generated/prisma/client";
  * is how the new row shows up; the input closes rather than staying open,
  * since there's nothing left to fix once the add actually worked.
  *
- * Each incomplete row's checkbox (SUB-03) is a real, forward-only button —
- * same "no un-complete" rule TASK-05/11 uses, so a done row's checkbox is
- * disabled rather than toggling back. **No
- * `POST /api/tasks/[id]/subtasks/[subId]/complete` yet** — SUB-05 is a
- * separate, unbuilt ticket, so a click doesn't attempt a fetch at all (same
- * "don't call an endpoint that doesn't exist" decision TASK-02 made ahead of
- * TASK-08); it just surfaces the "not connected yet (SUB-05)" notice below
- * the list.
+ * Each incomplete row's checkbox (SUB-03) `POST`s SUB-05's
+ * `/api/tasks/[id]/subtasks/[subId]/complete` for real, same "wired the
+ * same day" convention. **Forward-only**, same rule as TASK-05/11 — a done
+ * row's checkbox is disabled rather than toggling back. `router.refresh()`
+ * on success updates the row's own `completedAt`/strikethrough *and* the
+ * header's coins/XP/streak from the server (SUB-05's response may also
+ * auto-complete the parent task, SUB-4, which the refreshed page reflects
+ * too). A level-up crossing goes straight to ECO-07's
+ * `useLevelUp().celebrate()`, same as TASK-05.
  *
  * The add control is a plain `div`, not a nested `<form>` — this whole list
  * renders inside `EditTaskForm`'s own `<form>` (TASK-03's save/submit), and
@@ -40,9 +49,11 @@ import type { Subtask } from "@/generated/prisma/client";
  * task and losing the typed subtask title). Enter-to-submit is wired by
  * hand via `onKeyDown` instead of relying on native form submission.
  *
- * The coin figure per existing row is a preview of SUB-03/05's proportional
- * split (`parentCoins / subtasks.length`, floored) — not authoritative;
- * SUB-05's actual grant is server-side.
+ * The coin figure per row is a client-side preview of SUB-05's proportional
+ * split (`parentCoins / subtasks.length`, floored) — not authoritative,
+ * since efficiency/streak/cap can move the real grant. The reward pop that
+ * briefly replaces it on completion shows the *actual* granted amount from
+ * the response instead, same reasoning as `TaskRow`'s.
  */
 export function SubtaskList({
   taskId,
@@ -54,6 +65,7 @@ export function SubtaskList({
   parentCoins: number;
 }) {
   const router = useRouter();
+  const { celebrate } = useLevelUp();
   const inputId = useId();
   const errorId = useId();
 
@@ -62,10 +74,29 @@ export function SubtaskList({
   const [titleError, setTitleError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
-  const [completeNotice, setCompleteNotice] = useState<string>();
+
+  const [completingId, setCompletingId] = useState<string | null>(null);
+  const [celebration, setCelebration] = useState<{
+    subtaskId: string;
+    coins: number;
+    xp: number;
+  } | null>(null);
+  const [completeError, setCompleteError] = useState<string>();
 
   const shareCoins =
     subtasks.length > 0 ? Math.floor(parentCoins / subtasks.length) : 0;
+
+  useEffect(() => {
+    if (!celebration) return;
+    const timer = setTimeout(() => setCelebration(null), 900);
+    return () => clearTimeout(timer);
+  }, [celebration]);
+
+  useEffect(() => {
+    if (!completeError) return;
+    const timer = setTimeout(() => setCompleteError(undefined), 4000);
+    return () => clearTimeout(timer);
+  }, [completeError]);
 
   function openAdd() {
     setAdding(true);
@@ -102,10 +133,35 @@ export function SubtaskList({
     }
   }
 
-  function handleComplete() {
-    // SUB-05's `POST .../subtasks/[subId]/complete` doesn't exist yet —
-    // same "don't call it" decision as `handleSubmit()` above.
-    setCompleteNotice("Not connected yet — completing a subtask needs SUB-05.");
+  async function handleComplete(subtaskId: string) {
+    setCompletingId(subtaskId);
+    setCompleteError(undefined);
+    try {
+      const response = await fetch(
+        `/api/tasks/${taskId}/subtasks/${subtaskId}/complete`,
+        { method: "POST" },
+      );
+      const body = (await response.json()) as CompleteResponse;
+
+      if (!response.ok) {
+        setCompleteError(body.error ?? "Couldn't complete the subtask. Try again.");
+        return;
+      }
+
+      if (body.reward) {
+        setCelebration({
+          subtaskId,
+          coins: body.reward.granted.coins,
+          xp: body.reward.granted.xp,
+        });
+      }
+      celebrate(body.levelUp);
+      router.refresh();
+    } catch {
+      setCompleteError("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setCompletingId(null);
+    }
   }
 
   return (
@@ -131,30 +187,38 @@ export function SubtaskList({
         <ul className="flex flex-col gap-[7px]">
           {subtasks.map((subtask) => {
             const done = subtask.completedAt !== null;
+            const pending = completingId === subtask.id;
+            const reward =
+              celebration?.subtaskId === subtask.id
+                ? { coins: celebration.coins, xp: celebration.xp }
+                : null;
             return (
               <li
                 key={subtask.id}
                 className="flex items-center gap-[10px] rounded-[11px] border border-border-track bg-warm px-[11px] py-[9px]"
               >
-                <button
-                  type="button"
-                  onClick={handleComplete}
-                  disabled={done}
-                  aria-pressed={done}
-                  aria-label={
-                    done ? `"${subtask.title}" is done` : `Mark "${subtask.title}" as done`
-                  }
-                  className={cn(
-                    "flex size-[18px] flex-none items-center justify-center rounded-full transition-colors duration-120",
-                    done
-                      ? "bg-sage"
-                      : "border-2 border-checkbox hover:border-ink-disabled",
-                  )}
-                >
-                  {done ? (
-                    <Check size={11} strokeWidth={3} className="text-surface" />
-                  ) : null}
-                </button>
+                <span className="relative flex-none">
+                  <button
+                    type="button"
+                    onClick={() => handleComplete(subtask.id)}
+                    disabled={done || pending}
+                    aria-pressed={done}
+                    aria-label={
+                      done ? `"${subtask.title}" is done` : `Mark "${subtask.title}" as done`
+                    }
+                    className={cn(
+                      "flex size-[18px] items-center justify-center rounded-full transition-colors duration-120",
+                      done
+                        ? "bg-sage"
+                        : "border-2 border-checkbox hover:border-ink-disabled",
+                      pending && "opacity-60",
+                    )}
+                  >
+                    {done ? (
+                      <Check size={11} strokeWidth={3} className="text-surface" />
+                    ) : null}
+                  </button>
+                </span>
                 <span
                   className={cn(
                     "flex-1 text-[12.5px] font-semibold",
@@ -163,18 +227,24 @@ export function SubtaskList({
                 >
                   {subtask.title}
                 </span>
-                <span className="text-[11px] font-extrabold text-amber-text">
-                  {shareCoins}
-                </span>
+                {reward ? (
+                  <span className="text-[11px] font-extrabold whitespace-nowrap text-sage-text">
+                    +{reward.coins} · +{reward.xp} XP
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-extrabold text-amber-text">
+                    {shareCoins}
+                  </span>
+                )}
               </li>
             );
           })}
         </ul>
       )}
 
-      {completeNotice ? (
-        <p role="status" className="mt-[7px] text-[11px] font-bold text-ink-soft">
-          {completeNotice}
+      {completeError ? (
+        <p role="alert" className="mt-[7px] text-[11px] font-bold text-urgency-text">
+          {completeError}
         </p>
       ) : null}
 

@@ -210,6 +210,31 @@ export async function markTaskComplete(
   return count === 0 ? null : taskForUser(userId, taskId);
 }
 
+/**
+ * Marks a subtask complete (SUB-05). `completedAt: null` in the `where`
+ * clause is the same atomic double-completion guard `markTaskComplete()`
+ * uses, for the same reason — two racing requests must not both grant a
+ * reward for the same subtask.
+ *
+ * Scoped by `taskId` rather than `userId` — `Subtask` has no `userId` of its
+ * own, so the caller is responsible for having already confirmed the task
+ * belongs to the signed-in user (`taskForUser()`) before calling this.
+ */
+export async function markSubtaskComplete(
+  taskId: string,
+  subtaskId: string,
+  completedAt: Date,
+): Promise<Subtask | null> {
+  const { count } = await prisma.subtask.updateMany({
+    where: { id: subtaskId, taskId, completedAt: null },
+    data: { completedAt },
+  });
+
+  return count === 0
+    ? null
+    : prisma.subtask.findFirst({ where: { id: subtaskId, taskId } });
+}
+
 /** The shared filter behind both anti-spam lookups. */
 function sameTitleFilter(userId: string, titleKey: string, excludeTaskId?: string) {
   return {
