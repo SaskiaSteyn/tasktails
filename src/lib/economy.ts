@@ -1,11 +1,16 @@
 import { auth } from "@/auth";
 import type { UserEconomy } from "@/generated/prisma/client";
+import { isSameDay, startOfDay, startOfNextDay } from "@/lib/day";
 import { levelProgress, type LevelProgress } from "@/lib/levels";
 import { prisma } from "@/lib/prisma";
 import {
   antiSpamKeepFor,
   applyAntiSpam,
+  applyDailyCap,
+  DAILY_COIN_CAP,
+  DAILY_XP_CAP,
   FULL_REWARD_REPEATS_PER_DAY,
+  type CappedReward,
   type Reward,
 } from "@/lib/rewards";
 import { completionsOfTitleToday, lastCompletionOfTitle } from "@/lib/tasks";
@@ -189,4 +194,150 @@ export async function reduceForRepeats(
 ): Promise<{ reward: Reward; check: AntiSpamCheck }> {
   const check = await antiSpamCheck(userId, task, completedAt);
   return { reward: applyAntiSpam(reward, check.keep), check };
+}
+
+/** What NFR-TASK-2 allows in a day. */
+export const DAILY_CAPS: Reward = { coins: DAILY_COIN_CAP, xp: DAILY_XP_CAP };
+
+/** How much of today's cap is left (ECO-03). */
+export type DailyAllowance = {
+  /** Banked today. Zero once the stored counters are a day stale. */
+  earned: Reward;
+  /** Cap minus earned, floored at 0 — what a grant can still bank. */
+  remaining: Reward;
+  coinCapReached: boolean;
+  xpCapReached: boolean;
+  /** Local midnight when these counters next reset. */
+  resetsAt: Date;
+};
+
+/** The three columns ECO-03 reads and writes. */
+type DailyCounters = Pick<
+  UserEconomy,
+  "dailyCoinsEarned" | "dailyXpEarned" | "dailyCapResetAt"
+>;
+
+/**
+ * Reads the stored counters as of `now` (ECO-03).
+ *
+ * The reset is **lazy**: nothing sweeps the table at midnight, so counters from
+ * a previous day are simply read as zero and overwritten by the next grant.
+ * `dailyCapResetAt` is the day the stored numbers describe, not the moment a
+ * reset is due — an account that goes quiet for a week still reads as a clean
+ * slate on its return, with no scheduled job to keep alive on a $0 budget
+ * (NFR-GEN-3).
+ *
+ * Pure, so the dashboard can render remaining allowance from a row it already
+ * holds without a second query.
+ */
+export function dailyAllowanceOf(
+  counters: DailyCounters,
+  now: Date = new Date(),
+): DailyAllowance {
+  const stale = !isSameDay(counters.dailyCapResetAt, now);
+
+  const earned: Reward = stale
+    ? { coins: 0, xp: 0 }
+    : {
+        coins: Math.max(0, counters.dailyCoinsEarned),
+        xp: Math.max(0, counters.dailyXpEarned),
+      };
+
+  const remaining: Reward = {
+    coins: Math.max(0, DAILY_COIN_CAP - earned.coins),
+    xp: Math.max(0, DAILY_XP_CAP - earned.xp),
+  };
+
+  return {
+    earned,
+    remaining,
+    coinCapReached: remaining.coins === 0,
+    xpCapReached: remaining.xp === 0,
+    resetsAt: startOfNextDay(now),
+  };
+}
+
+/** Today's allowance for a user, or null if the account has no economy row. */
+export async function dailyAllowanceFor(
+  userId: string,
+  now: Date = new Date(),
+): Promise<DailyAllowance | null> {
+  const economy = await prisma.userEconomy.findUnique({
+    where: { userId },
+    select: {
+      dailyCoinsEarned: true,
+      dailyXpEarned: true,
+      dailyCapResetAt: true,
+    },
+  });
+
+  return economy ? dailyAllowanceOf(economy, now) : null;
+}
+
+/** The outcome of banking a reward. */
+export type EarningsGrant = CappedReward & {
+  /** What is left of the cap *after* this grant. */
+  allowance: DailyAllowance;
+  /** The row as it now stands. */
+  economy: UserEconomy;
+};
+
+/**
+ * Banks a reward against the daily cap (NFR-TASK-2), returning what actually
+ * landed.
+ *
+ * A partial grant rather than an outright rejection, as ECO-01's `applyDailyCap`
+ * defines it: someone 290 coins into their 300 still banks the last 10, and the
+ * withheld remainder comes back so the completion toast can say why the number
+ * was smaller than the task promised.
+ *
+ * The read is `SELECT … FOR UPDATE` inside a transaction rather than a plain
+ * find. Two completions submitted at once would otherwise both read the same
+ * "earned today" figure and both bank in full, putting a participant over the
+ * cap — and the cap is a study control, not a nicety, so it cannot depend on
+ * participants not double-tapping. The row lock makes the second grant wait and
+ * see the first one's effect.
+ *
+ * Returns null when the account has no economy row, which in practice means the
+ * account is gone (AUTH-04 creates the row with the user).
+ */
+export async function grantEarnings(
+  userId: string,
+  reward: Reward,
+  now: Date = new Date(),
+): Promise<EarningsGrant | null> {
+  return prisma.$transaction(async (tx) => {
+    const locked = await tx.$queryRaw<DailyCounters[]>`
+      SELECT "dailyCoinsEarned", "dailyXpEarned", "dailyCapResetAt"
+      FROM "UserEconomy"
+      WHERE "userId" = ${userId}
+      FOR UPDATE`;
+
+    const counters = locked[0];
+    if (!counters) return null;
+
+    const stale = !isSameDay(counters.dailyCapResetAt, now);
+    const before = dailyAllowanceOf(counters, now);
+    const capped = applyDailyCap(reward, before.earned);
+
+    // A stale row is rewritten rather than incremented — the stored numbers
+    // belong to a day that has ended, so adding to them would carry yesterday's
+    // earnings into today's cap.
+    const economy = await tx.userEconomy.update({
+      where: { userId },
+      data: {
+        coins: { increment: capped.granted.coins },
+        xp: { increment: capped.granted.xp },
+        dailyCoinsEarned: stale
+          ? capped.granted.coins
+          : { increment: capped.granted.coins },
+        dailyXpEarned: stale
+          ? capped.granted.xp
+          : { increment: capped.granted.xp },
+        ...(stale ? { dailyCapResetAt: startOfDay(now) } : {}),
+      },
+    });
+
+    return { ...capped, allowance: dailyAllowanceOf(economy, now), economy };
+  });
 }

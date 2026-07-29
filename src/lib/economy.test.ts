@@ -1,6 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { antiSpamCheck, reduceForRepeats } from "@/lib/economy";
+import {
+  antiSpamCheck,
+  dailyAllowanceOf,
+  grantEarnings,
+  reduceForRepeats,
+} from "@/lib/economy";
 import { prismaMock } from "@/test/prisma-mock";
 
 /**
@@ -197,5 +202,171 @@ describe("reduceForRepeats", () => {
     );
 
     expect(reward).toEqual({ coins: 35, xp: 45 });
+  });
+});
+
+/**
+ * ECO-03 — the daily cap (NFR-TASK-2).
+ *
+ * `grantEarnings` runs inside an interactive transaction and reads the row with
+ * `SELECT … FOR UPDATE`, so the mock has to stand in for both: the transaction
+ * callback is handed the same deep mock, and `$queryRaw` returns the locked row.
+ */
+describe("dailyAllowanceOf", () => {
+  const today = new Date(2026, 6, 20, 14, 0);
+
+  it("reports what is left of the cap", () => {
+    const allowance = dailyAllowanceOf(
+      {
+        dailyCoinsEarned: 120,
+        dailyXpEarned: 200,
+        dailyCapResetAt: new Date(2026, 6, 20, 8, 0),
+      },
+      today,
+    );
+
+    expect(allowance.earned).toEqual({ coins: 120, xp: 200 });
+    expect(allowance.remaining).toEqual({ coins: 180, xp: 300 });
+    expect(allowance.coinCapReached).toBe(false);
+    expect(allowance.resetsAt).toEqual(new Date(2026, 6, 21, 0, 0));
+  });
+
+  it("reads counters from a previous day as a clean slate", () => {
+    const allowance = dailyAllowanceOf(
+      {
+        dailyCoinsEarned: 300,
+        dailyXpEarned: 500,
+        dailyCapResetAt: new Date(2026, 6, 19, 23, 59),
+      },
+      today,
+    );
+
+    expect(allowance.earned).toEqual({ coins: 0, xp: 0 });
+    expect(allowance.remaining).toEqual({ coins: 300, xp: 500 });
+  });
+
+  it("flags each cap independently once it is spent", () => {
+    const allowance = dailyAllowanceOf(
+      {
+        dailyCoinsEarned: 300,
+        dailyXpEarned: 10,
+        dailyCapResetAt: today,
+      },
+      today,
+    );
+
+    expect(allowance.coinCapReached).toBe(true);
+    expect(allowance.xpCapReached).toBe(false);
+  });
+});
+
+describe("grantEarnings", () => {
+  const now = new Date(2026, 6, 20, 14, 0);
+
+  /** Stands the locked row up and hands the transaction the same mock. */
+  function economyRow(counters: {
+    dailyCoinsEarned: number;
+    dailyXpEarned: number;
+    dailyCapResetAt: Date;
+  }) {
+    prismaMock.$queryRaw.mockResolvedValue([counters]);
+    prismaMock.userEconomy.update.mockResolvedValue({
+      ...counters,
+      coins: 0,
+      xp: 0,
+    } as never);
+  }
+
+  beforeEach(() => {
+    prismaMock.$transaction.mockImplementation(
+      (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
+    );
+  });
+
+  it("banks the whole reward when there is room", async () => {
+    economyRow({
+      dailyCoinsEarned: 0,
+      dailyXpEarned: 0,
+      dailyCapResetAt: now,
+    });
+
+    const grant = await grantEarnings("user-1", { coins: 35, xp: 45 }, now);
+
+    expect(grant?.granted).toEqual({ coins: 35, xp: 45 });
+    expect(grant?.capReached).toBe(false);
+
+    const data = prismaMock.userEconomy.update.mock.calls[0][0].data as never as {
+      coins: { increment: number };
+      dailyCoinsEarned: { increment: number };
+    };
+    expect(data.coins).toEqual({ increment: 35 });
+    expect(data.dailyCoinsEarned).toEqual({ increment: 35 });
+  });
+
+  it("trims a grant to the remaining headroom", async () => {
+    economyRow({
+      dailyCoinsEarned: 290,
+      dailyXpEarned: 480,
+      dailyCapResetAt: now,
+    });
+
+    const grant = await grantEarnings("user-1", { coins: 150, xp: 200 }, now);
+
+    expect(grant?.granted).toEqual({ coins: 10, xp: 20 });
+    expect(grant?.withheld).toEqual({ coins: 140, xp: 180 });
+    expect(grant?.capReached).toBe(true);
+  });
+
+  it("banks nothing once the cap is spent, and still returns a result", async () => {
+    economyRow({
+      dailyCoinsEarned: 300,
+      dailyXpEarned: 500,
+      dailyCapResetAt: now,
+    });
+
+    const grant = await grantEarnings("user-1", { coins: 35, xp: 45 }, now);
+
+    expect(grant?.granted).toEqual({ coins: 0, xp: 0 });
+    expect(grant?.withheld).toEqual({ coins: 35, xp: 45 });
+  });
+
+  it("overwrites stale counters instead of adding to them", async () => {
+    economyRow({
+      dailyCoinsEarned: 300,
+      dailyXpEarned: 500,
+      dailyCapResetAt: new Date(2026, 6, 19, 20, 0),
+    });
+
+    const grant = await grantEarnings("user-1", { coins: 35, xp: 45 }, now);
+
+    // Yesterday's spent cap must not block today's first task.
+    expect(grant?.granted).toEqual({ coins: 35, xp: 45 });
+
+    const data = prismaMock.userEconomy.update.mock.calls[0][0].data as never as {
+      dailyCoinsEarned: number;
+      dailyXpEarned: number;
+      dailyCapResetAt: Date;
+    };
+    expect(data.dailyCoinsEarned).toBe(35);
+    expect(data.dailyXpEarned).toBe(45);
+    expect(data.dailyCapResetAt).toEqual(new Date(2026, 6, 20, 0, 0));
+  });
+
+  it("locks the row it is about to update", async () => {
+    economyRow({ dailyCoinsEarned: 0, dailyXpEarned: 0, dailyCapResetAt: now });
+
+    await grantEarnings("user-1", { coins: 5, xp: 8 }, now);
+
+    const sql = (prismaMock.$queryRaw.mock.calls[0][0] as unknown as string[])
+      .join("")
+      .replace(/\s+/g, " ");
+    expect(sql).toContain("FOR UPDATE");
+  });
+
+  it("returns null when the account has no economy row", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([]);
+
+    expect(await grantEarnings("ghost", { coins: 5, xp: 8 }, now)).toBeNull();
+    expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
   });
 });
