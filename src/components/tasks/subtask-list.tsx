@@ -1,26 +1,28 @@
 "use client";
 
 import { Check, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
 import { cn } from "@/lib/cn";
 import type { Subtask } from "@/generated/prisma/client";
 
 /**
- * SUB-01/02 — subtask list on the task edit screen. Matches the "Task detail
- * / edit" frame's SUBTASKS block: `bg-warm` rows, 18px completion circle,
- * strikethrough title once done, coin share on the right, "+ Add" above.
+ * SUB-01/02/04 — subtask list on the task edit screen. Matches the "Task
+ * detail / edit" frame's SUBTASKS block: `bg-warm` rows, 18px completion
+ * circle, strikethrough title once done, coin share on the right, "+ Add"
+ * above.
  *
  * The list has no fixed height and simply grows with `subtasks.length`,
  * which is what the ticket's "expandable" means here — the mock has no
  * accordion/collapse affordance for this block.
  *
  * "+ Add" (SUB-02) opens an inline title input, matching the app's input
- * styling. **No `POST /api/tasks/[id]/subtasks` yet** — SUB-04 is a
- * separate, unbuilt ticket, same scope decision TASK-02 made ahead of
- * TASK-08: real client-side validation runs, but a valid submit stops on a
- * visible "not connected yet (SUB-04)" notice rather than pretending to
- * save, and the input stays open so the notice is visible next to it.
+ * styling, and `POST`s SUB-04's `/api/tasks/[id]/subtasks` for real (wired
+ * the same day that ticket shipped — same convention as TASK-02→TASK-08).
+ * `router.refresh()` on success re-runs `taskForUser()` on the page, which
+ * is how the new row shows up; the input closes rather than staying open,
+ * since there's nothing left to fix once the add actually worked.
  *
  * Each incomplete row's checkbox (SUB-03) is a real, forward-only button —
  * same "no un-complete" rule TASK-05/11 uses, so a done row's checkbox is
@@ -43,19 +45,23 @@ import type { Subtask } from "@/generated/prisma/client";
  * SUB-05's actual grant is server-side.
  */
 export function SubtaskList({
+  taskId,
   subtasks,
   parentCoins,
 }: {
+  taskId: string;
   subtasks: Subtask[];
   parentCoins: number;
 }) {
+  const router = useRouter();
   const inputId = useId();
   const errorId = useId();
 
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [titleError, setTitleError] = useState<string>();
-  const [notice, setNotice] = useState<string>();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>();
   const [completeNotice, setCompleteNotice] = useState<string>();
 
   const shareCoins =
@@ -65,18 +71,35 @@ export function SubtaskList({
     setAdding(true);
     setTitle("");
     setTitleError(undefined);
-    setNotice(undefined);
+    setSubmitError(undefined);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const nextTitleError = title.trim() ? undefined : "Give the subtask a title.";
     setTitleError(nextTitleError);
     if (nextTitleError) return;
 
-    // SUB-04's `POST /api/tasks/[id]/subtasks` doesn't exist yet — stop here
-    // rather than pretending to save (same stub pattern TASK-02 used ahead
-    // of TASK-08).
-    setNotice("Not connected yet — adding a subtask needs SUB-04.");
+    setSubmitting(true);
+    setSubmitError(undefined);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/subtasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+
+      if (!response.ok) {
+        setSubmitError("Couldn't add the subtask. Try again.");
+        return;
+      }
+
+      setAdding(false);
+      router.refresh();
+    } catch {
+      setSubmitError("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleComplete() {
@@ -192,17 +215,18 @@ export function SubtaskList({
                 {titleError}
               </p>
             ) : null}
-            {notice ? (
-              <p role="status" className="mt-1 text-[11px] font-bold text-ink-soft">
-                {notice}
+            {submitError ? (
+              <p role="alert" className="mt-1 text-[11px] font-bold text-urgency-text">
+                {submitError}
               </p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={handleSubmit}
+            disabled={submitting}
             aria-label="Add subtask"
-            className="flex size-[38px] flex-none items-center justify-center rounded-input bg-terracotta text-surface transition-colors duration-120 hover:bg-terracotta-hover"
+            className="flex size-[38px] flex-none items-center justify-center rounded-input bg-terracotta text-surface transition-colors duration-120 hover:bg-terracotta-hover disabled:opacity-60"
           >
             <Plus size={18} strokeWidth={2.4} aria-hidden />
           </button>

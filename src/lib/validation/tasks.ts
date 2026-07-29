@@ -24,6 +24,13 @@ export const createTaskSchema = z.object({
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 
+/** SUB-02/04 — same "trim, require non-empty" rule as a task's own title. */
+export const createSubtaskSchema = z.object({
+  title: z.string().trim().min(1, "Give the subtask a title."),
+});
+
+export type CreateSubtaskInput = z.infer<typeof createSubtaskSchema>;
+
 // `fieldErrors()` isn't redeclared here — it's generic over any ZodError, not
 // auth-specific despite living in validation/auth.ts. Re-exported so callers
 // don't need to know that history.

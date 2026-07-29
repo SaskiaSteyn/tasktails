@@ -166,7 +166,7 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
         </div>
 
         <div className="mb-4">
-          <SubtaskList subtasks={task.subtasks} parentCoins={reward.coins} />
+          <SubtaskList taskId={task.id} subtasks={task.subtasks} parentCoins={reward.coins} />
         </div>
       </form>
 

@@ -105,6 +105,34 @@ export async function createTask(
 }
 
 /**
+ * Adds a subtask to a task (SUB-04), scoped to the task's owner. Returns
+ * null both when the task id doesn't exist and when it belongs to someone
+ * else — same "can't tell the difference" reasoning as `taskForUser()`.
+ *
+ * `Subtask` has no `userId` of its own, so ownership has to be checked
+ * against its parent `Task` before the insert rather than folded into a
+ * single scoped write the way `updateTask()`/`deleteTask()` do.
+ *
+ * No reward math here — SUB-05's completion endpoint is where a subtask
+ * earns anything, same as `createTask()` grants nothing at creation.
+ */
+export async function createSubtask(
+  userId: string,
+  taskId: string,
+  title: string,
+): Promise<Subtask | null> {
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, userId },
+    select: { id: true },
+  });
+  if (!task) return null;
+
+  return prisma.subtask.create({
+    data: { taskId, title: normaliseTitle(title) },
+  });
+}
+
+/**
  * Edits a task (TASK-09). Retitling rewrites `titleKey` with it — a task
  * whose key still described its old title would be graded against the
  * wrong history.
