@@ -1,13 +1,13 @@
 ID,Title,Module,Type,Status
 INF-01,Prisma schema — User model (id email passwordHash username displayName avatarUrl role abGroup createdAt),Infrastructure & Database,Database,Done
-INF-02,Prisma schema — Task model (id userId title complexityTier dueDate completedAt createdAt),Infrastructure & Database,Database,To Do
-INF-03,Prisma schema — Subtask model (id taskId title completedAt),Infrastructure & Database,Database,To Do
-INF-04,Prisma schema — StoreItem model (id name category levelRequired coinPrice imageUrl),Infrastructure & Database,Database,To Do
-INF-05,Prisma schema — InventoryItem model (id userId storeItemId equippedToPetId quantity),Infrastructure & Database,Database,To Do
-INF-06,Prisma schema — CartItem model (id userId storeItemId quantity),Infrastructure & Database,Database,To Do
-INF-07,Prisma schema — Transaction model (id userId storeItemId coinSpent purchasedAt),Infrastructure & Database,Database,To Do
-INF-08,Prisma schema — Pet model (id userId storeItemId happiness hunger lastInteractedAt),Infrastructure & Database,Database,To Do
-INF-09,Prisma schema — TelemetryEvent model (id userId eventType payload createdAt),Infrastructure & Database,Database,To Do
+INF-02,Prisma schema — Task model (id userId title complexityTier dueDate completedAt createdAt),Infrastructure & Database,Database,Done
+INF-03,Prisma schema — Subtask model (id taskId title completedAt),Infrastructure & Database,Database,Done
+INF-04,Prisma schema — StoreItem model (id name category levelRequired coinPrice imageUrl),Infrastructure & Database,Database,Done
+INF-05,Prisma schema — InventoryItem model (id userId storeItemId equippedToPetId quantity),Infrastructure & Database,Database,Done
+INF-06,Prisma schema — CartItem model (id userId storeItemId quantity),Infrastructure & Database,Database,Done
+INF-07,Prisma schema — Transaction model (id userId storeItemId coinSpent purchasedAt),Infrastructure & Database,Database,Done
+INF-08,Prisma schema — Pet model (id userId storeItemId happiness hunger lastInteractedAt),Infrastructure & Database,Database,Done
+INF-09,Prisma schema — TelemetryEvent model (id userId eventType payload createdAt),Infrastructure & Database,Database,Done
 INF-10,Prisma schema — UserEconomy model (id userId coins xp level streak lastStreakDate dailyCoinsEarned dailyXpEarned dailyCapResetAt),Infrastructure & Database,Database,Done
 INF-11,NextAuth configuration (credential and Google providers JWT strategy session callbacks),Infrastructure & Database,Backend,Done
 INF-12,Global layout component — header with persistent coin balance XP bar and level indicator,Infrastructure & Database,Frontend,Done

@@ -12,14 +12,14 @@
 | # | Feature | Type | Status |
 |---|---------|------|--------|
 | INF-01 | Prisma schema — `User` model (id, email, password hash, username, displayName, avatarUrl, role, A/B group, createdAt) | Database | Done — migrated; Postgres in `docker-compose.yml` |
-| INF-02 | Prisma schema — `Task` model (id, userId, title, complexity tier, dueDate, completedAt, createdAt) | Database | To Do |
-| INF-03 | Prisma schema — `Subtask` model (id, taskId, title, completedAt) | Database | To Do |
-| INF-04 | Prisma schema — `StoreItem` model (id, name, category, levelRequired, coinPrice, imageUrl) | Database | To Do |
-| INF-05 | Prisma schema — `InventoryItem` model (id, userId, storeItemId, equippedToPetId, quantity) | Database | To Do |
-| INF-06 | Prisma schema — `CartItem` model (id, userId, storeItemId, quantity) | Database | To Do |
-| INF-07 | Prisma schema — `Transaction` model (id, userId, storeItemId, coinSpent, purchasedAt) | Database | To Do |
-| INF-08 | Prisma schema — `Pet` model (id, userId, storeItemId, happiness, hunger, lastInteractedAt) | Database | To Do |
-| INF-09 | Prisma schema — `TelemetryEvent` model (id, userId, eventType, payload JSON, createdAt) | Database | To Do |
+| INF-02 | Prisma schema — `Task` model (id, userId, title, complexity tier, dueDate, completedAt, createdAt) | Database | Done |
+| INF-03 | Prisma schema — `Subtask` model (id, taskId, title, completedAt) | Database | Done |
+| INF-04 | Prisma schema — `StoreItem` model (id, name, category, levelRequired, coinPrice, imageUrl) | Database | Done |
+| INF-05 | Prisma schema — `InventoryItem` model (id, userId, storeItemId, equippedToPetId, quantity) | Database | Done |
+| INF-06 | Prisma schema — `CartItem` model (id, userId, storeItemId, quantity) | Database | Done |
+| INF-07 | Prisma schema — `Transaction` model (id, userId, storeItemId, coinSpent, purchasedAt) | Database | Done |
+| INF-08 | Prisma schema — `Pet` model (id, userId, storeItemId, happiness, hunger, lastInteractedAt) | Database | Done |
+| INF-09 | Prisma schema — `TelemetryEvent` model (id, userId, eventType, payload JSON, createdAt) | Database | Done |
 | INF-10 | Prisma schema — `UserEconomy` model (id, userId, coins, xp, level, streak, lastStreakDate, dailyCoinsEarned, dailyXpEarned, dailyCapResetAt) | Database | Done — migrated; AUTH-04 creates the row with the user |
 | INF-11 | NextAuth configuration (credential + Google providers, JWT strategy, session callbacks) | Backend | Done |
 | INF-12 | Global layout component — header with persistent coin balance, XP bar, and level indicator | Frontend | Done — `AppShell` + `AppHeader`/`PersistentHeader` in `src/components/layout/`, reads through `src/lib/economy.ts`. Two densities, both from the handoff: greeting + XP/streak row (dashboard) and title + coins (store, sanctuary). Profile and Settings now use the shell. Three AA gaps ship as designed — level disc 3.84:1, streak pill 2.52:1, streak numeral 2.94:1 — recorded in `globals.css` for INF-14 to accept or fix |
