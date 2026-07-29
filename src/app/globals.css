@@ -299,6 +299,24 @@
   color: var(--color-ink-soft);
 }
 
+/* TASK-05's reward pop, above a just-completed task row's checkbox. Centering
+   is baked into the keyframe itself (not a Tailwind translate utility on the
+   element) because a CSS animation's `transform` replaces rather than
+   composes with one set by a class. */
+@keyframes task-reward-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(-18px);
+  }
+}
+
 /* ECO-07 — the level-up celebration. The addendum asks for the confetti to fall
    on mount and the medallion to arrive with it. Both are gated behind Tailwind's
    `motion-safe:` in the component *and* neutralised by the reduce-motion block

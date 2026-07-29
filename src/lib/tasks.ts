@@ -1,22 +1,59 @@
-import type { Task } from "@/generated/prisma/client";
+import type { Subtask, Task } from "@/generated/prisma/client";
 
 import { startOfDay, startOfNextDay } from "@/lib/day";
 import { prisma } from "@/lib/prisma";
 import { ANTI_SPAM_WINDOW_HOURS } from "@/lib/rewards";
 
 /**
- * Every read and write of a task (INF-02).
+ * Every read and write of a task (INF-02, TASK-01/07..11).
  *
  * Same rule as src/lib/users.ts and src/lib/economy.ts: nothing outside this
- * module touches `prisma.task`. It starts with the write path and the two
- * queries ECO-02 needs, and grows into the rest as TASK-07..11 land.
+ * module touches `prisma.task`.
  *
  * SERVER ONLY — imports Prisma.
  */
 
 export type { Task };
 
+/** A task with its subtasks attached (SUB-01's read shape for the edit screen). */
+export type TaskWithSubtasks = Task & { subtasks: Subtask[] };
+
 const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * All of a user's tasks, incomplete ones first (what the dashboard needs to
+ * show), then by due date (soonest first, undated last), then oldest first
+ * within a tie.
+ */
+export async function tasksForUser(userId: string): Promise<Task[]> {
+  return prisma.task.findMany({
+    where: { userId },
+    orderBy: [
+      { completedAt: { sort: "asc", nulls: "first" } },
+      { dueDate: { sort: "asc", nulls: "last" } },
+      { createdAt: "asc" },
+    ],
+  });
+}
+
+/**
+ * A single task, scoped to its owner (TASK-03). Returns null both when the
+ * id doesn't exist and when it belongs to someone else — the caller can't
+ * tell the difference, which is the point: confirming a task id belongs to
+ * another user is its own information leak.
+ *
+ * Includes subtasks (SUB-01) ordered by id — cuid ids are k-sortable, so this
+ * reads as creation order without a separate `createdAt` column on `Subtask`.
+ */
+export async function taskForUser(
+  userId: string,
+  taskId: string,
+): Promise<TaskWithSubtasks | null> {
+  return prisma.task.findFirst({
+    where: { id: taskId, userId },
+    include: { subtasks: { orderBy: { id: "asc" } } },
+  });
+}
 
 /**
  * The normalised form the anti-spam guardrail matches on (ECO-02).
@@ -45,7 +82,11 @@ export function normaliseTitle(title: string): string {
   return title.trim().replace(/\s+/g, " ");
 }
 
-/** Creates a task, deriving `titleKey` so no caller has to know it exists. */
+/**
+ * Creates a task for the given user (TASK-08), deriving `titleKey` so no
+ * caller has to know it exists. No reward is calculated or granted here —
+ * coins/XP are only ever earned on completion (TASK-11).
+ */
 export async function createTask(
   userId: string,
   input: { title: string; complexityTier: number; dueDate?: Date | null },
@@ -64,12 +105,43 @@ export async function createTask(
 }
 
 /**
- * Edits a task. Retitling rewrites the key with it — a task whose key still
- * described its old title would be graded against the wrong history.
+ * Adds a subtask to a task (SUB-04), scoped to the task's owner. Returns
+ * null both when the task id doesn't exist and when it belongs to someone
+ * else — same "can't tell the difference" reasoning as `taskForUser()`.
  *
- * Scoped by userId as well as id so a participant cannot edit someone else's
- * task by guessing an id; `updateMany` rather than `update` because a compound
- * where clause on a non-unique field is what that scoping needs.
+ * `Subtask` has no `userId` of its own, so ownership has to be checked
+ * against its parent `Task` before the insert rather than folded into a
+ * single scoped write the way `updateTask()`/`deleteTask()` do.
+ *
+ * No reward math here — SUB-05's completion endpoint is where a subtask
+ * earns anything, same as `createTask()` grants nothing at creation.
+ */
+export async function createSubtask(
+  userId: string,
+  taskId: string,
+  title: string,
+): Promise<Subtask | null> {
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, userId },
+    select: { id: true },
+  });
+  if (!task) return null;
+
+  return prisma.subtask.create({
+    data: { taskId, title: normaliseTitle(title) },
+  });
+}
+
+/**
+ * Edits a task (TASK-09). Retitling rewrites `titleKey` with it — a task
+ * whose key still described its old title would be graded against the
+ * wrong history.
+ *
+ * Scoped by userId as well as id so a participant cannot edit someone
+ * else's task by guessing an id; `updateMany` rather than `update` because
+ * a compound where clause on a non-unique field is what that scoping needs
+ * — a mismatched owner fails as "0 rows" rather than a thrown "record not
+ * found", same reasoning as `taskForUser()`.
  */
 export async function updateTask(
   userId: string,
@@ -90,8 +162,77 @@ export async function updateTask(
     },
   });
 
-  if (count === 0) return null;
-  return prisma.task.findUnique({ where: { id: taskId } });
+  return count === 0 ? null : taskForUser(userId, taskId);
+}
+
+/**
+ * Deletes a task, scoped to its owner (TASK-10). `deleteMany`, same reason
+ * as `updateTask()`'s `updateMany` — a mismatched owner fails as "0 rows"
+ * rather than a thrown "record not found". Subtasks cascade at the schema
+ * level (`Subtask.task` is `onDelete: Cascade`), so there's nothing extra
+ * to delete here for those.
+ *
+ * Returns whether a row was actually deleted, so the route can tell a real
+ * delete from "there was nothing to delete" and 404 accordingly.
+ */
+export async function deleteTask(
+  userId: string,
+  taskId: string,
+): Promise<boolean> {
+  const { count } = await prisma.task.deleteMany({
+    where: { id: taskId, userId },
+  });
+  return count > 0;
+}
+
+/**
+ * Marks a task complete, scoped to its owner (TASK-11). `completedAt: null`
+ * in the `where` clause, not just a pre-check in the caller, is what makes
+ * this the actual guard against completing the same task twice — two
+ * requests racing each other both pass a "not complete yet" pre-check, but
+ * only one of them matches this `updateMany`'s where clause, since the
+ * first one's write has already flipped `completedAt` by the time the
+ * second reaches the database. Returns null (not completed) rather than
+ * throwing, so the caller can't double-grant a reward for a task that was
+ * already done — completing it forward-only, with no un-complete, keeps
+ * that guarantee simple to reason about.
+ */
+export async function markTaskComplete(
+  userId: string,
+  taskId: string,
+  completedAt: Date,
+): Promise<Task | null> {
+  const { count } = await prisma.task.updateMany({
+    where: { id: taskId, userId, completedAt: null },
+    data: { completedAt },
+  });
+
+  return count === 0 ? null : taskForUser(userId, taskId);
+}
+
+/**
+ * Marks a subtask complete (SUB-05). `completedAt: null` in the `where`
+ * clause is the same atomic double-completion guard `markTaskComplete()`
+ * uses, for the same reason — two racing requests must not both grant a
+ * reward for the same subtask.
+ *
+ * Scoped by `taskId` rather than `userId` — `Subtask` has no `userId` of its
+ * own, so the caller is responsible for having already confirmed the task
+ * belongs to the signed-in user (`taskForUser()`) before calling this.
+ */
+export async function markSubtaskComplete(
+  taskId: string,
+  subtaskId: string,
+  completedAt: Date,
+): Promise<Subtask | null> {
+  const { count } = await prisma.subtask.updateMany({
+    where: { id: subtaskId, taskId, completedAt: null },
+    data: { completedAt },
+  });
+
+  return count === 0
+    ? null
+    : prisma.subtask.findFirst({ where: { id: subtaskId, taskId } });
 }
 
 /** The shared filter behind both anti-spam lookups. */

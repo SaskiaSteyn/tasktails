@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { UsernameCard } from "@/components/profile/username-card";
 import { displayNameFor, findUserByEmail } from "@/lib/users";
 
@@ -36,6 +37,7 @@ export default async function ProfilePage() {
   return (
     <AppShell
       className="px-4 pt-4 pb-[14px]"
+      nav={<BottomNav />}
       header={
         <header className="flex flex-none items-center gap-[13px] border-b border-border-track bg-warm px-[18px] pt-[14px] pb-4">
           <div className="min-w-0 flex-1">

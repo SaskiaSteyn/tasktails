@@ -9,11 +9,8 @@ export const metadata: Metadata = {
   description: "Your pets missed you.",
 };
 
-/**
- * Where a session lands when nothing sent it here. The dashboard is TASK-01;
- * until it exists, the post-auth placeholder does the job — same as register.
- */
-const AFTER_LOGIN = "/onboarding";
+/** Where a session lands when nothing sent it here (TASK-01). */
+const AFTER_LOGIN = "/tasks";
 
 /**
  * NextAuth appends `?callbackUrl=` when it bounces someone here (AUTH-06), so
