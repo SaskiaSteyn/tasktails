@@ -33,8 +33,8 @@ AUTH-09,Google OAuth provider — NextAuth Google provider upserts the account o
 TASK-01,Task list view — displays all user tasks with title due date complexity badge and completion state,TODO App,Frontend,Done
 TASK-02,Create task form — fields: title (required) due date (optional) complexity tier (required 5-option select),TODO App,Frontend,Done
 TASK-03,Task detail / edit screen — pre-filled title due date complexity chips subtask list reward footer and delete,TODO App,Frontend,Done
-TASK-04,Delete task action — confirmation prompt before deletion,TODO App,Frontend,To Do
-TASK-05,Complete task action — checkbox or button triggers reward animation and coin/XP update,TODO App,Frontend,To Do
+TASK-04,Delete task action — confirmation prompt before deletion,TODO App,Frontend,Done
+TASK-05,Complete task action — checkbox or button triggers reward animation and coin/XP update,TODO App,Frontend,Done
 TASK-06,Task dashboard stats bar — current level XP progress bar streak counter coin balance,TODO App,Frontend,To Do
 TASK-07,GET /api/tasks — list all tasks for the authenticated user,TODO App,Backend,To Do
 TASK-08,POST /api/tasks — create a new task,TODO App,Backend,To Do

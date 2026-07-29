@@ -294,6 +294,24 @@
   color: var(--color-ink-soft);
 }
 
+/* TASK-05's reward pop, above a just-completed task row's checkbox. Centering
+   is baked into the keyframe itself (not a Tailwind translate utility on the
+   element) because a CSS animation's `transform` replaces rather than
+   composes with one set by a class. */
+@keyframes task-reward-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(-18px);
+  }
+}
+
 /* Respect the OS reduce-motion setting (also a PREFERENCES toggle later). */
 @media (prefers-reduced-motion: reduce) {
   *,
