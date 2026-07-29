@@ -30,7 +30,7 @@ AUTH-06,Protected route middleware — redirect unauthenticated users to login,A
 AUTH-07,Change username from the profile — inline editor with the same live availability check as the onboarding step,Authentication,Frontend,Done
 AUTH-08,Continue with Google button on register and login — full-width OAuth button hidden when the OAuth env vars are absent,Authentication,Frontend,Done
 AUTH-09,Google OAuth provider — NextAuth Google provider upserts the account on first sign-in and assigns the permanent study group,Authentication,Backend,Done
-TASK-01,Task list view — displays all user tasks with title due date complexity badge and completion state,TODO App,Frontend,To Do
+TASK-01,Task list view — displays all user tasks with title due date complexity badge and completion state,TODO App,Frontend,Done
 TASK-02,Create task form — fields: title (required) due date (optional) complexity tier (required 5-option select),TODO App,Frontend,To Do
 TASK-03,Task detail / edit screen — pre-filled title due date complexity chips subtask list reward footer and delete,TODO App,Frontend,To Do
 TASK-04,Delete task action — confirmation prompt before deletion,TODO App,Frontend,To Do

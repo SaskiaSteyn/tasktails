@@ -89,6 +89,13 @@ connection URL lives in `prisma.config.ts` and the adapter in `src/lib/prisma.ts
 (**not** in `datasource db`), and the client is generated to
 `src/generated/prisma`, which is gitignored.
 
+`postinstall` regenerates that client, but only runs on `npm install` — a
+`git pull` that changes `prisma/schema.prisma` does not trigger it. A stale
+client fails confusingly (`tsc` errors on fields that plainly exist in the
+schema, or a 500 at runtime) rather than obviously. After pulling any commit
+that touches `prisma/schema.prisma`, run `npx prisma generate` by hand before
+trusting either `tsc` or the dev server.
+
 Account reads and writes go through `src/lib/users.ts` — nothing else touches
 `prisma.user`. Keep new storage access behind a module like it rather than
 calling Prisma from routes and pages.

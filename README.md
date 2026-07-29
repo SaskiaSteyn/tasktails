@@ -144,7 +144,13 @@ Two Prisma 7 details worth knowing, because both changed from Prisma 6:
   Prisma only reads `.env` on its own), and the runtime client gets it through
   the `PrismaPg` adapter in [`src/lib/prisma.ts`](src/lib/prisma.ts).
 - The client is generated into `src/generated/prisma`, which is gitignored — so
-  `npm install` runs `prisma generate` for you via `postinstall`.
+  `npm install` runs `prisma generate` for you via `postinstall`. That only
+  fires on `npm install`, though — pulling a commit that changes
+  `prisma/schema.prisma` (without reinstalling) leaves your local client
+  stale. Symptoms are confusing: spurious `tsc` errors on fields that
+  obviously exist (`Unknown argument`, `Property 'x' does not exist`), or a
+  500 at runtime on a query using a new field. Run `npx prisma generate` by
+  hand after pulling any schema change.
 
 All account access goes through [`src/lib/users.ts`](src/lib/users.ts); nothing
 else touches `prisma.user` directly.
