@@ -101,6 +101,18 @@ export const FULL_REWARD_REPEATS_PER_DAY = 3;
 export const DAILY_COIN_CAP = 300;
 export const DAILY_XP_CAP = 500;
 
+/**
+ * The coin → XP conversion (§3.1, ECO-06).
+ *
+ * Priced as "meaningful cost, not a shortcut": 100 coins is between two and
+ * three Medium tasks' worth of coins for 40 XP, less than one Medium task's XP.
+ * Buying levels is deliberately worse value than earning them, so the store —
+ * where the study's urgency stimuli live — stays the interesting thing to spend
+ * coins on.
+ */
+export const BUY_XP_COST_COINS = 100;
+export const BUY_XP_GAIN_XP = 40;
+
 const HOUR_MS = 60 * 60 * 1000;
 
 const clampInt = (value: number) => Math.max(0, Math.round(value));

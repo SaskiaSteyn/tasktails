@@ -17,6 +17,8 @@ import {
   antiSpamKeepFor,
   applyAntiSpam,
   applyDailyCap,
+  BUY_XP_COST_COINS,
+  BUY_XP_GAIN_XP,
   DAILY_COIN_CAP,
   DAILY_XP_CAP,
   FULL_REWARD_REPEATS_PER_DAY,
@@ -582,5 +584,81 @@ export async function recordStreakDay(
     });
 
     return update;
+  });
+}
+
+/** The outcome of a coin → XP conversion (ECO-06). */
+export type BuyXpResult =
+  | {
+      ok: true;
+      /** Coins taken. */
+      spent: number;
+      /** XP added. */
+      gained: number;
+      levelUp: LevelUpEvent | null;
+      economy: UserEconomy;
+    }
+  | {
+      ok: false;
+      reason: "insufficient-coins";
+      /** What they hold now. */
+      coins: number;
+      /** How many more they need. */
+      shortfall: number;
+    }
+  | { ok: false; reason: "no-account" };
+
+/**
+ * Buys XP with coins — 100 → 40 (§3.1).
+ *
+ * The daily XP cap is deliberately **not** applied here. NFR-TASK-2 caps what a
+ * participant can *earn* "across all tasks", and these coins were already
+ * earned under that cap on the day they were banked; charging the ceiling twice
+ * for the same effort would make a conversion after a busy day silently do
+ * nothing. What limits this is the coin price — 300 coins a day buys at most
+ * 120 XP, and every coin spent here is a coin not spent in the store, which is
+ * the trade-off the study is actually interested in.
+ *
+ * Locked and level-updated exactly like `grantEarnings`: the balance check and
+ * the deduction have to see the same row, or two conversions submitted together
+ * could both pass a check that only one of them could afford.
+ */
+export async function buyXp(
+  userId: string,
+  cost: number = BUY_XP_COST_COINS,
+  gain: number = BUY_XP_GAIN_XP,
+): Promise<BuyXpResult> {
+  return prisma.$transaction(async (tx) => {
+    const locked = await tx.$queryRaw<{ coins: number; xp: number }[]>`
+      SELECT "coins", "xp"
+      FROM "UserEconomy"
+      WHERE "userId" = ${userId}
+      FOR UPDATE`;
+
+    const current = locked[0];
+    if (!current) return { ok: false, reason: "no-account" } as const;
+
+    if (current.coins < cost) {
+      return {
+        ok: false,
+        reason: "insufficient-coins",
+        coins: current.coins,
+        shortfall: cost - current.coins,
+      } as const;
+    }
+
+    const xp = xpWrite(current.xp, gain);
+    const economy = await tx.userEconomy.update({
+      where: { userId },
+      data: { ...xp.data, coins: { decrement: cost } },
+    });
+
+    return {
+      ok: true,
+      spent: cost,
+      gained: gain,
+      levelUp: xp.levelUp,
+      economy,
+    } as const;
   });
 }

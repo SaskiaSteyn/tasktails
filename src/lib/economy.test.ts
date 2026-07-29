@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   antiSpamCheck,
+  buyXp,
   dailyAllowanceOf,
   grantEarnings,
   levelUpBetween,
@@ -681,5 +682,99 @@ describe("xpWrite", () => {
 
     expect(write.xpAfter).toBe(0);
     expect(write.data.level).toBe(1);
+  });
+});
+
+/**
+ * ECO-06 — the coin → XP conversion (§3.1). The balance check and the deduction
+ * must see the same locked row, so this asserts the lock as well as the maths.
+ */
+describe("buyXp", () => {
+  beforeEach(() => {
+    prismaMock.$transaction.mockImplementation(
+      (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
+    );
+    prismaMock.userEconomy.update.mockResolvedValue({
+      coins: 0,
+      xp: 0,
+    } as never);
+  });
+
+  it("takes 100 coins, adds 40 XP and moves the level with it", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ coins: 250, xp: 20 }]);
+
+    const result = await buyXp("user-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.spent).toBe(100);
+    expect(result.gained).toBe(40);
+
+    const data = prismaMock.userEconomy.update.mock.calls[0][0].data as never as {
+      coins: { decrement: number };
+      xp: { increment: number };
+      level: number;
+    };
+    expect(data.coins).toEqual({ decrement: 100 });
+    expect(data.xp).toEqual({ increment: 40 });
+    // 20 + 40 = 60 XP, which is level 5.
+    expect(data.level).toBe(5);
+  });
+
+  it("reports the level-up the purchase caused", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ coins: 100, xp: 0 }]);
+
+    const result = await buyXp("user-1");
+
+    expect(result.ok && result.levelUp?.to).toBe(4);
+    expect(result.ok && result.levelUp?.levelsGained).toEqual([2, 3, 4]);
+  });
+
+  it("refuses and writes nothing when the coins are not there", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ coins: 99, xp: 0 }]);
+
+    const result = await buyXp("user-1");
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "insufficient-coins",
+      coins: 99,
+      shortfall: 1,
+    });
+    expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
+  });
+
+  it("allows a purchase that spends the balance exactly", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ coins: 100, xp: 0 }]);
+
+    expect((await buyXp("user-1")).ok).toBe(true);
+  });
+
+  it("ignores the daily XP cap — these coins were already capped when earned", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ coins: 100, xp: 0 }]);
+
+    const result = await buyXp("user-1");
+
+    expect(result.ok && result.gained).toBe(40);
+    const data = prismaMock.userEconomy.update.mock.calls[0][0]
+      .data as never as Record<string, unknown>;
+    expect(data.dailyXpEarned).toBeUndefined();
+  });
+
+  it("locks the row before checking the balance", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ coins: 100, xp: 0 }]);
+
+    await buyXp("user-1");
+
+    const sql = (prismaMock.$queryRaw.mock.calls[0][0] as unknown as string[])
+      .join("")
+      .replace(/\s+/g, " ");
+    expect(sql).toContain("FOR UPDATE");
+  });
+
+  it("reports a missing account rather than throwing", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([]);
+
+    expect(await buyXp("ghost")).toEqual({ ok: false, reason: "no-account" });
   });
 });
