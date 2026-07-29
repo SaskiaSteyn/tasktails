@@ -343,7 +343,10 @@
 }
 
 @theme {
-  --animate-confetti-fall: confetti-fall 620ms cubic-bezier(0.2, 0.7, 0.3, 1)
+  /* Slow and linear-ish — confetti falls at a fairly steady rate once it is
+     moving, and an ease-out would have it drift to a halt in mid-air. Each
+     piece overrides the duration inline so they do not descend in lockstep. */
+  --animate-confetti-fall: confetti-fall 2600ms cubic-bezier(0.3, 0.5, 0.6, 1)
     both;
   --animate-medallion-pop: medallion-pop 420ms cubic-bezier(0.2, 0.8, 0.3, 1.1)
     both;
