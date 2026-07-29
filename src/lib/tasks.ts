@@ -8,9 +8,9 @@ import { prisma } from "@/lib/prisma";
  * module touches `prisma.task`, so the writes (TASK-08..11) land in one place
  * when they arrive.
  *
- * TASK-09/TASK-10 (edit/delete) don't exist yet, so there's no write side
- * here for TASK-03's edit screen to call — see its own file for the stubbed
- * submit/delete this is deliberately missing.
+ * TASK-09/TASK-10 (edit/delete) don't exist yet, so there's still no write
+ * side here for TASK-03's edit screen to call — see its own file for the
+ * stubbed submit/delete this is deliberately missing.
  *
  * SERVER ONLY — imports Prisma.
  */
@@ -44,4 +44,23 @@ export async function taskForUser(
   taskId: string,
 ): Promise<Task | null> {
   return prisma.task.findFirst({ where: { id: taskId, userId } });
+}
+
+/**
+ * Creates a task for the given user (TASK-08). No reward is calculated or
+ * granted here — coins/XP are only ever earned on completion (TASK-11),
+ * which doesn't exist yet either.
+ */
+export async function createTask(
+  userId: string,
+  data: { title: string; complexityTier: number; dueDate: Date | null },
+): Promise<Task> {
+  return prisma.task.create({
+    data: {
+      userId,
+      title: data.title,
+      complexityTier: data.complexityTier,
+      dueDate: data.dueDate,
+    },
+  });
 }

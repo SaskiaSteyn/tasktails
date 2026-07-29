@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,17 +10,19 @@ import { cn } from "@/lib/cn";
 import type { TaskTier } from "@/lib/task-tiers";
 
 /**
- * TASK-02 — the create-task bottom sheet.
+ * TASK-02 — the create-task bottom sheet. `POST`s to TASK-08's
+ * `/api/tasks` (wired the same day that ticket shipped).
  *
  * Built on the native `<dialog>` the same way `Modal` (SHR-03) is, for
  * platform focus-trapping and Escape-to-close, but anchored to the bottom of
  * the viewport with only the top corners rounded, matching the mock's sheet
  * rather than a centred dialog.
  *
- * There is no `POST /api/tasks` yet — TASK-08 is a separate, unbuilt ticket.
- * Submitting a fully valid form does *not* pretend to succeed: it stops on a
- * visible notice instead, so the required-field validation is genuinely
- * exercised without silently discarding what looks like a real task.
+ * `router.refresh()` on success re-runs the server components on the current
+ * route (TASK-01's `tasksForUser()` fetch included), so the new task shows
+ * up without a full reload. It's called here rather than via a prop callback
+ * because this component is mounted from two different places (`BottomNav`
+ * and the empty state) and both want the same effect.
  */
 export function CreateTaskSheet({
   open,
@@ -28,6 +31,7 @@ export function CreateTaskSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingId = useId();
   const titleFieldId = useId();
@@ -40,12 +44,13 @@ export function CreateTaskSheet({
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [titleError, setTitleError] = useState<string>();
   const [tierError, setTierError] = useState<string>();
-  const [stubbedNotice, setStubbedNotice] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>();
 
   // Every open starts from a clean form rather than wherever the last one was
-  // left, including the stubbed-submit notice. Adjusted during render (React's
-  // recommended pattern for "reset state when a prop changes") rather than in
-  // an effect, which would fire an extra cascading render for the same result.
+  // left. Adjusted during render (React's recommended pattern for "reset
+  // state when a prop changes") rather than in an effect, which would fire
+  // an extra cascading render for the same result.
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
@@ -55,7 +60,7 @@ export function CreateTaskSheet({
       setDueDate(null);
       setTitleError(undefined);
       setTierError(undefined);
-      setStubbedNotice(false);
+      setSubmitError(undefined);
     }
   }
 
@@ -66,7 +71,7 @@ export function CreateTaskSheet({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
     const nextTitleError = title.trim() ? undefined : "Give the task a title.";
@@ -75,7 +80,27 @@ export function CreateTaskSheet({
     setTierError(nextTierError);
     if (nextTitleError || nextTierError) return;
 
-    setStubbedNotice(true);
+    setSubmitting(true);
+    setSubmitError(undefined);
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, complexityTier: tier, dueDate }),
+      });
+
+      if (!response.ok) {
+        setSubmitError("Couldn't add the task. Try again.");
+        return;
+      }
+
+      onOpenChange(false);
+      router.refresh();
+    } catch {
+      setSubmitError("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -165,13 +190,12 @@ export function CreateTaskSheet({
             <DatePicker value={dueDate} onChange={setDueDate} label="DUE (OPTIONAL)" />
           </div>
 
-          <Button type="submit" size="full">
-            Add task
+          <Button type="submit" size="full" disabled={submitting}>
+            {submitting ? "Adding…" : "Add task"}
           </Button>
-          {stubbedNotice ? (
-            <p className="mt-2 text-center text-[11px] text-ink-soft">
-              Looks good — but creating tasks isn&apos;t connected yet
-              (TASK-08). Nothing was saved.
+          {submitError ? (
+            <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
+              {submitError}
             </p>
           ) : null}
         </form>

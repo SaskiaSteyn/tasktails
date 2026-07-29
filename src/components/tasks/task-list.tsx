@@ -17,6 +17,12 @@ import type { Task } from "@/lib/tasks";
  * is a server-side concern (`tasksForUser`), and jumping a row around the
  * list for a change that isn't even saved would be a strange thing to watch.
  *
+ * Re-synced from `initialTasks` whenever that prop changes (adjusted during
+ * render, not an effect — same pattern as `CreateTaskSheet`'s reset-on-open)
+ * — TASK-08's create sheet calls `router.refresh()` on success, which
+ * re-runs `tasksForUser()` and passes a new array down here. A stale local
+ * toggle losing to that fresh fetch is correct: it was never saved either.
+ *
  * One shared "not saved" notice for the whole list, not one per row — a
  * banner beside every row you tap would compete with the list itself for
  * attention far more than the single-instance notices TASK-02/03 show on
@@ -25,6 +31,12 @@ import type { Task } from "@/lib/tasks";
 export function TaskList({ tasks: initialTasks }: { tasks: Task[] }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [showNotice, setShowNotice] = useState(false);
+
+  const [syncedFrom, setSyncedFrom] = useState(initialTasks);
+  if (initialTasks !== syncedFrom) {
+    setSyncedFrom(initialTasks);
+    setTasks(initialTasks);
+  }
 
   useEffect(() => {
     if (!showNotice) return;
