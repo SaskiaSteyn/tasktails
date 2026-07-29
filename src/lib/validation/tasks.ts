@@ -1,10 +1,14 @@
 import { z } from "zod";
 
 /**
- * Shared client/server validation for task mutations (TASK-02, TASK-08).
- * Same messages the create-task sheet already showed as client-side errors
- * before this existed, kept in sync here so server-side re-validation can't
- * disagree with what the form told the user.
+ * Shared client/server validation for task mutations (TASK-02/08, TASK-03/09).
+ * Same messages the forms already showed as client-side errors before this
+ * existed, kept in sync here so server-side re-validation can't disagree
+ * with what the form told the user.
+ *
+ * One schema for both create and edit — the create sheet and the edit
+ * screen send the same three fields under the same rules, so TASK-09's
+ * route reuses this rather than declaring an near-identical second schema.
  */
 
 export const createTaskSchema = z.object({

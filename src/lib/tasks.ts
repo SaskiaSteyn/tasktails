@@ -8,9 +8,9 @@ import { prisma } from "@/lib/prisma";
  * module touches `prisma.task`, so the writes (TASK-08..11) land in one place
  * when they arrive.
  *
- * TASK-09/TASK-10 (edit/delete) don't exist yet, so there's still no write
- * side here for TASK-03's edit screen to call — see its own file for the
- * stubbed submit/delete this is deliberately missing.
+ * TASK-10 (delete) doesn't exist yet, so there's still no write side here
+ * for TASK-03's delete confirm to call — see its own file for the stubbed
+ * delete this is deliberately missing.
  *
  * SERVER ONLY — imports Prisma.
  */
@@ -63,4 +63,30 @@ export async function createTask(
       dueDate: data.dueDate,
     },
   });
+}
+
+/**
+ * Edits a task's title/dueDate/complexityTier, scoped to its owner
+ * (TASK-09). `updateMany`, not `update` — the where clause isn't a unique
+ * key on its own (`id` is, but `userId` scopes it to the owner too), and
+ * `updateMany` is what lets a mismatched owner fail as "0 rows" instead of
+ * a thrown "record not found". Returns null in that case, same as
+ * `taskForUser()` — a task id that's someone else's reads the same as one
+ * that doesn't exist.
+ */
+export async function updateTask(
+  userId: string,
+  taskId: string,
+  data: { title: string; complexityTier: number; dueDate: Date | null },
+): Promise<Task | null> {
+  const { count } = await prisma.task.updateMany({
+    where: { id: taskId, userId },
+    data: {
+      title: data.title,
+      complexityTier: data.complexityTier,
+      dueDate: data.dueDate,
+    },
+  });
+
+  return count === 0 ? null : taskForUser(userId, taskId);
 }

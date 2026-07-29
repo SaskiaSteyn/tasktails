@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
 import { DatePicker } from "@/components/tasks/date-picker";
@@ -19,16 +20,19 @@ import type { Task } from "@/lib/tasks";
  * complete) are separate, unbuilt tickets, and a partial read-only subtask
  * list was ruled a worse middle ground than none at all.
  *
- * Neither action is wired to a backend yet:
- * - Save: TASK-09 (`PATCH /api/tasks/[id]`) doesn't exist. A valid submit
- *   validates for real and then stops on a visible notice, same as TASK-02's
- *   create sheet.
- * - Delete: TASK-10 (`DELETE /api/tasks/[id]`) doesn't exist, but the
- *   confirm step is real — this is `Modal`'s (SHR-03) second consumer,
- *   after the onboarding username step. Confirming it stops on the same
- *   kind of notice rather than deleting anything.
+ * Save `PATCH`es TASK-09's `/api/tasks/[id]` for real (wired the same day
+ * that ticket shipped) and returns to `/tasks` on success — the fresh
+ * navigation is what re-fetches `tasksForUser()`, no explicit
+ * `router.refresh()` needed the way TASK-02's sheet needs one to update the
+ * page it stays on.
+ *
+ * Delete is still stubbed: TASK-10 (`DELETE /api/tasks/[id]`) doesn't exist
+ * yet, but the confirm step is real — `Modal`'s (SHR-03) second consumer,
+ * after the onboarding username step. Confirming it stops on a visible
+ * notice rather than deleting anything.
  */
 export function EditTaskForm({ task }: { task: Task }) {
+  const router = useRouter();
   const formId = useId();
   const titleFieldId = useId();
   const titleErrorId = useId();
@@ -40,17 +44,39 @@ export function EditTaskForm({ task }: { task: Task }) {
   );
   const [dueDate, setDueDate] = useState<Date | null>(task.dueDate);
   const [titleError, setTitleError] = useState<string>();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [stubNotice, setStubNotice] = useState<"save" | "delete">();
+  const [deleteStubNotice, setDeleteStubNotice] = useState(false);
 
   const reward = taskTier(tier);
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const nextTitleError = title.trim() ? undefined : "Give the task a title.";
     setTitleError(nextTitleError);
     if (nextTitleError) return;
-    setStubNotice("save");
+
+    setSubmitting(true);
+    setSubmitError(undefined);
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, complexityTier: tier, dueDate }),
+      });
+
+      if (!response.ok) {
+        setSubmitError("Couldn't save changes. Try again.");
+        return;
+      }
+
+      router.push("/tasks");
+    } catch {
+      setSubmitError("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -126,18 +152,24 @@ export function EditTaskForm({ task }: { task: Task }) {
           >
             <Trash2 size={18} strokeWidth={2.2} aria-hidden />
           </button>
-          <Button type="submit" form={formId} size="dialog" fullWidth={false} className="flex-1">
-            Save changes
+          <Button
+            type="submit"
+            form={formId}
+            size="dialog"
+            fullWidth={false}
+            className="flex-1"
+            disabled={submitting}
+          >
+            {submitting ? "Saving…" : "Save changes"}
           </Button>
         </div>
 
-        {stubNotice === "save" ? (
-          <p className="mt-2 text-center text-[11px] text-ink-soft">
-            Looks good — but saving changes isn&apos;t connected yet
-            (TASK-09). Nothing was updated.
+        {submitError ? (
+          <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
+            {submitError}
           </p>
         ) : null}
-        {stubNotice === "delete" ? (
+        {deleteStubNotice ? (
           <p className="mt-2 text-center text-[11px] text-ink-soft">
             Deleting isn&apos;t connected yet (TASK-10). Nothing was removed.
           </p>
@@ -155,7 +187,7 @@ export function EditTaskForm({ task }: { task: Task }) {
         cancelLabel="Keep task"
         onConfirm={() => {
           setDeleteOpen(false);
-          setStubNotice("delete");
+          setDeleteStubNotice(true);
         }}
         onCancel={() => setDeleteOpen(false)}
       />
