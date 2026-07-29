@@ -15,8 +15,9 @@ export type ButtonVariant =
   | "secondary"
   | "destructive"
   | "destructive-outline"
+  | "on-brand"
   | "oauth";
-export type ButtonSize = "full" | "inline" | "dialog";
+export type ButtonSize = "full" | "inline" | "dialog" | "hero";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
@@ -39,6 +40,9 @@ const sizes: Record<ButtonSize, string> = {
   inline: "h-11 rounded-input font-display text-[14px] font-semibold",
   // Modal actions — 46px tall, radius 12 (handoff addendum §2).
   dialog: "h-[46px] rounded-input font-display text-[15px] font-semibold",
+  // Full-bleed celebration / landing CTA — 50px tall, radius 13 (level-up
+  // addendum, and the landing screen's "Get started").
+  hero: "h-[50px] rounded-btn font-display text-[16px] font-semibold",
 };
 
 // Filled buttons follow the style guide exactly: accent fill, white label,
@@ -84,6 +88,19 @@ const variants: Record<ButtonVariant, string> = {
     "hover:not-disabled:border-terracotta-hover hover:not-disabled:bg-terracotta-tint hover:not-disabled:text-terracotta-hover",
     "active:not-disabled:bg-terracotta-tint-press",
     "disabled:border-terracotta-disabled disabled:text-terracotta-disabled",
+  ),
+  // The inverse of `primary`, for a button drawn *on* a saturated brand fill:
+  // white body, terracotta label, neutral shadow rather than a tinted one (a
+  // terracotta glow is invisible on terracotta). The level-up celebration and
+  // the landing screen's "Get started" are both this.
+  //
+  // Contrast is the same 2.69 terracotta-on-white as `secondary` — an accepted
+  // AA exception recorded in the globals.css audit block, not an oversight.
+  "on-brand": cn(
+    "bg-surface text-terracotta shadow-[0_6px_14px_rgb(46_42_38/0.18)]",
+    "hover:not-disabled:bg-warm hover:not-disabled:-translate-y-px",
+    "active:not-disabled:bg-input active:not-disabled:translate-y-px",
+    "disabled:bg-surface/60 disabled:text-terracotta-disabled",
   ),
   // OAuth: neutral white button with the input border, Nunito 800 13px.
   oauth: cn(

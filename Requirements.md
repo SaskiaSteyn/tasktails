@@ -105,7 +105,7 @@
 
 | # | Requirement |
 |---|-------------|
-| NFR-TASK-1 | **Anti-spam guardrail** — if a user completes a task with the same title within 24 h of a prior completion, the reward is reduced to 50% coins/XP. Within 48 h: 25%. Within 72 h: 10%. Minimum floor: 1 coin, 1 XP. |
+| NFR-TASK-1 | **Anti-spam guardrail** — if a user completes a task with the same title within 24 h of a prior completion, the reward is reduced to 50% coins/XP. Within 48 h: 25%. Within 72 h: 10%. Minimum floor: 1 coin, 1 XP. Titles are matched on a normalised key (trimmed, whitespace-collapsed, lowercased), so capitalisation and spacing cannot evade the check. **Two exemptions** (ECO-02, added after the rule as first written was found to punish honest planning): a duplicate that *already existed* when its title was last completed keeps its full reward, because a task created before the reward was seen was planned rather than spawned in response to it; that exemption lapses after 3 completions of the same title in one calendar day, so a single large batch of identical tasks cannot buy unlimited full rewards. The floor never *raises* a reward — a task already reduced to 0 coins by lateness stays at 0, or a repeat would pay more than a single completion. |
 | NFR-TASK-2 | **Daily cap** — a user may earn a maximum of 300 coins and 500 XP per day across all tasks |
 | NFR-TASK-3 | **A/B group isolation** — Group A users must never see false urgency indicators; Group B users must always see them in the store. Assignment must be enforced server-side |
 
@@ -198,7 +198,9 @@ Designed with a **hockey-stick curve**: Levels 1–5 arrive within a single firs
 | 9 | 1,400 | Day 9–10 |
 | 10 | 2,000 | Day 13–14 (aspirational end-goal) |
 
-**First-session simulation**: 3 tasks (1 trivial + 2 small = 8 + 20 + 20 = 48 XP) → user hits Levels 2, 3, 4, and 5 in a single sitting.
+**First-session simulation**: 3 tasks (1 trivial + 2 small = 8 + 20 + 20 = 48 XP) → user hits Levels 2, 3 and 4 in a single sitting. A fourth small task (68 XP) reaches Level 5.
+
+> Corrected during ECO-05: this example previously claimed 48 XP reached Level 5. It does not — Level 5 needs 55 XP, so 48 lands on Level 4. The threshold table above is unchanged and remains authoritative; only the worked example was wrong. Four tasks, not three, get a participant to Level 5 in their first sitting.
 
 **Study-range summary**: Low performers (~2 tasks/day) reach Level 7–8. Average performers (~5 tasks/day) reach Level 10 by study end. High performers (~8 tasks/day, larger tasks) reach Level 10 by day 9–10.
 
