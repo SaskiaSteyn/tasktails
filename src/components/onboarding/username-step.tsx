@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { StepDots } from "@/components/ui/step-dots";
 import {
   UsernameField,
   type Availability,
@@ -85,6 +86,11 @@ export function UsernameStep({
   return (
     <>
     <div className="flex flex-1 flex-col">
+        {/* Addendum §1 — 3 pips, this step first/active. Step 2 is onboarding's
+            goals screen (ONB-01, not yet built); step 3 is the dashboard
+            itself, so this component doesn't own advancing past step 1. */}
+        <StepDots total={3} current={1} className="mt-[10px]" />
+
         <div className="mx-auto mt-[16px] mb-[14px] flex size-16 items-center justify-center rounded-full bg-terracotta-tint text-terracotta">
           <User size={30} strokeWidth={2.2} aria-hidden />
         </div>
