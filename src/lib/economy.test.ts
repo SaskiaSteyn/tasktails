@@ -4,6 +4,8 @@ import {
   antiSpamCheck,
   dailyAllowanceOf,
   grantEarnings,
+  nextStreak,
+  recordStreakDay,
   reduceForRepeats,
 } from "@/lib/economy";
 import { prismaMock } from "@/test/prisma-mock";
@@ -367,6 +369,137 @@ describe("grantEarnings", () => {
     prismaMock.$queryRaw.mockResolvedValue([]);
 
     expect(await grantEarnings("ghost", { coins: 5, xp: 8 }, now)).toBeNull();
+    expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * ECO-04 — the streak (§3.4). A streak day is "at least 1 task completed that
+ * day", so the transition table is driven entirely by how many calendar days
+ * sit between `lastStreakDate` and the completion.
+ */
+describe("nextStreak", () => {
+  const now = new Date(2026, 6, 20, 14, 0);
+  const daysBefore = (days: number) =>
+    new Date(2026, 6, 20 - days, 21, 0);
+
+  it("starts a streak on the first completion an account ever has", () => {
+    const update = nextStreak({ streak: 0, lastStreakDate: null }, now);
+
+    expect(update).toEqual({
+      streak: 1,
+      previousStreak: 0,
+      event: "started",
+      isFirstToday: true,
+      bonus: 0,
+    });
+  });
+
+  it("extends when yesterday was a streak day", () => {
+    const update = nextStreak({ streak: 6, lastStreakDate: daysBefore(1) }, now);
+
+    expect(update.streak).toBe(7);
+    expect(update.event).toBe("extended");
+    expect(update.isFirstToday).toBe(true);
+    // Crossing 7 puts the 20% coin bonus in force for this very completion.
+    expect(update.bonus).toBe(0.2);
+  });
+
+  it("does not move on the second completion of the same day", () => {
+    const update = nextStreak(
+      { streak: 4, lastStreakDate: new Date(2026, 6, 20, 8, 0) },
+      now,
+    );
+
+    expect(update.streak).toBe(4);
+    expect(update.event).toBe("already-counted");
+    expect(update.isFirstToday).toBe(false);
+  });
+
+  it("breaks back to 1 when a day was missed", () => {
+    const update = nextStreak({ streak: 13, lastStreakDate: daysBefore(2) }, now);
+
+    expect(update.streak).toBe(1);
+    expect(update.previousStreak).toBe(13);
+    expect(update.event).toBe("broken");
+    expect(update.bonus).toBe(0);
+  });
+
+  it("does not re-count a date in the future", () => {
+    // Clock skew or a backdated completion must not inflate a streak.
+    const update = nextStreak(
+      { streak: 3, lastStreakDate: new Date(2026, 6, 22, 9, 0) },
+      now,
+    );
+
+    expect(update.streak).toBe(3);
+    expect(update.event).toBe("already-counted");
+    expect(update.isFirstToday).toBe(false);
+  });
+
+  it("carries the §3.4 bonus thresholds", () => {
+    const onDay = (streak: number) =>
+      nextStreak({ streak: streak - 1, lastStreakDate: daysBefore(1) }, now)
+        .bonus;
+
+    expect(onDay(2)).toBe(0);
+    expect(onDay(3)).toBe(0.1);
+    expect(onDay(7)).toBe(0.2);
+    expect(onDay(14)).toBe(0.35);
+  });
+});
+
+describe("recordStreakDay", () => {
+  const now = new Date(2026, 6, 20, 14, 0);
+
+  beforeEach(() => {
+    prismaMock.$transaction.mockImplementation(
+      (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
+    );
+  });
+
+  it("writes the new counter and local midnight on the first completion of a day", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      { streak: 2, lastStreakDate: new Date(2026, 6, 19, 22, 0) },
+    ]);
+
+    const update = await recordStreakDay("user-1", now);
+
+    expect(update?.streak).toBe(3);
+    expect(prismaMock.userEconomy.update).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      data: { streak: 3, lastStreakDate: new Date(2026, 6, 20, 0, 0) },
+    });
+  });
+
+  it("writes nothing on a later completion the same day", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      { streak: 3, lastStreakDate: new Date(2026, 6, 20, 9, 0) },
+    ]);
+
+    const update = await recordStreakDay("user-1", now);
+
+    expect(update?.event).toBe("already-counted");
+    expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
+  });
+
+  it("locks the row it is about to update", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([
+      { streak: 0, lastStreakDate: null },
+    ]);
+
+    await recordStreakDay("user-1", now);
+
+    const sql = (prismaMock.$queryRaw.mock.calls[0][0] as unknown as string[])
+      .join("")
+      .replace(/\s+/g, " ");
+    expect(sql).toContain("FOR UPDATE");
+  });
+
+  it("returns null when the account has no economy row", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([]);
+
+    expect(await recordStreakDay("ghost", now)).toBeNull();
     expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
   });
 });

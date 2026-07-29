@@ -44,7 +44,7 @@ TASK-11,POST /api/tasks/[id]/complete — mark task complete and invoke economy 
 ECO-01,Reward calculation service — base coins/XP from complexity tier apply efficiency modifier apply streak bonus apply anti-spam reduction apply daily cap check,TODO App,Backend,Done
 ECO-02,Anti-spam check — query last completion of same task title within 72h and apply tiered reward reduction (50% 25% 10%),TODO App,Backend,Done
 ECO-03,Daily cap enforcement — reject coin/XP earnings above 300 coins and 500 XP per calendar day,TODO App,Backend,Done
-ECO-04,Streak service — detect if today is a streak day update streak counter calculate and apply streak coin bonus (10% 20% 35%),TODO App,Backend,To Do
+ECO-04,Streak service — detect if today is a streak day update streak counter calculate and apply streak coin bonus (10% 20% 35%),TODO App,Backend,Done
 ECO-05,Level-up service — compare cumulative XP against level threshold table update level in UserEconomy return level-up event if threshold crossed,TODO App,Backend,To Do
 ECO-06,POST /api/economy/buy-xp — deduct 100 coins add 40 XP invoke level-up service,TODO App,Backend,To Do
 ECO-07,Level-up notification — UI toast or modal shown when the user crosses a level threshold,TODO App,Frontend,To Do

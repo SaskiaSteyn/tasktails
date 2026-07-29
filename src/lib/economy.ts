@@ -1,6 +1,11 @@
 import { auth } from "@/auth";
 import type { UserEconomy } from "@/generated/prisma/client";
-import { isSameDay, startOfDay, startOfNextDay } from "@/lib/day";
+import {
+  calendarDaysBetween,
+  isSameDay,
+  startOfDay,
+  startOfNextDay,
+} from "@/lib/day";
 import { levelProgress, type LevelProgress } from "@/lib/levels";
 import { prisma } from "@/lib/prisma";
 import {
@@ -10,6 +15,7 @@ import {
   DAILY_COIN_CAP,
   DAILY_XP_CAP,
   FULL_REWARD_REPEATS_PER_DAY,
+  streakBonusFor,
   type CappedReward,
   type Reward,
 } from "@/lib/rewards";
@@ -339,5 +345,117 @@ export async function grantEarnings(
     });
 
     return { ...capped, allowance: dailyAllowanceOf(economy, now), economy };
+  });
+}
+
+/** What happened to a streak when a completion landed (ECO-04). */
+export type StreakEvent =
+  /** First streak day this account has ever had. */
+  | "started"
+  /** Yesterday was a streak day too — the counter went up. */
+  | "extended"
+  /** A day was missed; the counter is back to 1. */
+  | "broken"
+  /** Not the first completion today, so the counter had already moved. */
+  | "already-counted";
+
+export type StreakUpdate = {
+  /** The counter after this completion. */
+  streak: number;
+  previousStreak: number;
+  event: StreakEvent;
+  /** True when this completion is what made today a streak day. */
+  isFirstToday: boolean;
+  /** The coin bonus now in force: 0, 0.1, 0.2 or 0.35. */
+  bonus: number;
+};
+
+/** The two columns the streak lives in. */
+type StreakColumns = Pick<UserEconomy, "streak" | "lastStreakDate">;
+
+/**
+ * Where a streak lands when a task is completed at `now` (§3.4).
+ *
+ * A streak day is "at least 1 task completed that day", so the *first*
+ * completion of a day moves the counter and every completion after it is a
+ * no-op. That makes this safe to call on every completion — which is what
+ * makes it correct, since the alternative is each caller remembering whether it
+ * has already recorded today.
+ *
+ * Pure, so the dashboard can show what a completion would do to a streak
+ * without writing anything.
+ */
+export function nextStreak(
+  columns: StreakColumns,
+  now: Date = new Date(),
+): StreakUpdate {
+  const previousStreak = Math.max(0, columns.streak);
+  const settle = (streak: number, event: StreakEvent, isFirstToday: boolean) => ({
+    streak,
+    previousStreak,
+    event,
+    isFirstToday,
+    bonus: streakBonusFor(streak),
+  });
+
+  if (!columns.lastStreakDate) return settle(1, "started", true);
+
+  const daysSince = calendarDaysBetween(columns.lastStreakDate, now);
+
+  // Today (0), or a stored date in the future (negative) — clock skew or a
+  // backdated completion. Either way the day is already counted; re-counting it
+  // would let one active day inflate a streak.
+  if (daysSince <= 0) {
+    return settle(Math.max(previousStreak, 1), "already-counted", false);
+  }
+
+  // Yesterday. `max(…, 1)` guards a row that somehow has a date but a 0 counter,
+  // so an inconsistent row heals upward rather than sticking at 1 forever.
+  if (daysSince === 1) {
+    return settle(Math.max(previousStreak, 1) + 1, "extended", true);
+  }
+
+  return settle(1, "broken", true);
+}
+
+/**
+ * Records today as a streak day and returns what that did to the counter.
+ *
+ * Locked with `SELECT … FOR UPDATE` for the same reason as `grantEarnings`: two
+ * completions landing together would both read yesterday's date and both
+ * increment, handing out a streak day that was never earned. The lock makes the
+ * second one see the first's write and fall through to "already-counted".
+ *
+ * Call this *before* pricing the completion — the first task of day 3 should
+ * itself earn the 10% bonus, so `calculateReward` needs the post-update streak.
+ *
+ * Returns null when the account has no economy row.
+ */
+export async function recordStreakDay(
+  userId: string,
+  now: Date = new Date(),
+): Promise<StreakUpdate | null> {
+  return prisma.$transaction(async (tx) => {
+    const locked = await tx.$queryRaw<StreakColumns[]>`
+      SELECT "streak", "lastStreakDate"
+      FROM "UserEconomy"
+      WHERE "userId" = ${userId}
+      FOR UPDATE`;
+
+    const columns = locked[0];
+    if (!columns) return null;
+
+    const update = nextStreak(columns, now);
+    if (!update.isFirstToday) return update;
+
+    await tx.userEconomy.update({
+      where: { userId },
+      // Stored as local midnight, not the completion time: the column answers
+      // "which day was the last streak day", and a time-of-day component would
+      // invite an elapsed-hours comparison somewhere down the line.
+      data: { streak: update.streak, lastStreakDate: startOfDay(now) },
+    });
+
+    return update;
   });
 }
