@@ -123,3 +123,18 @@ export async function updateCartItemQuantity(
     include: { storeItem: true },
   });
 }
+
+/**
+ * Removes one row from `userId`'s cart (STOR-15). `deleteMany`, same
+ * ownership scoping as `updateCartItemQuantity()` and `deleteTask()` — a
+ * mismatched owner or unknown id both come back as "0 rows".
+ */
+export async function removeFromCart(
+  userId: string,
+  cartItemId: string,
+): Promise<boolean> {
+  const { count } = await prisma.cartItem.deleteMany({
+    where: { id: cartItemId, userId },
+  });
+  return count > 0;
+}
