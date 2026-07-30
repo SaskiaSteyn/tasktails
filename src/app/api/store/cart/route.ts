@@ -1,8 +1,26 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
-import { addToCart } from "@/lib/cart";
+import { addToCart, cartForUser } from "@/lib/cart";
 import { addToCartSchema, fieldErrors } from "@/lib/validation/store";
+
+/**
+ * STOR-13 — `GET /api/store/cart`. Lists the signed-in user's current cart,
+ * each row with its catalogue item attached (`cartForUser()`).
+ *
+ * Same auth pattern as `GET /api/tasks`: checked here explicitly rather than
+ * relied on from `src/proxy.ts`.
+ */
+export async function GET() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
+  const cart = await cartForUser(userId);
+  return NextResponse.json({ cart });
+}
 
 /**
  * STOR-12 — `POST /api/store/cart`. Adds an item to the signed-in user's

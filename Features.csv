@@ -70,7 +70,7 @@ STOR-09,Purchase history / transaction log page — lists past purchases with it
 STOR-10,GET /api/store/items — list all store items include per-item locked flag based on user level,Store,Backend,Done
 STOR-11,GET /api/store/items/[id] — single item detail,Store,Backend,Done
 STOR-12,POST /api/store/cart — add item to cart,Store,Backend,Done
-STOR-13,GET /api/store/cart — retrieve user's current cart,Store,Backend,To Do
+STOR-13,GET /api/store/cart — retrieve user's current cart,Store,Backend,Done
 STOR-14,PATCH /api/store/cart/[id] — update quantity of a cart item,Store,Backend,To Do
 STOR-15,DELETE /api/store/cart/[id] — remove item from cart,Store,Backend,To Do
 STOR-16,POST /api/store/checkout — validate cart check coin balance check level gates deduct coins create Transaction and InventoryItem records log telemetry,Store,Backend,To Do

@@ -72,3 +72,21 @@ export async function addToCart(
 
   return { ok: true, cartItem };
 }
+
+/**
+ * `userId`'s current cart, each row with its catalogue item attached
+ * (STOR-13) — what STOR-06's cart panel renders directly.
+ *
+ * Ordered by `id`, ascending — cuids are k-sortable, so this reads as
+ * insertion order without a `createdAt` column, same rationale
+ * `tasksForUser()`'s subtask ordering documents.
+ */
+export async function cartForUser(
+  userId: string,
+): Promise<CartItemWithStoreItem[]> {
+  return prisma.cartItem.findMany({
+    where: { userId },
+    orderBy: { id: "asc" },
+    include: { storeItem: true },
+  });
+}

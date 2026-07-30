@@ -126,7 +126,7 @@
 | STOR-10 | `GET /api/store/items` — list all store items; include per-item `locked` flag based on user's current level | Backend | Done |
 | STOR-11 | `GET /api/store/items/[id]` — single item detail | Backend | Done |
 | STOR-12 | `POST /api/store/cart` — add item to cart | Backend | Done — 403s on a locked item (STOR-04's card design); STOR-16 keeps its own independent level-gate check at checkout |
-| STOR-13 | `GET /api/store/cart` — retrieve user's current cart | Backend | To Do |
+| STOR-13 | `GET /api/store/cart` — retrieve user's current cart | Backend | Done |
 | STOR-14 | `PATCH /api/store/cart/[id]` — update quantity of a cart item | Backend | To Do |
 | STOR-15 | `DELETE /api/store/cart/[id]` — remove item from cart | Backend | To Do |
 | STOR-16 | `POST /api/store/checkout` — validate cart, check coin balance, check level gates, deduct coins, create `Transaction` and `InventoryItem` records, log telemetry | Backend | To Do |
