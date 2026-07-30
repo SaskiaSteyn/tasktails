@@ -53,9 +53,9 @@ SUB-02,Add subtask inline input within a task card,TODO App,Frontend,Done
 SUB-03,Complete subtask action — triggers proportional reward,TODO App,Frontend,Done
 SUB-04,POST /api/tasks/[id]/subtasks — add a subtask to a task,TODO App,Backend,Done
 SUB-05,POST /api/tasks/[id]/subtasks/[subId]/complete — mark subtask complete calculate proportional reward and auto-complete parent when all subtasks done,TODO App,Backend,Done
-ONB-01,Onboarding checklist widget — displays three goals with live completion status,TODO App,Frontend,To Do
-ONB-02,Goal completion celebration — visual feedback when each onboarding goal is met,TODO App,Frontend,To Do
-ONB-03,GET /api/onboarding — return current completion status of the three onboarding goals for the authenticated user,TODO App,Backend,To Do
+ONB-01,Onboarding checklist widget — displays three goals with live completion status,TODO App,Frontend,Done
+ONB-02,Goal completion celebration — visual feedback when each onboarding goal is met,TODO App,Frontend,Done
+ONB-03,GET /api/onboarding — return current completion status of the three onboarding goals for the authenticated user,TODO App,Backend,Done
 ONB-04,Username step — step dots live availability check suggestion chips and a skip that assigns an auto-generated handle,TODO App,Frontend,Done
 ONB-05,POST /api/user/username (availability) and PUT (claim) — session-scoped enforces uniqueness,TODO App,Backend,Done
 STOR-01,Store listing page — grid of item cards showing name image coin price level requirement and availability,Store,Frontend,To Do

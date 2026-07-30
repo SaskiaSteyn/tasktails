@@ -6,11 +6,29 @@
  * would eventually disagree with this one, and a participant seeing a different
  * level in the header than the store gate applies is a broken study instrument.
  *
- * Values are the agreed curve in claude-memory/economy_system.md: a hockey stick
- * that hands out levels 1-5 inside the first session (~3-6 tasks) for the early
- * dopamine hit, then steepens sharply for 6-10. Changing any of them changes the
- * store gates (economy_system.md's gate table) and the study's exposure
- * schedule, so update that document too.
+ * Values are the agreed curve in claude-memory/economy_system.md. Changing any
+ * of them changes when the store gates open (economy_system.md's gate table)
+ * and the study's exposure schedule, so update that document too.
+ *
+ * REBALANCED 2026-07-29. The original curve (8/20/35/55/200/500/900/1400/2000)
+ * put levels 1-5 inside 55 XP — barely more than one Medium task — and a single
+ * Epic task landed on level 6 exactly. Six level-up celebrations could fire in
+ * one sitting, which is what the rebalance was asked for: the levels arriving
+ * too close together, not there being too many of them. The ceiling stayed at
+ * 10 because the gate table is pinned to levels 1/3/5/7/10 and lowering it
+ * would mean re-mapping every gate.
+ *
+ * Only the bottom of the curve moved. Levels 7-10 keep their original values
+ * because those were already correct: Requirements §3.6 assumes an average
+ * participant earns ~150 XP/day (~5 tasks at ~30 XP), which puts Lv 7 at day
+ * ~3.7 and Lv 10 at day ~13 — the timings the study's exposure schedule is
+ * built on. Raising them would push Lv 10 past the end of the two weeks.
+ *
+ * A property worth preserving: Lv 6 (380) sits below the 500 XP/day cap
+ * (NFR-TASK-2) but Lv 7 (550) sits above it, so a participant who maxes the cap
+ * on day one lands on Lv 6 and cannot reach the Lv 7 gate — the second animal
+ * type, which the false-urgency exposure schedule depends on — until day two.
+ * Keep Lv 6 under 500 and Lv 7 over it, or that guarantee is gone.
  *
  * Pure arithmetic, no imports — safe in client components and in the proxy.
  */
@@ -18,15 +36,15 @@
 /** Cumulative XP needed to *reach* each level. Index 0 is level 1. */
 export const LEVEL_THRESHOLDS = [
   0, // Lv 1
-  8, // Lv 2
-  20, // Lv 3
-  35, // Lv 4
-  55, // Lv 5
-  200, // Lv 6
-  500, // Lv 7
-  900, // Lv 8
-  1400, // Lv 9
-  2000, // Lv 10
+  40, // Lv 2 — ~2 small tasks
+  110, // Lv 3 — end of a first session
+  190, // Lv 4
+  280, // Lv 5
+  380, // Lv 6 — under the 500/day cap, deliberately
+  550, // Lv 7 — over the cap; ~day 4, second animal type unlocks
+  900, // Lv 8 — ~day 6
+  1400, // Lv 9 — ~day 9
+  2000, // Lv 10 — ~day 13
 ] as const;
 
 /** The curve tops out here — the store's highest gate (economy_system.md). */
