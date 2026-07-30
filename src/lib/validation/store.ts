@@ -9,4 +9,15 @@ export const addToCartSchema = z.object({
 
 export type AddToCartInput = z.infer<typeof addToCartSchema>;
 
+/**
+ * STOR-14 — `PATCH /api/store/cart/[id]`'s body. No `default` here (unlike
+ * `addToCartSchema`) — an edit with no quantity given is a malformed request,
+ * not an implicit "set to 1".
+ */
+export const updateCartItemSchema = z.object({
+  quantity: z.number().int().min(1, "Quantity must be at least 1."),
+});
+
+export type UpdateCartItemInput = z.infer<typeof updateCartItemSchema>;
+
 export { fieldErrors } from "@/lib/validation/auth";

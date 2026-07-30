@@ -90,3 +90,36 @@ export async function cartForUser(
     include: { storeItem: true },
   });
 }
+
+/**
+ * Sets a cart row's quantity outright (STOR-14) — not an increment, unlike
+ * `addToCart()`, since this is the quantity stepper editing a line directly
+ * rather than a second add of the same item.
+ *
+ * Scoped to `userId` in the `where` clause (`updateMany`, not `update`) so a
+ * cart item id belonging to someone else fails the same way an unknown id
+ * does — same "404, not 403" reasoning `updateTask()` documents — rather than
+ * a two-query check-then-write that would leak whether the id exists via
+ * timing or a different error shape.
+ *
+ * No level-gate re-check here: STOR-12 already refused a locked item at
+ * add-time, so a row existing at all means it passed that gate, and quantity
+ * doesn't interact with level the way the item itself does.
+ */
+export async function updateCartItemQuantity(
+  userId: string,
+  cartItemId: string,
+  quantity: number,
+): Promise<CartItemWithStoreItem | null> {
+  const { count } = await prisma.cartItem.updateMany({
+    where: { id: cartItemId, userId },
+    data: { quantity },
+  });
+
+  if (count === 0) return null;
+
+  return prisma.cartItem.findUnique({
+    where: { id: cartItemId },
+    include: { storeItem: true },
+  });
+}
