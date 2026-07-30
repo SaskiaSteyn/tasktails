@@ -15,8 +15,12 @@ export type { StoreItem };
 /** A catalogue row with the level gate resolved against one user (STOR-04). */
 export type StoreItemWithLock = StoreItem & { locked: boolean };
 
-/** `userId`'s current level, for gating a `StoreItem` against (STOR-10, STOR-11). */
-async function levelOf(userId: string): Promise<number> {
+/**
+ * `userId`'s current level, for gating a `StoreItem` against (STOR-10, STOR-11,
+ * STOR-12). Exported so `src/lib/cart.ts` can apply the same gate at
+ * add-to-cart time without a second copy of this lookup.
+ */
+export async function levelOf(userId: string): Promise<number> {
   const economy = await prisma.userEconomy.findUnique({
     where: { userId },
     select: { level: true },
