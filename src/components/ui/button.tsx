@@ -111,6 +111,35 @@ const variants: Record<ButtonVariant, string> = {
   ),
 };
 
+/**
+ * The class list on its own, for the cases where the element has to be a
+ * `<Link>` rather than a `<button>` — a CTA whose whole job is navigation, like
+ * onboarding's "Let's go". An anchor cannot be nested in a button, and swapping
+ * in `useRouter` would make a server-rendered screen a client one for no gain.
+ */
+export function buttonClasses({
+  variant = "primary",
+  size = "full",
+  fullWidth = true,
+  className,
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+  className?: string;
+} = {}) {
+  return cn(
+    base,
+    fullWidth ? "w-full" : "flex-none",
+    // The OAuth button carries its own type ramp (Nunito 800 13px, 44px tall).
+    variant === "oauth"
+      ? "h-11 rounded-input text-[13px] font-extrabold"
+      : sizes[size],
+    variants[variant],
+    className,
+  );
+}
+
 export function Button({
   variant = "primary",
   size = "full",
@@ -119,21 +148,10 @@ export function Button({
   type = "button",
   ...props
 }: ButtonProps) {
-  const isOauth = variant === "oauth";
-
   return (
     <button
       type={type}
-      className={cn(
-        base,
-        fullWidth ? "w-full" : "flex-none",
-        // The OAuth button carries its own type ramp (Nunito 800 13px, 44px tall).
-        isOauth
-          ? "h-11 rounded-input text-[13px] font-extrabold"
-          : sizes[size],
-        variants[variant],
-        className,
-      )}
+      className={buttonClasses({ variant, size, fullWidth, className })}
       {...props}
     />
   );

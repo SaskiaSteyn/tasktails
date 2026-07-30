@@ -53,9 +53,9 @@ SUB-02,Add subtask inline input within a task card,TODO App,Frontend,Done
 SUB-03,Complete subtask action — triggers proportional reward,TODO App,Frontend,Done
 SUB-04,POST /api/tasks/[id]/subtasks — add a subtask to a task,TODO App,Backend,Done
 SUB-05,POST /api/tasks/[id]/subtasks/[subId]/complete — mark subtask complete calculate proportional reward and auto-complete parent when all subtasks done,TODO App,Backend,Done
-ONB-01,Onboarding checklist widget — displays three goals with live completion status,TODO App,Frontend,To Do
-ONB-02,Goal completion celebration — visual feedback when each onboarding goal is met,TODO App,Frontend,To Do
-ONB-03,GET /api/onboarding — return current completion status of the three onboarding goals for the authenticated user,TODO App,Backend,To Do
+ONB-01,Onboarding checklist widget — displays three goals with live completion status,TODO App,Frontend,Done
+ONB-02,Goal completion celebration — visual feedback when each onboarding goal is met,TODO App,Frontend,Done
+ONB-03,GET /api/onboarding — return current completion status of the three onboarding goals for the authenticated user,TODO App,Backend,Done
 ONB-04,Username step — step dots live availability check suggestion chips and a skip that assigns an auto-generated handle,TODO App,Frontend,Done
 ONB-05,POST /api/user/username (availability) and PUT (claim) — session-scoped enforces uniqueness,TODO App,Backend,Done
 STOR-01,Store listing page — grid of item cards showing name image coin price level requirement and availability,Store,Frontend,To Do
@@ -131,6 +131,7 @@ SHR-04,Empty state — tasks (All clear! with a New task action),Shared UI & Sta
 SHR-05,Empty state — cart (Cart's empty with a Go to store action),Shared UI & States,Frontend,To Do
 SHR-06,Locked-by-level state — violet lock heading level progress bar and levels-to-go label,Shared UI & States,Frontend,To Do
 SHR-07,Error / offline state — Can't reach TaskTails message with a Retry action,Shared UI & States,Frontend,To Do
+SHR-08,Not-found state plus coming-soon placeholders for Store and Zoo so neither dead-ends before their real screens ship,Shared UI & States,Frontend,Done
 MKT-01,Marketing site — desktop nav hero with CTAs avatar stack social proof and the hero phone,Marketing & Public Site,Frontend,To Do
 MKT-02,Marketing site — three-column feature grid how-it-works steps closing CTA and dark footer,Marketing & Public Site,Frontend,To Do
 MKT-03,Landing / welcome screen — full terracotta screen fox badge feature chips Get started and Log in,Marketing & Public Site,Frontend,To Do

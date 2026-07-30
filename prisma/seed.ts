@@ -72,10 +72,22 @@ const catalogue: Array<{
     imageUrl: "home",
   },
   {
+    // The starter animal, and deliberately almost free. Onboarding (ONB-01)
+    // asks a new participant to add a task, complete it, then buy a pet — so
+    // the price has to be inside what one completion can pay, and the smallest
+    // completion in the economy is a Trivial task at 5 coins. Was 200, which
+    // no first completion could reach.
+    //
+    // This sits below claude-memory/economy_system.md's 30–80 band for the
+    // level-1 gate. That band describes food and accessories; the starter
+    // animal is the onboarding runway and is priced to clear it, on the user's
+    // call (2026-07-29). The level-7 and level-10 animals are untouched, so the
+    // gate table still governs everything the 14-day earnings model was
+    // calibrated against.
     name: "Koala kit",
     category: StoreItemCategory.ANIMALS,
     levelRequired: 1,
-    coinPrice: 200,
+    coinPrice: 5,
     imageUrl: "/animals/koala.svg",
   },
   {

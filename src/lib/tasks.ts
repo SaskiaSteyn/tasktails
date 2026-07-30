@@ -24,8 +24,12 @@ const HOUR_MS = 60 * 60 * 1000;
  * All of a user's tasks, incomplete ones first (what the dashboard needs to
  * show), then by due date (soonest first, undated last), then oldest first
  * within a tie.
+ *
+ * Includes subtasks (2026-07-30, matching `taskForUser()`'s own include) so
+ * the dashboard can render and complete them inline rather than only from the
+ * edit screen — same "cuid ids are k-sortable" ordering rationale as there.
  */
-export async function tasksForUser(userId: string): Promise<Task[]> {
+export async function tasksForUser(userId: string): Promise<TaskWithSubtasks[]> {
   return prisma.task.findMany({
     where: { userId },
     orderBy: [
@@ -33,7 +37,25 @@ export async function tasksForUser(userId: string): Promise<Task[]> {
       { dueDate: { sort: "asc", nulls: "last" } },
       { createdAt: "asc" },
     ],
+    include: { subtasks: { orderBy: { id: "asc" } } },
   });
+}
+
+/** How many tasks this user has ever created, complete or not. */
+export async function taskCount(userId: string): Promise<number> {
+  return prisma.task.count({ where: { userId } });
+}
+
+/**
+ * How many tasks this user has ever completed.
+ *
+ * Lives here rather than in the caller because nothing outside this module
+ * touches `prisma.task`. ONB-01's first quest ("Complete 3 tasks") is the only
+ * consumer so far; PRO-09's `TASKS_COMPLETED` badge criterion wants the same
+ * number and should use this rather than counting again.
+ */
+export async function completedTaskCount(userId: string): Promise<number> {
+  return prisma.task.count({ where: { userId, completedAt: { not: null } } });
 }
 
 /**

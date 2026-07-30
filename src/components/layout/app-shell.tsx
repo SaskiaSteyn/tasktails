@@ -22,6 +22,15 @@ import { cn } from "@/lib/cn";
  * the home indicator on a notched phone, and `nav` would be the first casualty.
  * Above `frame:` the card is inset by its own padding and the insets resolve to
  * zero, so the same markup is correct at both ends.
+ *
+ * `nav` stays pinned to the bottom by height, not `position: sticky` — every
+ * div from `body` down to `main` is bounded (`h-full`/`min-h-0`/`frame:h-*`
+ * rather than `min-h-full`/`min-h-[640px]`), so a screen with more content than
+ * fits can only grow `main`'s own scroll area, never the frame itself. Each
+ * level needs its own `min-h-0`: a flex item's automatic minimum size is its
+ * content size unless something says otherwise, so without it every level down
+ * the chain would grow to fit whatever the screen renders and drag `nav` down
+ * with it — which is exactly the bug this replaced.
  */
 export function AppShell({
   header,
@@ -39,8 +48,8 @@ export function AppShell({
     // ECO-07's celebration is mounted here so any screen inside the frame can
     // raise it with `useLevelUp()`. It renders nothing until one fires.
     <LevelUpProvider>
-      <div className="flex flex-1 justify-center bg-board frame:items-center frame:p-6">
-        <div className="flex w-full flex-col bg-surface frame:min-h-[640px] frame:max-w-app frame:overflow-hidden frame:rounded-frame frame:border frame:border-[rgb(46_42_38/0.06)] frame:shadow-card">
+      <div className="flex min-h-0 flex-1 justify-center bg-board frame:items-center frame:p-6">
+        <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface frame:h-[640px] frame:max-w-app frame:rounded-frame frame:border frame:border-[rgb(46_42_38/0.06)] frame:shadow-card">
           {/* WCAG 2.4.1 Bypass Blocks. Only rendered when there is actually a block
             to bypass — on the auth screens the first thing in the tab order is
             already the content, and a skip link there would be one more stop for
@@ -59,7 +68,7 @@ export function AppShell({
           <main
             id="main"
             tabIndex={-1}
-            className={cn("flex flex-1 flex-col", className)}
+            className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto", className)}
           >
             {children}
           </main>

@@ -1,24 +1,40 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+
 import { auth } from "@/auth";
+import { AppShell } from "@/components/layout/app-shell";
+import { QuestChecklist } from "@/components/onboarding/quest-checklist";
+import { onboardingStatus } from "@/lib/onboarding";
+import { displayNameFor, findUserByEmail } from "@/lib/users";
+
+export const metadata: Metadata = {
+  title: "Your first three quests · TaskTails",
+  description: "The three quests that introduce TaskTails.",
+};
 
 /**
- * Placeholder landing spot after registration so the sign-up flow can be tested
- * end to end. The real screen ("Your first three quests") is ONB-01/ONB-02.
+ * ONB-01 — the onboarding checklist, where the register flow lands.
+ *
+ * No header and no bottom nav, matching the frame: this is still part of the
+ * welcome flow, and its one way out is "Let's go". The frame's ground is the
+ * warm fill rather than the usual white, so the shell's content area carries
+ * `bg-warm`.
  */
 export default async function OnboardingPage() {
   const session = await auth();
+  const userId = session?.user?.id;
+  const email = session?.user?.email;
+  if (!userId || !email) redirect("/login");
+
+  const [record, status] = await Promise.all([
+    findUserByEmail(email),
+    onboardingStatus(userId),
+  ]);
+  if (!record) redirect("/login");
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-board p-6">
-      <div className="flex w-full max-w-[400px] flex-col gap-2 rounded-card-lg border border-border-track bg-surface p-6 shadow-card">
-        <p className="text-overline text-terracotta">
-          Welcome{session?.user?.name ? `, ${session.user.name}` : ""}
-        </p>
-        <h1 className="text-section">Your first three quests</h1>
-        <p className="text-secondary">
-          This screen is still to be built — ONB-01. You&apos;re signed in, so
-          registration worked.
-        </p>
-      </div>
-    </main>
+    <AppShell className="bg-warm px-[22px] pt-[22px] pb-6">
+      <QuestChecklist name={displayNameFor(record)} status={status} />
+    </AppShell>
   );
 }

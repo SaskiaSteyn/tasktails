@@ -15,7 +15,7 @@ import type { TaskWithSubtasks } from "@/lib/tasks";
 
 /**
  * TASK-03 — task detail / edit screen. Pre-filled title, due date,
- * complexity, subtask list (SUB-01), and a reward footer with delete + save.
+ * complexity, subtask list (SUB-01), and a footer with delete + save.
  *
  * The subtask list is read-only here — adding one (SUB-02/04) and completing
  * one (SUB-03/05) are separate, unbuilt tickets, so "+ Add" is an inert label
@@ -171,12 +171,10 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
       </form>
 
       <div className="flex-none border-t border-border-track bg-warm px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
-        <div className="mb-[10px] flex items-center justify-between text-[12px]">
-          <span className="text-ink-soft">Reward on completion</span>
-          <span className="font-extrabold text-amber-text">
-            {reward.coins} coins · {reward.xp} XP
-          </span>
-        </div>
+        {/* The frame draws a "Reward on completion · N coins · N XP" line here.
+            Dropped on the user's call (2026-07-29) — it looked wrong in place,
+            and the figure is already on the task row and under each subtask, so
+            nothing is lost by not repeating it a third time. */}
         <div className="flex gap-2">
           <button
             type="button"
@@ -186,16 +184,20 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
           >
             <Trash2 size={18} strokeWidth={2.2} aria-hidden />
           </button>
-          <Button
-            type="submit"
-            form={formId}
-            size="dialog"
-            fullWidth={false}
-            className="flex-1"
-            disabled={submitting}
-          >
-            {submitting ? "Saving…" : "Save changes"}
-          </Button>
+          {/* `Button` is stretched by this wrapper rather than by passing it
+              `flex-1`: `fullWidth={false}` emits `flex-none`, and `cn` is a
+              plain join with no conflict resolution, so the two would race on
+              stylesheet order instead of one clearly winning. */}
+          <div className="flex-1">
+            <Button
+              type="submit"
+              form={formId}
+              size="dialog"
+              disabled={submitting}
+            >
+              {submitting ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
         </div>
 
         {submitError ? (

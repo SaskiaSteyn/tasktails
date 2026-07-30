@@ -521,29 +521,29 @@ describe("levelUpBetween", () => {
   });
 
   it("reports a single crossing", () => {
-    const event = levelUpBetween(0, 8);
+    const event = levelUpBetween(0, 40);
 
     expect(event).toEqual({
       from: 1,
       to: 2,
       levelsGained: [2],
-      xp: 8,
+      xp: 40,
       isMaxLevel: false,
     });
   });
 
   it("lists every level when one completion crosses several", () => {
-    // Requirements §3.6's first-session simulation: 1 trivial + 2 small = 48 XP.
-    // That reaches level 4 (threshold 35), not level 5 (55) as the document
-    // originally claimed — the example was arithmetically wrong and has been
-    // corrected there.
-    const event = levelUpBetween(0, 48);
+    // One Epic task is 200 XP, which clears levels 2 (40), 3 (110) and 4 (190)
+    // in a single completion — the widest jump a single task can produce under
+    // the 2026-07-29 curve. It used to reach level 6.
+    const event = levelUpBetween(0, 200);
 
     expect(event?.to).toBe(4);
     expect(event?.levelsGained).toEqual([2, 3, 4]);
 
-    // A fourth small task is what actually reaches level 5.
-    expect(levelUpBetween(48, 68)?.to).toBe(5);
+    // Requirements §3.6's first-session simulation, 1 trivial + 2 small, now
+    // stops at level 2 rather than sweeping up to 4.
+    expect(levelUpBetween(0, 48)?.to).toBe(2);
   });
 
   it("flags the top of the curve", () => {
@@ -578,7 +578,8 @@ describe("grantEarnings level-up", () => {
       { xp: 0, dailyCoinsEarned: 0, dailyXpEarned: 0, dailyCapResetAt: now },
     ]);
 
-    const grant = await grantEarnings("user-1", { coins: 35, xp: 45 }, now);
+    // Epic — the only single tier that crosses more than one threshold now.
+    const grant = await grantEarnings("user-1", { coins: 150, xp: 200 }, now);
 
     expect(grant?.levelUp?.from).toBe(1);
     expect(grant?.levelUp?.to).toBe(4);
@@ -616,8 +617,9 @@ describe("grantEarnings level-up", () => {
 
 describe("syncLevel", () => {
   it("repairs a stale level column", async () => {
+    // 380 is level 6's threshold.
     prismaMock.userEconomy.findUnique.mockResolvedValue({
-      xp: 220,
+      xp: 380,
       level: 3,
     } as never);
 
@@ -632,7 +634,7 @@ describe("syncLevel", () => {
 
   it("writes nothing when the column already agrees with the XP", async () => {
     prismaMock.userEconomy.findUnique.mockResolvedValue({
-      xp: 220,
+      xp: 380,
       level: 6,
     } as never);
 
@@ -672,9 +674,10 @@ describe("xpWrite", () => {
   });
 
   it("reports the crossing that the same write represents", () => {
-    expect(xpWrite(0, 8).levelUp?.to).toBe(2);
-    expect(xpWrite(0, 7).levelUp).toBeNull();
-    expect(xpWrite(48, 20).levelUp?.levelsGained).toEqual([5]);
+    expect(xpWrite(0, 40).levelUp?.to).toBe(2);
+    expect(xpWrite(0, 39).levelUp).toBeNull();
+    // 270 + 20 = 290, crossing Lv 5's 280 threshold.
+    expect(xpWrite(270, 20).levelUp?.levelsGained).toEqual([5]);
   });
 
   it("never derives a level from a negative total", () => {
@@ -717,17 +720,19 @@ describe("buyXp", () => {
     };
     expect(data.coins).toEqual({ decrement: 100 });
     expect(data.xp).toEqual({ increment: 40 });
-    // 20 + 40 = 60 XP, which is level 5.
-    expect(data.level).toBe(5);
+    // 20 + 40 = 60 XP, still below Lv 3's 110 — stays at level 2.
+    expect(data.level).toBe(2);
   });
 
   it("reports the level-up the purchase caused", async () => {
-    prismaMock.$queryRaw.mockResolvedValue([{ coins: 100, xp: 0 }]);
+    // Two purchases (80 XP) from 0 crosses Lv 2 (40) only. Buying from 100 XP
+    // one more purchase (140) crosses Lv 3 (110).
+    prismaMock.$queryRaw.mockResolvedValue([{ coins: 100, xp: 100 }]);
 
     const result = await buyXp("user-1");
 
-    expect(result.ok && result.levelUp?.to).toBe(4);
-    expect(result.ok && result.levelUp?.levelsGained).toEqual([2, 3, 4]);
+    expect(result.ok && result.levelUp?.to).toBe(3);
+    expect(result.ok && result.levelUp?.levelsGained).toEqual([3]);
   });
 
   it("refuses and writes nothing when the coins are not there", async () => {

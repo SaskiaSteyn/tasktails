@@ -39,7 +39,12 @@ export default function RootLayout({
       lang="en"
       className={`${fredoka.variable} ${nunito.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      {/* `h-full` + `overflow-hidden`, not the old `min-h-full`: pinning the
+          body to exactly the viewport height is what lets `AppShell`'s nav
+          stay put while its content area scrolls internally instead. With
+          `min-h-full` the body grew past the viewport whenever a screen's
+          content was tall, and the whole page scrolled — nav included. */}
+      <body className="h-full flex flex-col overflow-hidden">{children}</body>
     </html>
   );
 }
