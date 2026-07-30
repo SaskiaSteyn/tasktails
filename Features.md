@@ -124,7 +124,7 @@
 | STOR-08 | Coin balance display in store header (persistent) | Frontend | To Do |
 | STOR-09 | Purchase history / transaction log page — lists past purchases with item name, coins spent, and date | Frontend | To Do |
 | STOR-10 | `GET /api/store/items` — list all store items; include per-item `locked` flag based on user's current level | Backend | Done |
-| STOR-11 | `GET /api/store/items/[id]` — single item detail | Backend | To Do |
+| STOR-11 | `GET /api/store/items/[id]` — single item detail | Backend | Done |
 | STOR-12 | `POST /api/store/cart` — add item to cart | Backend | To Do |
 | STOR-13 | `GET /api/store/cart` — retrieve user's current cart | Backend | To Do |
 | STOR-14 | `PATCH /api/store/cart/[id]` — update quantity of a cart item | Backend | To Do |
