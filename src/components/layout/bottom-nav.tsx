@@ -24,10 +24,18 @@ const TABS_AFTER_PLUS = [
  * sheet's open state lives here, since this is the one thing mounted on
  * every authenticated page — there's no shared layout to hang it on instead.
  *
- * Store (STOR-01) and Zoo (PET-01) don't have pages yet; those tabs link to
- * their eventual routes anyway, the same forward-declared-route pattern
- * TASK-01's `/tasks` redirect used before that page existed.
+ * Store (STOR-01) doesn't have a real page yet — that tab links to its
+ * eventual route anyway, the same forward-declared-route pattern TASK-01's
+ * `/tasks` redirect used before that page existed. Zoo got its real pages in
+ * PET-01 (`/zoo` the gallery, `/zoo/[id]` the per-animal drill-in) — a tab
+ * counts as active on its own route or anything nested under it, which is
+ * what actually keeps the Zoo tab lit up while looking at one animal.
  */
+/** A tab is active on its own route and any route nested under it (PET-01's `/zoo/[id]` drill-in). */
+function isActiveTab(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function BottomNav() {
   const pathname = usePathname();
   const [createOpen, setCreateOpen] = useState(false);
@@ -36,7 +44,7 @@ export function BottomNav() {
     <>
       <nav className="flex items-center justify-center gap-4 bg-surface px-4 pt-2 pb-[14px]">
         {TABS_BEFORE_PLUS.map((tab) => (
-          <NavTab key={tab.href} {...tab} active={pathname === tab.href} />
+          <NavTab key={tab.href} {...tab} active={isActiveTab(pathname, tab.href)} />
         ))}
 
         <button
@@ -49,7 +57,7 @@ export function BottomNav() {
         </button>
 
         {TABS_AFTER_PLUS.map((tab) => (
-          <NavTab key={tab.href} {...tab} active={pathname === tab.href} />
+          <NavTab key={tab.href} {...tab} active={isActiveTab(pathname, tab.href)} />
         ))}
       </nav>
 

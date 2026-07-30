@@ -5,6 +5,8 @@ import { History } from "lucide-react";
 import { AuthBrandMark } from "@/components/auth/auth-screen";
 import { LevelUpDemo } from "@/components/economy/level-up-demo";
 import { AppHeader } from "@/components/layout/app-header";
+import { AnimalCard } from "@/components/pets/animal-card";
+import { ZooGalleryCard } from "@/components/pets/zoo-gallery-card";
 import { Button } from "@/components/ui/button";
 import { CoinPill } from "@/components/ui/coin";
 import { Divider } from "@/components/ui/divider";
@@ -16,7 +18,12 @@ import { StreakCard, StreakPill } from "@/components/ui/streak";
 import { TextField } from "@/components/ui/text-field";
 import { AA_TEXT, bpca, bpcaLc, contrast, readColorTokens } from "@/lib/contrast";
 import type { EconomySnapshot } from "@/lib/economy";
+// Type-only: erased at compile time, so this page (a Server Component) can
+// describe the shapes `AnimalCard`/`FeedSheet` need without ever importing
+// `pets.ts`'s or `inventory.ts`'s Prisma-touching value exports.
+import type { InventoryItemWithStoreItem } from "@/lib/inventory";
 import { levelProgress } from "@/lib/levels";
+import type { PetWithItem } from "@/lib/pets";
 
 export const metadata: Metadata = {
   title: "Style guide · TaskTails",
@@ -144,6 +151,72 @@ function sampleEconomy(
   return { ...levelProgress(xp), coins, streak };
 }
 
+/**
+ * `AnimalCard` samples, one per PET-02 mood. Built by hand rather than read
+ * from `petsForUser()` for the same reason `sampleEconomy()` doesn't call the
+ * real `currentEconomy()` — no Prisma value import on this public, statically
+ * generated page. The `id`/`userId`/`storeItemId`/`lastInteractedAt` fields
+ * are unused by `AnimalCard` but required by the type, so they're filled with
+ * placeholders rather than loosening the prop type just for this page.
+ */
+function samplePet(
+  name: string,
+  imageUrl: string,
+  happiness: number,
+  hunger: number,
+): PetWithItem {
+  return {
+    id: `sample-${name}`,
+    userId: "sample-user",
+    storeItemId: `sample-${name}-item`,
+    happiness,
+    hunger,
+    lastInteractedAt: new Date(),
+    storeItem: {
+      id: `sample-${name}-item`,
+      name,
+      category: "ANIMALS",
+      levelRequired: 1,
+      coinPrice: 0,
+      imageUrl,
+    },
+  };
+}
+
+/** PET-04's feed sheet needs something to list — same hand-built approach as `samplePet()`. */
+const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
+  {
+    id: "sample-sunflower-seeds",
+    userId: "sample-user",
+    storeItemId: "sample-sunflower-seeds-item",
+    equippedToPetId: null,
+    quantity: 3,
+    storeItem: {
+      id: "sample-sunflower-seeds-item",
+      name: "Sunflower seeds",
+      category: "FOOD",
+      levelRequired: 1,
+      coinPrice: 40,
+      imageUrl: "wheat",
+    },
+  },
+  {
+    id: "sample-treat-box",
+    userId: "sample-user",
+    storeItemId: "sample-treat-box-item",
+    equippedToPetId: null,
+    quantity: 1,
+    storeItem: {
+      id: "sample-treat-box-item",
+      name: "Treat box",
+      category: "FOOD",
+      levelRequired: 3,
+      coinPrice: 120,
+      imageUrl: "package",
+    },
+  },
+];
+
 /** A 300px slice of the phone frame, so the header is shown at its real width. */
 function Frame({ children }: { children: React.ReactNode }) {
   return (
@@ -216,7 +289,13 @@ export default function StyleGuidePage() {
   ] as const;
 
   return (
-    <main className="mx-auto flex w-full max-w-[1000px] flex-col gap-12 px-5 py-10 sm:px-8 sm:py-14">
+    // `flex-1 min-h-0 overflow-y-auto`: the root layout's `<body>` is
+    // `h-full overflow-hidden` (INF-12/13) so `AppShell`'s own `main` can be
+    // the thing that scrolls while its nav stays put. This page has no
+    // `AppShell` — it's a plain long-form document — so without its own
+    // scroll container here, `body`'s `overflow-hidden` just clips everything
+    // past one screen with no way to reach it.
+    <main className="mx-auto flex w-full min-h-0 max-w-[1000px] flex-1 flex-col gap-12 overflow-y-auto px-5 py-10 sm:px-8 sm:py-14">
       <header className="flex flex-col gap-3">
         <div className="flex items-center gap-4">
           <Image
@@ -568,8 +647,9 @@ export default function StyleGuidePage() {
               {(
                 [
                   ["xp", "XP", 35],
-                  ["happiness", "Happiness", 78],
-                  ["hunger", "Hunger", 35],
+                  ["good", "Good (≥70)", 90],
+                  ["caution", "Caution (31–69)", 50],
+                  ["critical", "Critical (≤30)", 15],
                 ] as const
               ).map(([tone, label, value]) => (
                 <div key={tone} className="flex flex-col gap-1.5">
@@ -582,8 +662,13 @@ export default function StyleGuidePage() {
               ))}
             </div>
             <p className="text-[11.5px] text-ink-soft">
-              The fill colour is semantic and fixed: violet XP, sage happiness,
-              amber hunger. Each is a <code>role=&quot;progressbar&quot;</code>.
+              <code>xp</code> is fixed to violet — always XP, on every screen.
+              <code>good</code>/<code>caution</code>/<code>critical</code> are
+              a value-driven traffic light instead (sage/amber/terracotta,
+              PET-02&rsquo;s happiness/hunger bars) — the caller picks which
+              applies via <code>stateTone()</code>, since &ldquo;which
+              direction is good&rdquo; depends on the stat. Each is a{" "}
+              <code>role=&quot;progressbar&quot;</code>.
             </p>
           </Card>
 
@@ -742,6 +827,46 @@ export default function StyleGuidePage() {
         <Card label="Open the real component">
           <LevelUpDemo />
         </Card>
+      </Section>
+
+      <Section
+        n="09"
+        title="Petting zoo"
+        blurb="PET-01's zoo gallery card and PET-02's Sanctuary stage, per design_handoff/ADDENDUM-zoo-gallery.md. Real components, sample data — see the note on samplePet() above for why this page doesn't read from the database. Pet (PET-03) and Feed (PET-04) are both live on the Sanctuary card; each stops on a stub notice rather than a real fetch, since PET-07/08 don't exist yet."
+      >
+        <Card label="Gallery card — one needs-attention, one not">
+          <div className="grid w-[300px] max-w-full grid-cols-2 gap-3">
+            <ZooGalleryCard pet={samplePet("Fox kit", "/animals/fox.svg", 82, 24)} />
+            <ZooGalleryCard pet={samplePet("Penguin kit", "/animals/penguin.svg", 58, 66)} />
+          </div>
+        </Card>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="w-[300px] max-w-full">
+            <AnimalCard
+              pet={samplePet("Koala kit", "/animals/koala.svg", 90, 10)}
+              foodItems={SAMPLE_FOOD_ITEMS}
+            />
+          </div>
+          <div className="w-[300px] max-w-full">
+            <AnimalCard
+              pet={samplePet("Fox kit", "/animals/fox.svg", 50, 40)}
+              foodItems={SAMPLE_FOOD_ITEMS}
+            />
+          </div>
+          <div className="w-[300px] max-w-full">
+            <AnimalCard
+              pet={samplePet("Penguin kit", "/animals/penguin.svg", 60, 85)}
+              foodItems={SAMPLE_FOOD_ITEMS}
+            />
+          </div>
+          <div className="w-[300px] max-w-full">
+            <AnimalCard
+              pet={samplePet("Koala kit", "/animals/koala.svg", 15, 20)}
+              foodItems={[]}
+            />
+          </div>
+        </div>
       </Section>
 
       <footer className="border-t border-border-track pt-6 text-[12px] text-ink-soft">

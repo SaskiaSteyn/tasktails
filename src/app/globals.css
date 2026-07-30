@@ -49,7 +49,9 @@
    accent at its brand value carrying small text:
      white on violet             3.79   (34px level disc, "Lv4")
      terracotta on t-tint        2.43   (streak pill, flame + count)
-     terracotta on surface       2.69   (streak card numeral)
+     terracotta on surface       2.69   (streak card numeral, and PET-02's
+                                          "critical" happiness/hunger icon +
+                                          numeral — same trade, not a new one)
    The palette has no in-family fix for the streak pill: terracotta-press on the
    same tint only reaches 3.38, so passing it means a new darker token or a
    different treatment, not a swap. The level disc does have one — the pill
