@@ -1,8 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import { petForUser, petsForUser, recordPetInteraction } from "@/lib/pets";
+import {
+  createPetForTransaction,
+  petForUser,
+  petsForUser,
+  recordCustomizeInteraction,
+  recordFeedInteraction,
+  recordPetInteraction,
+} from "@/lib/pets";
 import { prismaMock } from "@/test/prisma-mock";
 import type { PetWithItem } from "@/lib/pets";
+import type { InventoryItemWithStoreItem } from "@/lib/inventory";
+import type { StoreItem } from "@/generated/prisma/client";
 
 /**
  * PET-06/PET-07/PET-10 — `petsForUser()`/`petForUser()` decay their stored
@@ -34,6 +43,48 @@ function petRow(overrides: Partial<PetWithItem> = {}): PetWithItem {
     },
     ...overrides,
   } as PetWithItem;
+}
+
+function foodRow(
+  overrides: Partial<InventoryItemWithStoreItem> = {},
+): InventoryItemWithStoreItem {
+  return {
+    id: "item-1",
+    userId: "user-1",
+    storeItemId: "food-1",
+    equippedToPetId: null,
+    quantity: 3,
+    storeItem: {
+      id: "food-1",
+      name: "Sunflower seeds",
+      category: "FOOD",
+      levelRequired: 1,
+      coinPrice: 5,
+      imageUrl: "wheat",
+    },
+    ...overrides,
+  } as InventoryItemWithStoreItem;
+}
+
+function accessoryRow(
+  overrides: Partial<InventoryItemWithStoreItem> = {},
+): InventoryItemWithStoreItem {
+  return {
+    id: "acc-1",
+    userId: "user-1",
+    storeItemId: "collar-1",
+    equippedToPetId: null,
+    quantity: 1,
+    storeItem: {
+      id: "collar-1",
+      name: "Red collar",
+      category: "ACCESSORIES",
+      levelRequired: 1,
+      coinPrice: 30,
+      imageUrl: "circle",
+    },
+    ...overrides,
+  } as InventoryItemWithStoreItem;
 }
 
 describe("petsForUser / petForUser", () => {
@@ -119,4 +170,235 @@ describe("recordPetInteraction", () => {
     expect(result).toBeNull();
     expect(prismaMock.pet.update).not.toHaveBeenCalled();
   });
+});
+
+describe("recordFeedInteraction", () => {
+  beforeEach(() => {
+    prismaMock.$transaction.mockImplementation(
+      (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
+    );
+  });
+
+  it("consumes the item and applies −18 hunger / +4 happiness with no elapsed time", async () => {
+    const pet = petRow();
+    const item = foodRow();
+    prismaMock.pet.findFirst.mockResolvedValue(pet);
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.inventoryItem.findUniqueOrThrow.mockResolvedValue({
+      ...item,
+      quantity: item.quantity - 1,
+    } as never);
+    prismaMock.pet.update.mockImplementation(
+      (args) => Promise.resolve({ ...pet, ...(args.data as object) }) as never,
+    );
+
+    const now = at(12);
+    const result = await recordFeedInteraction("user-1", "pet-1", "item-1", now);
+
+    expect(prismaMock.inventoryItem.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "item-1",
+        userId: "user-1",
+        quantity: { gt: 0 },
+        storeItem: { category: "FOOD" },
+      },
+      data: { quantity: { decrement: 1 } },
+    });
+    expect(prismaMock.pet.update).toHaveBeenCalledWith({
+      where: { id: "pet-1" },
+      data: { happiness: 64, hunger: 22, lastInteractedAt: now },
+      include: { storeItem: true },
+    });
+    expect(result).toEqual({
+      ok: true,
+      pet: expect.objectContaining({ happiness: 64, hunger: 22 }),
+      item: expect.objectContaining({ quantity: 2 }),
+    });
+  });
+
+  it("catches decay up to `now` before applying the feed deltas", async () => {
+    // 3h elapsed: happiness 60 − 12 = 48, hunger 40 + 15 = 55.
+    const pet = petRow({ lastInteractedAt: at(12) });
+    prismaMock.pet.findFirst.mockResolvedValue(pet);
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.inventoryItem.findUniqueOrThrow.mockResolvedValue(foodRow() as never);
+    prismaMock.pet.update.mockImplementation(
+      (args) => Promise.resolve({ ...pet, ...(args.data as object) }) as never,
+    );
+
+    const now = at(15);
+    await recordFeedInteraction("user-1", "pet-1", "item-1", now);
+
+    // 48 + 4 = 52 happiness. 55 − 18 = 37 hunger.
+    expect(prismaMock.pet.update).toHaveBeenCalledWith({
+      where: { id: "pet-1" },
+      data: { happiness: 52, hunger: 37, lastInteractedAt: now },
+      include: { storeItem: true },
+    });
+  });
+
+  it("clamps hunger at 0", async () => {
+    const pet = petRow({ hunger: 10, lastInteractedAt: at(12) });
+    prismaMock.pet.findFirst.mockResolvedValue(pet);
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.inventoryItem.findUniqueOrThrow.mockResolvedValue(foodRow() as never);
+    prismaMock.pet.update.mockImplementation(
+      (args) => Promise.resolve({ ...pet, ...(args.data as object) }) as never,
+    );
+
+    await recordFeedInteraction("user-1", "pet-1", "item-1", at(12));
+
+    expect(prismaMock.pet.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ hunger: 0 }) }),
+    );
+  });
+
+  it("clamps happiness at 100", async () => {
+    const pet = petRow({ happiness: 98, lastInteractedAt: at(12) });
+    prismaMock.pet.findFirst.mockResolvedValue(pet);
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.inventoryItem.findUniqueOrThrow.mockResolvedValue(foodRow() as never);
+    prismaMock.pet.update.mockImplementation(
+      (args) => Promise.resolve({ ...pet, ...(args.data as object) }) as never,
+    );
+
+    await recordFeedInteraction("user-1", "pet-1", "item-1", at(12));
+
+    expect(prismaMock.pet.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ happiness: 100 }) }),
+    );
+  });
+
+  it("returns pet-not-found and never touches inventory when the pet isn't the caller's", async () => {
+    prismaMock.pet.findFirst.mockResolvedValue(null);
+
+    const result = await recordFeedInteraction("user-1", "someone-elses-pet", "item-1", at(12));
+
+    expect(result).toEqual({ ok: false, reason: "pet-not-found" });
+    expect(prismaMock.inventoryItem.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.pet.update).not.toHaveBeenCalled();
+  });
+
+  it("returns item-not-found and never updates the pet when the item can't be consumed", async () => {
+    // Not owned, not food, or already at 0 all look identical: updateMany matches nothing.
+    prismaMock.pet.findFirst.mockResolvedValue(petRow());
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 0 });
+
+    const result = await recordFeedInteraction("user-1", "pet-1", "not-mine", at(12));
+
+    expect(result).toEqual({ ok: false, reason: "item-not-found" });
+    expect(prismaMock.pet.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("recordCustomizeInteraction", () => {
+  beforeEach(() => {
+    prismaMock.$transaction.mockImplementation(
+      (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
+    );
+  });
+
+  it("equips the item and unequips whatever this pet had on before", async () => {
+    prismaMock.pet.findFirst.mockResolvedValue(petRow());
+    prismaMock.inventoryItem.findFirst.mockResolvedValue(accessoryRow());
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.inventoryItem.update.mockResolvedValue(
+      accessoryRow({ equippedToPetId: "pet-1" }) as never,
+    );
+
+    const result = await recordCustomizeInteraction("user-1", "pet-1", "acc-1");
+
+    expect(prismaMock.inventoryItem.findFirst).toHaveBeenCalledWith({
+      where: { id: "acc-1", userId: "user-1", storeItem: { category: "ACCESSORIES" } },
+    });
+    // Displaces whatever *this pet* already had on, but never the item being
+    // equipped itself.
+    expect(prismaMock.inventoryItem.updateMany).toHaveBeenCalledWith({
+      where: { equippedToPetId: "pet-1", id: { not: "acc-1" } },
+      data: { equippedToPetId: null },
+    });
+    expect(prismaMock.inventoryItem.update).toHaveBeenCalledWith({
+      where: { id: "acc-1" },
+      data: { equippedToPetId: "pet-1" },
+      include: { storeItem: true },
+    });
+    expect(result).toEqual({
+      ok: true,
+      item: expect.objectContaining({ equippedToPetId: "pet-1" }),
+    });
+  });
+
+  it("returns pet-not-found and never touches inventory when the pet isn't the caller's", async () => {
+    prismaMock.pet.findFirst.mockResolvedValue(null);
+
+    const result = await recordCustomizeInteraction("user-1", "someone-elses-pet", "acc-1");
+
+    expect(result).toEqual({ ok: false, reason: "pet-not-found" });
+    expect(prismaMock.inventoryItem.findFirst).not.toHaveBeenCalled();
+    expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
+  });
+
+  it("returns item-not-found and never unequips or writes when the accessory isn't the caller's", async () => {
+    prismaMock.pet.findFirst.mockResolvedValue(petRow());
+    prismaMock.inventoryItem.findFirst.mockResolvedValue(null);
+
+    const result = await recordCustomizeInteraction("user-1", "pet-1", "not-mine");
+
+    expect(result).toEqual({ ok: false, reason: "item-not-found" });
+    // Ownership is checked *before* anything is written — a bad accessory id
+    // must not first strip the pet's current one.
+    expect(prismaMock.inventoryItem.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("createPetForTransaction", () => {
+  const animalStoreItem = {
+    id: "koala-1",
+    name: "Koala kit",
+    category: "ANIMALS",
+    levelRequired: 1,
+    coinPrice: 5,
+    imageUrl: "/animals/koala.svg",
+  } as StoreItem;
+
+  it("creates a Pet at full happiness and zero hunger for an ANIMALS item", async () => {
+    prismaMock.pet.create.mockImplementation(
+      (args) =>
+        Promise.resolve({
+          id: "new-pet",
+          ...(args.data as object),
+        }) as never,
+    );
+
+    const now = at(12);
+    const pet = await createPetForTransaction(prismaMock, "user-1", animalStoreItem, now);
+
+    expect(prismaMock.pet.create).toHaveBeenCalledWith({
+      data: {
+        userId: "user-1",
+        storeItemId: "koala-1",
+        happiness: 100,
+        hunger: 0,
+        lastInteractedAt: now,
+      },
+      include: { storeItem: true },
+    });
+    expect(pet).toMatchObject({ happiness: 100, hunger: 0 });
+  });
+
+  it.each(["FOOD", "ACCESSORIES", "DECORATIONS"] as const)(
+    "does nothing for a %s item",
+    async (category) => {
+      const result = await createPetForTransaction(
+        prismaMock,
+        "user-1",
+        { ...animalStoreItem, category },
+        at(12),
+      );
+
+      expect(result).toBeNull();
+      expect(prismaMock.pet.create).not.toHaveBeenCalled();
+    },
+  );
 });

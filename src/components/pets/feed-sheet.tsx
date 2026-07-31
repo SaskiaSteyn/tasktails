@@ -1,6 +1,7 @@
 "use client";
 
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -19,28 +20,35 @@ import type { InventoryItemWithStoreItem } from "@/lib/inventory";
  * (TASK-02) — platform focus-trap, Escape-to-close, scrim tap, `frame:`
  * centred dialog above 480px.
  *
- * **No `POST /api/pets/[id]/feed` yet** — PET-08 is a separate, unbuilt
- * ticket, so confirming a selection surfaces a "Not connected yet" notice
- * rather than a fetch, same decision `AnimalCard`'s "Pet" button made ahead
- * of PET-07. The sheet stays open so the notice is visible next to the
- * selection, matching `SubtaskList`'s "add" stub before SUB-04 existed.
+ * Wired to PET-08's real `POST /api/pets/[id]/feed` the day that ticket
+ * shipped — same "wired the same day" convention `AnimalCard`'s "Pet"
+ * button used for PET-07, replacing the "Not connected yet" stub notice.
+ * Unlike that button, a successful feed *closes* the sheet (there's nothing
+ * left to do once it worked, same as `SubtaskList`'s "add" flow) rather
+ * than staying open — `router.refresh()` then updates both the pet's bars
+ * and the food list's `×N owned` counts from the server in one round trip,
+ * since both live on this same page.
  */
 export function FeedSheet({
   open,
   onOpenChange,
+  petId,
   petName,
   foodItems,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  petId: string;
   petName: string;
   foodItems: InventoryItemWithStoreItem[];
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingId = useId();
+  const router = useRouter();
 
   const [selectedId, setSelectedId] = useState<string>();
   const [notice, setNotice] = useState<string>();
+  const [feeding, setFeeding] = useState(false);
 
   // Every open starts clean, same "adjust during render" pattern
   // `CreateTaskSheet` uses rather than an effect that would fire an extra
@@ -51,6 +59,7 @@ export function FeedSheet({
     if (!open) {
       setSelectedId(undefined);
       setNotice(undefined);
+      setFeeding(false);
     }
   }
 
@@ -63,11 +72,27 @@ export function FeedSheet({
 
   const selected = foodItems.find((item) => item.id === selectedId);
 
-  function handleFeed() {
+  async function handleFeed() {
     if (!selected) return;
-    setNotice(
-      `Not connected yet — feeding ${petName} with ${selected.storeItem.name} needs PET-08.`,
-    );
+    setFeeding(true);
+    setNotice(undefined);
+    try {
+      const response = await fetch(`/api/pets/${petId}/feed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inventoryItemId: selected.id }),
+      });
+      if (!response.ok) {
+        setNotice(`Couldn't feed ${petName}. Try again.`);
+        return;
+      }
+      onOpenChange(false);
+      router.refresh();
+    } catch {
+      setNotice("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setFeeding(false);
+    }
   }
 
   return (
@@ -154,7 +179,7 @@ export function FeedSheet({
               type="button"
               variant="positive"
               size="full"
-              disabled={!selected}
+              disabled={!selected || feeding}
               onClick={handleFeed}
             >
               Feed
@@ -168,7 +193,7 @@ export function FeedSheet({
             </button>
           </div>
           {notice ? (
-            <p role="status" className="mt-2 text-center text-[11px] font-bold text-ink-soft">
+            <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
               {notice}
             </p>
           ) : null}

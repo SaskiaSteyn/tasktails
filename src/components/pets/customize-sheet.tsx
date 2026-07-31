@@ -1,6 +1,7 @@
 "use client";
 
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -23,10 +24,15 @@ import type { InventoryItemWithStoreItem } from "@/lib/inventory";
  * something this ticket invents — so whichever accessory is currently
  * equipped to *this* pet opens pre-selected, and every row is labelled with
  * its real equip state ("Equipped" / "Equipped elsewhere" / "×N owned")
- * rather than only a quantity. What's stubbed is just the *write*: **no
- * `POST /api/pets/[id]/customize` yet** — PET-09 is a separate, unbuilt
- * ticket, so confirming a selection surfaces a "Not connected yet" notice
- * rather than a fetch, same decision PET-03/04 made ahead of PET-07/08.
+ * rather than only a quantity.
+ *
+ * Wired to PET-09's real `POST /api/pets/[id]/customize` the day that
+ * ticket shipped — same "wired the same day" convention `FeedSheet` used
+ * for PET-08, replacing the "Not connected yet" stub notice. Also closes
+ * on success and `router.refresh()`es rather than staying open, same
+ * reasoning `FeedSheet` gives: nothing left to do once it worked, and a
+ * refresh picks up the new equip state for every accessory row (including
+ * whichever one this displaced from "Equipped"/"Equipped elsewhere").
  */
 export function CustomizeSheet({
   open,
@@ -43,11 +49,13 @@ export function CustomizeSheet({
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingId = useId();
+  const router = useRouter();
 
   const equippedItem = accessories.find((item) => item.equippedToPetId === petId);
 
   const [selectedId, setSelectedId] = useState<string | undefined>(equippedItem?.id);
   const [notice, setNotice] = useState<string>();
+  const [equipping, setEquipping] = useState(false);
 
   // Every open starts from this pet's real equip state, not a blank slate —
   // same "adjust during render" pattern `FeedSheet`/`CreateTaskSheet` use
@@ -58,6 +66,7 @@ export function CustomizeSheet({
     setWasOpen(open);
     if (!open) {
       setNotice(undefined);
+      setEquipping(false);
     } else {
       setSelectedId(equippedItem?.id);
     }
@@ -72,11 +81,27 @@ export function CustomizeSheet({
 
   const selected = accessories.find((item) => item.id === selectedId);
 
-  function handleEquip() {
+  async function handleEquip() {
     if (!selected) return;
-    setNotice(
-      `Not connected yet — equipping ${selected.storeItem.name} on ${petName} needs PET-09.`,
-    );
+    setEquipping(true);
+    setNotice(undefined);
+    try {
+      const response = await fetch(`/api/pets/${petId}/customize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inventoryItemId: selected.id }),
+      });
+      if (!response.ok) {
+        setNotice(`Couldn't equip ${selected.storeItem.name}. Try again.`);
+        return;
+      }
+      onOpenChange(false);
+      router.refresh();
+    } catch {
+      setNotice("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setEquipping(false);
+    }
   }
 
   return (
@@ -182,7 +207,7 @@ export function CustomizeSheet({
               type="button"
               variant="primary"
               size="full"
-              disabled={!selected}
+              disabled={!selected || equipping}
               onClick={handleEquip}
             >
               Equip
@@ -196,7 +221,7 @@ export function CustomizeSheet({
             </button>
           </div>
           {notice ? (
-            <p role="status" className="mt-2 text-center text-[11px] font-bold text-ink-soft">
+            <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
               {notice}
             </p>
           ) : null}
