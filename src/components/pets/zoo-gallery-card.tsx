@@ -107,12 +107,14 @@ export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
         </div>
         <div className={cn("flex items-center gap-1", STATE_TEXT_CLASS[hungerTone])}>
           <Drumstick size={11} strokeWidth={2.4} aria-hidden />
+          {/* Fill is fullness (100 − hunger), matching `AnimalCard`'s bar —
+              the two "never disagree" per this card's own doc comment. */}
           <ProgressBar
             size="sm"
             tone={hungerTone}
-            value={pet.hunger}
+            value={100 - pet.hunger}
             label={`${pet.storeItem.name}'s hunger`}
-            valueText={`${pet.hunger}%`}
+            valueText={`${pet.hunger}% hungry`}
             className="flex-1"
           />
         </div>

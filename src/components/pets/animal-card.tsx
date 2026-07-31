@@ -2,6 +2,7 @@
 
 import { Drumstick, Heart, Sparkles } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { CustomizeSheet } from "@/components/pets/customize-sheet";
@@ -65,17 +66,33 @@ export function AnimalCard({
   const happinessTone = stateTone(pet.happiness);
   const hungerTone = stateTone(100 - pet.hunger);
   const [notice, setNotice] = useState<string>();
+  const [petting, setPetting] = useState(false);
   const [feedOpen, setFeedOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  const router = useRouter();
 
-  function handlePet() {
-    // PET-07's `POST /api/pets/[id]/pet` doesn't exist yet — same "don't call
-    // an endpoint that isn't there" decision `SubtaskList`'s `handleComplete`
-    // made ahead of SUB-05, so this surfaces a stub notice rather than a
-    // failed fetch. Unlike a task's completion checkbox, petting isn't
-    // forward-only — there's no local "done" state to flip, real or stubbed,
-    // so the button stays enabled and can be clicked again.
-    setNotice(`Not connected yet — petting ${pet.storeItem.name} needs PET-07.`);
+  async function handlePet() {
+    // Wired to PET-07's `POST /api/pets/[id]/pet` the same day that ticket
+    // shipped — same "wired the same day" convention `SubtaskList`'s
+    // `handleComplete` follows for SUB-04→SUB-05. Not forward-only: unlike a
+    // task's completion checkbox, petting has no local "done" state to flip,
+    // so the button stays enabled and can be clicked again — `petting` only
+    // guards against a second submit landing mid-flight, it never disables
+    // the button afterward.
+    setPetting(true);
+    setNotice(undefined);
+    try {
+      const response = await fetch(`/api/pets/${pet.id}/pet`, { method: "POST" });
+      if (!response.ok) {
+        setNotice(`Couldn't pet ${pet.storeItem.name}. Try again.`);
+        return;
+      }
+      router.refresh();
+    } catch {
+      setNotice("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setPetting(false);
+    }
   }
 
   return (
@@ -93,12 +110,11 @@ export function AnimalCard({
 
         <div className="mt-auto flex w-full flex-col gap-[9px]">
           <div className="rounded-input border border-border-track bg-surface px-3 py-[9px]">
-            <div className="mb-1.5 flex items-center justify-between text-[10.5px] font-extrabold text-ink-soft">
+            <div className="mb-1.5 flex items-center text-[10.5px] font-extrabold text-ink-soft">
               <span className={cn("flex items-center gap-1", STATE_TEXT_CLASS[happinessTone])}>
                 <Heart size={13} strokeWidth={2.2} />
                 HAPPINESS
               </span>
-              <span className={STATE_TEXT_CLASS[happinessTone]}>{pet.happiness}%</span>
             </div>
             <ProgressBar
               tone={happinessTone}
@@ -108,18 +124,25 @@ export function AnimalCard({
             />
           </div>
           <div className="rounded-input border border-border-track bg-surface px-3 py-[9px]">
-            <div className="mb-1.5 flex items-center justify-between text-[10.5px] font-extrabold text-ink-soft">
+            <div className="mb-1.5 flex items-center text-[10.5px] font-extrabold text-ink-soft">
               <span className={cn("flex items-center gap-1", STATE_TEXT_CLASS[hungerTone])}>
                 <Drumstick size={13} strokeWidth={2.2} />
                 HUNGER
               </span>
-              <span className={STATE_TEXT_CLASS[hungerTone]}>{pet.hunger}%</span>
             </div>
+            {/* Fill is fullness (100 − hunger), not raw hunger — a bigger bar
+                reads as "more of a good thing" everywhere else in this app
+                (happiness above, XP, quest progress), so a bar that grows
+                *and* reddens as a pet gets hungrier fought that convention.
+                `hungerTone` already points the right way (green at low
+                hunger); flipping the fill to match is what a participant
+                testing this live flagged as "backwards". `valueText` still
+                announces the real hunger percentage for assistive tech. */}
             <ProgressBar
               tone={hungerTone}
-              value={pet.hunger}
+              value={100 - pet.hunger}
               label={`${pet.storeItem.name}'s hunger`}
-              valueText={`${pet.hunger}%`}
+              valueText={`${pet.hunger}% hungry`}
             />
           </div>
         </div>
@@ -132,7 +155,7 @@ export function AnimalCard({
             race on stylesheet order instead of one clearly winning (same fix
             `EditTaskForm`'s "Save changes" needed for TASK-03). */}
         <div className="flex-1">
-          <Button variant="primary" size="inline" onClick={handlePet}>
+          <Button variant="primary" size="inline" onClick={handlePet} disabled={petting}>
             Pet
           </Button>
         </div>
@@ -152,7 +175,7 @@ export function AnimalCard({
       </div>
 
       {notice ? (
-        <p role="status" className="px-3 pb-3 text-[11px] font-bold text-ink-soft">
+        <p role="alert" className="px-3 pb-3 text-[11px] font-bold text-urgency-text">
           {notice}
         </p>
       ) : null}

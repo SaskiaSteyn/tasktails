@@ -90,7 +90,7 @@ PET-03,Pet interaction button — Pet action on animal card,Petting Zoo,Frontend
 PET-04,Feed interaction — select a food item from the user's inventory and apply to animal,Petting Zoo,Frontend,Done
 PET-05,Customize interaction — select an accessory from inventory and equip to animal,Petting Zoo,Frontend,Done
 PET-06,GET /api/pets — list user's animals and compute current happiness and hunger state from lastInteractedAt and time elapsed,Petting Zoo,Backend,Done
-PET-07,POST /api/pets/[id]/pet — record pet interaction and update happiness in Pet record,Petting Zoo,Backend,To Do
+PET-07,POST /api/pets/[id]/pet — record pet interaction and update happiness in Pet record,Petting Zoo,Backend,Done
 PET-08,POST /api/pets/[id]/feed — validate user owns the food item update hunger and happiness decrement item quantity in InventoryItem,Petting Zoo,Backend,To Do
 PET-09,POST /api/pets/[id]/customize — validate user owns the accessory and set equippedToPetId on InventoryItem,Petting Zoo,Backend,To Do
 PET-10,Animal state decay — happiness and hunger computed from time elapsed since last interaction on GET /api/pets (no background job),Petting Zoo,Backend,Done
