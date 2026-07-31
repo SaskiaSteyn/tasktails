@@ -89,11 +89,11 @@ PET-02,Animal card — shows animal name image and current happiness/hunger stat
 PET-03,Pet interaction button — Pet action on animal card,Petting Zoo,Frontend,Done
 PET-04,Feed interaction — select a food item from the user's inventory and apply to animal,Petting Zoo,Frontend,Done
 PET-05,Customize interaction — select an accessory from inventory and equip to animal,Petting Zoo,Frontend,Done
-PET-06,GET /api/pets — list user's animals and compute current happiness and hunger state from lastInteractedAt and time elapsed,Petting Zoo,Backend,To Do
+PET-06,GET /api/pets — list user's animals and compute current happiness and hunger state from lastInteractedAt and time elapsed,Petting Zoo,Backend,Done
 PET-07,POST /api/pets/[id]/pet — record pet interaction and update happiness in Pet record,Petting Zoo,Backend,To Do
 PET-08,POST /api/pets/[id]/feed — validate user owns the food item update hunger and happiness decrement item quantity in InventoryItem,Petting Zoo,Backend,To Do
 PET-09,POST /api/pets/[id]/customize — validate user owns the accessory and set equippedToPetId on InventoryItem,Petting Zoo,Backend,To Do
-PET-10,Animal state decay — happiness and hunger computed from time elapsed since last interaction on GET /api/pets (no background job),Petting Zoo,Backend,To Do
+PET-10,Animal state decay — happiness and hunger computed from time elapsed since last interaction on GET /api/pets (no background job),Petting Zoo,Backend,Done
 PET-11,Animal acquisition — when a Transaction is completed for an animal item create a corresponding Pet record for that user,Petting Zoo,Backend,To Do
 ADM-01,Admin dashboard page — restricted to admin role accessible at /admin,Admin Dashboard,Frontend,To Do
 ADM-02,Per-user telemetry table — columns: participant A/B group session count total time in app days returning tasks completed,Admin Dashboard,Frontend,To Do
