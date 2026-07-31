@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AnimalCard } from "@/components/pets/animal-card";
-import { foodInventoryForUser } from "@/lib/inventory";
+import { accessoryInventoryForUser, foodInventoryForUser } from "@/lib/inventory";
 import { petForUser } from "@/lib/pets";
 
 export async function generateMetadata({
@@ -50,9 +50,10 @@ export default async function SanctuaryPage({
   if (!userId) redirect("/login");
 
   const { id } = await params;
-  const [pet, foodItems] = await Promise.all([
+  const [pet, foodItems, accessories] = await Promise.all([
     petForUser(userId, id),
     foodInventoryForUser(userId),
+    accessoryInventoryForUser(userId),
   ]);
   if (!pet) redirect("/zoo");
 
@@ -75,7 +76,7 @@ export default async function SanctuaryPage({
       nav={<BottomNav />}
       className="gap-3 px-4 pt-4 pb-4"
     >
-      <AnimalCard pet={pet} foodItems={foodItems} />
+      <AnimalCard pet={pet} foodItems={foodItems} accessories={accessories} />
     </AppShell>
   );
 }

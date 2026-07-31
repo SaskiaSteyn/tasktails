@@ -34,3 +34,20 @@ export async function foodInventoryForUser(
     include: { storeItem: true },
   });
 }
+
+/**
+ * The user's owned accessories, for PET-05's customize sheet. No
+ * `quantity: { gt: 0 }` filter here unlike `foodInventoryForUser()` — an
+ * accessory isn't consumed by equipping it (PET-09 only ever sets
+ * `equippedToPetId`, never touches `quantity`), so a owned-but-currently-
+ * equipped-elsewhere accessory still has to show up as pickable.
+ */
+export async function accessoryInventoryForUser(
+  userId: string,
+): Promise<InventoryItemWithStoreItem[]> {
+  return prisma.inventoryItem.findMany({
+    where: { userId, storeItem: { category: "ACCESSORIES" } },
+    orderBy: { id: "asc" },
+    include: { storeItem: true },
+  });
+}

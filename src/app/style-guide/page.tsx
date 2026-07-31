@@ -217,6 +217,30 @@ const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
   },
 ];
 
+/**
+ * PET-05's customize sheet needs something to list — same hand-built
+ * approach as `samplePet()`. The collar is pre-equipped to `sample-Koala
+ * kit` (the first Sanctuary card below) so that card's sheet demos the real
+ * "Equipped" state, not just the picker.
+ */
+const SAMPLE_ACCESSORIES: InventoryItemWithStoreItem[] = [
+  {
+    id: "sample-red-collar",
+    userId: "sample-user",
+    storeItemId: "sample-red-collar-item",
+    equippedToPetId: "sample-Koala kit",
+    quantity: 1,
+    storeItem: {
+      id: "sample-red-collar-item",
+      name: "Red collar",
+      category: "ACCESSORIES",
+      levelRequired: 1,
+      coinPrice: 65,
+      imageUrl: "shirt",
+    },
+  },
+];
+
 /** A 300px slice of the phone frame, so the header is shown at its real width. */
 function Frame({ children }: { children: React.ReactNode }) {
   return (
@@ -832,7 +856,7 @@ export default function StyleGuidePage() {
       <Section
         n="09"
         title="Petting zoo"
-        blurb="PET-01's zoo gallery card and PET-02's Sanctuary stage, per design_handoff/ADDENDUM-zoo-gallery.md. Real components, sample data — see the note on samplePet() above for why this page doesn't read from the database. Pet (PET-03) and Feed (PET-04) are both live on the Sanctuary card; each stops on a stub notice rather than a real fetch, since PET-07/08 don't exist yet."
+        blurb="PET-01's zoo gallery card and PET-02's Sanctuary stage, per design_handoff/ADDENDUM-zoo-gallery.md. Real components, sample data — see the note on samplePet() above for why this page doesn't read from the database. Pet (PET-03), Feed (PET-04) and Customize (PET-05) are all live on the Sanctuary card; each stops on a stub notice rather than a real fetch, since PET-07/08/09 don't exist yet. The first card's collar opens pre-equipped — that state is real, queried data (equippedToPetId), not part of the stub."
       >
         <Card label="Gallery card — one needs-attention, one not">
           <div className="grid w-[300px] max-w-full grid-cols-2 gap-3">
@@ -846,24 +870,28 @@ export default function StyleGuidePage() {
             <AnimalCard
               pet={samplePet("Koala kit", "/animals/koala.svg", 90, 10)}
               foodItems={SAMPLE_FOOD_ITEMS}
+              accessories={SAMPLE_ACCESSORIES}
             />
           </div>
           <div className="w-[300px] max-w-full">
             <AnimalCard
               pet={samplePet("Fox kit", "/animals/fox.svg", 50, 40)}
               foodItems={SAMPLE_FOOD_ITEMS}
+              accessories={SAMPLE_ACCESSORIES}
             />
           </div>
           <div className="w-[300px] max-w-full">
             <AnimalCard
               pet={samplePet("Penguin kit", "/animals/penguin.svg", 60, 85)}
               foodItems={SAMPLE_FOOD_ITEMS}
+              accessories={SAMPLE_ACCESSORIES}
             />
           </div>
           <div className="w-[300px] max-w-full">
             <AnimalCard
               pet={samplePet("Koala kit", "/animals/koala.svg", 15, 20)}
               foodItems={[]}
+              accessories={[]}
             />
           </div>
         </div>

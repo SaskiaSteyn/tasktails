@@ -305,7 +305,7 @@ export function TaskList({
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden px-4 pt-4 pb-2">
+    <div className="flex flex-1 flex-col overflow-hidden px-4 pt-4 pb-[14px]">
       {/* ONB-02. `role="status"` (not `role="alert"`) — good news, not an
           error, so it should announce without interrupting whatever the
           participant is doing. `aria-live="polite"` is `role="status"`'s

@@ -1,9 +1,10 @@
 "use client";
 
-import { Drumstick, Heart } from "lucide-react";
+import { Drumstick, Heart, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
+import { CustomizeSheet } from "@/components/pets/customize-sheet";
 import { FeedSheet } from "@/components/pets/feed-sheet";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -21,10 +22,10 @@ import type { PetWithItem } from "@/lib/pets";
  * sanctuary view has nothing to show without it.
  *
  * Matches the "Sanctuary" frame's stage (`TaskTails Screens.dc.html`,
- * Petting Zoo group), including its action row (PET-03's "Pet" button,
- * PET-04's "Feed" button and sheet). The customize icon (PET-05) isn't built
- * yet — the row is a `flex gap-2` for exactly this reason, so it can join as
- * a third sibling later without restructuring anything.
+ * Petting Zoo group), including its full action row: PET-03's "Pet" button,
+ * PET-04's "Feed" button and sheet, and PET-05's customize icon and sheet —
+ * the fixed 52×44 square button the mock draws beside the two flex-1
+ * buttons, not a flex-1 sibling itself.
  *
  * `flex-1` on the root fills the Sanctuary screen (`/zoo/[id]`) top to
  * bottom, matching the mock, since `AnimalCard` is the sole child of
@@ -48,10 +49,13 @@ import type { PetWithItem } from "@/lib/pets";
 export function AnimalCard({
   pet,
   foodItems,
+  accessories,
 }: {
   pet: PetWithItem;
-  /** The user's owned food (PET-04) — per-user, not per-animal, so `/zoo` fetches it once and passes the same list to every card. */
+  /** The user's owned food (PET-04) — per-user, not per-animal, so `/zoo/[id]` fetches it once and passes the same list to every card. */
   foodItems: InventoryItemWithStoreItem[];
+  /** The user's owned accessories (PET-05) — same "fetched once, per-user" reasoning as `foodItems`. */
+  accessories: InventoryItemWithStoreItem[];
 }) {
   const mood = moodFor(pet);
   const { label, className } = MOOD_COPY[mood];
@@ -62,6 +66,7 @@ export function AnimalCard({
   const hungerTone = stateTone(100 - pet.hunger);
   const [notice, setNotice] = useState<string>();
   const [feedOpen, setFeedOpen] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
 
   function handlePet() {
     // PET-07's `POST /api/pets/[id]/pet` doesn't exist yet — same "don't call
@@ -136,6 +141,14 @@ export function AnimalCard({
             Feed
           </Button>
         </div>
+        <button
+          type="button"
+          onClick={() => setCustomizeOpen(true)}
+          aria-label={`Customize ${pet.storeItem.name}`}
+          className="flex h-11 w-[52px] flex-none items-center justify-center rounded-input border border-border-input bg-input text-ink-soft transition-colors duration-120 hover:border-checkbox"
+        >
+          <Sparkles size={18} strokeWidth={2.2} aria-hidden />
+        </button>
       </div>
 
       {notice ? (
@@ -149,6 +162,14 @@ export function AnimalCard({
         onOpenChange={setFeedOpen}
         petName={pet.storeItem.name}
         foodItems={foodItems}
+      />
+
+      <CustomizeSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        petId={pet.id}
+        petName={pet.storeItem.name}
+        accessories={accessories}
       />
     </div>
   );

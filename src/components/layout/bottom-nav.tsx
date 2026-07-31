@@ -84,7 +84,7 @@ function NavTab({
       className={cn(
         "flex size-[42px] flex-none items-center justify-center rounded-full transition-colors duration-120",
         active
-          ? "bg-terracotta text-white shadow-nav-active"
+          ? "border-2 border-terracotta bg-surface text-terracotta shadow-nav-idle"
           : "border border-border-track bg-surface text-ink-soft shadow-nav-idle",
       )}
     >
