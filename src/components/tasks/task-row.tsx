@@ -133,7 +133,7 @@ export function TaskRow({
 
       <Link
         href={href}
-        className="flex min-w-0 flex-1 items-center gap-[11px] rounded-[8px] transition-colors duration-120 hover:bg-input"
+        className="flex min-w-0 flex-1 items-center gap-[11px] rounded-[8px] text-ink transition-colors duration-120 hover:bg-input"
       >
         <span className="min-w-0 flex-1">
           <span
