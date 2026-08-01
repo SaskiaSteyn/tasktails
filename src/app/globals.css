@@ -49,7 +49,9 @@
    accent at its brand value carrying small text:
      white on violet             3.79   (34px level disc, "Lv4")
      terracotta on t-tint        2.43   (streak pill, flame + count)
-     terracotta on surface       2.69   (streak card numeral)
+     terracotta on surface       2.69   (streak card numeral, and PET-02's
+                                          "critical" happiness/hunger icon +
+                                          numeral — same trade, not a new one)
    The palette has no in-family fix for the streak pill: terracotta-press on the
    same tint only reaches 3.38, so passing it means a new darker token or a
    different treatment, not a swap. The level disc does have one — the pill
@@ -314,6 +316,40 @@
   100% {
     opacity: 0;
     transform: translate(-50%, -50%) translateY(-18px);
+  }
+}
+
+/* PET-03's "Pet" button — a burst of hearts that climbs from the button
+   itself (`AnimalCard` measures its real position; this keyframe only
+   handles the climb). Same "centering baked into the keyframe" reasoning
+   `task-reward-float` documents above.
+
+   `--pet-heart-drift` is a per-element custom property (set inline by
+   `AnimalCard`, one random value per heart) for the sideways wander — a
+   keyframe is one shared set of rules for every element it's applied to, so
+   it cannot itself pick a different drift per heart the way JS can; reading
+   it back via `var()` is what lets five hearts drift five different ways
+   instead of climbing in a single flat row. The scale pop-in (0.5 → 1) is
+   what makes several hearts read as one "poof" rather than one heart
+   repeated five times, and the gentle shrink after 60% (1 → 0.9) is what
+   sells "getting further away" as they climb past the stage. */
+@keyframes pet-heart-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(0, 0) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%)
+      translate(calc(var(--pet-heart-drift, 0px) * 0.65), -140px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(var(--pet-heart-drift, 0px), -220px)
+      scale(0.9);
   }
 }
 

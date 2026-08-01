@@ -84,17 +84,17 @@ URG-05,Urgency language overlay — Last chance! / Don't miss out! text on item 
 URG-06,Bundle timer — Buy 2 get 1 free offer ends in MM:SS banner timer resets on page load [Group B only],Store — False Urgency,Frontend,To Do
 URG-07,Currency-based urgency indicator — Double XP for purchases this hour only or Bonus coins if bought before midnight banner [Group B only],Store — False Urgency,Frontend,To Do
 URG-08,GET /api/store/urgency-data — return seeded fabricated urgency values for Group B users only returns empty for Group A,Store — False Urgency,Backend,To Do
-PET-01,Pet sanctuary view — displays all of the user's owned animals with their current visual state,Petting Zoo,Frontend,To Do
-PET-02,Animal card — shows animal name image and current happiness/hunger state indicators,Petting Zoo,Frontend,To Do
-PET-03,Pet interaction button — Pet action on animal card,Petting Zoo,Frontend,To Do
-PET-04,Feed interaction — select a food item from the user's inventory and apply to animal,Petting Zoo,Frontend,To Do
-PET-05,Customize interaction — select an accessory from inventory and equip to animal,Petting Zoo,Frontend,To Do
-PET-06,GET /api/pets — list user's animals and compute current happiness and hunger state from lastInteractedAt and time elapsed,Petting Zoo,Backend,To Do
-PET-07,POST /api/pets/[id]/pet — record pet interaction and update happiness in Pet record,Petting Zoo,Backend,To Do
-PET-08,POST /api/pets/[id]/feed — validate user owns the food item update hunger and happiness decrement item quantity in InventoryItem,Petting Zoo,Backend,To Do
-PET-09,POST /api/pets/[id]/customize — validate user owns the accessory and set equippedToPetId on InventoryItem,Petting Zoo,Backend,To Do
-PET-10,Animal state decay — happiness and hunger computed from time elapsed since last interaction on GET /api/pets (no background job),Petting Zoo,Backend,To Do
-PET-11,Animal acquisition — when a Transaction is completed for an animal item create a corresponding Pet record for that user,Petting Zoo,Backend,To Do
+PET-01,Pet sanctuary view — displays all of the user's owned animals with their current visual state,Petting Zoo,Frontend,Done
+PET-02,Animal card — shows animal name image and current happiness/hunger state indicators,Petting Zoo,Frontend,Done
+PET-03,Pet interaction button — Pet action on animal card,Petting Zoo,Frontend,Done
+PET-04,Feed interaction — select a food item from the user's inventory and apply to animal,Petting Zoo,Frontend,Done
+PET-05,Customize interaction — select an accessory from inventory and equip to animal,Petting Zoo,Frontend,Done
+PET-06,GET /api/pets — list user's animals and compute current happiness and hunger state from lastInteractedAt and time elapsed,Petting Zoo,Backend,Done
+PET-07,POST /api/pets/[id]/pet — record pet interaction and update happiness in Pet record,Petting Zoo,Backend,Done
+PET-08,POST /api/pets/[id]/feed — validate user owns the food item update hunger and happiness decrement item quantity in InventoryItem,Petting Zoo,Backend,Done
+PET-09,POST /api/pets/[id]/customize — validate user owns the accessory and set equippedToPetId on InventoryItem,Petting Zoo,Backend,Done
+PET-10,Animal state decay — happiness and hunger computed from time elapsed since last interaction on GET /api/pets (no background job),Petting Zoo,Backend,Done
+PET-11,Animal acquisition — when a Transaction is completed for an animal item create a corresponding Pet record for that user,Petting Zoo,Backend,Done
 ADM-01,Admin dashboard page — restricted to admin role accessible at /admin,Admin Dashboard,Frontend,To Do
 ADM-02,Per-user telemetry table — columns: participant A/B group session count total time in app days returning tasks completed,Admin Dashboard,Frontend,To Do
 ADM-03,Per-user store telemetry table — columns: participant A/B group store visits items viewed items purchased avg time on store page,Admin Dashboard,Frontend,To Do
