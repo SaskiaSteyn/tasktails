@@ -2,7 +2,7 @@ import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import Image from "next/image";
 
 import { Coin } from "@/components/ui/coin";
-import { StoreItemCategory } from "@/generated/prisma/client";
+import type { StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
 import type { StoreItemWithLock } from "@/lib/store";
 
@@ -24,13 +24,22 @@ import type { StoreItemWithLock } from "@/lib/store";
  * later" pattern TASK-01 used for its own then-unbuilt "+ New task" pill. A
  * plain `<div>`, not `<button>`, so it isn't announced or focusable as a
  * control that does nothing.
+ *
+ * Category comparisons below use the string literals ("FOOD", "ANIMALS", …)
+ * rather than the `StoreItemCategory` enum's runtime object — this component
+ * is reachable from `StoreBrowser` (STOR-02, `"use client"`), and importing
+ * anything but the *type* from `@/generated/prisma/client` pulls Prisma's
+ * Node-only runtime into the browser bundle, which fails to compile
+ * ("chunking context does not support external modules (request:
+ * node:module)"). `StoreItemCategory` is still imported as a type, so the
+ * `Record` keys stay checked against the schema's real category set.
  */
 
 const CATEGORY_LABEL: Record<StoreItemCategory, string> = {
-  [StoreItemCategory.FOOD]: "Food",
-  [StoreItemCategory.ACCESSORIES]: "Accessory",
-  [StoreItemCategory.DECORATIONS]: "Decoration",
-  [StoreItemCategory.ANIMALS]: "Animal",
+  FOOD: "Food",
+  ACCESSORIES: "Accessory",
+  DECORATIONS: "Decoration",
+  ANIMALS: "Animal",
 };
 
 /**
@@ -40,15 +49,15 @@ const CATEGORY_LABEL: Record<StoreItemCategory, string> = {
  * there, an icon name everywhere else — same split `pets.ts`'s cards use).
  */
 const CATEGORY_WELL: Record<StoreItemCategory, { bg: string; icon: string }> = {
-  [StoreItemCategory.FOOD]: { bg: "bg-amber-tint", icon: "text-amber-text" },
-  [StoreItemCategory.ACCESSORIES]: { bg: "bg-sage-tint", icon: "text-sage-text" },
-  [StoreItemCategory.DECORATIONS]: { bg: "bg-violet-tint", icon: "text-violet-text" },
+  FOOD: { bg: "bg-amber-tint", icon: "text-amber-text" },
+  ACCESSORIES: { bg: "bg-sage-tint", icon: "text-sage-text" },
+  DECORATIONS: { bg: "bg-violet-tint", icon: "text-violet-text" },
   // Unused — animals render `Image` artwork instead, never this well's icon.
-  [StoreItemCategory.ANIMALS]: { bg: "bg-input", icon: "" },
+  ANIMALS: { bg: "bg-input", icon: "" },
 };
 
 export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
-  const isAnimal = item.category === StoreItemCategory.ANIMALS;
+  const isAnimal = item.category === "ANIMALS";
 
   return (
     <div className="rounded-card border border-border-track bg-warm px-[11px] py-3">

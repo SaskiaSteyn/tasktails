@@ -59,7 +59,7 @@ ONB-03,GET /api/onboarding — return current completion status of the three onb
 ONB-04,Username step — step dots live availability check suggestion chips and a skip that assigns an auto-generated handle,TODO App,Frontend,Done
 ONB-05,POST /api/user/username (availability) and PUT (claim) — session-scoped enforces uniqueness,TODO App,Backend,Done
 STOR-01,Store listing page — grid of item cards showing name image coin price level requirement and availability,Store,Frontend,Done
-STOR-02,Item search bar — filters visible items by name in real time,Store,Frontend,To Do
+STOR-02,Item search bar — filters visible items by name in real time,Store,Frontend,Done
 STOR-03,Category filter — filters visible items by category (food accessories animals decorations),Store,Frontend,To Do
 STOR-04,Item card — level-gated state (locked appearance and Requires Level X label for items above user level),Store,Frontend,To Do
 STOR-05,Add to cart button on item card,Store,Frontend,To Do
