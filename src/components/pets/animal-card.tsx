@@ -54,20 +54,30 @@ import type { PetWithItem } from "@/lib/pets";
 /**
  * One heart in the "Pet" button's floating-heart burst — see `spawnHearts()`.
  * `left`/`top` are pixels from the card's own top-left (measured off the
- * button's real position, not guessed as a percentage), and `drift` is how
- * far this particular heart wanders sideways as it climbs — set as the
+ * animal image's real position, not guessed as a percentage), and `drift` is
+ * how far this particular heart wanders sideways as it climbs — set as the
  * `--pet-heart-drift` custom property the `pet-heart-float` keyframe reads,
  * since a keyframe can't itself pick a different random value per element.
+ * `layer` decides whether this heart paints behind or in front of the pet's
+ * `Image` (itself `z-10`) — mixing both, scattered across the animal's own
+ * footprint rather than one shared point, is what sells "the hearts are
+ * floating around the animal" rather than all of them sitting flatly on top
+ * of it.
  */
-type FloatingHeart = { id: number; left: number; top: number; delay: number; drift: number };
+type FloatingHeart = {
+  id: number;
+  left: number;
+  top: number;
+  delay: number;
+  drift: number;
+  layer: "behind" | "front";
+};
 
 /** How many hearts spawn per pet, and how far apart their entrances are staggered. */
 const HEART_COUNT = 5;
 const HEART_STAGGER_MS = 170;
 /** Must match `pet-heart-float`'s own duration in globals.css. */
 const HEART_ANIMATION_MS = 1200;
-/** Pixels above the "Pet" button's top edge that the burst originates from. */
-const HEART_ORIGIN_OFFSET = 14;
 
 export function AnimalCard({
   pet,
@@ -91,43 +101,50 @@ export function AnimalCard({
   const [hearts, setHearts] = useState<FloatingHeart[]>([]);
   const nextHeartId = useRef(0);
   const cardRef = useRef<HTMLDivElement>(null);
-  const petButtonWrapperRef = useRef<HTMLDivElement>(null);
+  const petImageRef = useRef<HTMLImageElement>(null);
   const router = useRouter();
 
-  // A burst of hearts that climbs from the "Pet" button itself, at the
-  // user's request — the first version centred them over the stage and
-  // floated them straight up in a flat row, which read as one static shape
-  // sliding rather than several hearts drifting up independently. Purely
-  // decorative, no server round trip of its own, so it fires from
+  // A burst of hearts scattered across the animal itself, at the user's
+  // request — earlier versions climbed from the "Pet" button, which sits
+  // well below the stage: by the time a heart had climbed far enough to
+  // reach the animal's height, its short 1.2s life was already over, so the
+  // "some behind, some in front of the animal" layering below never had
+  // anything to actually appear behind or in front of. Measuring the image
+  // itself instead means the burst starts already overlapping the animal.
+  // Purely decorative, no server round trip of its own, so it fires from
   // `handlePet()` on success rather than being driven by `pet.happiness`
   // (which would also fire on an unrelated page refresh).
   function spawnHearts() {
     const card = cardRef.current;
-    const button = petButtonWrapperRef.current;
+    const image = petImageRef.current;
     // Both refs are attached to plain DOM nodes that exist for the whole
     // life of this component, so this only fails to measure if the layout
     // hasn't painted yet — skip the flourish rather than guess a position.
-    if (!card || !button) return;
+    if (!card || !image) return;
 
     const cardRect = card.getBoundingClientRect();
-    const buttonRect = button.getBoundingClientRect();
-    const originLeft = buttonRect.left + buttonRect.width / 2 - cardRect.left;
-    // A little above the button's own top edge, not right on it — hearts
-    // starting exactly at the button's edge visually overlapped its label.
-    const originTop = buttonRect.top - cardRect.top - HEART_ORIGIN_OFFSET;
+    const imageRect = image.getBoundingClientRect();
+    const originLeft = imageRect.left + imageRect.width / 2 - cardRect.left;
+    const originTop = imageRect.top + imageRect.height / 2 - cardRect.top;
 
     const batch: FloatingHeart[] = Array.from({ length: HEART_COUNT }, (_, i) => ({
       id: nextHeartId.current++,
-      // A little horizontal jitter on the origin itself, on top of each
-      // heart's own drift below, so the burst doesn't launch from one exact
-      // pixel every time.
-      left: originLeft + (Math.random() * 16 - 8),
-      top: originTop,
+      // Scattered across the animal's whole width/height, not jittered
+      // around one shared point — this is what keeps the burst from reading
+      // as a single row or a single "poof" location, and is also what gives
+      // the front/behind layering below something to actually show: a heart
+      // landing near the animal's edge reads clearly as one or the other,
+      // where one dead centre would barely peek out either way.
+      left: originLeft + (Math.random() * imageRect.width - imageRect.width / 2),
+      top: originTop + (Math.random() * imageRect.height - imageRect.height / 2),
       delay: i * HEART_STAGGER_MS,
       // Independent left/right wander per heart as it climbs — this is what
       // keeps five hearts from reading as a single row that moves as one
       // block; each one drifts its own way instead.
       drift: Math.random() * 64 - 32,
+      // Randomised per heart, not alternated by index — an alternating
+      // pattern would itself read as a regular, predictable order.
+      layer: Math.random() < 0.5 ? "behind" : "front",
     }));
     setHearts((current) => [...current, ...batch]);
 
@@ -166,18 +183,37 @@ export function AnimalCard({
   return (
     <div
       ref={cardRef}
-      className="relative flex flex-1 min-h-fit flex-col overflow-hidden rounded-card-lg border border-border-track bg-surface shadow-card"
+      className="relative flex flex-1 min-h-fit flex-col overflow-hidden rounded-card-lg border border-border-track bg-surface"
     >
       <div className="flex flex-1 flex-col items-center bg-linear-to-b from-[#EAF3EC] to-[#F3ECE1] px-4 pt-4 pb-[14px]">
         <p className="font-display text-[18px] font-semibold">{name}</p>
         <p className={cn("mt-[3px] text-[12px] font-extrabold", className)}>{label}</p>
-        <Image
-          src={pet.storeItem.imageUrl}
-          alt={name}
-          width={120}
-          height={120}
-          className="mt-1.5 block size-[120px]"
-        />
+        {/* `flex-1 min-h-0` is what lets the animal claim whatever vertical
+            room the stage isn't using for the name/mood label above it and
+            the stat bars (`mt-auto`) below it, instead of sitting at a fixed
+            size with dead space around it — `fill` is next/image's mode for
+            "size to the parent", with `object-contain` so a non-square
+            parent box (or a small phone, per NFR-GEN-2) letterboxes the
+            animal rather than stretching it. `max-w-[360px]` keeps it from
+            ballooning past a sensible size on a wide desktop card. */}
+        <div className="relative z-10 mt-1.5 min-h-0 w-full max-w-[360px] flex-1">
+          <Image
+            ref={petImageRef}
+            src={pet.storeItem.imageUrl}
+            alt={name}
+            fill
+            sizes="(min-width: 480px) 360px, 70vw"
+            // The ref is what lets `spawnHearts()` centre the burst on the
+            // animal's real rendered position rather than the button's.
+            // Greyed out for the two below-par moods, at the user's request —
+            // a visual cue that reads even before the "Hungry"/"Unhappy"
+            // label above or the stat bars below are read.
+            className={cn(
+              "object-contain",
+              mood === "hungry" || mood === "unhappy" ? "grayscale" : null,
+            )}
+          />
+        </div>
 
         <div className="mt-auto flex w-full flex-col gap-[9px]">
           <div className="rounded-input border border-border-track bg-surface px-3 py-[9px]">
@@ -225,7 +261,7 @@ export function AnimalCard({
             `cn` is a plain join with no conflict resolution, so the two would
             race on stylesheet order instead of one clearly winning (same fix
             `EditTaskForm`'s "Save changes" needed for TASK-03). */}
-        <div ref={petButtonWrapperRef} className="flex-1">
+        <div className="flex-1">
           <Button variant="primary" size="inline" onClick={handlePet} disabled={petting}>
             Pet
           </Button>
@@ -250,17 +286,25 @@ export function AnimalCard({
         </p>
       ) : null}
 
-      {/* Rendered last so the burst paints over the stage/bars/buttons, not
-          under them. Positioned in real pixels off the card's own top-left
+      {/* Rendered last so a `layer: "front"` heart paints over the stage/
+          bars/buttons; a `layer: "behind"` heart still climbs past the
+          animal, not under it, because its `z-0` only loses to the `Image`'s
+          own `z-10` — both are still above the stage's plain, unpositioned
+          background. Positioned in real pixels off the card's own top-left
           (measured in `spawnHearts()`), not a percentage guess at where the
           button roughly is. */}
       {hearts.map((heart) => (
         <Heart
           key={heart.id}
           aria-hidden
-          size={18}
           fill="currentColor"
-          className="pointer-events-none absolute text-terracotta [animation:pet-heart-float_1200ms_ease-out_forwards]"
+          className={cn(
+            // Sized off the viewport (`vw`), not the card, per the user's
+            // "relative to screen size" ask — clamped so it neither
+            // disappears on a small phone nor balloons on a wide one.
+            "pointer-events-none absolute size-[clamp(30px,8vw,52px)] text-terracotta [animation:pet-heart-float_1200ms_ease-out_forwards]",
+            heart.layer === "behind" ? "z-0" : "z-20",
+          )}
           style={
             {
               left: `${heart.left}px`,

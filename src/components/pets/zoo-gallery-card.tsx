@@ -83,7 +83,12 @@ export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
           alt={name}
           width={62}
           height={62}
-          className="block size-[62px]"
+          // Matches `AnimalCard`'s own grey-out for these two moods, so a
+          // pet doesn't look full-colour here and washed-out one tap away.
+          className={cn(
+            "block size-[62px]",
+            mood === "hungry" || mood === "unhappy" ? "grayscale" : null,
+          )}
         />
       </div>
 
