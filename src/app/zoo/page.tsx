@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { ZooGalleryCard } from "@/components/pets/zoo-gallery-card";
+import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { petsForUser } from "@/lib/pets";
 
 export const metadata: Metadata = {
@@ -54,6 +55,7 @@ export default async function ZooPage() {
       nav={<BottomNav />}
       className="bg-warm p-[14px]"
     >
+      <SessionTracker />
       {/* Grid always renders, even at zero pets — the addendum's own
           behaviour note: "Empty state (no pets) should surface the adopt
           slot prominently," not a separate empty-state screen replacing the

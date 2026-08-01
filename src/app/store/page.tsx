@@ -7,6 +7,8 @@ import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { ComingSoon } from "@/components/layout/coming-soon";
 import { PersistentHeader } from "@/components/layout/persistent-header";
+import { SessionTracker } from "@/components/telemetry/session-tracker";
+import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
 
 export const metadata: Metadata = {
   title: "Store · TaskTails",
@@ -22,6 +24,8 @@ export default async function StorePage() {
 
   return (
     <AppShell header={<PersistentHeader title="Store" />} nav={<BottomNav />}>
+      <SessionTracker />
+      <StoreTimeTracker />
       <ComingSoon
         icon={ShoppingBag}
         title="Store is on its way"

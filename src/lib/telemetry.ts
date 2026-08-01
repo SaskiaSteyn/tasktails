@@ -14,13 +14,20 @@ import { prisma } from "@/lib/prisma";
  */
 
 /**
- * The three event types `TelemetryEvent.eventType` actually gets, per
- * NFR-STORE-1 and STOR-18's own bullet. Not a schema enum — `TelemetryEvent`
- * deliberately keeps `eventType` as a free string (see the model's own doc
- * comment) for future event types without a migration — but every *current*
- * writer is expected to pick from this set rather than inventing a string.
+ * The event types `TelemetryEvent.eventType` actually gets, per NFR-STORE-1,
+ * STOR-18's own bullet and ADM-10 (`SESSION_START`/`SESSION_END`/
+ * `STORE_TIME_ON_PAGE`). Not a schema enum — `TelemetryEvent` deliberately
+ * keeps `eventType` as a free string (see the model's own doc comment) for
+ * future event types without a migration — but every *current* writer is
+ * expected to pick from this set rather than inventing a string.
  */
-export type TelemetryEventType = "STORE_VISIT" | "ITEM_VIEWED" | "ITEM_PURCHASED";
+export type TelemetryEventType =
+  | "STORE_VISIT"
+  | "ITEM_VIEWED"
+  | "ITEM_PURCHASED"
+  | "SESSION_START"
+  | "SESSION_END"
+  | "STORE_TIME_ON_PAGE";
 
 /**
  * Logs one event. Takes a plain `PrismaClient` by default, but accepts a

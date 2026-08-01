@@ -47,6 +47,11 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   return prisma.user.findUnique({ where: { email: normaliseEmail(email) } });
 }
 
+/** Session callbacks carry `user.id`, not `user.email` — this is that lookup. */
+export async function findUserById(id: string): Promise<User | null> {
+  return prisma.user.findUnique({ where: { id } });
+}
+
 /** Usernames are unique — the schema's unique index is what enforces it. */
 export async function isUsernameAvailable(
   username: string,

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { QuestChecklist } from "@/components/onboarding/quest-checklist";
+import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { onboardingStatus } from "@/lib/onboarding";
 import { displayNameFor, findUserByEmail } from "@/lib/users";
 
@@ -34,6 +35,7 @@ export default async function OnboardingPage() {
 
   return (
     <AppShell className="bg-warm px-[22px] pt-[22px] pb-6">
+      <SessionTracker />
       <QuestChecklist name={displayNameFor(record)} status={status} />
     </AppShell>
   );
