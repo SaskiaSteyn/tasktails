@@ -30,6 +30,19 @@ const TABS_AFTER_PLUS = [
  * PET-01 (`/zoo` the gallery, `/zoo/[id]` the per-animal drill-in) — a tab
  * counts as active on its own route or anything nested under it, which is
  * what actually keeps the Zoo tab lit up while looking at one animal.
+ *
+ * The root `<nav>` itself carries a 68px fade above its own icon row
+ * (`pt-[68px]`, `bg-linear-to-b from-surface/0 to-surface`) rather than
+ * `AppShell` wrapping this in an extra div for it — `AppShell`'s `nav` slot
+ * is always this component (nothing else is ever passed there), so the fade
+ * belongs to the one thing that actually needs it. Both gradient stops are
+ * `surface` itself, alpha only — not the bare `transparent` keyword, which
+ * has no hue of its own and fades toward an opaque colour through a visibly
+ * darker midpoint band (browsers interpolate colour and alpha together).
+ * `main` never needs its own matching margin for this: it's `flex-1` in the
+ * same flex column as this `<nav>`, so this element's real, non-absolute
+ * height (fade included) is space `main` can't claim in the first place —
+ * content can't scroll into a zone that was never part of `main`'s own box.
  */
 /** A tab is active on its own route and any route nested under it (PET-01's `/zoo/[id]` drill-in). */
 function isActiveTab(pathname: string, href: string): boolean {
@@ -42,7 +55,7 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="flex items-center justify-center gap-4 bg-surface px-4 pt-2 pb-[14px]">
+      <nav className="flex flex-none items-center justify-center gap-4 bg-linear-to-b from-surface/0 to-surface px-4 pb-[calc(14px+env(safe-area-inset-bottom))]">
         {TABS_BEFORE_PLUS.map((tab) => (
           <NavTab key={tab.href} {...tab} active={isActiveTab(pathname, tab.href)} />
         ))}

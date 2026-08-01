@@ -7,7 +7,8 @@ import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AnimalCard } from "@/components/pets/animal-card";
-import { accessoryInventoryForUser, foodInventoryForUser } from "@/lib/inventory";
+import { foodInventoryForUser } from "@/lib/inventory";
+import { petDisplayName } from "@/lib/pet-mood";
 import { petForUser } from "@/lib/pets";
 
 export async function generateMetadata({
@@ -21,7 +22,7 @@ export async function generateMetadata({
 
   const { id } = await params;
   const pet = await petForUser(userId, id);
-  return { title: pet ? `${pet.storeItem.name} · TaskTails` : "Sanctuary · TaskTails" };
+  return { title: pet ? `${petDisplayName(pet)} · TaskTails` : "Sanctuary · TaskTails" };
 }
 
 /**
@@ -50,10 +51,9 @@ export default async function SanctuaryPage({
   if (!userId) redirect("/login");
 
   const { id } = await params;
-  const [pet, foodItems, accessories] = await Promise.all([
+  const [pet, foodItems] = await Promise.all([
     petForUser(userId, id),
     foodInventoryForUser(userId),
-    accessoryInventoryForUser(userId),
   ]);
   if (!pet) redirect("/zoo");
 
@@ -69,14 +69,14 @@ export default async function SanctuaryPage({
             <ChevronLeft size={22} strokeWidth={2} aria-hidden />
           </Link>
           <h1 className="min-w-0 truncate font-display text-[19px] leading-[1.15] font-semibold">
-            {pet.storeItem.name}
+            {petDisplayName(pet)}
           </h1>
         </header>
       }
       nav={<BottomNav />}
       className="gap-3 px-4 pt-4 pb-4"
     >
-      <AnimalCard pet={pet} foodItems={foodItems} accessories={accessories} />
+      <AnimalCard pet={pet} foodItems={foodItems} />
     </AppShell>
   );
 }

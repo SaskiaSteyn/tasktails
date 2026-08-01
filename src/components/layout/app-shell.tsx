@@ -17,11 +17,13 @@ import { cn } from "@/lib/cn";
  * instead, and the auth screens pass none. `nav` is where SHR-01's bottom nav
  * will go.
  *
- * Safe-area insets are handled here and in `AppHeader` rather than by each
- * screen: while the frame is edge-to-edge, the bottom of the shell sits under
- * the home indicator on a notched phone, and `nav` would be the first casualty.
- * Above `frame:` the card is inset by its own padding and the insets resolve to
- * zero, so the same markup is correct at both ends.
+ * Safe-area insets are handled in `AppHeader`, in `BottomNav` itself (`nav`'s
+ * own `pb-[calc(14px+env(safe-area-inset-bottom))]`), and by the plain spacer
+ * below when there's no `nav` — never by guessing a screen-specific padding:
+ * while the frame is edge-to-edge, the bottom of the shell sits under the
+ * home indicator on a notched phone. Above `frame:` the card is inset by its
+ * own padding and the insets resolve to zero, so the same markup is correct
+ * at both ends.
  *
  * `nav` stays pinned to the bottom by height, not `position: sticky` — every
  * div from `body` down to `main` is bounded (`h-full`/`min-h-0`/`frame:h-*`
@@ -72,28 +74,7 @@ export function AppShell({
           >
             {children}
           </main>
-          {nav ? (
-            <div className="relative flex-none pb-[env(safe-area-inset-bottom)]">
-              {/* The fade the nav itself can't produce: `nav` is a normal-flow
-                  sibling *after* `main`, not overlapping it, so a gradient on
-                  `nav`'s own background can only ever fade against whatever is
-                  directly behind *its* box — this card's white — never
-                  against whatever `main` actually renders there (a page's own
-                  background, or its last bit of scrolled content). This
-                  overlay is what actually overlaps that content: positioned
-                  above this wrapper's own top edge, it paints over the bottom
-                  of `main`'s rendered area and fades from transparent (so
-                  whatever's really there shows through) to solid white
-                  flush with the nav below it. `pointer-events-none` so it
-                  never intercepts taps or scroll on the content it's
-                  covering. */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-linear-to-b from-transparent to-surface"
-              />
-              {nav}
-            </div>
-          ) : (
+          {nav ?? (
             // No nav to absorb it, so the content area clears the home indicator.
             <div
               aria-hidden

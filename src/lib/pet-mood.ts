@@ -20,6 +20,17 @@ export type PetMood = "happy" | "neutral" | "hungry" | "unhappy";
  * threshold, `happiness` alone decides between "Happy", "Neutral" and
  * "Unhappy".
  */
+/**
+ * A pet's displayed name — its own nickname if the owner has set one,
+ * falling back to `storeItem.name` (the shared species name, e.g. "Fox kit")
+ * until then. Pure, so `AnimalCard`/`ZooGalleryCard` can call it directly
+ * without pulling `src/lib/pets.ts`'s Prisma import into the browser bundle,
+ * same reasoning this file's own header comment gives for `moodFor()`.
+ */
+export function petDisplayName(pet: { name: string | null; storeItem: { name: string } }): string {
+  return pet.name ?? pet.storeItem.name;
+}
+
 export function moodFor(pet: { happiness: number; hunger: number }): PetMood {
   if (pet.hunger >= 70) return "hungry";
   if (pet.happiness <= 30) return "unhappy";

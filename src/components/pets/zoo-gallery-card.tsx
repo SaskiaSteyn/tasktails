@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { cn } from "@/lib/cn";
-import { MOOD_COPY, moodFor, STATE_TEXT_CLASS, stateTone } from "@/lib/pet-mood";
+import { MOOD_COPY, moodFor, petDisplayName, STATE_TEXT_CLASS, stateTone } from "@/lib/pet-mood";
 import type { PetWithItem } from "@/lib/pets";
 
 /**
@@ -31,6 +31,7 @@ function speciesOf(storeItemName: string): string {
 }
 
 export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
+  const name = petDisplayName(pet);
   const mood = moodFor(pet);
   const moodCopy = MOOD_COPY[mood];
   const happinessTone = stateTone(pet.happiness);
@@ -79,7 +80,7 @@ export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
         </span>
         <Image
           src={pet.storeItem.imageUrl}
-          alt={pet.storeItem.name}
+          alt={name}
           width={62}
           height={62}
           className="block size-[62px]"
@@ -87,7 +88,7 @@ export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
       </div>
 
       <p className="mt-2 truncate font-display text-[14px] font-semibold">
-        {pet.storeItem.name}
+        {name}
       </p>
       <p className="text-[10px] text-ink-faint">
         {species} · Lvl {pet.storeItem.levelRequired}
@@ -100,7 +101,7 @@ export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
             size="sm"
             tone={happinessTone}
             value={pet.happiness}
-            label={`${pet.storeItem.name}'s happiness`}
+            label={`${name}'s happiness`}
             valueText={`${pet.happiness}%`}
             className="flex-1"
           />
@@ -113,7 +114,7 @@ export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
             size="sm"
             tone={hungerTone}
             value={100 - pet.hunger}
-            label={`${pet.storeItem.name}'s hunger`}
+            label={`${name}'s hunger`}
             valueText={`${pet.hunger}% hungry`}
             className="flex-1"
           />

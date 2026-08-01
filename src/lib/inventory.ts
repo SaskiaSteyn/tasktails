@@ -111,12 +111,12 @@ export async function consumeFoodItem(
  * `consumeFoodItem()`) can't prevent on its own the way it can for a single
  * row.
  *
- * At most one accessory equipped per pet at a time — `CustomizeSheet`'s
- * radiogroup only ever pre-selects "whichever accessory is already
+ * At most one accessory equipped per pet at a time — `PetCustomizer`'s
+ * accessory grid only ever highlights "whichever accessory is already
  * equipped" (singular, per PET-05's own note), so equipping a new one always
  * displaces whatever this pet was wearing, including an item that was
- * "Equipped elsewhere" on a *different* pet (moving a physical accessory is
- * exactly what that label warns the selection will do). Unlike
+ * equipped on a *different* pet (moving a physical accessory between pets is
+ * exactly that). Unlike
  * `consumeFoodItem()`'s scarce, racy `quantity` decrement, equipping isn't
  * consumed or capped — a race between two clients equipping two different
  * accessories to the same pet just has one write land after the other, an
