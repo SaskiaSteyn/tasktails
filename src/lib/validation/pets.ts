@@ -23,3 +23,14 @@ export const customizePetSchema = z.object({
 });
 
 export type CustomizePetInput = z.infer<typeof customizePetSchema>;
+
+/**
+ * `POST /api/pets/[id]/rename` — the pet's own nickname, separate from
+ * `storeItem.name` (the shared species name every pet of that type starts
+ * with). Capped at 30 so it never overruns "Customize {name}" in the header.
+ */
+export const renamePetSchema = z.object({
+  name: z.string().trim().min(1, "Give your pet a name.").max(30, "Keep it under 30 characters."),
+});
+
+export type RenamePetInput = z.infer<typeof renamePetSchema>;
