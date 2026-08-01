@@ -90,7 +90,9 @@ export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
         <span className="flex items-center gap-[3px]">
           <Coin size={12} />
           <span className="text-[12px] font-extrabold text-amber-text">
-            {item.coinPrice.toLocaleString()}
+            {/* Locale pinned explicitly — see `coin.tsx`'s `CoinPill` for
+                the hydration mismatch this avoids. */}
+            {item.coinPrice.toLocaleString("en-US")}
           </span>
         </span>
 

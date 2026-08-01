@@ -135,8 +135,11 @@ function XpCard({ economy }: { economy: EconomySnapshot }) {
   const { isMaxLevel, nextLevel, xpIntoLevel, xpLevelSpan, percent } = economy;
 
   const caption = isMaxLevel ? "MAX LEVEL" : `XP TO LVL ${nextLevel}`;
+  // Locale pinned explicitly, same reason `coin.tsx`'s CoinPill fixes —
+  // `toLocaleString()` with no argument can format differently on the server
+  // than in the browser and produce a hydration mismatch.
   const value = isMaxLevel
-    ? `${economy.xp.toLocaleString()} XP`
+    ? `${economy.xp.toLocaleString("en-US")} XP`
     : `${xpIntoLevel} / ${xpLevelSpan} XP`;
 
   return (
