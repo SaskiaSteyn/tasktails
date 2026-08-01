@@ -1,5 +1,6 @@
 import type {
   InventoryItem,
+  StoreItem,
   Transaction,
   UserEconomy,
 } from "@/generated/prisma/client";
@@ -237,5 +238,27 @@ export async function checkout(userId: string): Promise<CheckoutResult> {
       pets,
       economy,
     } as const;
+  });
+}
+
+/** A `Transaction` row with the item it bought attached — what STOR-09's history page renders. */
+export type TransactionWithStoreItem = Transaction & { storeItem: StoreItem };
+
+/**
+ * `userId`'s purchase history (STOR-17), most recent first — a history page
+ * reads newest-on-top, unlike `cartForUser()`'s insertion order.
+ *
+ * Lives here rather than a new module: `checkout()`'s own doc comment
+ * already claims `Transaction` as owned by this file, since nothing else
+ * writes it. A read-only list doesn't need the `tx` client checkout's writes
+ * do, so this just goes through the module-level `prisma` singleton.
+ */
+export async function transactionsForUser(
+  userId: string,
+): Promise<TransactionWithStoreItem[]> {
+  return prisma.transaction.findMany({
+    where: { userId },
+    orderBy: { purchasedAt: "desc" },
+    include: { storeItem: true },
   });
 }

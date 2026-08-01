@@ -130,7 +130,7 @@
 | STOR-14 | `PATCH /api/store/cart/[id]` — update quantity of a cart item | Backend | Done |
 | STOR-15 | `DELETE /api/store/cart/[id]` — remove item from cart | Backend | Done |
 | STOR-16 | `POST /api/store/checkout` — validate cart, check coin balance, check level gates, deduct coins, create `Transaction` and `InventoryItem` records, log telemetry | Backend | Done — one `Transaction`/`ITEM_PURCHASED` event per cart line (not per unit). `ANIMALS` lines skip `InventoryItem` and call PET-11's `createPetForTransaction()` once per unit instead (quantity 3 adopts 3 distinct `Pet` rows, since `Pet` has no quantity column) — wired in after merging `79-pet-sanctuary` into this branch, once `createPetForTransaction()` existed to call. Verified live against real seeded data: a mixed cart (2 Koala kits + 1 Treat box) produced 2 `Pet` rows (100/0 stats), 1 `InventoryItem` row (Treat box only), 2 `Transaction` rows (one per line, not per unit — 3 units, 2 lines), correct coin deduction, and 2 telemetry events; a solo animal purchase and a non-animal-only cart were checked separately; empty-cart/locked/insufficient-coins branches re-verified unaffected. `npm test` (99), `tsc` and `eslint` green |
-| STOR-17 | `GET /api/store/history` — list the authenticated user's purchase transactions | Backend | To Do |
+| STOR-17 | `GET /api/store/history` — list the authenticated user's purchase transactions | Backend | Done |
 | STOR-18 | Telemetry logging — log `STORE_VISIT`, `ITEM_VIEWED`, and `ITEM_PURCHASED` events to `TelemetryEvent` on relevant actions | Backend | To Do |
 
 ### False Urgency — Group B Only
