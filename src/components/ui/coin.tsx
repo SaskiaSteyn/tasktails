@@ -52,7 +52,16 @@ export function CoinPill({
       // makes the label win over the content — aria-label on a bare span is not
       // reliably exposed.
       role="img"
-      aria-label={`${coins.toLocaleString()} coins`}
+      // Locale pinned explicitly — `toLocaleString()` with no argument uses
+      // the runtime's default locale, which can differ between the Node
+      // server process and the browser (different OS/ICU locale data). That
+      // mismatch is exactly what produced the hydration error found while
+      // verifying STOR-03: the server rendered "1,200" and the client
+      // rendered "1 200" for the same number, and React discarded the
+      // subtree rather than reconcile text it can't diff. Every numeric
+      // `toLocaleString()` call reachable from a hydrated page needs the
+      // same fix — see `store-item-card.tsx` and `app-header.tsx`.
+      aria-label={`${coins.toLocaleString("en-US")} coins`}
       className={cn(
         "inline-flex flex-none items-center gap-[5px] rounded-pill border border-border-track bg-surface py-[5px] pr-[10px] pl-[6px]",
         className,
@@ -60,7 +69,7 @@ export function CoinPill({
     >
       <Coin size={18} />
       <span className="text-[13px] font-extrabold text-amber-text">
-        {coins.toLocaleString()}
+        {coins.toLocaleString("en-US")}
       </span>
     </span>
   );
