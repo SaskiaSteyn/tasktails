@@ -49,7 +49,7 @@ export function AppShell({
     // raise it with `useLevelUp()`. It renders nothing until one fires.
     <LevelUpProvider>
       <div className="flex min-h-0 flex-1 justify-center bg-board frame:items-center frame:p-6">
-        <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface frame:h-[640px] frame:max-w-app frame:rounded-frame frame:border frame:border-[rgb(46_42_38/0.06)] frame:shadow-card">
+        <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface frame:h-[640px] frame:max-w-app frame:rounded-frame frame:border frame:border-[rgb(46_42_38/0.06)] frame:shadow-card">
           {/* WCAG 2.4.1 Bypass Blocks. Only rendered when there is actually a block
             to bypass — on the auth screens the first thing in the tab order is
             already the content, and a skip link there would be one more stop for
@@ -73,7 +73,24 @@ export function AppShell({
             {children}
           </main>
           {nav ? (
-            <div className="flex-none pb-[env(safe-area-inset-bottom)]">
+            <div className="relative flex-none pb-[env(safe-area-inset-bottom)]">
+              {/* The fade the nav itself can't produce: `nav` is a normal-flow
+                  sibling *after* `main`, not overlapping it, so a gradient on
+                  `nav`'s own background can only ever fade against whatever is
+                  directly behind *its* box — this card's white — never
+                  against whatever `main` actually renders there (a page's own
+                  background, or its last bit of scrolled content). This
+                  overlay is what actually overlaps that content: positioned
+                  above this wrapper's own top edge, it paints over the bottom
+                  of `main`'s rendered area and fades from transparent (so
+                  whatever's really there shows through) to solid white
+                  flush with the nav below it. `pointer-events-none` so it
+                  never intercepts taps or scroll on the content it's
+                  covering. */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 -top-10 h-10 bg-linear-to-b from-transparent to-surface"
+              />
               {nav}
             </div>
           ) : (

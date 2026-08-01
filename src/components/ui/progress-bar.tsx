@@ -3,26 +3,38 @@ import { cn } from "@/lib/cn";
 /**
  * Progress bar — track `border-track`, height 8, radius 5 (style guide).
  *
- * The fill colour is semantic, not decorative: violet is XP, sage is happiness,
- * amber is hunger, sage again for an onboarding quest. Passing a tone rather
- * than a class keeps those fixed — a sage XP bar would read as "good" on a
- * screen where the sage bar already means something else. `goal` and
- * `happiness` land on the same sage on purpose; they are named separately so a
- * later change to either doesn't drag the other with it.
+ * The fill colour is semantic, not decorative. `xp` and `goal` are *fixed* —
+ * violet always means XP, sage always means an onboarding quest — so a later
+ * screen can't accidentally reuse a colour that already means something else
+ * there.
+ *
+ * `good`/`caution`/`critical` are different: they're a *value-driven* traffic
+ * light (sage/amber/terracotta), for a meter whose own fill level is the
+ * thing being judged — PET-02's happiness/hunger bars, per
+ * `design_handoff/ADDENDUM-zoo-gallery.md`'s colour rule ("the icon stroke
+ * ALWAYS matches its own bar fill... healthy = green, caution = amber,
+ * critical = terracotta"). The caller picks which of the three applies (see
+ * `stateTone()` in `src/lib/pet-mood.ts`) rather than this component reading
+ * `value` itself, since "which direction is good" depends on the stat — high
+ * happiness is good, high hunger is not, and this component has no way to
+ * know which it's drawing. Terracotta rather than literal red: `--color-
+ * urgency` is reserved for Group B's false-urgency stimuli and destructive
+ * actions (AGENTS.md) and must never appear in neutral game UI like this.
  *
  * Built once here because the sanctuary (ZOO-01) draws two of these beside the
  * header's one.
  */
-export type ProgressTone = "xp" | "happiness" | "hunger" | "goal";
+export type ProgressTone = "xp" | "goal" | "good" | "caution" | "critical";
 
 /** The designs draw two heights: 8px in the header, 7px on a quest card. */
 export type ProgressSize = "default" | "sm";
 
 const tones: Record<ProgressTone, string> = {
   xp: "bg-violet",
-  happiness: "bg-sage",
-  hunger: "bg-amber",
   goal: "bg-sage",
+  good: "bg-sage",
+  caution: "bg-amber",
+  critical: "bg-terracotta",
 };
 
 const heights: Record<ProgressSize, string> = {
