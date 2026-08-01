@@ -1,4 +1,3 @@
-import { History } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -6,7 +5,10 @@ import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { PersistentHeader } from "@/components/layout/persistent-header";
+import { CartCountProvider } from "@/components/store/cart-count-context";
+import { CartLink } from "@/components/store/cart-link";
 import { StoreBrowser } from "@/components/store/store-browser";
+import { cartForUser } from "@/lib/cart";
 import { storeItemsForUser } from "@/lib/store";
 
 export const metadata: Metadata = {
@@ -18,13 +20,27 @@ export const metadata: Metadata = {
  * "Store — Group A" frame. Replaces the `ComingSoon` placeholder `BottomNav`
  * (SHR-01) has pointed at since it shipped.
  *
- * The grid and search (`StoreBrowser`, STOR-02) are real. The header's
- * history icon and the category chips still render matching the mock exactly
- * but are inert — no navigation, no filtering — since STOR-03 (category
- * filter) and STOR-09 (history page) are separate, unbuilt tickets. Same
- * "render the control, wire it up later" pattern TASK-01 used for its own
- * then-unbuilt "+ New task" pill. The history icon's markup matches the
- * style guide's own "Header — title" sample exactly (`/style-guide`).
+ * The grid and search (`StoreBrowser`, STOR-02) are real. The category chips
+ * still render matching the mock exactly but are inert — no filtering —
+ * since STOR-03 hasn't shipped. Same "render the control, wire it up later"
+ * pattern TASK-01 used for its own then-unbuilt "+ New task" pill.
+ *
+ * The header's action slot is a cart icon linking to STOR-06's `/store/cart`
+ * (with a count badge), not the mock's history icon — a deliberate,
+ * user-directed swap: the design handoff never actually shows how a user
+ * reaches the cart from here, and the history icon was the closest existing
+ * affordance to repurpose rather than inventing a second icon slot. History
+ * itself isn't lost, just relocated — `/store/cart`'s own header carries it
+ * instead, per the same instruction.
+ *
+ * The badge (`CartLink`) reads its count from `CartCountProvider`
+ * (`cart-count-context.tsx`) rather than a plain prop — found live after
+ * shipping that a prop-only badge only reflected the count as of the last
+ * page load, so adding an item didn't move it until a refresh. The provider
+ * wraps both the header and `StoreBrowser`'s grid (siblings in this tree,
+ * so a prop from one can't reach the other) and `StoreItemCard`'s
+ * add-to-cart button calls its `increment()` the moment a `POST
+ * /api/store/cart` succeeds.
  *
  * `PersistentHeader`'s title variant is STOR-08's coin balance display,
  * already shipped by INF-12 — same "done by reuse" relationship TASK-06 had
@@ -41,27 +57,21 @@ export default async function StorePage() {
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
 
-  const items = await storeItemsForUser(userId);
+  const [items, cart] = await Promise.all([
+    storeItemsForUser(userId),
+    cartForUser(userId),
+  ]);
+  const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
   return (
-    <AppShell
-      header={
-        <PersistentHeader
-          title="Store"
-          action={
-            <span
-              aria-hidden
-              className="flex size-[34px] items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft"
-            >
-              <History size={17} strokeWidth={2} />
-            </span>
-          }
-        />
-      }
-      nav={<BottomNav />}
-      className="bg-warm p-[14px]"
-    >
-      <StoreBrowser items={items} />
-    </AppShell>
+    <CartCountProvider initialCount={cartCount}>
+      <AppShell
+        header={<PersistentHeader title="Store" action={<CartLink />} />}
+        nav={<BottomNav />}
+        className="bg-warm p-[14px]"
+      >
+        <StoreBrowser items={items} />
+      </AppShell>
+    </CartCountProvider>
   );
 }

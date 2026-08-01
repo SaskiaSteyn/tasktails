@@ -1,9 +1,11 @@
-import { Lock } from "lucide-react";
-import { DynamicIcon, type IconName } from "lucide-react/dynamic";
-import Image from "next/image";
+"use client";
 
+import { Check, Lock, X } from "lucide-react";
+import { useRef, useState } from "react";
+
+import { useCartCount } from "@/components/store/cart-count-context";
+import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
 import { Coin } from "@/components/ui/coin";
-import type { StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
 import type { StoreItemWithLock } from "@/lib/store";
 
@@ -22,46 +24,55 @@ import type { StoreItemWithLock } from "@/lib/store";
  * instead, same "real icon, not a drawn shape" call the seed data's own
  * comment already made for the unlocked wells.
  *
- * The "+" add-to-cart button renders (matching the mock) but is inert — no
- * `onClick` — since STOR-05 owns that. Same "render the control, wire it up
- * later" pattern TASK-01 used for its own then-unbuilt "+ New task" pill. A
- * plain `<div>`, not `<button>`, so it isn't announced or focusable as a
- * control that does nothing.
+ * The "+" is now a real add-to-cart button (STOR-05), posting to STOR-12's
+ * `POST /api/store/cart`. Only ever rendered unlocked (a locked card shows
+ * the "Unlocks at Lvl N" pill in this same slot instead), so the 403 that
+ * route can return for a locked item is a state this button can never
+ * actually trigger — nothing here handles it beyond the generic error path.
+ * On success, also calls `useCartCount()`'s `increment()` — found live after
+ * STOR-06 shipped that the header's cart badge only reflected the count as
+ * of the last page load, since it and this button are siblings in the tree
+ * with no prop path between them. See `cart-count-context.tsx`. Still no
+ * `router.refresh()`: nothing else on `/store` needs a full re-fetch for a
+ * cart add, so the context update is the only thing that has to happen.
  *
- * Category comparisons below use the string literals ("FOOD", "ANIMALS", …)
- * rather than the `StoreItemCategory` enum's runtime object — this component
- * is reachable from `StoreBrowser` (STOR-02, `"use client"`), and importing
- * anything but the *type* from `@/generated/prisma/client` pulls Prisma's
- * Node-only runtime into the browser bundle, which fails to compile
- * ("chunking context does not support external modules (request:
- * node:module)"). `StoreItemCategory` is still imported as a type, so the
- * `Record` keys stay checked against the schema's real category set.
+ * The category→colour/icon mapping (`CATEGORY_LABEL`, the well itself) lives
+ * in `item-visual.tsx` now — factored out when STOR-06's cart rows needed
+ * the exact same treatment, so there's one definition instead of two that
+ * could drift.
  */
 
-const CATEGORY_LABEL: Record<StoreItemCategory, string> = {
-  FOOD: "Food",
-  ACCESSORIES: "Accessory",
-  DECORATIONS: "Decoration",
-  ANIMALS: "Animal",
-};
-
-/**
- * Icon well tint + icon colour per category, matching the mock's per-item
- * accent (amber for food, sage for accessories, violet for decorations).
- * Animals render the real SVG artwork instead (`imageUrl` is a file path
- * there, an icon name everywhere else — same split `pets.ts`'s cards use).
- */
-const CATEGORY_WELL: Record<StoreItemCategory, { bg: string; icon: string }> = {
-  FOOD: { bg: "bg-amber-tint", icon: "text-amber-text" },
-  ACCESSORIES: { bg: "bg-sage-tint", icon: "text-sage-text" },
-  DECORATIONS: { bg: "bg-violet-tint", icon: "text-violet-text" },
-  // Unused — animals render `Image` artwork instead, never this well's icon.
-  ANIMALS: { bg: "bg-input", icon: "" },
-};
+/** How long the post-click checkmark/error state stays up before reverting to "+". */
+const FEEDBACK_MS = 1200;
 
 export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
-  const isAnimal = item.category === "ANIMALS";
   const locked = item.locked;
+  const [status, setStatus] = useState<"idle" | "pending" | "added" | "error">("idle");
+  // Tracks the pending revert-to-idle timer so a second click's own timer
+  // can't be cut short by the first click's — without this, clicking twice
+  // within `FEEDBACK_MS` would have the first click's stale timeout reset
+  // the second click's still-fresh "added"/"error" state back to idle early.
+  const revertTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const cart = useCartCount();
+
+  async function handleAddToCart() {
+    if (status === "pending") return;
+    if (revertTimer.current) clearTimeout(revertTimer.current);
+    setStatus("pending");
+    try {
+      const response = await fetch("/api/store/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeItemId: item.id }),
+      });
+      setStatus(response.ok ? "added" : "error");
+      if (response.ok) cart?.increment();
+    } catch {
+      setStatus("error");
+    } finally {
+      revertTimer.current = setTimeout(() => setStatus("idle"), FEEDBACK_MS);
+    }
+  }
 
   return (
     <div
@@ -70,29 +81,15 @@ export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
         locked ? "bg-[#F2EEE7]" : "bg-warm",
       )}
     >
-      <div
-        className={cn(
-          "mb-[9px] flex h-[54px] items-center justify-center rounded-[11px]",
-          locked ? "bg-[#E9E3D9]" : isAnimal ? "bg-input" : CATEGORY_WELL[item.category].bg,
-        )}
-      >
-        {locked ? (
-          <Lock size={22} strokeWidth={2.2} className="text-ink-disabled" aria-hidden />
-        ) : isAnimal ? (
-          <Image src={item.imageUrl} alt="" width={40} height={40} className="block size-10" />
-        ) : (
-          <DynamicIcon
-            // Free-form DB string (icon names for goods, SVG paths for
-            // animals per `seed.ts`) — cast rather than widen `IconName`,
-            // same reasoning `feed-sheet.tsx` documents for its own cast.
-            name={item.imageUrl as IconName}
-            size={26}
-            strokeWidth={2.2}
-            className={CATEGORY_WELL[item.category].icon}
-            aria-hidden
-          />
-        )}
-      </div>
+      <ItemWell
+        item={item}
+        locked={locked}
+        size={54}
+        iconSize={26}
+        animalIconSize={40}
+        fullWidth
+        className="mb-[9px]"
+      />
 
       <p
         className={cn(
@@ -120,12 +117,39 @@ export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
             </span>
           </span>
 
-          <div
-            aria-hidden
-            className="flex size-[26px] flex-none items-center justify-center rounded-[8px] bg-terracotta text-[16px] leading-none text-white"
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={status === "pending"}
+            aria-label={`Add ${item.name} to cart`}
+            className={cn(
+              "flex size-[26px] flex-none items-center justify-center rounded-[8px] text-[16px] leading-none text-white transition-colors duration-120",
+              status === "error"
+                ? "bg-urgency"
+                : status === "added"
+                  ? "bg-sage"
+                  : "bg-terracotta hover:bg-terracotta-hover disabled:opacity-70",
+            )}
           >
-            +
-          </div>
+            {status === "added" ? (
+              <Check size={14} strokeWidth={2.6} aria-hidden />
+            ) : status === "error" ? (
+              <X size={14} strokeWidth={2.6} aria-hidden />
+            ) : (
+              <span aria-hidden>+</span>
+            )}
+          </button>
+
+          {/* Visual-only for "pending"/"idle" — the icon swap on the button
+              itself is silent to a screen reader, so the outcome that
+              matters (added or failed) gets announced here instead. */}
+          <span role="status" aria-live="polite" className="sr-only">
+            {status === "added"
+              ? `Added ${item.name} to cart`
+              : status === "error"
+                ? `Couldn't add ${item.name} to cart`
+                : ""}
+          </span>
         </div>
       )}
     </div>
