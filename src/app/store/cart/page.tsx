@@ -24,9 +24,8 @@ export const metadata: Metadata = {
  * always carries a coin pill the mock doesn't draw here. The history icon on
  * the right is **not in the mock** — added at the user's explicit direction
  * as the other half of swapping `/store`'s own history icon for a cart icon,
- * so history is still one tap away, just relocated. It's inert (STOR-09's
- * `/store/history` page doesn't exist yet), same "render the control, wire
- * it up later" pattern used throughout STOR-01..05.
+ * so history is still one tap away, just relocated. Now links to STOR-09's
+ * `/store/history`.
  *
  * Only the listing/qty-edit/removal (`CartPanel`) is this ticket's job. The
  * "Check out" footer button renders matching the mock but is inert — STOR-07
@@ -53,12 +52,13 @@ export default async function CartPage() {
           <h1 className="min-w-0 flex-1 truncate font-display text-[17px] leading-[1.15] font-semibold">
             Your cart
           </h1>
-          <span
-            aria-hidden
-            className="flex size-[34px] flex-none items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft"
+          <Link
+            href="/store/history"
+            aria-label="Purchase history"
+            className="flex size-[34px] flex-none items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft transition-colors duration-120 hover:border-checkbox"
           >
-            <History size={17} strokeWidth={2} />
-          </span>
+            <History size={17} strokeWidth={2} aria-hidden />
+          </Link>
         </header>
       }
       className="bg-warm"

@@ -66,7 +66,7 @@ STOR-05,Add to cart button on item card,Store,Frontend,Done
 STOR-06,Cart panel — lists cart items quantities subtotal supports quantity edit and item removal,Store,Frontend,Done
 STOR-07,Checkout flow — confirms purchase deducts coins shows confirmation,Store,Frontend,Done
 STOR-08,Coin balance display in store header (persistent),Store,Frontend,Done
-STOR-09,Purchase history / transaction log page — lists past purchases with item name coins spent and date,Store,Frontend,To Do
+STOR-09,Purchase history / transaction log page — lists past purchases with item name coins spent and date,Store,Frontend,Done
 STOR-10,GET /api/store/items — list all store items include per-item locked flag based on user level,Store,Backend,Done
 STOR-11,GET /api/store/items/[id] — single item detail,Store,Backend,Done
 STOR-12,POST /api/store/cart — add item to cart,Store,Backend,Done
