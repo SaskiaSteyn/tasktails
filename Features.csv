@@ -61,7 +61,7 @@ ONB-05,POST /api/user/username (availability) and PUT (claim) — session-scoped
 STOR-01,Store listing page — grid of item cards showing name image coin price level requirement and availability,Store,Frontend,Done
 STOR-02,Item search bar — filters visible items by name in real time,Store,Frontend,Done
 STOR-03,Category filter — filters visible items by category (food accessories animals decorations),Store,Frontend,Done
-STOR-04,Item card — level-gated state (locked appearance and Requires Level X label for items above user level),Store,Frontend,To Do
+STOR-04,Item card — level-gated state (locked appearance and Requires Level X label for items above user level),Store,Frontend,Done
 STOR-05,Add to cart button on item card,Store,Frontend,To Do
 STOR-06,Cart panel — lists cart items quantities subtotal supports quantity edit and item removal,Store,Frontend,To Do
 STOR-07,Checkout flow — confirms purchase deducts coins shows confirmation,Store,Frontend,To Do
