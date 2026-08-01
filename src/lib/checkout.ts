@@ -6,6 +6,7 @@ import type {
 } from "@/generated/prisma/client";
 import { createPetForTransaction, type PetWithItem } from "@/lib/pets";
 import { prisma } from "@/lib/prisma";
+import { logTelemetryEvent } from "@/lib/telemetry";
 
 /**
  * STOR-16 — `POST /api/store/checkout`'s pipeline.
@@ -22,7 +23,9 @@ import { prisma } from "@/lib/prisma";
  * exception is `Pet`: `pets.ts`'s `createPetForTransaction()` already takes
  * a `Prisma.TransactionClient` for exactly this reason (its own doc comment
  * anticipated this ticket by name), so that one *is* called through its
- * owning module rather than reimplemented here. `Transaction` and
+ * owning module rather than reimplemented here. Same for `TelemetryEvent`'s
+ * `ITEM_PURCHASED` logging — `telemetry.ts` (STOR-18) accepts a
+ * `Prisma.TransactionClient` for the same reason. `Transaction` and
  * `InventoryItem` have no other module yet, so this is where they start
  * being owned.
  *
@@ -210,18 +213,17 @@ export async function checkout(userId: string): Promise<CheckoutResult> {
 
     await Promise.all(
       cart.map((line) =>
-        tx.telemetryEvent.create({
-          data: {
-            userId,
-            eventType: "ITEM_PURCHASED",
-            payload: {
-              storeItemId: line.storeItemId,
-              name: line.storeItem.name,
-              quantity: line.quantity,
-              coinSpent: line.storeItem.coinPrice * line.quantity,
-            },
+        logTelemetryEvent(
+          userId,
+          "ITEM_PURCHASED",
+          {
+            storeItemId: line.storeItemId,
+            name: line.storeItem.name,
+            quantity: line.quantity,
+            coinSpent: line.storeItem.coinPrice * line.quantity,
           },
-        }),
+          tx,
+        ),
       ),
     );
 
