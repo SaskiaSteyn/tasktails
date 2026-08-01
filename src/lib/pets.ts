@@ -249,6 +249,32 @@ export async function recordCustomizeInteraction(
   });
 }
 
+/**
+ * The customize screen's rename control — sets a pet's own nickname,
+ * overriding the shared `storeItem.name` (`petDisplayName()` in
+ * `src/lib/pet-mood.ts` picks between the two for display). `updateMany`'s
+ * `where: { id, userId }` is the ownership check itself, same "guarded write
+ * instead of a separate read" shape `consumeFoodItem()` uses — a pet id that
+ * exists but belongs to someone else matches zero rows rather than renaming
+ * it. Returns null in that case (or when the id doesn't exist at all), same
+ * "can't tell the difference" shape `petForUser()` documents.
+ */
+export async function renamePet(
+  userId: string,
+  petId: string,
+  name: string,
+  now: Date = new Date(),
+): Promise<PetWithItem | null> {
+  const { count } = await prisma.pet.updateMany({
+    where: { id: petId, userId },
+    data: { name },
+  });
+  if (count === 0) return null;
+
+  const pet = await findPetRaw(userId, petId);
+  return pet ? { ...pet, ...decayedStateFor(pet, now) } : null;
+}
+
 /** A freshly-adopted animal's starting stats — full and unhungry, so acquisition itself never puts a new pet in a bad state. */
 const NEW_PET_HAPPINESS = 100;
 const NEW_PET_HUNGER = 0;

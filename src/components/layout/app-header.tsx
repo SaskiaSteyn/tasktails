@@ -89,7 +89,7 @@ export function AppHeader({
         // The top inset is added to the design's 6px rather than replacing it,
         // so the warm bar itself extends under a notch and only its contents are
         // pushed clear (INF-13). Resolves to plain 6px everywhere else.
-        "flex-none border-b border-border-track bg-warm px-[18px] pt-[calc(6px+env(safe-area-inset-top))] pb-[14px]",
+        "flex-none border-b border-border-track bg-warm px-[18px] pt-[14px] pb-[14px]",
         className,
       )}
     >
