@@ -1,31 +1,52 @@
 "use client";
 
-import { Minus, Plus, ShoppingBag } from "lucide-react";
+import { Check, Minus, Plus, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
-import { buttonClasses } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { Coin } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
 import type { CartItemWithStoreItem } from "@/lib/cart";
+import type { PurchasedLine } from "@/lib/checkout";
+
+/** What a successful `POST /api/store/checkout` leaves this screen holding. */
+type Confirmation = {
+  spent: number;
+  purchased: PurchasedLine[];
+  coins: number;
+  adoptedCount: number;
+};
 
 /**
- * STOR-06 — the cart panel: lists cart lines, a subtotal/balance summary,
- * and a real quantity stepper (STOR-14's `PATCH`, STOR-15's `DELETE`).
+ * STOR-06/07 — the cart panel: lists cart lines, a subtotal/balance summary,
+ * a real quantity stepper (STOR-14's `PATCH`, STOR-15's `DELETE`), and now
+ * (STOR-07) a real checkout against STOR-16's `POST /api/store/checkout`.
  *
  * Client component holding the cart as local state, seeded once from the
  * server (`cartForUser()`, read by `CartPage`) — every stepper tap updates
  * this local array from the mutation's own response rather than
  * `router.refresh()`-ing the whole page, since a quantity edit doesn't touch
- * anything else this page renders (no economy change happens until STOR-07's
- * checkout).
+ * anything else this page renders.
  *
  * The "−" button removes the line entirely once quantity would drop to 0
  * (calling `DELETE`, not `PATCH` with a 0) — the mock's stepper has no
  * separate trash icon, and "decrement to nothing removes it" is the reading
  * that satisfies STOR-06's own "item removal" wording without inventing a
  * control the design doesn't show.
+ *
+ * **The confirmation screen has no design spec** — `design_handoff/` never
+ * draws a post-checkout state, only the cart itself. Same situation STOR-05's
+ * add-to-cart feedback was in: designed from scratch, kept close to the
+ * existing "Cart's empty" empty-state's own visual language (icon tile,
+ * Fredoka heading, muted line, outlined secondary button) so it reads as
+ * part of the same screen family rather than a one-off. Shows what was
+ * bought, coins spent, and the new balance — the three things STOR-07's own
+ * wording ("confirms purchase, deducts coins, shows confirmation") asks for
+ * — plus a link into the zoo when an animal was among the purchases, since
+ * "go see it" is the obvious next step and `pets.length` is already on the
+ * response.
  */
 export function CartPanel({
   initialCart,
@@ -38,12 +59,40 @@ export function CartPanel({
   // Which line has a request in flight, so its own stepper disables without
   // freezing every other row.
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string>();
+  const [confirmation, setConfirmation] = useState<Confirmation>();
 
   const subtotal = cart.reduce(
     (sum, line) => sum + line.storeItem.coinPrice * line.quantity,
     0,
   );
   const balanceAfter = coins - subtotal;
+
+  async function handleCheckout() {
+    if (checkingOut) return;
+    setCheckingOut(true);
+    setCheckoutError(undefined);
+    try {
+      const response = await fetch("/api/store/checkout", { method: "POST" });
+      const body = await response.json();
+      if (!response.ok) {
+        setCheckoutError(body.error ?? "Couldn't check out. Try again.");
+        return;
+      }
+      setConfirmation({
+        spent: body.spent,
+        purchased: body.purchased,
+        coins: body.economy.coins,
+        adoptedCount: body.pets.length,
+      });
+      setCart([]);
+    } catch {
+      setCheckoutError("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setCheckingOut(false);
+    }
+  }
 
   async function setQuantity(line: CartItemWithStoreItem, quantity: number) {
     if (pendingId) return;
@@ -69,6 +118,45 @@ export function CartPanel({
     } finally {
       setPendingId(null);
     }
+  }
+
+  if (confirmation) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+        <div
+          aria-hidden
+          className="mb-4 flex size-16 items-center justify-center rounded-card-lg bg-sage-tint"
+        >
+          <Check size={28} strokeWidth={2.2} className="text-sage" />
+        </div>
+        <p className="font-display text-[17px] font-semibold">Purchase complete!</p>
+        <p className="mt-[6px] text-[12.5px] text-ink-soft">
+          {confirmation.purchased.map((line) => `${line.name}${line.quantity > 1 ? ` ×${line.quantity}` : ""}`).join(", ")}
+        </p>
+        <p className="mt-3 flex items-center gap-1 text-[13px] font-extrabold text-amber-text">
+          <Coin size={13} />
+          {confirmation.spent.toLocaleString("en-US")} spent · {confirmation.coins.toLocaleString("en-US")} left
+        </p>
+        <div className="mt-[18px] flex w-full flex-col gap-[10px]">
+          {confirmation.adoptedCount > 0 ? (
+            <Link href="/zoo" className={buttonClasses({ size: "inline" })}>
+              Go see your zoo
+            </Link>
+          ) : null}
+          <Link
+            href="/store"
+            className={buttonClasses({
+              variant: "secondary",
+              fullWidth: confirmation.adoptedCount === 0,
+              size: "inline",
+              className: confirmation.adoptedCount > 0 ? "px-5 self-center" : undefined,
+            })}
+          >
+            Back to store
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   if (cart.length === 0) {
@@ -179,15 +267,22 @@ export function CartPanel({
       </div>
 
       <div className="flex-none border-t border-border-track p-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
-        {/* Inert — STOR-07 owns wiring this to POST /api/store/checkout. */}
-        <button
-          type="button"
-          className="flex h-12 w-full items-center justify-center gap-[7px] rounded-btn bg-terracotta font-display text-[16px] font-semibold text-white shadow-btn"
-        >
-          Check out ·
-          <Coin size={14} />
-          {subtotal.toLocaleString("en-US")}
-        </button>
+        {checkoutError ? (
+          <p role="alert" className="mb-2 text-center text-[12px] font-bold text-urgency-text">
+            {checkoutError}
+          </p>
+        ) : null}
+        <Button onClick={handleCheckout} disabled={checkingOut} className="gap-[7px]">
+          {checkingOut ? (
+            "Checking out…"
+          ) : (
+            <>
+              Check out ·
+              <Coin size={14} />
+              {subtotal.toLocaleString("en-US")}
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );
