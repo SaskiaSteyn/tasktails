@@ -7,9 +7,11 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { PersistentHeader } from "@/components/layout/persistent-header";
 import { CartCountProvider } from "@/components/store/cart-count-context";
 import { CartLink } from "@/components/store/cart-link";
+import { FlashSaleBanner } from "@/components/store/flash-sale-banner";
 import { StoreBrowser } from "@/components/store/store-browser";
 import { cartForUser } from "@/lib/cart";
 import { storeItemsForUser } from "@/lib/store";
+import { groupGatedData } from "@/lib/study-group";
 
 export const metadata: Metadata = {
   title: "Store · TaskTails",
@@ -51,15 +53,23 @@ export const metadata: Metadata = {
  * `StoreBrowser` filters that same array client-side rather than re-fetching
  * per keystroke, since STOR-02 asks for real-time filtering and every item's
  * `locked` state is already resolved for this user in the one server read.
+ *
+ * `showFlashSale` (URG-01) goes through `groupGatedData()` — `true` for Group
+ * B, `null` for Group A/signed-out — rather than `currentStudyGroup()`
+ * directly, both to reuse the one enforcement point INF-17 built for exactly
+ * this and to keep the group value itself from ever reaching a client
+ * component: only the pre-decided `<FlashSaleBanner />` element (or `null`)
+ * crosses into `StoreBrowser`, never a boolean the client could branch on.
  */
 export default async function StorePage() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
 
-  const [items, cart] = await Promise.all([
+  const [items, cart, showFlashSale] = await Promise.all([
     storeItemsForUser(userId),
     cartForUser(userId),
+    groupGatedData(() => true),
   ]);
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
@@ -70,7 +80,10 @@ export default async function StorePage() {
         nav={<BottomNav />}
         className="bg-warm p-[14px]"
       >
-        <StoreBrowser items={items} />
+        <StoreBrowser
+          items={items}
+          flashSaleBanner={showFlashSale ? <FlashSaleBanner /> : null}
+        />
       </AppShell>
     </CartCountProvider>
   );

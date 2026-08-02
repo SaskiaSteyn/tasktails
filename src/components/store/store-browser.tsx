@@ -1,7 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 
 import { StoreItemCard } from "@/components/store/store-item-card";
 import type { StoreItemCategory } from "@/generated/prisma/client";
@@ -35,8 +35,20 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * Search is case-insensitive substring match on `name` only — the ticket's
  * own wording ("filters visible items by name") — not description or
  * category, which the chips own separately.
+ *
+ * `flashSaleBanner` (URG-01) is a slot, not a boolean: `StorePage` decides
+ * server-side whether the signed-in user is in Group B and only then renders
+ * `<FlashSaleBanner />` into it, so this client component never receives —
+ * and can never branch on — the study group itself (`study-group.ts`'s
+ * isolation rule, NFR-TASK-3).
  */
-export function StoreBrowser({ items }: { items: StoreItemWithLock[] }) {
+export function StoreBrowser({
+  items,
+  flashSaleBanner,
+}: {
+  items: StoreItemWithLock[];
+  flashSaleBanner?: ReactNode;
+}) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<StoreItemCategory | "ALL">("ALL");
 
@@ -64,6 +76,8 @@ export function StoreBrowser({ items }: { items: StoreItemWithLock[] }) {
           className="w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-disabled"
         />
       </label>
+
+      {flashSaleBanner}
 
       <div
         role="radiogroup"
