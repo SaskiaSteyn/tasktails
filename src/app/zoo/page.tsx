@@ -45,7 +45,7 @@ export default async function ZooPage() {
   return (
     <AppShell
       header={
-        <header className="flex-none border-b border-border-track bg-warm px-[18px] pt-[calc(8px+env(safe-area-inset-top))] pb-3">
+        <header className="flex-none border-b border-border-track px-[18px] pt-[14px] pb-3">
           <h1 className="font-display text-[19px] leading-[1.15] font-semibold">
             Your zoo
           </h1>
@@ -55,7 +55,7 @@ export default async function ZooPage() {
         </header>
       }
       nav={<BottomNav />}
-      className="bg-warm p-[14px]"
+      className="p-[14px]"
     >
       <SessionTracker />
       {/* Grid always renders, even at zero pets — the addendum's own

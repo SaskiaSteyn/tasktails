@@ -18,9 +18,9 @@ export const metadata: Metadata = {
  * ONB-01 — the onboarding checklist, where the register flow lands.
  *
  * No header and no bottom nav, matching the frame: this is still part of the
- * welcome flow, and its one way out is "Let's go". The frame's ground is the
- * warm fill rather than the usual white, so the shell's content area carries
- * `bg-warm`.
+ * welcome flow, and its one way out is "Let's go". The design's frame uses a
+ * warm fill here, but every screen's background was moved to plain white at
+ * the user's request, so this one no longer carries `bg-warm` either.
  */
 export default async function OnboardingPage() {
   const session = await auth();
@@ -36,7 +36,7 @@ export default async function OnboardingPage() {
   if (!record) redirect("/login");
 
   return (
-    <AppShell className="bg-warm px-[22px] pt-[22px] pb-6">
+    <AppShell className="px-[22px] pt-[22px] pb-6">
       <SessionTracker />
       <QuestChecklist name={displayNameFor(record)} status={status} />
     </AppShell>

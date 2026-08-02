@@ -89,7 +89,7 @@ export function AppHeader({
         // The top inset is added to the design's 6px rather than replacing it,
         // so the warm bar itself extends under a notch and only its contents are
         // pushed clear (INF-13). Resolves to plain 6px everywhere else.
-        "flex-none border-b border-border-track bg-warm px-[18px] pt-[calc(6px+env(safe-area-inset-top))] pb-[14px]",
+        "flex-none border-b border-border-track bg-warm px-[18px] pt-[14px] pb-[14px]",
         className,
       )}
     >
@@ -135,8 +135,11 @@ function XpCard({ economy }: { economy: EconomySnapshot }) {
   const { isMaxLevel, nextLevel, xpIntoLevel, xpLevelSpan, percent } = economy;
 
   const caption = isMaxLevel ? "MAX LEVEL" : `XP TO LVL ${nextLevel}`;
+  // Locale pinned explicitly, same reason `coin.tsx`'s CoinPill fixes —
+  // `toLocaleString()` with no argument can format differently on the server
+  // than in the browser and produce a hydration mismatch.
   const value = isMaxLevel
-    ? `${economy.xp.toLocaleString()} XP`
+    ? `${economy.xp.toLocaleString("en-US")} XP`
     : `${xpIntoLevel} / ${xpLevelSpan} XP`;
 
   return (
