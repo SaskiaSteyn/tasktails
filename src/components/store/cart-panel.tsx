@@ -147,9 +147,7 @@ export function CartPanel({
             href="/store"
             className={buttonClasses({
               variant: "secondary",
-              fullWidth: confirmation.adoptedCount === 0,
               size: "inline",
-              className: confirmation.adoptedCount > 0 ? "px-5 self-center" : undefined,
             })}
           >
             Back to store

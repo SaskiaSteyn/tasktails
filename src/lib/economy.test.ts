@@ -304,9 +304,11 @@ describe("grantEarnings", () => {
 
     const data = prismaMock.userEconomy.update.mock.calls[0][0].data as never as {
       coins: { increment: number };
+      lifetimeCoinsEarned: { increment: number };
       dailyCoinsEarned: { increment: number };
     };
     expect(data.coins).toEqual({ increment: 35 });
+    expect(data.lifetimeCoinsEarned).toEqual({ increment: 35 });
     expect(data.dailyCoinsEarned).toEqual({ increment: 35 });
   });
 
@@ -322,6 +324,13 @@ describe("grantEarnings", () => {
     expect(grant?.granted).toEqual({ coins: 10, xp: 20 });
     expect(grant?.withheld).toEqual({ coins: 140, xp: 180 });
     expect(grant?.capReached).toBe(true);
+
+    // Lifetime earned tracks the capped, actually-banked amount — not the
+    // task's pre-cap face value.
+    const data = prismaMock.userEconomy.update.mock.calls[0][0].data as never as {
+      lifetimeCoinsEarned: { increment: number };
+    };
+    expect(data.lifetimeCoinsEarned).toEqual({ increment: 10 });
   });
 
   it("banks nothing once the cap is spent, and still returns a result", async () => {

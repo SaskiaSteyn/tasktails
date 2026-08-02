@@ -107,15 +107,15 @@ ADM-09,Admin role middleware — reject non-admin users from all /api/admin/* ro
 ADM-10,Session telemetry logging — log SESSION_START and SESSION_END events and record time-on-page for store pages,Admin Dashboard,Backend,Done
 ADM-11,AI insight callout — generate and render a short summary of the Group A vs Group B divergence on the overview,Admin Dashboard,Backend,Done
 ADM-12,Trust metric capture — per-participant trust rating feeding the overview comparison bar (instrument to be decided),Admin Dashboard,Backend,To Do
-PRO-01,Profile page — avatar name email LEVEL and STUDY GROUP badges and the entry point to settings,Profile & Settings,Frontend,To Do
-PRO-02,Avatar upload — circular user-uploadable avatar with an upload placeholder as the default,Profile & Settings,Frontend,To Do
-PRO-03,POST /api/user/avatar — validate and store the uploaded image and set avatarUrl on the User record,Profile & Settings,Backend,To Do
-PRO-04,Lifetime stats grid — tasks done coins earned day streak and animals owned,Profile & Settings,Frontend,To Do
-PRO-05,GET /api/user/stats — aggregate lifetime totals for the authenticated user,Profile & Settings,Backend,To Do
-PRO-06,Buy XP card — violet 100 coins to 40 XP card with a Convert action calling the buy-xp endpoint,Profile & Settings,Frontend,To Do
-PRO-07,Achievements grid — earned and locked badge tiles,Profile & Settings,Frontend,To Do
-PRO-08,GET /api/user/achievements — list all achievements with per-user unlocked state,Profile & Settings,Backend,To Do
-PRO-09,Achievement unlock service — evaluate criteria on task completion purchase and pet interaction,Profile & Settings,Backend,To Do
+PRO-01,Profile page — avatar name email LEVEL and STUDY GROUP badges and the entry point to settings,Profile & Settings,Frontend,Done
+PRO-02,Avatar upload — circular user-uploadable avatar with an upload placeholder as the default,Profile & Settings,Frontend,Done
+PRO-03,POST /api/user/avatar — validate and store the uploaded image and set avatarUrl on the User record,Profile & Settings,Backend,Done
+PRO-04,Lifetime stats grid — tasks done coins earned day streak and animals owned,Profile & Settings,Frontend,Done
+PRO-05,GET /api/user/stats — aggregate lifetime totals for the authenticated user,Profile & Settings,Backend,Done
+PRO-06,Buy XP card — violet 100 coins to 40 XP card with a Convert action calling the buy-xp endpoint,Profile & Settings,Frontend,Done
+PRO-07,Achievements grid — earned and locked badge tiles,Profile & Settings,Frontend,Done
+PRO-08,GET /api/user/achievements — list all achievements with per-user unlocked state,Profile & Settings,Backend,Done
+PRO-09,Achievement unlock service — evaluate criteria on task completion purchase and pet interaction,Profile & Settings,Backend,Done
 PRO-10,Settings page — grouped account notification and preference list cards with back navigation,Profile & Settings,Frontend,To Do
 PRO-11,Change password form — current and new password fields with validation and error states,Profile & Settings,Frontend,To Do
 PRO-12,POST /api/user/password — verify the current password and store the new hash,Profile & Settings,Backend,To Do

@@ -1,4 +1,5 @@
 import { StoreItemCategory } from "@/generated/prisma/client";
+import type { AchievementCriterion } from "@/lib/achievements";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -106,6 +107,48 @@ const catalogue: Array<{
   },
 ];
 
+/**
+ * PRO-09 — the achievement catalogue. `Achievement`'s own doc comment
+ * (INF-19) notes the design draws badge tiles but names none of them, so
+ * this is the source for what they actually are: one badge per criterion
+ * type the schema's example already sketches, with thresholds taken
+ * straight from that same example rather than invented fresh.
+ *
+ * `key` is `@unique`, so — unlike `StoreItem`'s name-based lookup above —
+ * this seeds with a real `upsert`.
+ */
+const achievements: Array<{
+  key: string;
+  name: string;
+  description: string;
+  criteria: AchievementCriterion;
+}> = [
+  {
+    key: "task_champion",
+    name: "Task Champion",
+    description: "Complete 10 tasks.",
+    criteria: { type: "TASKS_COMPLETED", threshold: 10 },
+  },
+  {
+    key: "rising_star",
+    name: "Rising Star",
+    description: "Reach Level 5.",
+    criteria: { type: "LEVEL_REACHED", threshold: 5 },
+  },
+  {
+    key: "week_warrior",
+    name: "Week Warrior",
+    description: "Keep a 7-day streak.",
+    criteria: { type: "STREAK_DAYS", threshold: 7 },
+  },
+  {
+    key: "first_purchase",
+    name: "First Purchase",
+    description: "Buy your first item from the store.",
+    criteria: { type: "ITEMS_PURCHASED", threshold: 1 },
+  },
+];
+
 async function main() {
   for (const item of catalogue) {
     const existing = await prisma.storeItem.findFirst({
@@ -120,6 +163,15 @@ async function main() {
     }
   }
   console.log(`Seeded ${catalogue.length} StoreItem rows.`);
+
+  for (const achievement of achievements) {
+    await prisma.achievement.upsert({
+      where: { key: achievement.key },
+      update: achievement,
+      create: achievement,
+    });
+  }
+  console.log(`Seeded ${achievements.length} Achievement rows.`);
 }
 
 main()

@@ -456,6 +456,10 @@ export async function grantEarnings(
       data: {
         ...xp.data,
         coins: { increment: capped.granted.coins },
+        // Grows even when a partial (daily-cap-trimmed) grant lands — this
+        // tracks what was actually banked, same as `coins` itself, not the
+        // reward's pre-cap face value.
+        lifetimeCoinsEarned: { increment: capped.granted.coins },
         dailyCoinsEarned: stale
           ? capped.granted.coins
           : { increment: capped.granted.coins },

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { evaluateAchievements } from "@/lib/achievements";
 import { recordCustomizeInteraction } from "@/lib/pets";
 import { fieldErrors } from "@/lib/validation/auth";
 import { customizePetSchema } from "@/lib/validation/pets";
@@ -58,6 +59,10 @@ export async function POST(
         : "Accessory not found.";
     return NextResponse.json({ error }, { status: 404 });
   }
+
+  // PRO-09 — one of the three trigger points (task completion, purchase, pet
+  // interaction); see `evaluateAchievements()`'s doc comment.
+  await evaluateAchievements(userId);
 
   return NextResponse.json({ item: result.item });
 }

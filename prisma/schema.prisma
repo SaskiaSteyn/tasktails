@@ -212,6 +212,12 @@ model UserEconomy {
   xp    Int @default(0)
   level Int @default(1)
 
+  /// Cumulative coins ever granted by `grantEarnings` (PRO-04/05's "coins
+  /// earned" lifetime stat). Deliberately separate from `coins`, which is the
+  /// *spendable* balance and falls when the store deducts from it — this only
+  /// ever grows, same shape as `completedTaskCount()` and animals owned.
+  lifetimeCoinsEarned Int @default(0)
+
   /// Consecutive streak-day count; a streak day = at least 1 task completed.
   streak         Int       @default(0)
   lastStreakDate DateTime?

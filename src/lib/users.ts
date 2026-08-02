@@ -124,6 +124,26 @@ export async function setUsername(
   }
 }
 
+/**
+ * Sets the uploaded profile photo (PRO-03) — a data URL, not a file path; see
+ * `src/lib/validation/avatar.ts` for why. Returns `undefined` rather than
+ * throwing when the account is gone, matching {@link setUsername}.
+ */
+export async function setAvatar(
+  email: string,
+  avatarUrl: string,
+): Promise<User | undefined> {
+  try {
+    return await prisma.user.update({
+      where: { email: normaliseEmail(email) },
+      data: { avatarUrl },
+    });
+  } catch (error) {
+    if (isRecordNotFound(error)) return undefined;
+    throw error;
+  }
+}
+
 /** Strips a candidate down to the allowed alphabet: a–z, 0–9 and underscore. */
 export function slugifyUsername(value: string): string {
   return normaliseUsername(value)
