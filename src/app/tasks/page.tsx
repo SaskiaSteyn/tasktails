@@ -8,6 +8,7 @@ import { PersistentHeader } from "@/components/layout/persistent-header";
 import { NextQuestCard } from "@/components/onboarding/next-quest-card";
 import { TaskList } from "@/components/tasks/task-list";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
+import { redirectAdminsAway } from "@/lib/admin";
 import { onboardingStatus } from "@/lib/onboarding";
 import { tasksForUser } from "@/lib/tasks";
 
@@ -29,6 +30,7 @@ export default async function TasksPage() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
+  await redirectAdminsAway(userId);
 
   const [tasks, onboarding] = await Promise.all([
     tasksForUser(userId),

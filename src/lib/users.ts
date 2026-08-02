@@ -1,6 +1,6 @@
 import { randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
 
-import { AbGroup, type User } from "@/generated/prisma/client";
+import { AbGroup, type User, UserRole } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -50,6 +50,35 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 /** Session callbacks carry `user.id`, not `user.email` — this is that lookup. */
 export async function findUserById(id: string): Promise<User | null> {
   return prisma.user.findUnique({ where: { id } });
+}
+
+/** What ADM-02/03/04/06's tables render one row of. */
+export type ParticipantSummary = Pick<
+  User,
+  "id" | "username" | "email" | "displayName" | "abGroup" | "createdAt"
+>;
+
+/**
+ * Every non-admin account (ADM-06) — the researcher's own `ADMIN` row isn't
+ * a study participant and has no A/B group meaning, so it's excluded rather
+ * than showing up as a stray row in the comparison tables.
+ *
+ * Ordered by `createdAt` so "Participant #07" style labelling (the design's
+ * own convention) is stable across reads.
+ */
+export async function listParticipants(): Promise<ParticipantSummary[]> {
+  return prisma.user.findMany({
+    where: { role: UserRole.PARTICIPANT },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      displayName: true,
+      abGroup: true,
+      createdAt: true,
+    },
+  });
 }
 
 /** Usernames are unique — the schema's unique index is what enforces it. */

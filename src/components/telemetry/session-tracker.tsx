@@ -20,20 +20,29 @@ const SESSION_STORAGE_KEY = "tt_session_id";
  */
 export function SessionTracker() {
   useEffect(() => {
-    let sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    const isNewSession = !sessionId;
-    if (!sessionId) {
-      sessionId = crypto.randomUUID();
-      sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
-    }
+    const existingSessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    const sessionId = existingSessionId ?? crypto.randomUUID();
 
-    if (isNewSession) {
+    if (!existingSessionId) {
       fetch("/api/telemetry/session-start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId }),
         keepalive: true,
-      }).catch(() => {});
+      })
+        .then((res) => {
+          // Only remember this id once the server has actually logged it.
+          // Writing it unconditionally (the original bug here) meant a
+          // dropped request — a network blip, a server restart mid-flight —
+          // silently poisoned every later page load in this tab into
+          // believing a session already started, with no retry, for the
+          // rest of the tab's life. Confirmed live: a real account showed a
+          // `STORE_TIME_ON_PAGE` event (that tracker has no such gate) but
+          // no `SESSION_START` ever, from a tab that outlived a container
+          // restart.
+          if (res.ok) sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+        })
+        .catch(() => {});
     }
 
     const handlePageHide = () => {

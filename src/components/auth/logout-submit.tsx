@@ -19,7 +19,14 @@ import { Modal } from "@/components/ui/modal";
  * modal; the form's real submit is a hidden button the modal's confirm
  * clicks via a ref, so there's no way to skip the confirmation step.
  */
-export function LogoutSubmit({ children }: { children: ReactNode }) {
+export function LogoutSubmit({
+  children,
+  fullWidth = true,
+}: {
+  children: ReactNode;
+  /** `false` for a spot like the admin header, sitting inline beside other content rather than owning a whole row. */
+  fullWidth?: boolean;
+}) {
   const { pending } = useFormStatus();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const submitRef = useRef<HTMLButtonElement>(null);
@@ -30,6 +37,7 @@ export function LogoutSubmit({ children }: { children: ReactNode }) {
         type="button"
         size="inline"
         variant="destructive-outline"
+        fullWidth={fullWidth}
         disabled={pending}
         onClick={() => setConfirmOpen(true)}
       >

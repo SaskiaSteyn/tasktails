@@ -9,6 +9,7 @@ import { ComingSoon } from "@/components/layout/coming-soon";
 import { PersistentHeader } from "@/components/layout/persistent-header";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
+import { redirectAdminsAway } from "@/lib/admin";
 
 export const metadata: Metadata = {
   title: "Store · TaskTails",
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
 export default async function StorePage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+  await redirectAdminsAway(session.user.id);
 
   return (
     <AppShell header={<PersistentHeader title="Store" />} nav={<BottomNav />}>
