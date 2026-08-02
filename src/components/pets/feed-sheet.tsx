@@ -4,6 +4,7 @@ import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 // Type-only: erased at compile time, same reasoning `AnimalCard` documents for
@@ -45,6 +46,7 @@ export function FeedSheet({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingId = useId();
   const router = useRouter();
+  const { celebrate: celebrateAchievements } = useAchievementUnlock();
 
   const [selectedId, setSelectedId] = useState<string>();
   const [notice, setNotice] = useState<string>();
@@ -86,7 +88,9 @@ export function FeedSheet({
         setNotice(`Couldn't feed ${petName}. Try again.`);
         return;
       }
+      const body = await response.json();
       onOpenChange(false);
+      celebrateAchievements(body.achievementsUnlocked);
       router.refresh();
     } catch {
       setNotice("Couldn't reach TaskTails. Check your connection and try again.");

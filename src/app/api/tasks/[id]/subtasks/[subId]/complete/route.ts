@@ -111,7 +111,7 @@ export async function POST(
 
   // PRO-09 — one of the three trigger points (task/subtask completion,
   // purchase, pet interaction); see `evaluateAchievements()`'s doc comment.
-  await evaluateAchievements(userId);
+  const achievementsUnlocked = await evaluateAchievements(userId);
 
   if (!streakUpdate || !grant) {
     return NextResponse.json({
@@ -120,6 +120,7 @@ export async function POST(
       reward: null,
       streak: null,
       levelUp: null,
+      achievementsUnlocked,
     });
   }
 
@@ -133,5 +134,6 @@ export async function POST(
     },
     streak: { value: streakUpdate.streak, event: streakUpdate.event },
     levelUp: grant.levelUp,
+    achievementsUnlocked,
   });
 }

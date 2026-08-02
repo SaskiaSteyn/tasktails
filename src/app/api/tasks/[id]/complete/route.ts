@@ -93,7 +93,7 @@ export async function POST(
   });
 
   const grant = await grantEarnings(userId, priced.granted, completedAt);
-  await evaluateAchievements(userId);
+  const achievementsUnlocked = await evaluateAchievements(userId);
 
   if (!streakUpdate || !grant) {
     return NextResponse.json({
@@ -101,6 +101,7 @@ export async function POST(
       reward: null,
       streak: null,
       levelUp: null,
+      achievementsUnlocked,
     });
   }
 
@@ -113,5 +114,6 @@ export async function POST(
     },
     streak: { value: streakUpdate.streak, event: streakUpdate.event },
     levelUp: grant.levelUp,
+    achievementsUnlocked,
   });
 }

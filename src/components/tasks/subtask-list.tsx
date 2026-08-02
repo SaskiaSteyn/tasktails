@@ -4,6 +4,7 @@ import { Check, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 
+import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { cn } from "@/lib/cn";
 import type { Subtask } from "@/generated/prisma/client";
@@ -12,6 +13,9 @@ import type { Subtask } from "@/generated/prisma/client";
 type CompleteResponse = {
   reward: { granted: { coins: number; xp: number } } | null;
   levelUp: Parameters<ReturnType<typeof useLevelUp>["celebrate"]>[0];
+  achievementsUnlocked: Parameters<
+    ReturnType<typeof useAchievementUnlock>["celebrate"]
+  >[0];
   error?: string;
 };
 
@@ -66,6 +70,7 @@ export function SubtaskList({
 }) {
   const router = useRouter();
   const { celebrate } = useLevelUp();
+  const { celebrate: celebrateAchievements } = useAchievementUnlock();
   const inputId = useId();
   const errorId = useId();
 
@@ -156,6 +161,7 @@ export function SubtaskList({
         });
       }
       celebrate(body.levelUp);
+      celebrateAchievements(body.achievementsUnlocked);
       router.refresh();
     } catch {
       setCompleteError("Couldn't reach TaskTails. Check your connection and try again.");

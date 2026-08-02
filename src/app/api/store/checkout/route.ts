@@ -63,7 +63,7 @@ export async function POST() {
 
   // PRO-09 — one of the three trigger points (task completion, purchase, pet
   // interaction); see `evaluateAchievements()`'s doc comment.
-  await evaluateAchievements(userId);
+  const achievementsUnlocked = await evaluateAchievements(userId);
 
   return NextResponse.json({
     spent: result.spent,
@@ -71,5 +71,6 @@ export async function POST() {
     transactions: result.transactions,
     pets: result.pets,
     economy: snapshotOf(result.economy),
+    achievementsUnlocked,
   });
 }
