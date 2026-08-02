@@ -37,7 +37,7 @@ export default async function EditTaskPage({
   return (
     <AppShell
       header={
-        <header className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] pt-2 pb-[14px]">
+        <header className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] p-3">
           <Link
             href="/tasks"
             aria-label="Back to tasks"

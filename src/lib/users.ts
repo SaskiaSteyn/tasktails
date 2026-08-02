@@ -329,6 +329,43 @@ export async function authenticate(
   return verifyPassword(password, user.passwordHash) ? user : null;
 }
 
+export class IncorrectPasswordError extends Error {
+  constructor() {
+    super("That password isn't right.");
+    this.name = "IncorrectPasswordError";
+  }
+}
+
+/**
+ * PRO-12 — verifies the current password and stores the new hash.
+ *
+ * Throws {@link IncorrectPasswordError} both when the given current password
+ * is wrong and when the account has no password at all (Google-only,
+ * `passwordHash` null) — there is nothing to "change" for the latter, and
+ * failing the same way as a wrong password avoids a second error case the
+ * form would have to explain differently for no real benefit.
+ *
+ * Returns `undefined` when the account itself is gone, matching
+ * `setUsername`/`setAvatar`.
+ */
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<User | undefined> {
+  const user = await findUserById(userId);
+  if (!user) return undefined;
+
+  if (!user.passwordHash || !verifyPassword(currentPassword, user.passwordHash)) {
+    throw new IncorrectPasswordError();
+  }
+
+  return prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: hashPassword(newPassword) },
+  });
+}
+
 /**
  * Prisma's known-request errors are not exported as classes from the generated
  * client, so match on the shape instead: P2002 is a unique-constraint violation

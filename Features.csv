@@ -116,13 +116,13 @@ PRO-06,Buy XP card — violet 100 coins to 40 XP card with a Convert action call
 PRO-07,Achievements grid — earned and locked badge tiles,Profile & Settings,Frontend,Done
 PRO-08,GET /api/user/achievements — list all achievements with per-user unlocked state,Profile & Settings,Backend,Done
 PRO-09,Achievement unlock service — evaluate criteria on task completion purchase and pet interaction,Profile & Settings,Backend,Done
-PRO-10,Settings page — grouped account notification and preference list cards with back navigation,Profile & Settings,Frontend,To Do
-PRO-11,Change password form — current and new password fields with validation and error states,Profile & Settings,Frontend,To Do
-PRO-12,POST /api/user/password — verify the current password and store the new hash,Profile & Settings,Backend,To Do
-PRO-13,Notification preference toggles — daily task reminder and streak at risk alert,Profile & Settings,Frontend,To Do
-PRO-14,App preference toggles — sound effects and reduce motion,Profile & Settings,Frontend,To Do
-PRO-15,GET and PATCH /api/user/settings — read and persist the notification and preference toggles,Profile & Settings,Backend,To Do
-PRO-16,Research consent note — participant note with the researcher withdrawal contact on settings,Profile & Settings,Frontend,To Do
+PRO-10,Settings page — grouped account notification and preference list cards with back navigation,Profile & Settings,Frontend,Done
+PRO-11,Change password form — current and new password fields with validation and error states,Profile & Settings,Frontend,Done
+PRO-12,POST /api/user/password — verify the current password and store the new hash,Profile & Settings,Backend,Done
+PRO-13,Notification preference toggles — daily task reminder and streak at risk alert,Profile & Settings,Frontend,Done
+PRO-14,App preference toggles — sound effects and reduce motion,Profile & Settings,Frontend,Done
+PRO-15,GET and PATCH /api/user/settings — read and persist the notification and preference toggles,Profile & Settings,Backend,Done
+PRO-16,Research consent note — participant note with the researcher withdrawal contact on settings,Profile & Settings,Frontend,Done
 PRO-17,Reminder delivery — send the daily task reminder and streak at risk notifications honouring the toggles (channel to be decided),Profile & Settings,Backend,To Do
 SHR-01,Bottom nav — four floating tab circles plus a raised central add button on every logged-in screen; the central + opens the create-task sheet,Shared UI & States,Frontend,Done
 SHR-02,Inline date-picker popover — attaches beneath the due-date field with quick chips month nav and a square-cell month grid,Shared UI & States,Frontend,Done

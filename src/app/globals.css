@@ -406,7 +406,7 @@
     both;
 }
 
-/* Respect the OS reduce-motion setting (also a PREFERENCES toggle later). */
+/* Respect the OS reduce-motion setting. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -416,4 +416,21 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* PRO-14's in-app "Reduce motion" toggle — an override on top of the OS
+   setting above, not a replacement for it: `<html data-reduce-motion="true">`
+   is set by the root layout from the signed-in account's stored preference
+   (`UserSettings.reduceMotion`), so the two are OR-ed exactly as INF-18's
+   schema comment promises — either one reduces motion, neither can un-reduce
+   what the other requires. Same declarations, deliberately duplicated rather
+   than shared: a `@media` block and an attribute selector are different rule
+   *contexts*, so there's no single selector that means "either of these". */
+:root[data-reduce-motion="true"] *,
+:root[data-reduce-motion="true"] *::before,
+:root[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }

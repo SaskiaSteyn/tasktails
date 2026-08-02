@@ -7,35 +7,43 @@ import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { AccountCard } from "@/components/settings/account-card";
+import { SettingsToggleCard } from "@/components/settings/settings-toggle-card";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
+import { settingsForUser } from "@/lib/settings";
+import { findUserByEmail } from "@/lib/users";
 
 export const metadata: Metadata = {
   title: "Settings · TaskTails",
 };
 
 /**
- * Partial Settings screen — the shell plus AUTH-03 (log out), which is where the
- * designs put it.
- *
- * The designed frame also carries ACCOUNT (email, change password),
- * NOTIFICATIONS and PREFERENCES rows. None of those have tickets or anything to
- * write to yet, so the screen ships as the route that owns Log out and grows the
- * rest later. The research-consent note is here because it is study copy, not a
- * feature — participants need the withdrawal line wherever they land.
+ * The Settings screen — grouped ACCOUNT/NOTIFICATIONS/PREFERENCES cards
+ * (PRO-10), backed by PRO-13/14/15's toggles and PRO-11/12's password
+ * screen, plus AUTH-03 (log out) and the research-consent note (PRO-16 —
+ * already present since AUTH-03 built this screen, study copy rather than a
+ * feature with its own state).
  */
 export default async function SettingsPage() {
   const session = await auth();
+  const email = session?.user?.email;
   const userId = session?.user?.id;
-  if (!session?.user?.email || !userId) redirect("/login");
+  if (!email || !userId) redirect("/login");
   await redirectAdminsAway(userId);
+
+  const [record, settings] = await Promise.all([
+    findUserByEmail(email),
+    settingsForUser(userId),
+  ]);
+  if (!record) redirect("/login");
 
   return (
     <AppShell
       className="px-4 pt-[10px] pb-[14px]"
       nav={<BottomNav />}
       header={
-        <header className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] pt-2 pb-[14px]">
+        <header className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] p-3">
           <Link
             href="/profile"
             aria-label="Back to profile"
@@ -50,9 +58,34 @@ export default async function SettingsPage() {
       }
     >
       <SessionTracker />
-      <p className="text-center text-[10.5px] leading-[1.4] text-ink-faint">
-        Account, notification and preference settings are still to be built.
-      </p>
+
+      <div className="flex flex-col gap-4">
+        <AccountCard email={record.email} />
+
+        <SettingsToggleCard
+          title="Notifications"
+          rows={[
+            { key: "dailyReminder", label: "Daily task reminder" },
+            { key: "streakAlert", label: "Streak at risk alert" },
+          ]}
+          initialValues={{
+            dailyReminder: settings?.dailyReminder ?? true,
+            streakAlert: settings?.streakAlert ?? true,
+          }}
+        />
+
+        <SettingsToggleCard
+          title="Preferences"
+          rows={[
+            { key: "soundEffects", label: "Sound effects" },
+            { key: "reduceMotion", label: "Reduce motion" },
+          ]}
+          initialValues={{
+            soundEffects: settings?.soundEffects ?? false,
+            reduceMotion: settings?.reduceMotion ?? false,
+          }}
+        />
+      </div>
 
       <div className="min-h-2 flex-1" />
 

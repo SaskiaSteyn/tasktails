@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 
+import { auth } from "@/auth";
+import { settingsForUser } from "@/lib/settings";
+
 const fredoka = Fredoka({
   variable: "--font-fredoka",
   subsets: ["latin"],
@@ -29,14 +32,26 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // PRO-14 — "Reduce motion" is an in-app override on top of the OS setting
+  // globals.css already honours via `prefers-reduced-motion`, so it lives on
+  // `<html>` itself rather than threaded through every page. Only a signed-in
+  // account has a preference to read; a null here (signed out, or no
+  // account) just means the attribute is absent and only the OS setting
+  // applies, same as before this ticket existed.
+  const session = await auth();
+  const settings = session?.user?.id
+    ? await settingsForUser(session.user.id)
+    : null;
+
   return (
     <html
       lang="en"
+      data-reduce-motion={settings?.reduceMotion ? "true" : undefined}
       className={`${fredoka.variable} ${nunito.variable} h-full antialiased`}
     >
       {/* `h-full` + `overflow-hidden`, not the old `min-h-full`: pinning the
