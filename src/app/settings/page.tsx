@@ -7,6 +7,8 @@ import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { SessionTracker } from "@/components/telemetry/session-tracker";
+import { redirectAdminsAway } from "@/lib/admin";
 
 export const metadata: Metadata = {
   title: "Settings · TaskTails",
@@ -24,7 +26,9 @@ export const metadata: Metadata = {
  */
 export default async function SettingsPage() {
   const session = await auth();
-  if (!session?.user?.email) redirect("/login");
+  const userId = session?.user?.id;
+  if (!session?.user?.email || !userId) redirect("/login");
+  await redirectAdminsAway(userId);
 
   return (
     <AppShell
@@ -45,6 +49,7 @@ export default async function SettingsPage() {
         </header>
       }
     >
+      <SessionTracker />
       <p className="text-center text-[10.5px] leading-[1.4] text-ink-faint">
         Account, notification and preference settings are still to be built.
       </p>

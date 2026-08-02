@@ -7,6 +7,8 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { PersistentHeader } from "@/components/layout/persistent-header";
 import { NextQuestCard } from "@/components/onboarding/next-quest-card";
 import { TaskList } from "@/components/tasks/task-list";
+import { SessionTracker } from "@/components/telemetry/session-tracker";
+import { redirectAdminsAway } from "@/lib/admin";
 import { onboardingStatus } from "@/lib/onboarding";
 import { tasksForUser } from "@/lib/tasks";
 
@@ -28,6 +30,7 @@ export default async function TasksPage() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
+  await redirectAdminsAway(userId);
 
   const [tasks, onboarding] = await Promise.all([
     tasksForUser(userId),
@@ -36,6 +39,7 @@ export default async function TasksPage() {
 
   return (
     <AppShell header={<PersistentHeader />} nav={<BottomNav />}>
+      <SessionTracker />
       {/* Above `TaskList` rather than inside it: the list swaps itself for
           `EmptyTasksState` when there are no tasks, and that is exactly the
           moment a new participant most needs to see what the quests are. */}

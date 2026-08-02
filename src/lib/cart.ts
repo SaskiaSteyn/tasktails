@@ -1,6 +1,7 @@
 import type { CartItem, StoreItem } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { levelOf } from "@/lib/store";
+import { logTelemetryEvent } from "@/lib/telemetry";
 
 /**
  * Every read and write of a cart (STOR-12..15).
@@ -39,6 +40,12 @@ export type AddToCartResult =
  * transaction's actual security boundary, and neither is redundant with the
  * other (a level lost between add-to-cart and checkout, e.g. nothing today
  * lowers level, but the invariant is worth keeping cheap to hold).
+ *
+ * Logs `ADD_TO_CART` on success (ADM-07's store funnel's middle bar) —
+ * STOR-18 scoped its telemetry to `STORE_VISIT`/`ITEM_VIEWED`/
+ * `ITEM_PURCHASED` and didn't cover this action, so the funnel had no real
+ * data behind "added cart" until now. Not logged for the locked/not-found
+ * failure branches — those aren't an add, they're a rejected attempt.
  */
 export async function addToCart(
   userId: string,
@@ -70,6 +77,7 @@ export async function addToCart(
         include: { storeItem: true },
       });
 
+  await logTelemetryEvent(userId, "ADD_TO_CART", { storeItemId, quantity });
   return { ok: true, cartItem };
 }
 

@@ -7,6 +7,8 @@ import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { UsernameCard } from "@/components/profile/username-card";
+import { SessionTracker } from "@/components/telemetry/session-tracker";
+import { redirectAdminsAway } from "@/lib/admin";
 import { displayNameFor, findUserByEmail } from "@/lib/users";
 
 export const metadata: Metadata = {
@@ -29,7 +31,9 @@ export const metadata: Metadata = {
 export default async function ProfilePage() {
   const session = await auth();
   const email = session?.user?.email;
-  if (!email) redirect("/login");
+  const userId = session?.user?.id;
+  if (!email || !userId) redirect("/login");
+  await redirectAdminsAway(userId);
 
   const record = await findUserByEmail(email);
   if (!record) redirect("/login");
@@ -59,6 +63,7 @@ export default async function ProfilePage() {
         </header>
       }
     >
+      <SessionTracker />
       <UsernameCard username={record.username ?? displayNameFor(record)} />
 
       <div className="min-h-2 flex-1" />

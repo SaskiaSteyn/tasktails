@@ -36,8 +36,13 @@ const base =
 const sizes: Record<ButtonSize, string> = {
   // Primary CTA — 48px tall, radius 13, Fredoka 600 16px.
   full: "h-12 rounded-btn font-display text-[16px] font-semibold",
-  // In-flow actions — 44px tall, radius 12, Fredoka 600 14px.
-  inline: "h-11 rounded-input font-display text-[14px] font-semibold",
+  // In-flow actions — 44px tall, radius 12, Fredoka 600 14px. `px-5` matters
+  // here specifically: this is the one size meant to sit at its own content
+  // width (`fullWidth={false}`, per the doc comment above), and every other
+  // size either always spans full width or is otherwise centered in ample
+  // space — this was the only one with no horizontal padding to fall back
+  // on, so a non-full-width button rendered with the label hugging the edges.
+  inline: "h-11 rounded-input px-5 font-display text-[14px] font-semibold",
   // Modal actions — 46px tall, radius 12 (handoff addendum §2).
   dialog: "h-[46px] rounded-input font-display text-[15px] font-semibold",
   // Full-bleed celebration / landing CTA — 50px tall, radius 13 (level-up

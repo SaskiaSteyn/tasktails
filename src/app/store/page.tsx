@@ -8,6 +8,9 @@ import { PersistentHeader } from "@/components/layout/persistent-header";
 import { CartCountProvider } from "@/components/store/cart-count-context";
 import { CartLink } from "@/components/store/cart-link";
 import { StoreBrowser } from "@/components/store/store-browser";
+import { SessionTracker } from "@/components/telemetry/session-tracker";
+import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
+import { redirectAdminsAway } from "@/lib/admin";
 import { cartForUser } from "@/lib/cart";
 import { storeItemsForUser } from "@/lib/store";
 
@@ -56,6 +59,7 @@ export default async function StorePage() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
+  await redirectAdminsAway(userId);
 
   const [items, cart] = await Promise.all([
     storeItemsForUser(userId),
@@ -70,6 +74,8 @@ export default async function StorePage() {
         nav={<BottomNav />}
         className="bg-warm p-[14px]"
       >
+        <SessionTracker />
+        <StoreTimeTracker />
         <StoreBrowser items={items} />
       </AppShell>
     </CartCountProvider>
