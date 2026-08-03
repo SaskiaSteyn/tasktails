@@ -41,13 +41,20 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * `<FlashSaleBanner />` into it, so this client component never receives —
  * and can never branch on — the study group itself (`study-group.ts`'s
  * isolation rule, NFR-TASK-3).
+ *
+ * `stockBadges` (URG-02) is the same slot pattern, keyed per item: `StorePage`
+ * builds a `<StockBadge />` per unlocked item it decides should have one and
+ * hands the whole map down, so a lookup by id is all this component (or
+ * `StoreItemCard`) ever does with it.
  */
 export function StoreBrowser({
   items,
   flashSaleBanner,
+  stockBadges,
 }: {
   items: StoreItemWithLock[];
   flashSaleBanner?: ReactNode;
+  stockBadges?: Record<string, ReactNode>;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<StoreItemCategory | "ALL">("ALL");
@@ -126,7 +133,7 @@ export function StoreBrowser({
       ) : (
         <div className="grid grid-cols-2 gap-[11px]">
           {visible.map((item) => (
-            <StoreItemCard key={item.id} item={item} />
+            <StoreItemCard key={item.id} item={item} badge={stockBadges?.[item.id]} />
           ))}
         </div>
       )}

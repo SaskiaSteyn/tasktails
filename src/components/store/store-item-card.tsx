@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Lock, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 
 import { useCartCount } from "@/components/store/cart-count-context";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
@@ -40,12 +40,25 @@ import type { StoreItemWithLock } from "@/lib/store";
  * in `item-visual.tsx` now — factored out when STOR-06's cart rows needed
  * the exact same treatment, so there's one definition instead of two that
  * could drift.
+ *
+ * `badge` (URG-02) is an inert slot, not a stock number: `StorePage` decides
+ * server-side whether the item gets a `<StockBadge />` and only ever unlocked
+ * items get one (advertising urgency on something you can't yet buy reads as
+ * nonsensical, same call STOR-05's add-to-cart button already made for its
+ * own unlocked-only rendering) — this component just renders whatever it's
+ * handed, same as `StoreBrowser`'s own `flashSaleBanner` prop.
  */
 
 /** How long the post-click checkmark/error state stays up before reverting to "+". */
 const FEEDBACK_MS = 1200;
 
-export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
+export function StoreItemCard({
+  item,
+  badge,
+}: {
+  item: StoreItemWithLock;
+  badge?: ReactNode;
+}) {
   const locked = item.locked;
   const [status, setStatus] = useState<"idle" | "pending" | "added" | "error">("idle");
   // Tracks the pending revert-to-idle timer so a second click's own timer
@@ -77,10 +90,12 @@ export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
   return (
     <div
       className={cn(
-        "rounded-card border border-border-track px-[11px] py-3",
+        "relative rounded-card border border-border-track px-[11px] py-3",
         locked ? "bg-[#F2EEE7]" : "bg-warm",
       )}
     >
+      {badge}
+
       <ItemWell
         item={item}
         locked={locked}

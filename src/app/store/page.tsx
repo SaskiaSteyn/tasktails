@@ -5,13 +5,17 @@ import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { PersistentHeader } from "@/components/layout/persistent-header";
+import type { ReactNode } from "react";
+
 import { CartCountProvider } from "@/components/store/cart-count-context";
 import { CartLink } from "@/components/store/cart-link";
 import { FlashSaleBanner } from "@/components/store/flash-sale-banner";
+import { StockBadge } from "@/components/store/stock-badge";
 import { StoreBrowser } from "@/components/store/store-browser";
 import { cartForUser } from "@/lib/cart";
 import { storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
+import { urgencyDataForItems } from "@/lib/urgency";
 
 export const metadata: Metadata = {
   title: "Store · TaskTails",
@@ -60,18 +64,44 @@ export const metadata: Metadata = {
  * this and to keep the group value itself from ever reaching a client
  * component: only the pre-decided `<FlashSaleBanner />` element (or `null`)
  * crosses into `StoreBrowser`, never a boolean the client could branch on.
+ *
+ * `stockBadges` (URG-02) follows the same `groupGatedData()` pattern, one
+ * level deeper: `urgencyDataForItems()` (URG-08) needs the resolved item ids,
+ * so `items` is awaited before the `Promise.all` rather than inside it, and
+ * only unlocked items get a badge built for them — the same "unlocked only"
+ * call STOR-05's add-to-cart button already made. `urgencyDataForItems()` is
+ * called directly rather than fetching `GET /api/store/urgency-data` over
+ * HTTP — this is already a server component, so that would just be an
+ * unnecessary network hop back to itself, same reasoning as reading
+ * `storeItemsForUser()` directly instead of `/api/store/items`.
  */
 export default async function StorePage() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
 
-  const [items, cart, showFlashSale] = await Promise.all([
-    storeItemsForUser(userId),
+  const items = await storeItemsForUser(userId);
+
+  const [cart, showFlashSale, stockRows] = await Promise.all([
     cartForUser(userId),
     groupGatedData(() => true),
+    groupGatedData(() =>
+      urgencyDataForItems(
+        userId,
+        items.map((item) => item.id),
+      ),
+    ),
   ]);
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
+
+  const stockBadges: Record<string, ReactNode> = {};
+  if (stockRows) {
+    for (const item of items) {
+      if (item.locked) continue;
+      const row = stockRows.find((candidate) => candidate.itemId === item.id);
+      if (row) stockBadges[item.id] = <StockBadge stock={row.stock} />;
+    }
+  }
 
   return (
     <CartCountProvider initialCount={cartCount}>
@@ -83,6 +113,7 @@ export default async function StorePage() {
         <StoreBrowser
           items={items}
           flashSaleBanner={showFlashSale ? <FlashSaleBanner /> : null}
+          stockBadges={stockBadges}
         />
       </AppShell>
     </CartCountProvider>
