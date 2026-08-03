@@ -114,8 +114,9 @@ export function AnimalCard({
   // anything to actually appear behind or in front of. Measuring the image
   // itself instead means the burst starts already overlapping the animal.
   // Purely decorative, no server round trip of its own, so it fires from
-  // `handlePet()` on success rather than being driven by `pet.happiness`
-  // (which would also fire on an unrelated page refresh).
+  // `handlePet()` and `FeedSheet`'s `onFed` on success rather than being
+  // driven by `pet.happiness` (which would also fire on an unrelated page
+  // refresh).
   function spawnHearts() {
     const card = cardRef.current;
     const image = petImageRef.current;
@@ -323,6 +324,7 @@ export function AnimalCard({
       <FeedSheet
         open={feedOpen}
         onOpenChange={setFeedOpen}
+        onFed={spawnHearts}
         petId={pet.id}
         petName={name}
         foodItems={foodItems}
