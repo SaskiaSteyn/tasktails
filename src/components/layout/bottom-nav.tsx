@@ -55,7 +55,7 @@ export function BottomNav() {
 
   return (
     <>
-      <nav className="nav-bar flex flex-none items-center justify-center gap-4 bg-linear-to-b from-surface/0 to-surface px-4 pb-[calc(14px+env(safe-area-inset-bottom))]">
+      <nav className="nav-bar flex flex-none items-center justify-center gap-4 bg-linear-to-b from-surface/0 to-surface p-4">
         {TABS_BEFORE_PLUS.map((tab) => (
           <NavTab key={tab.href} {...tab} active={isActiveTab(pathname, tab.href)} />
         ))}

@@ -62,6 +62,24 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+/**
+ * PRO-11/12 — the Settings "Change password" form. `currentPassword` isn't
+ * `passwordSchema` for the same reason `loginSchema` isn't: it's checked
+ * against whatever hash already exists, not against today's rules.
+ */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Enter your current password."),
+    newPassword: passwordSchema,
+    confirmNewPassword: z.string().min(1, "Re-enter your new password."),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "Passwords don't match.",
+    path: ["confirmNewPassword"],
+  });
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 /** Flattens a Zod error into `{ field: firstMessage }` for the form state. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const result: Record<string, string> = {};

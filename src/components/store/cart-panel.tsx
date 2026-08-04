@@ -4,6 +4,7 @@ import { Check, Minus, Plus, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Coin } from "@/components/ui/coin";
@@ -47,6 +48,10 @@ type Confirmation = {
  * — plus a link into the zoo when an animal was among the purchases, since
  * "go see it" is the obvious next step and `pets.length` is already on the
  * response.
+ *
+ * A checkout is one of PRO-09's three achievement-unlock trigger points; any
+ * newly unlocked badge goes to `useAchievementUnlock().celebrate()`, same
+ * pattern `TaskList`/`SubtaskList` use for theirs.
  */
 export function CartPanel({
   initialCart,
@@ -55,6 +60,7 @@ export function CartPanel({
   initialCart: CartItemWithStoreItem[];
   coins: number;
 }) {
+  const { celebrate: celebrateAchievements } = useAchievementUnlock();
   const [cart, setCart] = useState(initialCart);
   // Which line has a request in flight, so its own stepper disables without
   // freezing every other row.
@@ -87,6 +93,7 @@ export function CartPanel({
         adoptedCount: body.pets.length,
       });
       setCart([]);
+      celebrateAchievements(body.achievementsUnlocked);
     } catch {
       setCheckoutError("Couldn't reach TaskTails. Check your connection and try again.");
     } finally {
@@ -147,9 +154,7 @@ export function CartPanel({
             href="/store"
             className={buttonClasses({
               variant: "secondary",
-              fullWidth: confirmation.adoptedCount === 0,
               size: "inline",
-              className: confirmation.adoptedCount > 0 ? "px-5 self-center" : undefined,
             })}
           >
             Back to store

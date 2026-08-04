@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { evaluateAchievements } from "@/lib/achievements";
 import { recordPetInteraction } from "@/lib/pets";
 
 /**
@@ -34,5 +35,9 @@ export async function POST(
     return NextResponse.json({ error: "Pet not found." }, { status: 404 });
   }
 
-  return NextResponse.json({ pet });
+  // PRO-09 — one of the three trigger points (task completion, purchase, pet
+  // interaction); see `evaluateAchievements()`'s doc comment.
+  const achievementsUnlocked = await evaluateAchievements(userId);
+
+  return NextResponse.json({ pet, achievementsUnlocked });
 }

@@ -4,11 +4,19 @@ import { Settings } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { achievementsForUser } from "@/lib/achievements";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { AchievementsGrid } from "@/components/profile/achievements-grid";
+import { BuyXpCard } from "@/components/profile/buy-xp-card";
+import { ProfileHeader } from "@/components/profile/profile-header";
+import { StatsGrid } from "@/components/profile/stats-grid";
 import { UsernameCard } from "@/components/profile/username-card";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
+import { currentEconomy } from "@/lib/economy";
+import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
+import { lifetimeStatsFor } from "@/lib/stats";
 import { displayNameFor, findUserByEmail } from "@/lib/users";
 
 export const metadata: Metadata = {
@@ -16,13 +24,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * Partial Profile screen — AUTH-07 (change your username).
- *
- * The designed Profile frame also carries an avatar, lifetime stats, buy-XP and
- * achievements; those belong to their own tickets and are deliberately absent.
- * The frame's "STUDY GROUP B" chip is left out on purpose too: AUTH-04 keeps the
- * assignment off the wire because participants must not learn which arm they are
- * in, and a chip on their own profile would undo that.
+ * The Profile screen — PRO-01 (banner), PRO-04 (lifetime stats), PRO-06
+ * (buy XP), PRO-07 (achievements) and AUTH-07 (change your username). Every
+ * section the designed frame draws now has one.
  *
  * The gear in the banner is not in the handoff frames — it was added because
  * nothing in the designs routes to Settings, and Settings is where "Log out"
@@ -35,7 +39,12 @@ export default async function ProfilePage() {
   if (!email || !userId) redirect("/login");
   await redirectAdminsAway(userId);
 
-  const record = await findUserByEmail(email);
+  const [record, economy, stats, achievements] = await Promise.all([
+    findUserByEmail(email),
+    currentEconomy(),
+    lifetimeStatsFor(userId),
+    achievementsForUser(userId),
+  ]);
   if (!record) redirect("/login");
 
   return (
@@ -44,14 +53,12 @@ export default async function ProfilePage() {
       nav={<BottomNav />}
       header={
         <header className="flex flex-none items-center gap-[13px] border-b border-border-track bg-warm px-[18px] pt-[14px] pb-4">
-          <div className="min-w-0 flex-1">
-            <h1 className="font-display text-[19px] leading-[1.1] font-semibold">
-              {displayNameFor(record)}
-            </h1>
-            <p className="truncate text-[11.5px] text-ink-soft">
-              {record.email}
-            </p>
-          </div>
+          <ProfileHeader
+            name={displayNameFor(record)}
+            email={record.email}
+            level={economy?.level ?? 1}
+            avatarUrl={record.avatarUrl}
+          />
 
           <Link
             href="/settings"
@@ -66,12 +73,23 @@ export default async function ProfilePage() {
       <SessionTracker />
       <UsernameCard username={record.username ?? displayNameFor(record)} />
 
-      <div className="min-h-2 flex-1" />
+      <div className="mt-4">
+        <StatsGrid stats={stats} />
+      </div>
 
-      <p className="text-center text-[10.5px] leading-[1.4] text-ink-faint">
-        The rest of this screen — your photo, stats, achievements and your
-        sanctuary — is still to be built.
-      </p>
+      <div className="mt-4">
+        <BuyXpCard
+          costCoins={BUY_XP_COST_COINS}
+          gainXp={BUY_XP_GAIN_XP}
+          coins={economy?.coins ?? 0}
+        />
+      </div>
+
+      <div className="mt-4">
+        <AchievementsGrid achievements={achievements} />
+      </div>
+
+      <div className="min-h-2 flex-1" />
     </AppShell>
   );
 }

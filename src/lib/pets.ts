@@ -34,6 +34,11 @@ function findPetRaw(userId: string, petId: string) {
   });
 }
 
+/** How many animals this user owns (PRO-04/05's "animals owned" lifetime stat). */
+export async function petCount(userId: string): Promise<number> {
+  return prisma.pet.count({ where: { userId } });
+}
+
 /**
  * All of a user's animals, oldest-acquired first — cuid ids are k-sortable,
  * same ordering rationale `tasks.ts` uses for subtasks, and there's no

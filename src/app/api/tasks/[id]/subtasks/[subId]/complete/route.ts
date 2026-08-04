@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { evaluateAchievements } from "@/lib/achievements";
 import { grantEarnings, recordStreakDay } from "@/lib/economy";
 import { calculateReward } from "@/lib/rewards";
 import { markSubtaskComplete, markTaskComplete, taskForUser } from "@/lib/tasks";
@@ -108,6 +109,10 @@ export async function POST(
     ? await markTaskComplete(userId, taskId, completedAt)
     : null;
 
+  // PRO-09 — one of the three trigger points (task/subtask completion,
+  // purchase, pet interaction); see `evaluateAchievements()`'s doc comment.
+  const achievementsUnlocked = await evaluateAchievements(userId);
+
   if (!streakUpdate || !grant) {
     return NextResponse.json({
       subtask: completed,
@@ -115,6 +120,7 @@ export async function POST(
       reward: null,
       streak: null,
       levelUp: null,
+      achievementsUnlocked,
     });
   }
 
@@ -128,5 +134,6 @@ export async function POST(
     },
     streak: { value: streakUpdate.streak, event: streakUpdate.event },
     levelUp: grant.levelUp,
+    achievementsUnlocked,
   });
 }

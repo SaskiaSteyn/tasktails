@@ -72,7 +72,7 @@ export default async function StorePage() {
       <AppShell
         header={<PersistentHeader title="Store" action={<CartLink />} />}
         nav={<BottomNav />}
-        className="bg-warm p-[14px]"
+        className="p-[14px]"
       >
         <SessionTracker />
         <StoreTimeTracker />

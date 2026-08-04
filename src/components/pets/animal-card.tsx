@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
+import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { FeedSheet } from "@/components/pets/feed-sheet";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -103,6 +104,7 @@ export function AnimalCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const petImageRef = useRef<HTMLImageElement>(null);
   const router = useRouter();
+  const { celebrate: celebrateAchievements } = useAchievementUnlock();
 
   // A burst of hearts scattered across the animal itself, at the user's
   // request — earlier versions climbed from the "Pet" button, which sits
@@ -112,8 +114,9 @@ export function AnimalCard({
   // anything to actually appear behind or in front of. Measuring the image
   // itself instead means the burst starts already overlapping the animal.
   // Purely decorative, no server round trip of its own, so it fires from
-  // `handlePet()` on success rather than being driven by `pet.happiness`
-  // (which would also fire on an unrelated page refresh).
+  // `handlePet()` and `FeedSheet`'s `onFed` on success rather than being
+  // driven by `pet.happiness` (which would also fire on an unrelated page
+  // refresh).
   function spawnHearts() {
     const card = cardRef.current;
     const image = petImageRef.current;
@@ -171,7 +174,9 @@ export function AnimalCard({
         setNotice(`Couldn't pet ${name}. Try again.`);
         return;
       }
+      const body = await response.json();
       spawnHearts();
+      celebrateAchievements(body.achievementsUnlocked);
       router.refresh();
     } catch {
       setNotice("Couldn't reach TaskTails. Check your connection and try again.");
@@ -319,6 +324,7 @@ export function AnimalCard({
       <FeedSheet
         open={feedOpen}
         onOpenChange={setFeedOpen}
+        onFed={spawnHearts}
         petId={pet.id}
         petName={name}
         foodItems={foodItems}

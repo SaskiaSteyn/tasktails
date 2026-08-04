@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AchievementUnlockProvider } from "@/components/economy/achievement-unlock-provider";
 import { LevelUpProvider } from "@/components/economy/level-up-provider";
 import { cn } from "@/lib/cn";
 
@@ -47,42 +48,46 @@ export function AppShell({
   className?: string;
 }) {
   return (
-    // ECO-07's celebration is mounted here so any screen inside the frame can
-    // raise it with `useLevelUp()`. It renders nothing until one fires.
+    // ECO-07's celebration and the achievement-unlock celebration are both
+    // mounted here so any screen inside the frame can raise them with
+    // `useLevelUp()`/`useAchievementUnlock()`. Neither renders anything
+    // until one fires.
     <LevelUpProvider>
-      <div className="flex min-h-0 flex-1 justify-center bg-board frame:items-center frame:p-6">
-        <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface frame:h-[640px] frame:max-w-app frame:rounded-frame frame:border frame:border-[rgb(46_42_38/0.06)] frame:shadow-card">
-          {/* WCAG 2.4.1 Bypass Blocks. Only rendered when there is actually a block
-            to bypass — on the auth screens the first thing in the tab order is
-            already the content, and a skip link there would be one more stop for
-            no gain. It earns its keep once SHR-01's nav is on every screen.
-            Visually hidden until focused, then it lands on the board above the
-            card. */}
-          {header || nav ? (
-            <a
-              href="#main"
-              className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-1/2 focus:z-50 focus:-translate-x-1/2 focus:rounded-input focus:bg-surface focus:px-4 focus:py-2 focus:text-[13px] focus:font-bold focus:text-ink focus:shadow-card"
+      <AchievementUnlockProvider>
+        <div className="flex min-h-0 flex-1 justify-center bg-board frame:items-center frame:p-6">
+          <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface frame:h-[640px] frame:max-w-app frame:rounded-frame frame:border frame:border-[rgb(46_42_38/0.06)] frame:shadow-card">
+            {/* WCAG 2.4.1 Bypass Blocks. Only rendered when there is actually a block
+              to bypass — on the auth screens the first thing in the tab order is
+              already the content, and a skip link there would be one more stop for
+              no gain. It earns its keep once SHR-01's nav is on every screen.
+              Visually hidden until focused, then it lands on the board above the
+              card. */}
+            {header || nav ? (
+              <a
+                href="#main"
+                className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-1/2 focus:z-50 focus:-translate-x-1/2 focus:rounded-input focus:bg-surface focus:px-4 focus:py-2 focus:text-[13px] focus:font-bold focus:text-ink focus:shadow-card"
+              >
+                Skip to content
+              </a>
+            ) : null}
+            {header}
+            <main
+              id="main"
+              tabIndex={-1}
+              className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto", className)}
             >
-              Skip to content
-            </a>
-          ) : null}
-          {header}
-          <main
-            id="main"
-            tabIndex={-1}
-            className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto", className)}
-          >
-            {children}
-          </main>
-          {nav ?? (
-            // No nav to absorb it, so the content area clears the home indicator.
-            <div
-              aria-hidden
-              className="h-[env(safe-area-inset-bottom)] flex-none"
-            />
-          )}
+              {children}
+            </main>
+            {nav ?? (
+              // No nav to absorb it, so the content area clears the home indicator.
+              <div
+                aria-hidden
+                className="h-[env(safe-area-inset-bottom)] flex-none"
+              />
+            )}
+          </div>
         </div>
-      </div>
+      </AchievementUnlockProvider>
     </LevelUpProvider>
   );
 }
