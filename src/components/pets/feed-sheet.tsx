@@ -4,6 +4,7 @@ import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 // Type-only: erased at compile time, same reasoning `AnimalCard` documents for
@@ -28,16 +29,25 @@ import type { InventoryItemWithStoreItem } from "@/lib/inventory";
  * than staying open — `router.refresh()` then updates both the pet's bars
  * and the food list's `×N owned` counts from the server in one round trip,
  * since both live on this same page.
+ *
+ * `onFed` fires alongside that close, at the user's request for the same
+ * floating-heart burst the "Pet" button gets — `AnimalCard` owns
+ * `spawnHearts()` (it needs the animal image's own ref to position the
+ * burst), so this sheet has no heart logic of its own, just the hook to
+ * trigger it once the sheet has started closing.
  */
 export function FeedSheet({
   open,
   onOpenChange,
+  onFed,
   petId,
   petName,
   foodItems,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called on a successful feed, after the sheet is told to close. */
+  onFed?: () => void;
   petId: string;
   petName: string;
   foodItems: InventoryItemWithStoreItem[];
@@ -45,6 +55,7 @@ export function FeedSheet({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingId = useId();
   const router = useRouter();
+  const { celebrate: celebrateAchievements } = useAchievementUnlock();
 
   const [selectedId, setSelectedId] = useState<string>();
   const [notice, setNotice] = useState<string>();
@@ -86,7 +97,10 @@ export function FeedSheet({
         setNotice(`Couldn't feed ${petName}. Try again.`);
         return;
       }
+      const body = await response.json();
       onOpenChange(false);
+      onFed?.();
+      celebrateAchievements(body.achievementsUnlocked);
       router.refresh();
     } catch {
       setNotice("Couldn't reach TaskTails. Check your connection and try again.");

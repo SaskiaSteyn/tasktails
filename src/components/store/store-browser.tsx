@@ -79,15 +79,15 @@ export function StoreBrowser({
 
   return (
     <>
-      <label className="mb-[9px] flex h-[38px] items-center gap-2 rounded-input border border-border-input bg-surface px-3">
-        <Search size={14} strokeWidth={2} className="flex-none text-ink-disabled" />
+      <label className="mb-[9px] flex h-[38px] items-center gap-2 rounded-input border border-border-input bg-surface px-4">
+        <Search size={16} strokeWidth={2} className="flex-none text-ink-faint" />
         <span className="sr-only">Search items</span>
         <input
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search items…"
-          className="w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-disabled"
+          className="w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-disabled py-[5px]"
         />
       </label>
 

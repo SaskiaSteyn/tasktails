@@ -17,6 +17,9 @@ import { RecentPurchasesBadge } from "@/components/store/recent-purchases-badge"
 import { StockBadge } from "@/components/store/stock-badge";
 import { StoreBrowser } from "@/components/store/store-browser";
 import { UrgencyLanguageNote } from "@/components/store/urgency-language-note";
+import { SessionTracker } from "@/components/telemetry/session-tracker";
+import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
+import { redirectAdminsAway } from "@/lib/admin";
 import { cartForUser } from "@/lib/cart";
 import { storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
@@ -100,6 +103,7 @@ export default async function StorePage() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
+  await redirectAdminsAway(userId);
 
   const items = await storeItemsForUser(userId);
 
@@ -144,8 +148,10 @@ export default async function StorePage() {
       <AppShell
         header={<PersistentHeader title="Store" action={<CartLink />} />}
         nav={<BottomNav />}
-        className="bg-warm p-[14px]"
+        className="p-[14px]"
       >
+        <SessionTracker />
+        <StoreTimeTracker />
         <StoreBrowser
           items={items}
           flashSaleBanner={showFlashSale ? <FlashSaleBanner /> : null}

@@ -1,6 +1,6 @@
 import { randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
 
-import { AbGroup, type User } from "@/generated/prisma/client";
+import { AbGroup, type User, UserRole } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -47,6 +47,40 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   return prisma.user.findUnique({ where: { email: normaliseEmail(email) } });
 }
 
+/** Session callbacks carry `user.id`, not `user.email` — this is that lookup. */
+export async function findUserById(id: string): Promise<User | null> {
+  return prisma.user.findUnique({ where: { id } });
+}
+
+/** What ADM-02/03/04/06's tables render one row of. */
+export type ParticipantSummary = Pick<
+  User,
+  "id" | "username" | "email" | "displayName" | "abGroup" | "createdAt"
+>;
+
+/**
+ * Every non-admin account (ADM-06) — the researcher's own `ADMIN` row isn't
+ * a study participant and has no A/B group meaning, so it's excluded rather
+ * than showing up as a stray row in the comparison tables.
+ *
+ * Ordered by `createdAt` so "Participant #07" style labelling (the design's
+ * own convention) is stable across reads.
+ */
+export async function listParticipants(): Promise<ParticipantSummary[]> {
+  return prisma.user.findMany({
+    where: { role: UserRole.PARTICIPANT },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      displayName: true,
+      abGroup: true,
+      createdAt: true,
+    },
+  });
+}
+
 /** Usernames are unique — the schema's unique index is what enforces it. */
 export async function isUsernameAvailable(
   username: string,
@@ -85,6 +119,26 @@ export async function setUsername(
     });
   } catch (error) {
     if (isUniqueViolation(error, "username")) throw new UsernameTakenError();
+    if (isRecordNotFound(error)) return undefined;
+    throw error;
+  }
+}
+
+/**
+ * Sets the uploaded profile photo (PRO-03) — a data URL, not a file path; see
+ * `src/lib/validation/avatar.ts` for why. Returns `undefined` rather than
+ * throwing when the account is gone, matching {@link setUsername}.
+ */
+export async function setAvatar(
+  email: string,
+  avatarUrl: string,
+): Promise<User | undefined> {
+  try {
+    return await prisma.user.update({
+      where: { email: normaliseEmail(email) },
+      data: { avatarUrl },
+    });
+  } catch (error) {
     if (isRecordNotFound(error)) return undefined;
     throw error;
   }
@@ -273,6 +327,43 @@ export async function authenticate(
   const user = await findUserByEmail(email);
   if (!user?.passwordHash) return null;
   return verifyPassword(password, user.passwordHash) ? user : null;
+}
+
+export class IncorrectPasswordError extends Error {
+  constructor() {
+    super("That password isn't right.");
+    this.name = "IncorrectPasswordError";
+  }
+}
+
+/**
+ * PRO-12 — verifies the current password and stores the new hash.
+ *
+ * Throws {@link IncorrectPasswordError} both when the given current password
+ * is wrong and when the account has no password at all (Google-only,
+ * `passwordHash` null) — there is nothing to "change" for the latter, and
+ * failing the same way as a wrong password avoids a second error case the
+ * form would have to explain differently for no real benefit.
+ *
+ * Returns `undefined` when the account itself is gone, matching
+ * `setUsername`/`setAvatar`.
+ */
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<User | undefined> {
+  const user = await findUserById(userId);
+  if (!user) return undefined;
+
+  if (!user.passwordHash || !verifyPassword(currentPassword, user.passwordHash)) {
+    throw new IncorrectPasswordError();
+  }
+
+  return prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: hashPassword(newPassword) },
+  });
 }
 
 /**

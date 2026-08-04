@@ -264,3 +264,16 @@ export async function transactionsForUser(
     include: { storeItem: true },
   });
 }
+
+/**
+ * ADM-06/07 — how many purchases `userId` has ever made, one row per
+ * checked-out cart line (`checkout()` writes one `Transaction` per line, its
+ * `coinSpent` already the line's quantity × price — the same rows
+ * `transactionsForUser()`/STOR-17's history page count as "one purchase"
+ * each). The authoritative "items purchased" count for the admin dashboard,
+ * over `telemetry.ts`'s `ITEM_PURCHASED` log of the same fact — this reads
+ * the table the purchase itself lives in.
+ */
+export async function purchaseCount(userId: string): Promise<number> {
+  return prisma.transaction.count({ where: { userId } });
+}

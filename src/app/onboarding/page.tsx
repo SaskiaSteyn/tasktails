@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { QuestChecklist } from "@/components/onboarding/quest-checklist";
+import { SessionTracker } from "@/components/telemetry/session-tracker";
+import { redirectAdminsAway } from "@/lib/admin";
 import { onboardingStatus } from "@/lib/onboarding";
 import { displayNameFor, findUserByEmail } from "@/lib/users";
 
@@ -25,6 +27,7 @@ export default async function OnboardingPage() {
   const userId = session?.user?.id;
   const email = session?.user?.email;
   if (!userId || !email) redirect("/login");
+  await redirectAdminsAway(userId);
 
   const [record, status] = await Promise.all([
     findUserByEmail(email),
@@ -34,6 +37,7 @@ export default async function OnboardingPage() {
 
   return (
     <AppShell className="px-[22px] pt-[22px] pb-6">
+      <SessionTracker />
       <QuestChecklist name={displayNameFor(record)} status={status} />
     </AppShell>
   );

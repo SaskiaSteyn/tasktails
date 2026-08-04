@@ -7,6 +7,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
+import {
+  AchievementUnlockScreen,
+  type AchievementUnlockLike,
+} from "@/components/economy/achievement-unlock-screen";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -40,6 +44,14 @@ import type { PetWithItem } from "@/lib/pets";
  * No `nav` on `AppShell` — a focused drill-in from the Sanctuary screen, same
  * "no bottom nav" call `EditTaskPage` makes for the same reason (this is an
  * edit flow, not tab content).
+ *
+ * Equipping is one of PRO-09's three achievement-unlock trigger points, but
+ * this renders `AchievementUnlockScreen` directly off local state rather
+ * than `useAchievementUnlock()` — unlike `TaskList`/`CartPanel`, this
+ * component *instantiates* `AppShell` itself rather than being rendered
+ * inside one, so it sits above `AppShell`'s provider in the tree and a hook
+ * call here could never see it. Same reasoning the style guide's
+ * `LevelUpDemo` documents for rendering `LevelUpScreen` directly.
  */
 export function PetCustomizer({
   pet,
@@ -62,6 +74,9 @@ export function PetCustomizer({
   );
   const [equipping, setEquipping] = useState(false);
   const [equipError, setEquipError] = useState<string>();
+  const [achievementQueue, setAchievementQueue] = useState<
+    AchievementUnlockLike[]
+  >([]);
 
   const equippedItem = accessories.find((item) => item.id === equippedId);
 
@@ -117,6 +132,10 @@ export function PetCustomizer({
         setEquippedId(previous);
         setEquipError(`Couldn't equip ${item.storeItem.name}. Try again.`);
         return;
+      }
+      const body = await response.json();
+      if (body.achievementsUnlocked?.length) {
+        setAchievementQueue((current) => [...current, ...body.achievementsUnlocked]);
       }
       router.refresh();
     } catch {
@@ -286,6 +305,15 @@ export function PetCustomizer({
           </p>
         ) : null}
       </div>
+
+      {achievementQueue[0] ? (
+        <AchievementUnlockScreen
+          key={achievementQueue[0].key}
+          open
+          achievement={achievementQueue[0]}
+          onDismiss={() => setAchievementQueue((current) => current.slice(1))}
+        />
+      ) : null}
     </AppShell>
   );
 }

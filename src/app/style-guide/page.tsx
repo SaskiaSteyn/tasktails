@@ -3,10 +3,12 @@ import Image from "next/image";
 import { History } from "lucide-react";
 
 import { AuthBrandMark } from "@/components/auth/auth-screen";
+import { AchievementUnlockDemo } from "@/components/economy/achievement-unlock-demo";
 import { LevelUpDemo } from "@/components/economy/level-up-demo";
 import { AppHeader } from "@/components/layout/app-header";
 import { AnimalCard } from "@/components/pets/animal-card";
 import { ZooGalleryCard } from "@/components/pets/zoo-gallery-card";
+import { AchievementsGrid } from "@/components/profile/achievements-grid";
 import { Button } from "@/components/ui/button";
 import { CoinPill } from "@/components/ui/coin";
 import { Divider } from "@/components/ui/divider";
@@ -16,6 +18,10 @@ import { PasswordField } from "@/components/ui/password-field";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { StreakCard, StreakPill } from "@/components/ui/streak";
 import { TextField } from "@/components/ui/text-field";
+// Type-only, same reasoning as `EconomySnapshot`/`PetWithItem` below —
+// `achievements.ts` is server-only (Prisma), but the *type* is erased at
+// compile time and safe on this public, statically generated page.
+import type { AchievementWithState } from "@/lib/achievements";
 import { AA_TEXT, bpca, bpcaLc, contrast, readColorTokens } from "@/lib/contrast";
 import type { EconomySnapshot } from "@/lib/economy";
 // Type-only: erased at compile time, so this page (a Server Component) can
@@ -216,6 +222,36 @@ const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
       imageUrl: "package",
     },
   },
+];
+
+/**
+ * PRO-07 samples — the real catalogue's four keys (`prisma/seed.ts`), so
+ * `AchievementsGrid`'s per-key icon/colour lookup renders exactly as it does
+ * live rather than falling back to the neutral default for an unknown key.
+ * `criteria` is unused by the grid (it only reads `unlockedAt`) but required
+ * by the type.
+ */
+function sampleAchievement(
+  key: string,
+  name: string,
+  description: string,
+  unlocked: boolean,
+): AchievementWithState {
+  return {
+    id: `sample-${key}`,
+    key,
+    name,
+    description,
+    criteria: { type: "TASKS_COMPLETED", threshold: 1 },
+    unlockedAt: unlocked ? new Date() : null,
+  };
+}
+
+const ACHIEVEMENT_CATALOGUE: Array<[string, string, string]> = [
+  ["task_champion", "Task Champion", "Complete 10 tasks."],
+  ["rising_star", "Rising Star", "Reach Level 5."],
+  ["week_warrior", "Week Warrior", "Keep a 7-day streak."],
+  ["first_purchase", "First Purchase", "Buy your first item from the store."],
 ];
 
 /** A 300px slice of the phone frame, so the header is shown at its real width. */
@@ -868,6 +904,56 @@ export default function StyleGuidePage() {
             />
           </div>
         </div>
+      </Section>
+
+      <Section
+        n="10"
+        title="Achievements"
+        blurb="PRO-07's ACHIEVEMENTS grid — one square tile per catalogue entry (prisma/seed.ts's four rows), earned or locked. The real grid on /profile reads live unlock state from achievementsForUser(); these three cards are the same component fed sample data, so every state is visible without needing a real account's progress."
+      >
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card label="Fresh account — nothing earned">
+            <div className="w-[300px] max-w-full">
+              <AchievementsGrid
+                achievements={ACHIEVEMENT_CATALOGUE.map(([key, name, description]) =>
+                  sampleAchievement(key, name, description, false),
+                )}
+              />
+            </div>
+          </Card>
+
+          <Card label="Two earned">
+            <div className="w-[300px] max-w-full">
+              <AchievementsGrid
+                achievements={ACHIEVEMENT_CATALOGUE.map(([key, name, description], index) =>
+                  sampleAchievement(key, name, description, index === 1 || index === 3),
+                )}
+              />
+            </div>
+          </Card>
+
+          <Card label="All earned">
+            <div className="w-[300px] max-w-full">
+              <AchievementsGrid
+                achievements={ACHIEVEMENT_CATALOGUE.map(([key, name, description]) =>
+                  sampleAchievement(key, name, description, true),
+                )}
+              />
+            </div>
+          </Card>
+        </div>
+
+        <Card label="Unlock celebration — open the real component">
+          <p className="text-[11.5px] text-ink-soft">
+            No frame in <code>design_handoff</code> draws this — added at the
+            user&rsquo;s request after noticing the grid above just silently
+            flips a tile with no moment marking it. Adapted from ECO-07&rsquo;s
+            level-up screen: same full-bleed dialog, confetti and medallion,
+            violet instead of terracotta so it reads as a different kind of
+            event from a level crossing.
+          </p>
+          <AchievementUnlockDemo />
+        </Card>
       </Section>
 
       <footer className="border-t border-border-track pt-6 text-[12px] text-ink-soft">

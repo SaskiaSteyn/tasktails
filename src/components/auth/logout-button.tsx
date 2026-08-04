@@ -13,7 +13,14 @@ import { LogoutSubmit } from "@/components/auth/logout-submit";
  * red label, no icon. One of the two sanctioned uses of urgency red (see
  * globals.css).
  */
-export function LogoutButton({ className }: { className?: string }) {
+export function LogoutButton({
+  className,
+  fullWidth = true,
+}: {
+  className?: string;
+  /** `false` for the admin header, which sits it beside the page title rather than giving it Settings' whole row. */
+  fullWidth?: boolean;
+}) {
   async function logout() {
     "use server";
     await signOut({ redirectTo: "/login" });
@@ -21,7 +28,7 @@ export function LogoutButton({ className }: { className?: string }) {
 
   return (
     <form action={logout} className={className}>
-      <LogoutSubmit>Log out</LogoutSubmit>
+      <LogoutSubmit fullWidth={fullWidth}>Log out</LogoutSubmit>
     </form>
   );
 }

@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import {
+  useAchievementUnlock,
+  type AchievementUnlockLike,
+} from "@/components/economy/achievement-unlock-provider";
+import {
   useLevelUp,
   type LevelUpEventLike,
 } from "@/components/economy/level-up-provider";
@@ -20,6 +24,7 @@ type CompleteResponse = {
   task: { completedAt: string };
   reward: { granted: { coins: number; xp: number } } | null;
   levelUp: LevelUpEventLike | null;
+  achievementsUnlocked: AchievementUnlockLike[];
   error?: string;
 };
 
@@ -29,6 +34,7 @@ type CompleteSubtaskResponse = {
   task: { completedAt: string } | null;
   reward: { granted: { coins: number; xp: number } } | null;
   levelUp: LevelUpEventLike | null;
+  achievementsUnlocked: AchievementUnlockLike[];
   error?: string;
 };
 
@@ -51,7 +57,8 @@ type CompleteSubtaskResponse = {
  *
  * A level-up crossing goes straight to ECO-07's `useLevelUp().celebrate()`
  * — the provider is a no-op queue if the event is null, so this is safe to
- * call on every completion rather than needing its own guard.
+ * call on every completion rather than needing its own guard. Any newly
+ * unlocked badges go the same way to `useAchievementUnlock().celebrate()`.
  *
  * **Subtasks (2026-07-30)** render nested under their parent via the same
  * `TaskRow`, indented, and complete for real through SUB-05's
@@ -99,6 +106,7 @@ export function TaskList({
 }) {
   const router = useRouter();
   const { celebrate } = useLevelUp();
+  const { celebrate: celebrateAchievements } = useAchievementUnlock();
 
   const [tasks, setTasks] = useState(initialTasks);
   const [syncedFrom, setSyncedFrom] = useState(initialTasks);
@@ -184,6 +192,7 @@ export function TaskList({
         });
       }
       celebrate(body.levelUp);
+      celebrateAchievements(body.achievementsUnlocked);
       router.refresh();
     } catch {
       setError("Couldn't reach TaskTails. Check your connection and try again.");
@@ -237,6 +246,7 @@ export function TaskList({
         });
       }
       celebrate(body.levelUp);
+      celebrateAchievements(body.achievementsUnlocked);
       router.refresh();
     } catch {
       setError("Couldn't reach TaskTails. Check your connection and try again.");

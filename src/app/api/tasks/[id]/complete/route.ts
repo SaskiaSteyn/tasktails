@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { evaluateAchievements } from "@/lib/achievements";
 import { antiSpamCheck, grantEarnings, recordStreakDay } from "@/lib/economy";
 import { calculateReward } from "@/lib/rewards";
 import { markTaskComplete, taskForUser } from "@/lib/tasks";
@@ -31,6 +32,10 @@ import { markTaskComplete, taskForUser } from "@/lib/tasks";
  *     figure just means nothing is capped at this stage.
  *  5. `grantEarnings()` banks the priced reward against the *real*,
  *     lock-read daily allowance and returns the level-up event, if any.
+ *  6. `evaluateAchievements()` (PRO-09) re-checks the whole badge catalogue
+ *     against the account's now-updated progress — this is one of the
+ *     three trigger points the ticket names, the others being a purchase
+ *     and a pet interaction.
  *
  * If `recordStreakDay`/`grantEarnings` come back null (no `UserEconomy`
  * row — in practice an impossible state, since AUTH-04 creates one with
@@ -88,6 +93,7 @@ export async function POST(
   });
 
   const grant = await grantEarnings(userId, priced.granted, completedAt);
+  const achievementsUnlocked = await evaluateAchievements(userId);
 
   if (!streakUpdate || !grant) {
     return NextResponse.json({
@@ -95,6 +101,7 @@ export async function POST(
       reward: null,
       streak: null,
       levelUp: null,
+      achievementsUnlocked,
     });
   }
 
@@ -107,5 +114,6 @@ export async function POST(
     },
     streak: { value: streakUpdate.streak, event: streakUpdate.event },
     levelUp: grant.levelUp,
+    achievementsUnlocked,
   });
 }

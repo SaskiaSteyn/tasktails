@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { evaluateAchievements } from "@/lib/achievements";
 import { checkout } from "@/lib/checkout";
 import { snapshotOf } from "@/lib/economy";
 
@@ -60,11 +61,16 @@ export async function POST() {
     }
   }
 
+  // PRO-09 — one of the three trigger points (task completion, purchase, pet
+  // interaction); see `evaluateAchievements()`'s doc comment.
+  const achievementsUnlocked = await evaluateAchievements(userId);
+
   return NextResponse.json({
     spent: result.spent,
     purchased: result.purchased,
     transactions: result.transactions,
     pets: result.pets,
     economy: snapshotOf(result.economy),
+    achievementsUnlocked,
   });
 }
