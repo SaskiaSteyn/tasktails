@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { PersistentHeader } from "@/components/layout/persistent-header";
 import type { ReactNode } from "react";
 
+import { BundleTimerBadge } from "@/components/store/bundle-timer-badge";
 import { CartActivityBadge } from "@/components/store/cart-activity-badge";
 import { CartCountProvider } from "@/components/store/cart-count-context";
 import { CartLink } from "@/components/store/cart-link";
@@ -86,14 +87,15 @@ export const metadata: Metadata = {
  * corner and `StoreItemCard` renders whatever it's handed without knowing
  * how many pieces are inside it.
  *
- * `urgencyNotes` (URG-04/URG-05) is a second map for a different card slot
- * (below the category label, not the corner badges) — `<RecentPurchasesBadge
- * />` or `<UrgencyLanguageNote />`, never both: the user chose mutual
- * exclusivity for this slot (unlike the corner badges' "both allowed"),
- * since two full sentences stacked read as too crowded for a 172px card.
+ * `urgencyNotes` (URG-04/URG-05/URG-06) is a second map for a different card
+ * slot (below the category label, not the corner badges) —
+ * `<RecentPurchasesBadge />`, `<UrgencyLanguageNote />`, or `<BundleTimerBadge
+ * />`, never more than one: the user chose mutual exclusivity for this slot
+ * (unlike the corner badges' "both allowed"), since two full
+ * sentences/pills stacked read as too crowded for a 172px card.
  * `urgencyDataForItems()`'s `noteSelection` seed (URG-08) already guarantees
- * `showRecentPurchases`/`showUrgencyLanguage` are never both true, so this
- * is a plain if/else-if rather than needing its own selection logic here.
+ * at most one of the three is ever true, so this is a plain if/else-if
+ * rather than needing its own selection logic here.
  */
 export default async function StorePage() {
   const session = await auth();
@@ -131,6 +133,8 @@ export default async function StorePage() {
         urgencyNotes[item.id] = <RecentPurchasesBadge count={row.recentPurchases} />;
       } else if (row.showUrgencyLanguage) {
         urgencyNotes[item.id] = <UrgencyLanguageNote />;
+      } else if (row.showBundleTimer) {
+        urgencyNotes[item.id] = <BundleTimerBadge />;
       }
     }
   }

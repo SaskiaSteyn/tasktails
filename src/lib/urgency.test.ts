@@ -128,30 +128,38 @@ describe("urgencyDataForItems", () => {
     expect(recentOnly).toBeGreaterThan(0);
   });
 
-  it("never shows both note types on the same item (URG-05 mutual exclusivity)", () => {
+  it("never shows more than one of the three note types on the same item (URG-05/URG-06 mutual exclusivity)", () => {
     const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
     const rows = urgencyDataForItems("user-1", itemIds);
     for (const row of rows) {
-      expect(row.showRecentPurchases && row.showUrgencyLanguage).toBe(false);
+      const count = [row.showRecentPurchases, row.showUrgencyLanguage, row.showBundleTimer].filter(
+        Boolean,
+      ).length;
+      expect(count).toBeLessThanOrEqual(1);
     }
   });
 
-  it("shows recent-purchases, urgency-language, and neither, each at least once", () => {
+  it("shows recent-purchases, urgency-language, bundle-timer, and neither, each at least once", () => {
     const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
     const rows = urgencyDataForItems("user-1", itemIds);
     expect(rows.some((row) => row.showRecentPurchases)).toBe(true);
     expect(rows.some((row) => row.showUrgencyLanguage)).toBe(true);
+    expect(rows.some((row) => row.showBundleTimer)).toBe(true);
     expect(
-      rows.some((row) => !row.showRecentPurchases && !row.showUrgencyLanguage),
+      rows.some(
+        (row) => !row.showRecentPurchases && !row.showUrgencyLanguage && !row.showBundleTimer,
+      ),
     ).toBe(true);
   });
 
-  it("keeps showUrgencyLanguage stable across repeated calls", () => {
+  it("keeps the note selection stable across repeated calls", () => {
     const itemIds = Array.from({ length: 12 }, (_, index) => `item-${index}`);
     const first = urgencyDataForItems("user-1", itemIds);
     const second = urgencyDataForItems("user-1", itemIds);
-    expect(first.map((row) => row.showUrgencyLanguage)).toEqual(
-      second.map((row) => row.showUrgencyLanguage),
+    expect(
+      first.map((row) => [row.showRecentPurchases, row.showUrgencyLanguage, row.showBundleTimer]),
+    ).toEqual(
+      second.map((row) => [row.showRecentPurchases, row.showUrgencyLanguage, row.showBundleTimer]),
     );
   });
 });
