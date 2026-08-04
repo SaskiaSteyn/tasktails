@@ -11,6 +11,7 @@ import { BundleTimerBadge } from "@/components/store/bundle-timer-badge";
 import { CartActivityBadge } from "@/components/store/cart-activity-badge";
 import { CartCountProvider } from "@/components/store/cart-count-context";
 import { CartLink } from "@/components/store/cart-link";
+import { CurrencyUrgencyBadge } from "@/components/store/currency-urgency-badge";
 import { FlashSaleBanner } from "@/components/store/flash-sale-banner";
 import { RecentPurchasesBadge } from "@/components/store/recent-purchases-badge";
 import { StockBadge } from "@/components/store/stock-badge";
@@ -80,22 +81,20 @@ export const metadata: Metadata = {
  * itself, same reasoning as reading `storeItemsForUser()` directly instead
  * of `/api/store/items`.
  *
- * Each unlocked item gets `<StockBadge />`, `<CartActivityBadge />`, or both
- * stacked in a fragment, per `urgencyDataForItems()`'s own seeded
- * `showStockBadge`/`showCartActivityBadge` selection (URG-03, confirmed with
- * the user) — every item shows at least one, since the two badges share one
- * corner and `StoreItemCard` renders whatever it's handed without knowing
- * how many pieces are inside it.
+ * Each unlocked item gets exactly one of `<StockBadge />`/`<CartActivityBadge
+ * />`, per `urgencyDataForItems()`'s own seeded `badgeSelection` — mutually
+ * exclusive per the user (2026-08-04, after both tickets had already
+ * shipped allowing both at once), same convention as the note slot below.
  *
- * `urgencyNotes` (URG-04/URG-05/URG-06) is a second map for a different card
- * slot (below the category label, not the corner badges) —
- * `<RecentPurchasesBadge />`, `<UrgencyLanguageNote />`, or `<BundleTimerBadge
- * />`, never more than one: the user chose mutual exclusivity for this slot
- * (unlike the corner badges' "both allowed"), since two full
- * sentences/pills stacked read as too crowded for a 172px card.
- * `urgencyDataForItems()`'s `noteSelection` seed (URG-08) already guarantees
- * at most one of the three is ever true, so this is a plain if/else-if
- * rather than needing its own selection logic here.
+ * `urgencyNotes` (URG-04/URG-05/URG-06/URG-07) is a second map for a
+ * different card slot (below the category label, not the corner badges) —
+ * `<RecentPurchasesBadge />`, `<UrgencyLanguageNote />`, `<BundleTimerBadge
+ * />`, or `<CurrencyUrgencyBadge />`, never more than one: the user chose
+ * mutual exclusivity for this slot (unlike the corner badges' "both
+ * allowed"), since several full sentences/pills stacked read as too crowded
+ * for a 172px card. `urgencyDataForItems()`'s `noteSelection` seed (URG-08)
+ * already guarantees at most one of the four is ever true, so this is a
+ * plain if/else-if chain rather than needing its own selection logic here.
  */
 export default async function StorePage() {
   const session = await auth();
@@ -123,18 +122,19 @@ export default async function StorePage() {
       if (item.locked) continue;
       const row = urgencyRows.find((candidate) => candidate.itemId === item.id);
       if (!row) continue;
-      urgencyBadges[item.id] = (
-        <>
-          {row.showStockBadge && <StockBadge stock={row.stock} />}
-          {row.showCartActivityBadge && <CartActivityBadge count={row.cartActivity} />}
-        </>
-      );
+      if (row.showStockBadge) {
+        urgencyBadges[item.id] = <StockBadge stock={row.stock} />;
+      } else if (row.showCartActivityBadge) {
+        urgencyBadges[item.id] = <CartActivityBadge count={row.cartActivity} />;
+      }
       if (row.showRecentPurchases) {
         urgencyNotes[item.id] = <RecentPurchasesBadge count={row.recentPurchases} />;
       } else if (row.showUrgencyLanguage) {
         urgencyNotes[item.id] = <UrgencyLanguageNote />;
       } else if (row.showBundleTimer) {
         urgencyNotes[item.id] = <BundleTimerBadge />;
+      } else if (row.showCurrencyUrgency) {
+        urgencyNotes[item.id] = <CurrencyUrgencyBadge />;
       }
     }
   }

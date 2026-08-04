@@ -42,18 +42,17 @@ import type { StoreItemWithLock } from "@/lib/store";
  * could drift.
  *
  * `badge` (URG-02/URG-03) is an inert slot, not a stock/cart number:
- * `StorePage` decides server-side which of `<StockBadge />`/
- * `<CartActivityBadge />` (or both) an item gets, and only ever unlocked
- * items get one (advertising urgency on something you can't yet buy reads as
- * nonsensical, same call STOR-05's add-to-cart button already made for its
- * own unlocked-only rendering) — this component just renders whatever it's
- * handed, same as `StoreBrowser`'s own `flashSaleBanner` prop. The wrapper
- * around `{badge}` is the card's *only* `position: absolute` element in this
- * corner (URG-03) — `StockBadge`/`CartActivityBadge` are plain, unpositioned
- * pills, so when `badge` is both of them stacked in a fragment, flexbox lays
- * them out top-to-bottom inside this one absolutely-positioned box rather
- * than two independently-positioned elements needing a hardcoded offset
- * between them.
+ * `StorePage` decides server-side which one of `<StockBadge />`/
+ * `<CartActivityBadge />` an item gets — mutually exclusive, per the user
+ * (2026-08-04, after both tickets had already shipped allowing both at
+ * once) — and only ever unlocked items get one (advertising urgency on
+ * something you can't yet buy reads as nonsensical, same call STOR-05's
+ * add-to-cart button already made for its own unlocked-only rendering) —
+ * this component just renders whatever it's handed, same as `StoreBrowser`'s
+ * own `flashSaleBanner` prop. The wrapper around `{badge}` is the card's
+ * *only* `position: absolute` element in this corner; `StockBadge`/
+ * `CartActivityBadge` are plain, unpositioned pills, so the wrapper still
+ * lays out a single child correctly without any special-casing.
  *
  * `note` (URG-04) is a second, independent inert slot for
  * `<RecentPurchasesBadge />` — a different card position from `badge`

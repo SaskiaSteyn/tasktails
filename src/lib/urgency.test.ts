@@ -56,28 +56,17 @@ describe("urgencyDataForItems", () => {
     }
   });
 
-  it("always selects at least one badge, and sometimes both", () => {
+  it("shows exactly one corner badge per item, never both, never neither", () => {
     const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
     const rows = urgencyDataForItems("user-1", itemIds);
 
     for (const row of rows) {
-      expect(row.showStockBadge || row.showCartActivityBadge).toBe(true);
+      expect(row.showStockBadge).toBe(!row.showCartActivityBadge);
     }
 
-    // Over 50 items, a seed that only ever picked one badge (never both)
-    // would be indistinguishable from a genuine three-way selection unless
-    // this is actually asserted.
-    expect(rows.some((row) => row.showStockBadge && row.showCartActivityBadge)).toBe(
-      true,
-    );
-    // Also confirm the "only stock" and "only cart" outcomes both occur, not
-    // just "both" every time.
-    expect(
-      rows.some((row) => row.showStockBadge && !row.showCartActivityBadge),
-    ).toBe(true);
-    expect(
-      rows.some((row) => !row.showStockBadge && row.showCartActivityBadge),
-    ).toBe(true);
+    // Confirm both outcomes actually occur over 50 items, not just one every time.
+    expect(rows.some((row) => row.showStockBadge)).toBe(true);
+    expect(rows.some((row) => row.showCartActivityBadge)).toBe(true);
   });
 
   it("keeps the badge selection stable across repeated calls", () => {
@@ -116,50 +105,60 @@ describe("urgencyDataForItems", () => {
     // large enough sample.
     const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
     const rows = urgencyDataForItems("user-1", itemIds);
-    const bothTrue = rows.filter(
-      (row) => row.showRecentPurchases && row.showStockBadge && row.showCartActivityBadge,
+    const stockAndRecent = rows.filter(
+      (row) => row.showRecentPurchases && row.showStockBadge,
     ).length;
-    const recentOnly = rows.filter(
-      (row) => row.showRecentPurchases && !(row.showStockBadge && row.showCartActivityBadge),
+    const cartAndRecent = rows.filter(
+      (row) => row.showRecentPurchases && row.showCartActivityBadge,
     ).length;
     // If the two seeds were identical, every "showRecentPurchases" row would
-    // also be a "both corner badges" row (or vice versa) — expect a mix.
-    expect(bothTrue).toBeGreaterThan(0);
-    expect(recentOnly).toBeGreaterThan(0);
+    // always pair with the same corner badge — expect a mix of both.
+    expect(stockAndRecent).toBeGreaterThan(0);
+    expect(cartAndRecent).toBeGreaterThan(0);
   });
 
-  it("never shows more than one of the three note types on the same item (URG-05/URG-06 mutual exclusivity)", () => {
+  it("never shows more than one of the four note types on the same item (URG-05/URG-06/URG-07 mutual exclusivity)", () => {
     const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
     const rows = urgencyDataForItems("user-1", itemIds);
     for (const row of rows) {
-      const count = [row.showRecentPurchases, row.showUrgencyLanguage, row.showBundleTimer].filter(
-        Boolean,
-      ).length;
+      const count = [
+        row.showRecentPurchases,
+        row.showUrgencyLanguage,
+        row.showBundleTimer,
+        row.showCurrencyUrgency,
+      ].filter(Boolean).length;
       expect(count).toBeLessThanOrEqual(1);
     }
   });
 
-  it("shows recent-purchases, urgency-language, bundle-timer, and neither, each at least once", () => {
+  it("shows all four note types, and neither, each at least once", () => {
     const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
     const rows = urgencyDataForItems("user-1", itemIds);
     expect(rows.some((row) => row.showRecentPurchases)).toBe(true);
     expect(rows.some((row) => row.showUrgencyLanguage)).toBe(true);
     expect(rows.some((row) => row.showBundleTimer)).toBe(true);
+    expect(rows.some((row) => row.showCurrencyUrgency)).toBe(true);
     expect(
       rows.some(
-        (row) => !row.showRecentPurchases && !row.showUrgencyLanguage && !row.showBundleTimer,
+        (row) =>
+          !row.showRecentPurchases &&
+          !row.showUrgencyLanguage &&
+          !row.showBundleTimer &&
+          !row.showCurrencyUrgency,
       ),
     ).toBe(true);
   });
 
   it("keeps the note selection stable across repeated calls", () => {
     const itemIds = Array.from({ length: 12 }, (_, index) => `item-${index}`);
+    const noteFlags = (row: ReturnType<typeof urgencyDataForItems>[number]) => [
+      row.showRecentPurchases,
+      row.showUrgencyLanguage,
+      row.showBundleTimer,
+      row.showCurrencyUrgency,
+    ];
     const first = urgencyDataForItems("user-1", itemIds);
     const second = urgencyDataForItems("user-1", itemIds);
-    expect(
-      first.map((row) => [row.showRecentPurchases, row.showUrgencyLanguage, row.showBundleTimer]),
-    ).toEqual(
-      second.map((row) => [row.showRecentPurchases, row.showUrgencyLanguage, row.showBundleTimer]),
-    );
+    expect(first.map(noteFlags)).toEqual(second.map(noteFlags));
   });
 });

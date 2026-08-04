@@ -18,27 +18,26 @@ import { createHash } from "node:crypto";
  * `noteSelection` provides.
  *
  * `badgeSelection` (URG-03) decides which of the two *corner* badges
- * (`StockBadge`/`CartActivityBadge`) an item shows, confirmed with the user:
- * the design mock's own "Store — Group B" frame only ever draws one urgency
- * badge per card (each of its four example cards demonstrates a different
- * pattern), but nothing stops the same item having both stock and
- * cart-activity data once both tickets exist — so something has to decide
- * layout once real cards can carry either or both. Per the user: every
- * unlocked item shows at least one of the two, and some show both stacked in
- * the same top-right corner (`StoreItemCard`'s wrapper).
+ * (`StockBadge`/`CartActivityBadge`) an item shows. Originally allowed both
+ * at once (matching how `noteSelection` started out allowing "neither"), but
+ * the user asked afterwards to make this slot mutually exclusive too, like
+ * every note-slot ticket already was — exactly one of the two always shows,
+ * never both, never neither (2026-08-04, after all 7 frontend URG tickets
+ * had shipped).
  *
- * `noteSelection` (URG-05, extended by URG-06) is the equivalent for the
- * card's second slot — the inline line below the category label. URG-04
- * shipped `showRecentPurchases` as an independent coin flip; URG-05's own
- * text ("Last chance — don't miss out!") lives in that exact same slot, and
- * the user chose *mutual exclusivity* here (unlike the corner badges' "both
- * allowed" — two full sentences/pills stacked read as too crowded for a
- * 172px card). URG-06's bundle-timer pill landed in the same slot too
- * (confirmed with the user), so `noteSelection` grew a fourth outcome rather
- * than a separate rule: 0 = neither note, 1 = recent-purchases,
- * 2 = urgency-language, 3 = bundle-timer. "Neither" stays a possible
- * outcome, preserving URG-04's own already-confirmed "can be absent
- * entirely" behaviour — only "more than one at once" is ruled out.
+ * `noteSelection` (URG-05, extended by URG-06 and URG-07) is the equivalent
+ * for the card's second slot — the inline line below the category label.
+ * URG-04 shipped `showRecentPurchases` as an independent coin flip; URG-05's
+ * own text ("Last chance — don't miss out!") lives in that exact same slot,
+ * and the user chose *mutual exclusivity* here (unlike the corner badges'
+ * "both allowed" — several full sentences/pills stacked read as too crowded
+ * for a 172px card). URG-06's bundle-timer pill and URG-07's currency-urgency
+ * pill both landed in the same slot too (the design mock draws all four in
+ * the identical position), so `noteSelection` grew again rather than adding
+ * a separate rule each time: 0 = neither note, 1 = recent-purchases,
+ * 2 = urgency-language, 3 = bundle-timer, 4 = currency-urgency. "Neither"
+ * stays a possible outcome, preserving URG-04's own already-confirmed "can
+ * be absent entirely" behaviour — only "more than one at once" is ruled out.
  */
 
 type UrgencyKind =
@@ -74,10 +73,8 @@ export type ItemUrgencyData = {
   /** URG-03 — "N in carts". Range 2–9, confirmed with the user. */
   cartActivity: number;
   /**
-   * At least one of these two is always true — an item is never handed down
-   * with neither badge selected. Independent seeded coin flips rather than a
-   * single three-way pick: simpler, and the "both false" outcome is just
-   * re-rolled rather than needing a fourth case to reject.
+   * Mutually exclusive — exactly one of these two is always true, never both,
+   * never neither. Both derive from the same `badgeSelection` seed.
    */
   showStockBadge: boolean;
   showCartActivityBadge: boolean;
@@ -88,9 +85,9 @@ export type ItemUrgencyData = {
    */
   recentPurchases: number;
   /**
-   * Mutually exclusive with `showUrgencyLanguage`/`showBundleTimer` — all
-   * three derive from the same `noteSelection` seed, so at most one is ever
-   * true.
+   * Mutually exclusive with `showUrgencyLanguage`/`showBundleTimer`/
+   * `showCurrencyUrgency` — all four derive from the same `noteSelection`
+   * seed, so at most one is ever true.
    */
   showRecentPurchases: boolean;
   /** URG-05 — the fixed "Last chance — don't miss out!" note. See above. */
@@ -102,6 +99,8 @@ export type ItemUrgencyData = {
    * for the offer at all.
    */
   showBundleTimer: boolean;
+  /** URG-07 — the fixed "Double XP this hour only" note. See above. */
+  showCurrencyUrgency: boolean;
 };
 
 /** One fabricated row per item in `itemIds`, seeded against `userId`. */
@@ -110,21 +109,23 @@ export function urgencyDataForItems(
   itemIds: string[],
 ): ItemUrgencyData[] {
   return itemIds.map((itemId) => {
-    // 0 = stock only, 1 = cart-activity only, 2 = both.
-    const badgeSelection = seededInt(userId, itemId, "badgeSelection", 0, 2);
-    // 0 = neither note, 1 = recent-purchases, 2 = urgency-language, 3 = bundle-timer.
-    const noteSelection = seededInt(userId, itemId, "noteSelection", 0, 3);
+    // 0 = stock only, 1 = cart-activity only.
+    const badgeSelection = seededInt(userId, itemId, "badgeSelection", 0, 1);
+    // 0 = neither note, 1 = recent-purchases, 2 = urgency-language,
+    // 3 = bundle-timer, 4 = currency-urgency.
+    const noteSelection = seededInt(userId, itemId, "noteSelection", 0, 4);
 
     return {
       itemId,
       stock: seededInt(userId, itemId, "stock", 1, 5),
       cartActivity: seededInt(userId, itemId, "cartActivity", 2, 9),
-      showStockBadge: badgeSelection === 0 || badgeSelection === 2,
-      showCartActivityBadge: badgeSelection === 1 || badgeSelection === 2,
+      showStockBadge: badgeSelection === 0,
+      showCartActivityBadge: badgeSelection === 1,
       recentPurchases: seededInt(userId, itemId, "recentPurchases", 3, 7),
       showRecentPurchases: noteSelection === 1,
       showUrgencyLanguage: noteSelection === 2,
       showBundleTimer: noteSelection === 3,
+      showCurrencyUrgency: noteSelection === 4,
     };
   });
 }
