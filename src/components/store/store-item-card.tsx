@@ -54,6 +54,12 @@ import type { StoreItemWithLock } from "@/lib/store";
  * them out top-to-bottom inside this one absolutely-positioned box rather
  * than two independently-positioned elements needing a hardcoded offset
  * between them.
+ *
+ * `note` (URG-04) is a second, independent inert slot for
+ * `<RecentPurchasesBadge />` — a different card position from `badge`
+ * (inline below the category label, not the absolute top-right corner), so
+ * it renders directly in the card's normal flow rather than through the
+ * `badge` wrapper. Same "unlocked only" rule as `badge`.
  */
 
 /** How long the post-click checkmark/error state stays up before reverting to "+". */
@@ -62,9 +68,11 @@ const FEEDBACK_MS = 1200;
 export function StoreItemCard({
   item,
   badge,
+  note,
 }: {
   item: StoreItemWithLock;
   badge?: ReactNode;
+  note?: ReactNode;
 }) {
   const locked = item.locked;
   const [status, setStatus] = useState<"idle" | "pending" | "added" | "error">("idle");
@@ -126,6 +134,8 @@ export function StoreItemCard({
         {item.name}
       </p>
       <p className="mb-2 text-[10.5px] text-ink-faint">{CATEGORY_LABEL[item.category]}</p>
+
+      {note}
 
       {locked ? (
         <div className="flex items-center justify-center gap-[5px] rounded-[8px] bg-[#E9E3D9] py-[5px] text-[11px] font-extrabold text-ink-soft">

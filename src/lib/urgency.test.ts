@@ -85,4 +85,46 @@ describe("urgencyDataForItems", () => {
     const second = urgencyDataForItems("user-1", ["item-a", "item-b", "item-c"]);
     expect(first).toEqual(second);
   });
+
+  it("keeps recentPurchases within the confirmed 3–7 range", () => {
+    const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
+    const rows = urgencyDataForItems("user-1", itemIds);
+    for (const row of rows) {
+      expect(row.recentPurchases).toBeGreaterThanOrEqual(3);
+      expect(row.recentPurchases).toBeLessThanOrEqual(7);
+    }
+  });
+
+  it("shows showRecentPurchases on some items but not all, stably", () => {
+    const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
+    const rows = urgencyDataForItems("user-1", itemIds);
+
+    // Unlike the two corner badges, this one is allowed to be off entirely —
+    // confirm both outcomes actually occur over 50 items.
+    expect(rows.some((row) => row.showRecentPurchases)).toBe(true);
+    expect(rows.some((row) => !row.showRecentPurchases)).toBe(true);
+
+    const second = urgencyDataForItems("user-1", itemIds);
+    expect(second.map((row) => row.showRecentPurchases)).toEqual(
+      rows.map((row) => row.showRecentPurchases),
+    );
+  });
+
+  it("keeps showRecentPurchases independent of the corner-badge selection", () => {
+    // A seed bug that reused the same hash input for both selections would
+    // make them perfectly correlated; assert that isn't the case over a
+    // large enough sample.
+    const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
+    const rows = urgencyDataForItems("user-1", itemIds);
+    const bothTrue = rows.filter(
+      (row) => row.showRecentPurchases && row.showStockBadge && row.showCartActivityBadge,
+    ).length;
+    const recentOnly = rows.filter(
+      (row) => row.showRecentPurchases && !(row.showStockBadge && row.showCartActivityBadge),
+    ).length;
+    // If the two seeds were identical, every "showRecentPurchases" row would
+    // also be a "both corner badges" row (or vice versa) — expect a mix.
+    expect(bothTrue).toBeGreaterThan(0);
+    expect(recentOnly).toBeGreaterThan(0);
+  });
 });

@@ -47,15 +47,21 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * `<StockBadge />`, `<CartActivityBadge />`, or both — and hands the whole
  * map down, so a lookup by id is all this component (or `StoreItemCard`)
  * ever does with it.
+ *
+ * `urgencyNotes` (URG-04) is the same pattern again for `<RecentPurchasesBadge
+ * />`, kept as a separate map from `urgencyBadges` since it renders through
+ * `StoreItemCard`'s different `note` slot, not the corner-badge one.
  */
 export function StoreBrowser({
   items,
   flashSaleBanner,
   urgencyBadges,
+  urgencyNotes,
 }: {
   items: StoreItemWithLock[];
   flashSaleBanner?: ReactNode;
   urgencyBadges?: Record<string, ReactNode>;
+  urgencyNotes?: Record<string, ReactNode>;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<StoreItemCategory | "ALL">("ALL");
@@ -134,7 +140,12 @@ export function StoreBrowser({
       ) : (
         <div className="grid grid-cols-2 gap-[11px]">
           {visible.map((item) => (
-            <StoreItemCard key={item.id} item={item} badge={urgencyBadges?.[item.id]} />
+            <StoreItemCard
+              key={item.id}
+              item={item}
+              badge={urgencyBadges?.[item.id]}
+              note={urgencyNotes?.[item.id]}
+            />
           ))}
         </div>
       )}

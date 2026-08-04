@@ -7,28 +7,36 @@ import { createHash } from "node:crypto";
  * number* to fabricate once that gate has already said yes, so it has no
  * knowledge of the study group itself.
  *
- * Covers `stock` (URG-02) and `cartActivity` (URG-03) so far, not the full
- * "stock counts, viewer counts, sale timers" URG-08's own summary lists.
- * URG-01 and URG-06 (the two timers) are self-contained per their own
- * "resets on page load" wording — confirmed for URG-01, and URG-06 reads the
- * same way — so neither needs data from here. URG-04's count needs this
- * module too, but its numeric range hasn't been confirmed the way URG-02's
- * 1–5 and URG-03's 2–9 have, and inventing a range for a ticket nobody has
- * taken up yet would be exactly the kind of unconfirmed requirement
- * CLAUDE.behavior.md says to avoid. Add a `recentPurchases` kind here — same
- * `seededInt` call, new range — when that ticket is actually taken up.
+ * Covers `stock` (URG-02), `cartActivity` (URG-03) and `recentPurchases`
+ * (URG-04) so far, not the full "stock counts, viewer counts, sale timers"
+ * URG-08's own summary lists. URG-01 and URG-06 (the two timers) are
+ * self-contained per their own "resets on page load" wording — confirmed for
+ * URG-01, and URG-06 reads the same way — so neither needs data from here.
  *
- * `badgeSelection` (URG-03) decides which of the two badges an item shows,
- * confirmed with the user: the design mock's own "Store — Group B" frame
- * only ever draws one urgency badge per card (each of its four example cards
- * demonstrates a different pattern), but nothing stops the same item having
- * both stock and cart-activity data once both tickets exist — so something
- * has to decide layout once real cards can carry either or both. Per the
- * user: every unlocked item shows at least one of the two, and some show
- * both stacked in the same top-right corner (`StoreItemCard`'s wrapper).
+ * `badgeSelection` (URG-03) decides which of the two *corner* badges
+ * (`StockBadge`/`CartActivityBadge`) an item shows, confirmed with the user:
+ * the design mock's own "Store — Group B" frame only ever draws one urgency
+ * badge per card (each of its four example cards demonstrates a different
+ * pattern), but nothing stops the same item having both stock and
+ * cart-activity data once both tickets exist — so something has to decide
+ * layout once real cards can carry either or both. Per the user: every
+ * unlocked item shows at least one of the two, and some show both stacked in
+ * the same top-right corner (`StoreItemCard`'s wrapper).
+ *
+ * `showRecentPurchases` (URG-04) is a separate, independent seeded coin flip
+ * — the "X sold in the last hour" line lives in a different card slot (below
+ * the category label, not the corner badges), so it doesn't compete with
+ * `badgeSelection` for space and isn't tied to its outcome. Confirmed with
+ * the user: unlike the two corner badges, this one is allowed to not appear
+ * on an item at all.
  */
 
-type UrgencyKind = "stock" | "cartActivity" | "badgeSelection";
+type UrgencyKind =
+  | "stock"
+  | "cartActivity"
+  | "badgeSelection"
+  | "recentPurchases"
+  | "showRecentPurchases";
 
 /**
  * A hash of `(userId, itemId, kind)`, not `Math.random()` — the same user
@@ -63,6 +71,14 @@ export type ItemUrgencyData = {
    */
   showStockBadge: boolean;
   showCartActivityBadge: boolean;
+  /**
+   * URG-04 — "X sold in the last hour". Range 3–7, confirmed with the user
+   * (deliberately narrower than URG-02/URG-03's ranges — the study only has
+   * 20 participants, so "8 sold" reads as implausible for this catalogue).
+   */
+  recentPurchases: number;
+  /** Independent of `showStockBadge`/`showCartActivityBadge` — see above. */
+  showRecentPurchases: boolean;
 };
 
 /** One fabricated row per item in `itemIds`, seeded against `userId`. */
@@ -80,6 +96,8 @@ export function urgencyDataForItems(
       cartActivity: seededInt(userId, itemId, "cartActivity", 2, 9),
       showStockBadge: selection === 0 || selection === 2,
       showCartActivityBadge: selection === 1 || selection === 2,
+      recentPurchases: seededInt(userId, itemId, "recentPurchases", 3, 7),
+      showRecentPurchases: seededInt(userId, itemId, "showRecentPurchases", 0, 1) === 1,
     };
   });
 }

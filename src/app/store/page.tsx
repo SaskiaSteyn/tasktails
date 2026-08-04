@@ -11,6 +11,7 @@ import { CartActivityBadge } from "@/components/store/cart-activity-badge";
 import { CartCountProvider } from "@/components/store/cart-count-context";
 import { CartLink } from "@/components/store/cart-link";
 import { FlashSaleBanner } from "@/components/store/flash-sale-banner";
+import { RecentPurchasesBadge } from "@/components/store/recent-purchases-badge";
 import { StockBadge } from "@/components/store/stock-badge";
 import { StoreBrowser } from "@/components/store/store-browser";
 import { cartForUser } from "@/lib/cart";
@@ -83,6 +84,13 @@ export const metadata: Metadata = {
  * the user) — every item shows at least one, since the two badges share one
  * corner and `StoreItemCard` renders whatever it's handed without knowing
  * how many pieces are inside it.
+ *
+ * `urgencyNotes` (URG-04) is a second, independent map for
+ * `<RecentPurchasesBadge />` — a different card slot (below the category
+ * label) from the corner badges, so it's built and passed separately even
+ * though the loop is the same shape. Per `showRecentPurchases` (confirmed
+ * with the user): unlike the corner badges, an item is allowed to show none
+ * of this one at all.
  */
 export default async function StorePage() {
   const session = await auth();
@@ -104,6 +112,7 @@ export default async function StorePage() {
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
   const urgencyBadges: Record<string, ReactNode> = {};
+  const urgencyNotes: Record<string, ReactNode> = {};
   if (urgencyRows) {
     for (const item of items) {
       if (item.locked) continue;
@@ -115,6 +124,9 @@ export default async function StorePage() {
           {row.showCartActivityBadge && <CartActivityBadge count={row.cartActivity} />}
         </>
       );
+      if (row.showRecentPurchases) {
+        urgencyNotes[item.id] = <RecentPurchasesBadge count={row.recentPurchases} />;
+      }
     }
   }
 
@@ -129,6 +141,7 @@ export default async function StorePage() {
           items={items}
           flashSaleBanner={showFlashSale ? <FlashSaleBanner /> : null}
           urgencyBadges={urgencyBadges}
+          urgencyNotes={urgencyNotes}
         />
       </AppShell>
     </CartCountProvider>
