@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { PersistentHeader } from "@/components/layout/persistent-header";
 import type { ReactNode } from "react";
 
+import { CartActivityBadge } from "@/components/store/cart-activity-badge";
 import { CartCountProvider } from "@/components/store/cart-count-context";
 import { CartLink } from "@/components/store/cart-link";
 import { FlashSaleBanner } from "@/components/store/flash-sale-banner";
@@ -65,15 +66,23 @@ export const metadata: Metadata = {
  * component: only the pre-decided `<FlashSaleBanner />` element (or `null`)
  * crosses into `StoreBrowser`, never a boolean the client could branch on.
  *
- * `stockBadges` (URG-02) follows the same `groupGatedData()` pattern, one
- * level deeper: `urgencyDataForItems()` (URG-08) needs the resolved item ids,
- * so `items` is awaited before the `Promise.all` rather than inside it, and
- * only unlocked items get a badge built for them — the same "unlocked only"
- * call STOR-05's add-to-cart button already made. `urgencyDataForItems()` is
- * called directly rather than fetching `GET /api/store/urgency-data` over
- * HTTP — this is already a server component, so that would just be an
- * unnecessary network hop back to itself, same reasoning as reading
- * `storeItemsForUser()` directly instead of `/api/store/items`.
+ * `urgencyBadges` (URG-02/URG-03) follows the same `groupGatedData()`
+ * pattern, one level deeper: `urgencyDataForItems()` (URG-08) needs the
+ * resolved item ids, so `items` is awaited before the `Promise.all` rather
+ * than inside it, and only unlocked items get badges built for them — the
+ * same "unlocked only" call STOR-05's add-to-cart button already made.
+ * `urgencyDataForItems()` is called directly rather than fetching
+ * `GET /api/store/urgency-data` over HTTP — this is already a server
+ * component, so that would just be an unnecessary network hop back to
+ * itself, same reasoning as reading `storeItemsForUser()` directly instead
+ * of `/api/store/items`.
+ *
+ * Each unlocked item gets `<StockBadge />`, `<CartActivityBadge />`, or both
+ * stacked in a fragment, per `urgencyDataForItems()`'s own seeded
+ * `showStockBadge`/`showCartActivityBadge` selection (URG-03, confirmed with
+ * the user) — every item shows at least one, since the two badges share one
+ * corner and `StoreItemCard` renders whatever it's handed without knowing
+ * how many pieces are inside it.
  */
 export default async function StorePage() {
   const session = await auth();
@@ -82,7 +91,7 @@ export default async function StorePage() {
 
   const items = await storeItemsForUser(userId);
 
-  const [cart, showFlashSale, stockRows] = await Promise.all([
+  const [cart, showFlashSale, urgencyRows] = await Promise.all([
     cartForUser(userId),
     groupGatedData(() => true),
     groupGatedData(() =>
@@ -94,12 +103,18 @@ export default async function StorePage() {
   ]);
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
-  const stockBadges: Record<string, ReactNode> = {};
-  if (stockRows) {
+  const urgencyBadges: Record<string, ReactNode> = {};
+  if (urgencyRows) {
     for (const item of items) {
       if (item.locked) continue;
-      const row = stockRows.find((candidate) => candidate.itemId === item.id);
-      if (row) stockBadges[item.id] = <StockBadge stock={row.stock} />;
+      const row = urgencyRows.find((candidate) => candidate.itemId === item.id);
+      if (!row) continue;
+      urgencyBadges[item.id] = (
+        <>
+          {row.showStockBadge && <StockBadge stock={row.stock} />}
+          {row.showCartActivityBadge && <CartActivityBadge count={row.cartActivity} />}
+        </>
+      );
     }
   }
 
@@ -113,7 +128,7 @@ export default async function StorePage() {
         <StoreBrowser
           items={items}
           flashSaleBanner={showFlashSale ? <FlashSaleBanner /> : null}
-          stockBadges={stockBadges}
+          urgencyBadges={urgencyBadges}
         />
       </AppShell>
     </CartCountProvider>

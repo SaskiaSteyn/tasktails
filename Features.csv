@@ -78,7 +78,7 @@ STOR-17,GET /api/store/history — list the authenticated user's purchase transa
 STOR-18,Telemetry logging — log STORE_VISIT ITEM_VIEWED and ITEM_PURCHASED events to TelemetryEvent on relevant actions,Store,Backend,Done
 URG-01,Countdown timer (flash sale) — MM:SS countdown shown on item cards resets on page load to a random value within a configured window [Group B only],Store — False Urgency,Frontend,Done
 URG-02,Stock depletion indicator — Only X left! badge on item cards X is a seeded random value per item per session [Group B only],Store — False Urgency,Frontend,Done
-URG-03,Cart activity indicator — N people have this in their cart label on item cards N is a seeded random value [Group B only],Store — False Urgency,Frontend,To Do
+URG-03,Cart activity indicator — N people have this in their cart label on item cards N is a seeded random value [Group B only],Store — False Urgency,Frontend,Done
 URG-04,Recent purchases indicator — X sold in the last hour label on item cards X is a seeded random value [Group B only],Store — False Urgency,Frontend,To Do
 URG-05,Urgency language overlay — Last chance! / Don't miss out! text on item cards or item detail [Group B only],Store — False Urgency,Frontend,To Do
 URG-06,Bundle timer — Buy 2 get 1 free offer ends in MM:SS banner timer resets on page load [Group B only],Store — False Urgency,Frontend,To Do

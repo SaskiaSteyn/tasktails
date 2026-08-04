@@ -41,12 +41,19 @@ import type { StoreItemWithLock } from "@/lib/store";
  * the exact same treatment, so there's one definition instead of two that
  * could drift.
  *
- * `badge` (URG-02) is an inert slot, not a stock number: `StorePage` decides
- * server-side whether the item gets a `<StockBadge />` and only ever unlocked
+ * `badge` (URG-02/URG-03) is an inert slot, not a stock/cart number:
+ * `StorePage` decides server-side which of `<StockBadge />`/
+ * `<CartActivityBadge />` (or both) an item gets, and only ever unlocked
  * items get one (advertising urgency on something you can't yet buy reads as
  * nonsensical, same call STOR-05's add-to-cart button already made for its
  * own unlocked-only rendering) — this component just renders whatever it's
- * handed, same as `StoreBrowser`'s own `flashSaleBanner` prop.
+ * handed, same as `StoreBrowser`'s own `flashSaleBanner` prop. The wrapper
+ * around `{badge}` is the card's *only* `position: absolute` element in this
+ * corner (URG-03) — `StockBadge`/`CartActivityBadge` are plain, unpositioned
+ * pills, so when `badge` is both of them stacked in a fragment, flexbox lays
+ * them out top-to-bottom inside this one absolutely-positioned box rather
+ * than two independently-positioned elements needing a hardcoded offset
+ * between them.
  */
 
 /** How long the post-click checkmark/error state stays up before reverting to "+". */
@@ -94,7 +101,11 @@ export function StoreItemCard({
         locked ? "bg-[#F2EEE7]" : "bg-warm",
       )}
     >
-      {badge}
+      {badge && (
+        <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1">
+          {badge}
+        </div>
+      )}
 
       <ItemWell
         item={item}

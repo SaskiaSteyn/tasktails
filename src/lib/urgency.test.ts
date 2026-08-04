@@ -46,4 +46,43 @@ describe("urgencyDataForItems", () => {
     const rows = urgencyDataForItems("user-1", ["item-a", "item-b"]);
     expect(rows.map((row) => row.itemId)).toEqual(["item-a", "item-b"]);
   });
+
+  it("keeps cartActivity within the confirmed 2–9 range", () => {
+    const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
+    const rows = urgencyDataForItems("user-1", itemIds);
+    for (const row of rows) {
+      expect(row.cartActivity).toBeGreaterThanOrEqual(2);
+      expect(row.cartActivity).toBeLessThanOrEqual(9);
+    }
+  });
+
+  it("always selects at least one badge, and sometimes both", () => {
+    const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
+    const rows = urgencyDataForItems("user-1", itemIds);
+
+    for (const row of rows) {
+      expect(row.showStockBadge || row.showCartActivityBadge).toBe(true);
+    }
+
+    // Over 50 items, a seed that only ever picked one badge (never both)
+    // would be indistinguishable from a genuine three-way selection unless
+    // this is actually asserted.
+    expect(rows.some((row) => row.showStockBadge && row.showCartActivityBadge)).toBe(
+      true,
+    );
+    // Also confirm the "only stock" and "only cart" outcomes both occur, not
+    // just "both" every time.
+    expect(
+      rows.some((row) => row.showStockBadge && !row.showCartActivityBadge),
+    ).toBe(true);
+    expect(
+      rows.some((row) => !row.showStockBadge && row.showCartActivityBadge),
+    ).toBe(true);
+  });
+
+  it("keeps the badge selection stable across repeated calls", () => {
+    const first = urgencyDataForItems("user-1", ["item-a", "item-b", "item-c"]);
+    const second = urgencyDataForItems("user-1", ["item-a", "item-b", "item-c"]);
+    expect(first).toEqual(second);
+  });
 });
