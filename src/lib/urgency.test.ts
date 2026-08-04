@@ -127,4 +127,31 @@ describe("urgencyDataForItems", () => {
     expect(bothTrue).toBeGreaterThan(0);
     expect(recentOnly).toBeGreaterThan(0);
   });
+
+  it("never shows both note types on the same item (URG-05 mutual exclusivity)", () => {
+    const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
+    const rows = urgencyDataForItems("user-1", itemIds);
+    for (const row of rows) {
+      expect(row.showRecentPurchases && row.showUrgencyLanguage).toBe(false);
+    }
+  });
+
+  it("shows recent-purchases, urgency-language, and neither, each at least once", () => {
+    const itemIds = Array.from({ length: 50 }, (_, index) => `item-${index}`);
+    const rows = urgencyDataForItems("user-1", itemIds);
+    expect(rows.some((row) => row.showRecentPurchases)).toBe(true);
+    expect(rows.some((row) => row.showUrgencyLanguage)).toBe(true);
+    expect(
+      rows.some((row) => !row.showRecentPurchases && !row.showUrgencyLanguage),
+    ).toBe(true);
+  });
+
+  it("keeps showUrgencyLanguage stable across repeated calls", () => {
+    const itemIds = Array.from({ length: 12 }, (_, index) => `item-${index}`);
+    const first = urgencyDataForItems("user-1", itemIds);
+    const second = urgencyDataForItems("user-1", itemIds);
+    expect(first.map((row) => row.showUrgencyLanguage)).toEqual(
+      second.map((row) => row.showUrgencyLanguage),
+    );
+  });
 });

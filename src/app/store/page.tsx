@@ -14,6 +14,7 @@ import { FlashSaleBanner } from "@/components/store/flash-sale-banner";
 import { RecentPurchasesBadge } from "@/components/store/recent-purchases-badge";
 import { StockBadge } from "@/components/store/stock-badge";
 import { StoreBrowser } from "@/components/store/store-browser";
+import { UrgencyLanguageNote } from "@/components/store/urgency-language-note";
 import { cartForUser } from "@/lib/cart";
 import { storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
@@ -85,12 +86,14 @@ export const metadata: Metadata = {
  * corner and `StoreItemCard` renders whatever it's handed without knowing
  * how many pieces are inside it.
  *
- * `urgencyNotes` (URG-04) is a second, independent map for
- * `<RecentPurchasesBadge />` — a different card slot (below the category
- * label) from the corner badges, so it's built and passed separately even
- * though the loop is the same shape. Per `showRecentPurchases` (confirmed
- * with the user): unlike the corner badges, an item is allowed to show none
- * of this one at all.
+ * `urgencyNotes` (URG-04/URG-05) is a second map for a different card slot
+ * (below the category label, not the corner badges) — `<RecentPurchasesBadge
+ * />` or `<UrgencyLanguageNote />`, never both: the user chose mutual
+ * exclusivity for this slot (unlike the corner badges' "both allowed"),
+ * since two full sentences stacked read as too crowded for a 172px card.
+ * `urgencyDataForItems()`'s `noteSelection` seed (URG-08) already guarantees
+ * `showRecentPurchases`/`showUrgencyLanguage` are never both true, so this
+ * is a plain if/else-if rather than needing its own selection logic here.
  */
 export default async function StorePage() {
   const session = await auth();
@@ -126,6 +129,8 @@ export default async function StorePage() {
       );
       if (row.showRecentPurchases) {
         urgencyNotes[item.id] = <RecentPurchasesBadge count={row.recentPurchases} />;
+      } else if (row.showUrgencyLanguage) {
+        urgencyNotes[item.id] = <UrgencyLanguageNote />;
       }
     }
   }
