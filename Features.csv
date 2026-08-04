@@ -132,6 +132,6 @@ SHR-05,Empty state — cart (Cart's empty with a Go to store action),Shared UI &
 SHR-06,Locked-by-level state — violet lock heading level progress bar and levels-to-go label,Shared UI & States,Frontend,To Do
 SHR-07,Error / offline state — Can't reach TaskTails message with a Retry action,Shared UI & States,Frontend,To Do
 SHR-08,Not-found state plus coming-soon placeholders for Store and Zoo so neither dead-ends before their real screens ship,Shared UI & States,Frontend,Done
-MKT-01,Marketing site — desktop nav hero with CTAs avatar stack social proof and the hero phone,Marketing & Public Site,Frontend,To Do
-MKT-02,Marketing site — three-column feature grid how-it-works steps closing CTA and dark footer,Marketing & Public Site,Frontend,To Do
-MKT-03,Landing / welcome screen — full terracotta screen fox badge feature chips Get started and Log in,Marketing & Public Site,Frontend,To Do
+MKT-01,Marketing site — desktop nav hero with CTAs avatar stack social proof and the hero phone,Marketing & Public Site,Frontend,Done
+MKT-02,Marketing site — three-column feature grid how-it-works steps closing CTA and dark footer,Marketing & Public Site,Frontend,Done
+MKT-03,Landing / welcome screen — full terracotta screen fox badge feature chips Get started and Log in,Marketing & Public Site,Frontend,Done

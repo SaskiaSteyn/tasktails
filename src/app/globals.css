@@ -43,6 +43,16 @@
    The focus ring stays brand terracotta for the same reason. Revisit only if
    the pre-study user testing round surfaces legibility complaints.
 
+   MARKETING SITE (MKT-01/02/03) — measured when it landed, all resolved rather
+   than added to the exception pile, because none of them needed the brand
+   colours to move:
+     footer link on ink   #A89E92 → --color-on-dark-soft   3.09 → 4.59, passes
+     body copy            #5C5470 / #8A8178 → ink-soft            6.56+, passes
+   The one genuine exception is the welcome screen, whose ground is terracotta:
+   every ratio on it is already in the accepted list above (white 2.86,
+   brand-soft 2.54, terracotta-on-white 2.69), and it sets `--focus-ring` to
+   white with a dark halo exactly as the level-up celebration does.
+
    UNDECIDED — shipped by INF-12's persistent header, drawn exactly as the
    handoff frames specify, and awaiting the INF-14 pass. Measured, not guessed;
    see /style-guide §06. Each is the same trade already accepted above — an
@@ -86,6 +96,11 @@
   /* The frame's own width, matching the design's proportions at 400px. */
   --container-app: 25rem; /* 400px — `max-w-app` */
 
+  /* The marketing site's content column (MKT-01/02) — the width of the browser
+     frame the handoff draws it in, so every band centres on the same measure
+     however wide the viewport gets. Not a phone frame; see the note above. */
+  --container-site: 73.75rem; /* 1180px — `max-w-site` */
+
   /* ---- Fonts ---- */
   /* Fredoka: display, headings, numerals. Nunito: body, labels, all UI text. */
   --font-display: var(--font-fredoka), system-ui, sans-serif;
@@ -104,6 +119,14 @@
   /* Disabled text only. WCAG 1.4.3 exempts inactive controls, so this keeps the
      guide's original faint value — it must stay visibly "off". */
   --color-ink-disabled: #b8afa4;
+  /* Secondary text *on* the ink fill — the marketing footer's links and
+     copyright (MKT-02), the mirror of what `brand-soft` is for terracotta.
+     The frame draws these #A89E92, which is only 3.09 on ink; this is that
+     colour lightened along its own hue and saturation until it clears AA
+     (4.59 BPCA), the same fix and the same method the `ink-soft` entry in the
+     audit block above records. Unlike terracotta, ink *has* an in-family fix,
+     so this one is corrected rather than accepted as an exception. */
+  --color-on-dark-soft: #cdc7c1;
   --color-scrim: rgb(46 42 38 / 0.42); /* behind modals and sheets */
   --color-step-idle: #e7ddcc; /* step dots not yet reached */
   --color-border-track: #efe7da; /* borders, progress tracks */
