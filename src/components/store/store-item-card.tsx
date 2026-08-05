@@ -59,6 +59,12 @@ import type { StoreItemWithLock } from "@/lib/store";
  * (inline below the category label, not the absolute top-right corner), so
  * it renders directly in the card's normal flow rather than through the
  * `badge` wrapper. Same "unlocked only" rule as `badge`.
+ *
+ * A locked card is now a real `<button>` (SHR-06): tapping it calls
+ * `onLockedClick`, which `StoreBrowser` uses to show the full-screen
+ * "locked by level" state in place of the grid. Unlocked cards stay a plain
+ * `<div>` — their own interactive part is the "+" button, and a card cannot
+ * itself be a `<button>` while nesting one.
  */
 
 /** How long the post-click checkmark/error state stays up before reverting to "+". */
@@ -68,10 +74,13 @@ export function StoreItemCard({
   item,
   badge,
   note,
+  onLockedClick,
 }: {
   item: StoreItemWithLock;
   badge?: ReactNode;
   note?: ReactNode;
+  /** SHR-06 — only ever called for a locked card; unlocked cards have no use for it. */
+  onLockedClick?: () => void;
 }) {
   const locked = item.locked;
   const [status, setStatus] = useState<"idle" | "pending" | "added" | "error">("idle");
@@ -101,13 +110,13 @@ export function StoreItemCard({
     }
   }
 
-  return (
-    <div
-      className={cn(
-        "relative rounded-card border border-border-track px-[11px] py-3",
-        locked ? "bg-[#F2EEE7]" : "bg-warm",
-      )}
-    >
+  const cardClassName = cn(
+    "relative w-full rounded-card border border-border-track px-[11px] py-3",
+    locked ? "bg-[#F2EEE7] text-left transition-colors duration-120 hover:border-checkbox" : "bg-warm",
+  );
+
+  const content = (
+    <>
       {badge && (
         <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1">
           {badge}
@@ -187,6 +196,19 @@ export function StoreItemCard({
           </span>
         </div>
       )}
-    </div>
+    </>
+  );
+
+  return locked ? (
+    <button
+      type="button"
+      onClick={onLockedClick}
+      aria-label={`${item.name}, locked until level ${item.levelRequired}`}
+      className={cardClassName}
+    >
+      {content}
+    </button>
+  ) : (
+    <div className={cardClassName}>{content}</div>
   );
 }

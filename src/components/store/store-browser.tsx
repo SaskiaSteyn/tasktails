@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
+import { LockedByLevelState } from "@/components/store/locked-by-level-state";
 import { StoreItemCard } from "@/components/store/store-item-card";
 import type { StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
@@ -51,20 +52,30 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * `urgencyNotes` (URG-04) is the same pattern again for `<RecentPurchasesBadge
  * />`, kept as a separate map from `urgencyBadges` since it renders through
  * `StoreItemCard`'s different `note` slot, not the corner-badge one.
+ *
+ * `level` (SHR-06) is the signed-in user's current level, read once here so
+ * tapping a locked card can show the full-screen "locked by level" state
+ * (`LockedByLevelState`) without a second round trip — `selectedLocked`
+ * swaps it in for the search/chips/grid entirely, the same "replace the
+ * content, keep the chrome" pattern `CartPanel`'s empty/confirmation states
+ * use, rather than a modal stacked on top.
  */
 export function StoreBrowser({
   items,
   flashSaleBanner,
   urgencyBadges,
   urgencyNotes,
+  level,
 }: {
   items: StoreItemWithLock[];
   flashSaleBanner?: ReactNode;
   urgencyBadges?: Record<string, ReactNode>;
   urgencyNotes?: Record<string, ReactNode>;
+  level: number;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<StoreItemCategory | "ALL">("ALL");
+  const [selectedLocked, setSelectedLocked] = useState<StoreItemWithLock | null>(null);
 
   const visible = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
@@ -76,6 +87,16 @@ export function StoreBrowser({
   }, [items, query, category]);
 
   const activeLabel = CATEGORY_CHIPS.find((chip) => chip.value === category)?.label;
+
+  if (selectedLocked) {
+    return (
+      <LockedByLevelState
+        item={selectedLocked}
+        level={level}
+        onDismiss={() => setSelectedLocked(null)}
+      />
+    );
+  }
 
   return (
     <>
@@ -145,6 +166,7 @@ export function StoreBrowser({
               item={item}
               badge={urgencyBadges?.[item.id]}
               note={urgencyNotes?.[item.id]}
+              onLockedClick={() => setSelectedLocked(item)}
             />
           ))}
         </div>

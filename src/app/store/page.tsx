@@ -21,7 +21,7 @@ import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { cartForUser } from "@/lib/cart";
-import { storeItemsForUser } from "@/lib/store";
+import { levelOf, storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
 import { urgencyDataForItems } from "@/lib/urgency";
 
@@ -98,6 +98,12 @@ export const metadata: Metadata = {
  * for a 172px card. `urgencyDataForItems()`'s `noteSelection` seed (URG-08)
  * already guarantees at most one of the four is ever true, so this is a
  * plain if/else-if chain rather than needing its own selection logic here.
+ *
+ * `level` (SHR-06) is read via `levelOf()` — the same gate check
+ * `storeItemsForUser()` already runs internally to resolve each item's own
+ * `locked` flag — so `StoreBrowser` can show the full-screen "locked by
+ * level" state's progress bar/levels-to-go label without a second fetch
+ * when a locked card is tapped.
  */
 export default async function StorePage() {
   const session = await auth();
@@ -107,7 +113,7 @@ export default async function StorePage() {
 
   const items = await storeItemsForUser(userId);
 
-  const [cart, showFlashSale, urgencyRows] = await Promise.all([
+  const [cart, showFlashSale, urgencyRows, level] = await Promise.all([
     cartForUser(userId),
     groupGatedData(() => true),
     groupGatedData(() =>
@@ -116,6 +122,7 @@ export default async function StorePage() {
         items.map((item) => item.id),
       ),
     ),
+    levelOf(userId),
   ]);
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
@@ -157,6 +164,7 @@ export default async function StorePage() {
           flashSaleBanner={showFlashSale ? <FlashSaleBanner /> : null}
           urgencyBadges={urgencyBadges}
           urgencyNotes={urgencyNotes}
+          level={level}
         />
       </AppShell>
     </CartCountProvider>
