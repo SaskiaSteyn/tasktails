@@ -128,7 +128,7 @@ SHR-01,Bottom nav — four floating tab circles plus a raised central add button
 SHR-02,Inline date-picker popover — attaches beneath the due-date field with quick chips month nav and a square-cell month grid,Shared UI & States,Frontend,Done
 SHR-03,Confirm modal component — one shared component with destructive and non-destructive variants stacked full-width actions and scrim dismiss,Shared UI & States,Frontend,Done
 SHR-04,Empty state — tasks (All clear! with a New task action),Shared UI & States,Frontend,Done
-SHR-05,Empty state — cart (Cart's empty with a Go to store action),Shared UI & States,Frontend,To Do
+SHR-05,Empty state — cart (Cart's empty with a Go to store action),Shared UI & States,Frontend,Done
 SHR-06,Locked-by-level state — violet lock heading level progress bar and levels-to-go label,Shared UI & States,Frontend,To Do
 SHR-07,Error / offline state — Can't reach TaskTails message with a Retry action,Shared UI & States,Frontend,To Do
 SHR-08,Not-found state plus coming-soon placeholders for Store and Zoo so neither dead-ends before their real screens ship,Shared UI & States,Frontend,Done
