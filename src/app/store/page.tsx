@@ -5,14 +5,25 @@ import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { PersistentHeader } from "@/components/layout/persistent-header";
+import type { ReactNode } from "react";
+
+import { BundleTimerBadge } from "@/components/store/bundle-timer-badge";
+import { CartActivityBadge } from "@/components/store/cart-activity-badge";
 import { CartCountProvider } from "@/components/store/cart-count-context";
 import { CartLink } from "@/components/store/cart-link";
+import { CurrencyUrgencyBadge } from "@/components/store/currency-urgency-badge";
+import { FlashSaleBanner } from "@/components/store/flash-sale-banner";
+import { RecentPurchasesBadge } from "@/components/store/recent-purchases-badge";
+import { StockBadge } from "@/components/store/stock-badge";
 import { StoreBrowser } from "@/components/store/store-browser";
+import { UrgencyLanguageNote } from "@/components/store/urgency-language-note";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { cartForUser } from "@/lib/cart";
 import { storeItemsForUser } from "@/lib/store";
+import { groupGatedData } from "@/lib/study-group";
+import { urgencyDataForItems } from "@/lib/urgency";
 
 export const metadata: Metadata = {
   title: "Store · TaskTails",
@@ -54,6 +65,39 @@ export const metadata: Metadata = {
  * `StoreBrowser` filters that same array client-side rather than re-fetching
  * per keystroke, since STOR-02 asks for real-time filtering and every item's
  * `locked` state is already resolved for this user in the one server read.
+ *
+ * `showFlashSale` (URG-01) goes through `groupGatedData()` — `true` for Group
+ * B, `null` for Group A/signed-out — rather than `currentStudyGroup()`
+ * directly, both to reuse the one enforcement point INF-17 built for exactly
+ * this and to keep the group value itself from ever reaching a client
+ * component: only the pre-decided `<FlashSaleBanner />` element (or `null`)
+ * crosses into `StoreBrowser`, never a boolean the client could branch on.
+ *
+ * `urgencyBadges` (URG-02/URG-03) follows the same `groupGatedData()`
+ * pattern, one level deeper: `urgencyDataForItems()` (URG-08) needs the
+ * resolved item ids, so `items` is awaited before the `Promise.all` rather
+ * than inside it, and only unlocked items get badges built for them — the
+ * same "unlocked only" call STOR-05's add-to-cart button already made.
+ * `urgencyDataForItems()` is called directly rather than fetching
+ * `GET /api/store/urgency-data` over HTTP — this is already a server
+ * component, so that would just be an unnecessary network hop back to
+ * itself, same reasoning as reading `storeItemsForUser()` directly instead
+ * of `/api/store/items`.
+ *
+ * Each unlocked item gets exactly one of `<StockBadge />`/`<CartActivityBadge
+ * />`, per `urgencyDataForItems()`'s own seeded `badgeSelection` — mutually
+ * exclusive per the user (2026-08-04, after both tickets had already
+ * shipped allowing both at once), same convention as the note slot below.
+ *
+ * `urgencyNotes` (URG-04/URG-05/URG-06/URG-07) is a second map for a
+ * different card slot (below the category label, not the corner badges) —
+ * `<RecentPurchasesBadge />`, `<UrgencyLanguageNote />`, `<BundleTimerBadge
+ * />`, or `<CurrencyUrgencyBadge />`, never more than one: the user chose
+ * mutual exclusivity for this slot (unlike the corner badges' "both
+ * allowed"), since several full sentences/pills stacked read as too crowded
+ * for a 172px card. `urgencyDataForItems()`'s `noteSelection` seed (URG-08)
+ * already guarantees at most one of the four is ever true, so this is a
+ * plain if/else-if chain rather than needing its own selection logic here.
  */
 export default async function StorePage() {
   const session = await auth();
@@ -61,11 +105,43 @@ export default async function StorePage() {
   if (!userId) redirect("/login");
   await redirectAdminsAway(userId);
 
-  const [items, cart] = await Promise.all([
-    storeItemsForUser(userId),
+  const items = await storeItemsForUser(userId);
+
+  const [cart, showFlashSale, urgencyRows] = await Promise.all([
     cartForUser(userId),
+    groupGatedData(() => true),
+    groupGatedData(() =>
+      urgencyDataForItems(
+        userId,
+        items.map((item) => item.id),
+      ),
+    ),
   ]);
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
+
+  const urgencyBadges: Record<string, ReactNode> = {};
+  const urgencyNotes: Record<string, ReactNode> = {};
+  if (urgencyRows) {
+    for (const item of items) {
+      if (item.locked) continue;
+      const row = urgencyRows.find((candidate) => candidate.itemId === item.id);
+      if (!row) continue;
+      if (row.showStockBadge) {
+        urgencyBadges[item.id] = <StockBadge stock={row.stock} />;
+      } else if (row.showCartActivityBadge) {
+        urgencyBadges[item.id] = <CartActivityBadge count={row.cartActivity} />;
+      }
+      if (row.showRecentPurchases) {
+        urgencyNotes[item.id] = <RecentPurchasesBadge count={row.recentPurchases} />;
+      } else if (row.showUrgencyLanguage) {
+        urgencyNotes[item.id] = <UrgencyLanguageNote />;
+      } else if (row.showBundleTimer) {
+        urgencyNotes[item.id] = <BundleTimerBadge />;
+      } else if (row.showCurrencyUrgency) {
+        urgencyNotes[item.id] = <CurrencyUrgencyBadge />;
+      }
+    }
+  }
 
   return (
     <CartCountProvider initialCount={cartCount}>
@@ -76,7 +152,12 @@ export default async function StorePage() {
       >
         <SessionTracker />
         <StoreTimeTracker />
-        <StoreBrowser items={items} />
+        <StoreBrowser
+          items={items}
+          flashSaleBanner={showFlashSale ? <FlashSaleBanner /> : null}
+          urgencyBadges={urgencyBadges}
+          urgencyNotes={urgencyNotes}
+        />
       </AppShell>
     </CartCountProvider>
   );
