@@ -32,7 +32,7 @@ export function MarketingNav() {
     <header className="sticky top-0 z-10 flex-none border-b border-border-track bg-surface">
       <nav
         aria-label="Main"
-        className="mx-auto flex max-w-site items-center justify-between px-10 py-[18px]"
+        className="mx-auto flex max-w-site items-center justify-between px-5 py-3 md:px-10 md:py-[18px]"
       >
         <Link href="/" className="flex items-center gap-[11px]">
           <Image
@@ -41,16 +41,22 @@ export function MarketingNav() {
             width={38}
             height={38}
             priority
-            className="block size-[38px] flex-none rounded-[11px]"
+            className="block size-8 flex-none rounded-[11px] md:size-[38px]"
           />
-          <span className="font-display text-[22px] font-semibold text-ink">
+          <span className="font-display text-[19px] font-semibold text-ink md:text-[22px]">
             Task<span className="text-terracotta">Tails</span>
           </span>
         </Link>
 
-        <ul className="flex items-center gap-[30px]">
+        <ul className="flex items-center gap-4 md:gap-[30px]">
+          {/* The three in-page anchors drop below `md` rather than folding into
+              a hamburger. A menu button is a whole disclosure widget — button,
+              expanded state, focus management, Escape — for a page that is one
+              short scroll on a phone, where the sections it links to are a
+              thumb-flick away. What a narrow screen actually needs from this bar
+              is the two things it cannot scroll to: sign in, and sign up. */}
           {LINKS.map((link) => (
-            <li key={link.href}>
+            <li key={link.href} className="hidden md:block">
               <a
                 href={link.href}
                 className="text-[14px] font-bold text-ink-soft hover:text-ink"
@@ -60,14 +66,21 @@ export function MarketingNav() {
             </li>
           ))}
           <li>
-            <Link href="/login" className="text-[14px] font-bold text-terracotta">
+            <Link
+              href="/login"
+              className="text-[13px] font-bold text-terracotta md:text-[14px]"
+            >
               Log in
             </Link>
           </li>
           <li>
             <Link
               href="/register"
-              className={buttonClasses({ size: "inline", fullWidth: false })}
+              className={buttonClasses({
+                size: "inline",
+                fullWidth: false,
+                className: "max-md:h-10 max-md:px-3 max-md:text-[13px]",
+              })}
             >
               Get started free
             </Link>

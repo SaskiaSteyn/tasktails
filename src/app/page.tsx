@@ -15,27 +15,35 @@ export const metadata: Metadata = {
  * The public entry point — MKT-01, MKT-02 and MKT-03, which are one route and
  * two designs rather than three pages.
  *
- * The handoff draws the marketing site in a ~1180px browser frame and the
- * landing / welcome screen in the same 300×640 phone frame as every app screen,
- * and Module 8 in `Features.md` says so outright: "Desktop-first for MKT-01/02
- * (the only part of the product that is), mobile for MKT-03". They are the same
- * front door at two sizes, so `/` serves whichever fits:
+ * **The split is app vs website, not phone vs desktop.** The welcome screen is
+ * the installed PWA's splash: you get it when TaskTails is launched from the
+ * home screen, at any size. Everyone who opens the URL in a browser gets the
+ * marketing site and logs in from there — a phone browser is still the website,
+ * however narrow the screen.
  *
- *   < 480px          welcome screen, edge to edge
- *   480px – 1023px   welcome screen as the centred 400×640 card, exactly what
- *                    `AppShell` does to every other screen at those widths
- *   >= 1024px        the marketing site
+ *   installed app (any width)   welcome screen — edge to edge on a phone, the
+ *                               centred 400×640 card from `frame:` up, exactly
+ *                               what `AppShell` does to every other screen
+ *   browser (any width)         the marketing site, responsive from 320px up
  *
- * The switch is CSS, not a media-query hook, so there is no hydration flash and
- * no JavaScript needed to pick — both trees are server-rendered and one is
- * `display: none`. `lg` rather than `frame:` is the cut because 1024px is the
- * narrowest the 1180px desktop layout survives; between the two breakpoints a
- * tablet gets the phone card on the board, which is the app's own answer to
- * that range and not an invention.
+ * This replaced a width-based split (welcome below `lg`, marketing above), which
+ * read the handoff's "desktop-first for MKT-01/02, mobile for MKT-03" as a
+ * breakpoint. It isn't one — it describes which *frame* each design was drawn
+ * in, and the consequence of treating it as a breakpoint was that a phone
+ * visiting the public site never saw the marketing page at all, only a splash
+ * screen for an app it had no way to install. NFR-GEN-2 asks for both viewports,
+ * not one design each.
+ *
+ * `standalone:` is the manifest's `display: "standalone"` reported back through
+ * a media query — see the variant definition in globals.css. CSS, not a hook, so
+ * both trees are server-rendered and one is `display: none`: no hydration flash,
+ * no JavaScript needed to choose, and nothing to sniff a user agent for.
  *
  * Signed in, there is nothing here for you: `/tasks` is where a session belongs
  * (the same destination `AFTER_LOGIN` in the login page uses), and `/tasks`
  * bounces admins on to `/admin` itself, so this needs no role read of its own.
+ * That applies to the app and the website alike — the splash is for launching,
+ * not for sitting on top of a live session.
  */
 export default async function Home() {
   const session = await auth();
@@ -43,8 +51,8 @@ export default async function Home() {
 
   return (
     <>
-      <WelcomeScreen className="lg:hidden" />
-      <MarketingSite className="hidden lg:flex" />
+      <WelcomeScreen className="hidden standalone:flex" />
+      <MarketingSite className="flex standalone:hidden" />
     </>
   );
 }

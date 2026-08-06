@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* `standalone:` — true only when the page is running as the installed PWA,
+   launched from the home screen rather than opened in a browser tab. The
+   manifest (`src/app/manifest.ts`) declares `display: "standalone"`, and this is
+   the media query that reports it back.
+
+   It is what separates "the app" from "the website" on one deployment: `/`
+   shows the welcome screen under this variant and the marketing site without it
+   (`src/app/page.tsx`). A media query, not a user-agent test — the question is
+   genuinely "how was this launched", which is exactly what it answers, and a
+   phone browser is still the website however small the screen gets. */
+@custom-variant standalone (@media (display-mode: standalone));
+
 /* ==========================================================================
    TaskTails design tokens — see design_handoff/TaskTails Style Guide.dc.html
    Warm flat UI. Neutral base + four accents, each with fill / soft tint /

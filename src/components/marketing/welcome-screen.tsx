@@ -62,8 +62,12 @@ export function WelcomeScreen({ className }: { className?: string }) {
   return (
     <div
       style={{ "--focus-ring": "#fff" } as React.CSSProperties}
+      // The caller supplies the `display` (`hidden standalone:flex`), so the
+      // base list deliberately carries no `flex` of its own — `cn` is a plain
+      // join, not tailwind-merge, and two display utilities would both survive
+      // with stylesheet order deciding. Same arrangement `MarketingSite` uses.
       className={cn(
-        "flex min-h-0 flex-1 justify-center bg-board frame:items-center frame:p-6 [&_:focus-visible]:shadow-[0_0_0_5px_rgb(46_42_38/0.45)]",
+        "min-h-0 flex-1 justify-center bg-board frame:items-center frame:p-6 [&_:focus-visible]:shadow-[0_0_0_5px_rgb(46_42_38/0.45)]",
         className,
       )}
     >

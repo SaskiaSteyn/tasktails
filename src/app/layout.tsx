@@ -22,6 +22,19 @@ export const metadata: Metadata = {
   description:
     "Turn your to-do list into a cosy sanctuary. Finish tasks, earn coins, and grow a zoo of little friends.",
   icons: { icon: "/brand/icon.svg" },
+  // iOS honours the manifest from 16.4 on, but `apple-mobile-web-app-capable`
+  // is still what makes an older iPhone's "Add to Home Screen" launch
+  // standalone rather than in a browser chrome — and standalone is the whole
+  // signal `/` switches on (`src/app/manifest.ts`). `statusBarStyle` stays
+  // `default`: `black-translucent` runs content under the status bar, and while
+  // `viewportFit: "cover"` below plus the safe-area padding in `AppShell` could
+  // absorb that, an opaque bar is the safer default for a study instrument
+  // nobody will be on hand to debug.
+  appleWebApp: {
+    capable: true,
+    title: "TaskTails",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {

@@ -76,24 +76,26 @@ const STEPS = [
 export function MarketingFeatures() {
   return (
     // `scroll-mt` so the sticky nav does not cover the heading the anchor lands
-    // on — the nav is 77px tall, rounded up with room to breathe.
-    <section id="features" className="scroll-mt-[88px]">
-      <div className="mx-auto max-w-site px-10 pt-16 pb-5 text-center">
-        <h2 className="font-display text-[36px] font-semibold">
+    // on. The nav is 77px tall from `md` up and 56px below it (smaller logo,
+    // tighter padding), so the offset shrinks with it — one fixed value would
+    // either overlap on desktop or leave a visible gap on a phone.
+    <section id="features" className="scroll-mt-[68px] md:scroll-mt-[88px]">
+      <div className="mx-auto max-w-site px-5 pt-12 pb-4 text-center md:px-10 md:pt-16 md:pb-5">
+        <h2 className="font-display text-[27px] font-semibold sm:text-[32px] md:text-[36px]">
           Everything you need to stay on track
         </h2>
-        <p className="mt-[10px] text-[16px] text-ink-soft">
+        <p className="mt-[10px] text-[15px] text-ink-soft md:text-[16px]">
           A real task manager underneath the fluff — with rewards that actually
           make you come back.
         </p>
       </div>
 
-      <ul className="mx-auto grid max-w-site grid-cols-3 gap-5 px-10 pt-[34px] pb-14">
+      <ul className="mx-auto grid max-w-site grid-cols-1 gap-4 px-5 pt-6 pb-10 md:grid-cols-3 md:gap-5 md:px-10 md:pt-[34px] md:pb-14">
         {FEATURES.map((feature) => (
           <li
             key={feature.title}
             id={feature.id}
-            className="scroll-mt-[88px] rounded-card-lg border border-border-track bg-warm p-[26px]"
+            className="scroll-mt-[68px] rounded-card-lg border border-border-track bg-warm p-5 md:scroll-mt-[88px] md:p-[26px]"
           >
             <span
               className={`mb-4 flex size-[52px] items-center justify-center rounded-[14px] ${feature.well} ${feature.mark}`}
@@ -113,13 +115,13 @@ export function MarketingFeatures() {
 
 export function MarketingHowItWorks() {
   return (
-    <section id="how-it-works" className="scroll-mt-[88px] bg-warm">
-      <div className="mx-auto max-w-site px-10 py-[60px]">
-        <h2 className="mb-11 text-center font-display text-[36px] font-semibold">
+    <section id="how-it-works" className="scroll-mt-[68px] bg-warm md:scroll-mt-[88px]">
+      <div className="mx-auto max-w-site px-5 py-12 md:px-10 md:py-[60px]">
+        <h2 className="mb-8 text-center font-display text-[27px] font-semibold sm:text-[32px] md:mb-11 md:text-[36px]">
           Three steps to a happier list
         </h2>
 
-        <ol className="mx-auto flex max-w-[980px] gap-[26px]">
+        <ol className="mx-auto flex max-w-[980px] flex-col gap-8 md:flex-row md:gap-[26px]">
           {STEPS.map((step, index) => (
             <li key={step.title} className="flex-1 text-center">
               <span
@@ -142,13 +144,13 @@ export function MarketingHowItWorks() {
 
 export function MarketingClosingCta() {
   return (
-    <section className="mx-auto max-w-site px-10 py-[70px] text-center">
-      <h2 className="font-display text-[42px] leading-[1.1] font-semibold">
+    <section className="mx-auto max-w-site px-5 py-14 text-center md:px-10 md:py-[70px]">
+      <h2 className="font-display text-[29px] leading-[1.1] font-semibold sm:text-[36px] md:text-[42px]">
         Your to-do list has
         <br />
         never been this cute.
       </h2>
-      <p className="mt-4 mb-7 text-[16px] text-ink-soft">
+      <p className="mt-4 mb-7 text-[15px] text-ink-soft md:text-[16px]">
         Free to start. No card required.
       </p>
       <Link
@@ -156,7 +158,7 @@ export function MarketingClosingCta() {
         className={buttonClasses({
           size: "hero",
           fullWidth: false,
-          className: "h-[54px] px-8 text-[18px]",
+          className: "h-[54px] px-8 text-[17px] md:text-[18px]",
         })}
       >
         Get started free
@@ -184,7 +186,7 @@ export function MarketingFooter() {
       style={{ "--focus-ring": "#fff" } as React.CSSProperties}
       className="bg-ink"
     >
-      <div className="mx-auto flex max-w-site items-center justify-between px-10 py-[34px]">
+      <div className="mx-auto flex max-w-site flex-col items-center justify-between gap-5 px-5 py-8 md:flex-row md:gap-0 md:px-10 md:py-[34px]">
         <div className="flex items-center gap-[10px]">
           <Image
             src="/brand/icon-light.svg"
@@ -198,7 +200,7 @@ export function MarketingFooter() {
           </span>
         </div>
 
-        <ul className="flex items-center gap-[26px] text-[13px] text-on-dark-soft">
+        <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[13px] text-on-dark-soft md:gap-x-[26px]">
           <li>
             <a href="#features" className="text-on-dark-soft hover:text-white">
               Features
