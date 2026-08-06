@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { AchievementUnlockProvider } from "@/components/economy/achievement-unlock-provider";
 import { LevelUpProvider } from "@/components/economy/level-up-provider";
+import { ConnectivityGate } from "@/components/layout/connectivity-gate";
 import { cn } from "@/lib/cn";
 
 /**
@@ -34,6 +35,13 @@ import { cn } from "@/lib/cn";
  * content size unless something says otherwise, so without it every level down
  * the chain would grow to fit whatever the screen renders and drag `nav` down
  * with it — which is exactly the bug this replaced.
+ *
+ * `ConnectivityGate` (SHR-07) wraps `children` only, inside `main` — every
+ * screen that renders `AppShell` gets the offline takeover for free, header
+ * and nav included, without each one wiring it up separately. The `(auth)`
+ * login/register screens don't render `AppShell` at all, so they're outside
+ * its reach — deliberate, since the mock's "we'll sync your progress"
+ * copy only makes sense once there is progress to sync.
  */
 export function AppShell({
   header,
@@ -76,7 +84,7 @@ export function AppShell({
               tabIndex={-1}
               className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto", className)}
             >
-              {children}
+              <ConnectivityGate>{children}</ConnectivityGate>
             </main>
             {nav ?? (
               // No nav to absorb it, so the content area clears the home indicator.
