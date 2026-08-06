@@ -1,8 +1,9 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 
+import { LockedByLevelState } from "@/components/store/locked-by-level-state";
 import { StoreItemCard } from "@/components/store/store-item-card";
 import type { StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
@@ -35,10 +36,46 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * Search is case-insensitive substring match on `name` only — the ticket's
  * own wording ("filters visible items by name") — not description or
  * category, which the chips own separately.
+ *
+ * `flashSaleBanner` (URG-01) is a slot, not a boolean: `StorePage` decides
+ * server-side whether the signed-in user is in Group B and only then renders
+ * `<FlashSaleBanner />` into it, so this client component never receives —
+ * and can never branch on — the study group itself (`study-group.ts`'s
+ * isolation rule, NFR-TASK-3).
+ *
+ * `urgencyBadges` (URG-02/URG-03) is the same slot pattern, keyed per item:
+ * `StorePage` builds whichever badge(s) an unlocked item should have —
+ * `<StockBadge />`, `<CartActivityBadge />`, or both — and hands the whole
+ * map down, so a lookup by id is all this component (or `StoreItemCard`)
+ * ever does with it.
+ *
+ * `urgencyNotes` (URG-04) is the same pattern again for `<RecentPurchasesBadge
+ * />`, kept as a separate map from `urgencyBadges` since it renders through
+ * `StoreItemCard`'s different `note` slot, not the corner-badge one.
+ *
+ * `level` (SHR-06) is the signed-in user's current level, read once here so
+ * tapping a locked card can show the full-screen "locked by level" state
+ * (`LockedByLevelState`) without a second round trip — `selectedLocked`
+ * swaps it in for the search/chips/grid entirely, the same "replace the
+ * content, keep the chrome" pattern `CartPanel`'s empty/confirmation states
+ * use, rather than a modal stacked on top.
  */
-export function StoreBrowser({ items }: { items: StoreItemWithLock[] }) {
+export function StoreBrowser({
+  items,
+  flashSaleBanner,
+  urgencyBadges,
+  urgencyNotes,
+  level,
+}: {
+  items: StoreItemWithLock[];
+  flashSaleBanner?: ReactNode;
+  urgencyBadges?: Record<string, ReactNode>;
+  urgencyNotes?: Record<string, ReactNode>;
+  level: number;
+}) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<StoreItemCategory | "ALL">("ALL");
+  const [selectedLocked, setSelectedLocked] = useState<StoreItemWithLock | null>(null);
 
   const visible = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
@@ -50,6 +87,16 @@ export function StoreBrowser({ items }: { items: StoreItemWithLock[] }) {
   }, [items, query, category]);
 
   const activeLabel = CATEGORY_CHIPS.find((chip) => chip.value === category)?.label;
+
+  if (selectedLocked) {
+    return (
+      <LockedByLevelState
+        item={selectedLocked}
+        level={level}
+        onDismiss={() => setSelectedLocked(null)}
+      />
+    );
+  }
 
   return (
     <>
@@ -64,6 +111,8 @@ export function StoreBrowser({ items }: { items: StoreItemWithLock[] }) {
           className="w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-disabled py-[5px]"
         />
       </label>
+
+      {flashSaleBanner}
 
       <div
         role="radiogroup"
@@ -112,7 +161,13 @@ export function StoreBrowser({ items }: { items: StoreItemWithLock[] }) {
       ) : (
         <div className="grid grid-cols-2 gap-[11px]">
           {visible.map((item) => (
-            <StoreItemCard key={item.id} item={item} />
+            <StoreItemCard
+              key={item.id}
+              item={item}
+              badge={urgencyBadges?.[item.id]}
+              note={urgencyNotes?.[item.id]}
+              onLockedClick={() => setSelectedLocked(item)}
+            />
           ))}
         </div>
       )}

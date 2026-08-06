@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Lock, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 
 import { useCartCount } from "@/components/store/cart-count-context";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
@@ -40,12 +40,48 @@ import type { StoreItemWithLock } from "@/lib/store";
  * in `item-visual.tsx` now — factored out when STOR-06's cart rows needed
  * the exact same treatment, so there's one definition instead of two that
  * could drift.
+ *
+ * `badge` (URG-02/URG-03) is an inert slot, not a stock/cart number:
+ * `StorePage` decides server-side which one of `<StockBadge />`/
+ * `<CartActivityBadge />` an item gets — mutually exclusive, per the user
+ * (2026-08-04, after both tickets had already shipped allowing both at
+ * once) — and only ever unlocked items get one (advertising urgency on
+ * something you can't yet buy reads as nonsensical, same call STOR-05's
+ * add-to-cart button already made for its own unlocked-only rendering) —
+ * this component just renders whatever it's handed, same as `StoreBrowser`'s
+ * own `flashSaleBanner` prop. The wrapper around `{badge}` is the card's
+ * *only* `position: absolute` element in this corner; `StockBadge`/
+ * `CartActivityBadge` are plain, unpositioned pills, so the wrapper still
+ * lays out a single child correctly without any special-casing.
+ *
+ * `note` (URG-04) is a second, independent inert slot for
+ * `<RecentPurchasesBadge />` — a different card position from `badge`
+ * (inline below the category label, not the absolute top-right corner), so
+ * it renders directly in the card's normal flow rather than through the
+ * `badge` wrapper. Same "unlocked only" rule as `badge`.
+ *
+ * A locked card is now a real `<button>` (SHR-06): tapping it calls
+ * `onLockedClick`, which `StoreBrowser` uses to show the full-screen
+ * "locked by level" state in place of the grid. Unlocked cards stay a plain
+ * `<div>` — their own interactive part is the "+" button, and a card cannot
+ * itself be a `<button>` while nesting one.
  */
 
 /** How long the post-click checkmark/error state stays up before reverting to "+". */
 const FEEDBACK_MS = 1200;
 
-export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
+export function StoreItemCard({
+  item,
+  badge,
+  note,
+  onLockedClick,
+}: {
+  item: StoreItemWithLock;
+  badge?: ReactNode;
+  note?: ReactNode;
+  /** SHR-06 — only ever called for a locked card; unlocked cards have no use for it. */
+  onLockedClick?: () => void;
+}) {
   const locked = item.locked;
   const [status, setStatus] = useState<"idle" | "pending" | "added" | "error">("idle");
   // Tracks the pending revert-to-idle timer so a second click's own timer
@@ -74,13 +110,19 @@ export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
     }
   }
 
-  return (
-    <div
-      className={cn(
-        "rounded-card border border-border-track px-[11px] py-3",
-        locked ? "bg-[#F2EEE7]" : "bg-warm",
+  const cardClassName = cn(
+    "relative w-full rounded-card border border-border-track px-[11px] py-3",
+    locked ? "bg-[#F2EEE7] text-left transition-colors duration-120 hover:border-checkbox" : "bg-warm",
+  );
+
+  const content = (
+    <>
+      {badge && (
+        <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1">
+          {badge}
+        </div>
       )}
-    >
+
       <ItemWell
         item={item}
         locked={locked}
@@ -100,6 +142,8 @@ export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
         {item.name}
       </p>
       <p className="mb-2 text-[10.5px] text-ink-faint">{CATEGORY_LABEL[item.category]}</p>
+
+      {note}
 
       {locked ? (
         <div className="flex items-center justify-center gap-[5px] rounded-[8px] bg-[#E9E3D9] py-[5px] text-[11px] font-extrabold text-ink-soft">
@@ -152,6 +196,19 @@ export function StoreItemCard({ item }: { item: StoreItemWithLock }) {
           </span>
         </div>
       )}
-    </div>
+    </>
+  );
+
+  return locked ? (
+    <button
+      type="button"
+      onClick={onLockedClick}
+      aria-label={`${item.name}, locked until level ${item.levelRequired}`}
+      className={cardClassName}
+    >
+      {content}
+    </button>
+  ) : (
+    <div className={cardClassName}>{content}</div>
   );
 }

@@ -76,14 +76,14 @@ STOR-15,DELETE /api/store/cart/[id] — remove item from cart,Store,Backend,Done
 STOR-16,POST /api/store/checkout — validate cart check coin balance check level gates deduct coins create Transaction and InventoryItem records log telemetry,Store,Backend,Done
 STOR-17,GET /api/store/history — list the authenticated user's purchase transactions,Store,Backend,Done
 STOR-18,Telemetry logging — log STORE_VISIT ITEM_VIEWED and ITEM_PURCHASED events to TelemetryEvent on relevant actions,Store,Backend,Done
-URG-01,Countdown timer (flash sale) — MM:SS countdown shown on item cards resets on page load to a random value within a configured window [Group B only],Store — False Urgency,Frontend,To Do
-URG-02,Stock depletion indicator — Only X left! badge on item cards X is a seeded random value per item per session [Group B only],Store — False Urgency,Frontend,To Do
-URG-03,Cart activity indicator — N people have this in their cart label on item cards N is a seeded random value [Group B only],Store — False Urgency,Frontend,To Do
-URG-04,Recent purchases indicator — X sold in the last hour label on item cards X is a seeded random value [Group B only],Store — False Urgency,Frontend,To Do
-URG-05,Urgency language overlay — Last chance! / Don't miss out! text on item cards or item detail [Group B only],Store — False Urgency,Frontend,To Do
-URG-06,Bundle timer — Buy 2 get 1 free offer ends in MM:SS banner timer resets on page load [Group B only],Store — False Urgency,Frontend,To Do
-URG-07,Currency-based urgency indicator — Double XP for purchases this hour only or Bonus coins if bought before midnight banner [Group B only],Store — False Urgency,Frontend,To Do
-URG-08,GET /api/store/urgency-data — return seeded fabricated urgency values for Group B users only returns empty for Group A,Store — False Urgency,Backend,To Do
+URG-01,Countdown timer (flash sale) — MM:SS countdown shown on item cards resets on page load to a random value within a configured window [Group B only],Store — False Urgency,Frontend,Done
+URG-02,Stock depletion indicator — Only X left! badge on item cards X is a seeded random value per item per session [Group B only],Store — False Urgency,Frontend,Done
+URG-03,Cart activity indicator — N people have this in their cart label on item cards N is a seeded random value [Group B only],Store — False Urgency,Frontend,Done
+URG-04,Recent purchases indicator — X sold in the last hour label on item cards X is a seeded random value [Group B only],Store — False Urgency,Frontend,Done
+URG-05,Urgency language overlay — Last chance! / Don't miss out! text on item cards or item detail [Group B only],Store — False Urgency,Frontend,Done
+URG-06,Bundle timer — Buy 2 get 1 free offer ends in MM:SS banner timer resets on page load [Group B only],Store — False Urgency,Frontend,Done
+URG-07,Currency-based urgency indicator — Double XP for purchases this hour only or Bonus coins if bought before midnight banner [Group B only],Store — False Urgency,Frontend,Done
+URG-08,GET /api/store/urgency-data — return seeded fabricated urgency values for Group B users only returns empty for Group A,Store — False Urgency,Backend,Done
 PET-01,Pet sanctuary view — displays all of the user's owned animals with their current visual state,Petting Zoo,Frontend,Done
 PET-02,Animal card — shows animal name image and current happiness/hunger state indicators,Petting Zoo,Frontend,Done
 PET-03,Pet interaction button — Pet action on animal card,Petting Zoo,Frontend,Done
@@ -128,9 +128,9 @@ SHR-01,Bottom nav — four floating tab circles plus a raised central add button
 SHR-02,Inline date-picker popover — attaches beneath the due-date field with quick chips month nav and a square-cell month grid,Shared UI & States,Frontend,Done
 SHR-03,Confirm modal component — one shared component with destructive and non-destructive variants stacked full-width actions and scrim dismiss,Shared UI & States,Frontend,Done
 SHR-04,Empty state — tasks (All clear! with a New task action),Shared UI & States,Frontend,Done
-SHR-05,Empty state — cart (Cart's empty with a Go to store action),Shared UI & States,Frontend,To Do
-SHR-06,Locked-by-level state — violet lock heading level progress bar and levels-to-go label,Shared UI & States,Frontend,To Do
-SHR-07,Error / offline state — Can't reach TaskTails message with a Retry action,Shared UI & States,Frontend,To Do
+SHR-05,Empty state — cart (Cart's empty with a Go to store action),Shared UI & States,Frontend,Done
+SHR-06,Locked-by-level state — violet lock heading level progress bar and levels-to-go label,Shared UI & States,Frontend,Done
+SHR-07,Error / offline state — Can't reach TaskTails message with a Retry action,Shared UI & States,Frontend,Done
 SHR-08,Not-found state plus coming-soon placeholders for Store and Zoo so neither dead-ends before their real screens ship,Shared UI & States,Frontend,Done
 MKT-01,Marketing site — desktop nav hero with CTAs avatar stack social proof and the hero phone,Marketing & Public Site,Frontend,Done
 MKT-02,Marketing site — three-column feature grid how-it-works steps closing CTA and dark footer,Marketing & Public Site,Frontend,Done
