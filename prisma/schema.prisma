@@ -112,6 +112,17 @@ enum StoreItemCategory {
   DECORATIONS
 }
 
+/// Rarity tier per every table in Gatcha stuffs.pdf — Common/Rare/Epic/Legendary,
+/// deliberately its own vocabulary rather than reusing the Task complexity tiers
+/// (Gatcha.md GACHA-01, research_gacha_mechanics.md G-3). Drives the Lucky Box
+/// pull's weighting (GACHA-04) once GACHA-03 seeds the real catalogue.
+enum StoreItemRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
 /// INF-04.
 model StoreItem {
   id       String            @id @default(cuid())
@@ -122,6 +133,13 @@ model StoreItem {
   levelRequired  Int
   coinPrice      Int
   imageUrl       String
+
+  /// Nullable (GACHA-01) — INF-20's 7 placeholder items don't map cleanly onto
+  /// Gatcha stuffs.pdf's roster (different names, some invented outright, e.g.
+  /// "Cosy den"), so guessing a rarity for them here would be fabricated data.
+  /// GACHA-03 populates this for the real 69-item catalogue; tighten to
+  /// required once that ticket retires the placeholder seed.
+  rarity         StoreItemRarity?
   inventoryItems InventoryItem[]
   cartItems      CartItem[]
   transactions   Transaction[]
