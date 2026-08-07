@@ -13,6 +13,8 @@ import { CartCountProvider } from "@/components/store/cart-count-context";
 import { CartLink } from "@/components/store/cart-link";
 import { CurrencyUrgencyBadge } from "@/components/store/currency-urgency-badge";
 import { FlashSaleBanner } from "@/components/store/flash-sale-banner";
+import { LuckyBoxOddsBoostBanner } from "@/components/store/lucky-box-odds-boost-banner";
+import { LuckyBoxRecentPullsNote } from "@/components/store/lucky-box-recent-pulls-note";
 import { RecentPurchasesBadge } from "@/components/store/recent-purchases-badge";
 import { StockBadge } from "@/components/store/stock-badge";
 import { StoreBrowser } from "@/components/store/store-browser";
@@ -21,7 +23,7 @@ import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { cartForUser } from "@/lib/cart";
-import { LUCKY_BOX_COST_COINS } from "@/lib/gacha";
+import { LUCKY_BOX_COST_COINS, luckyBoxUrgencyForUser } from "@/lib/gacha";
 import { levelOf, storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
 import { urgencyDataForItems } from "@/lib/urgency";
@@ -109,6 +111,12 @@ export const metadata: Metadata = {
  * `luckyBoxPrice` (`GACHA-10`) is `gacha.ts`'s `LUCKY_BOX_COST_COINS`,
  * passed down as a plain number rather than importing it into the client
  * `StoreBrowser` directly — see `LuckyBoxCard`'s own doc comment for why.
+ *
+ * `luckyBoxUrgency` (`GACHA-11`) is the same `groupGatedData()` pattern as
+ * `showFlashSale`, one level deeper like `urgencyRows`: `null` for Group A,
+ * or (for Group B) the fully-built `<LuckyBoxOddsBoostBanner /><LuckyBoxRecentPullsNote
+ * .../></>` pair — the entire decided subtree, not a boolean, per
+ * `StoreBrowser`'s own `luckyBoxUrgency` doc comment.
  */
 export default async function StorePage() {
   const session = await auth();
@@ -118,7 +126,7 @@ export default async function StorePage() {
 
   const items = await storeItemsForUser(userId);
 
-  const [cart, showFlashSale, urgencyRows, level] = await Promise.all([
+  const [cart, showFlashSale, urgencyRows, level, luckyBoxUrgencyRow] = await Promise.all([
     cartForUser(userId),
     groupGatedData(() => true),
     groupGatedData(() =>
@@ -128,6 +136,7 @@ export default async function StorePage() {
       ),
     ),
     levelOf(userId),
+    groupGatedData(() => luckyBoxUrgencyForUser(userId)),
   ]);
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
@@ -171,6 +180,14 @@ export default async function StorePage() {
           urgencyNotes={urgencyNotes}
           level={level}
           luckyBoxPrice={LUCKY_BOX_COST_COINS}
+          luckyBoxUrgency={
+            luckyBoxUrgencyRow ? (
+              <>
+                <LuckyBoxOddsBoostBanner />
+                <LuckyBoxRecentPullsNote count={luckyBoxUrgencyRow.recentPulls} />
+              </>
+            ) : null
+          }
         />
       </AppShell>
     </CartCountProvider>

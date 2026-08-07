@@ -1,6 +1,8 @@
 import { Gift } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { Coin } from "@/components/ui/coin";
+import { cn } from "@/lib/cn";
 
 /**
  * GACHA-10 — the Lucky Box's entry point on the Store screen, per the
@@ -13,11 +15,15 @@ import { Coin } from "@/components/ui/coin";
  * button, label" note is what trimmed this down from an earlier draft that
  * also carried a subtitle.
  *
- * Shown identically to every user, not gated by study group — the design
- * board's Group B urgency variant is a separate, not-yet-decided ticket
- * (`GACHA-11`) that would *add* badges on top of this same base card, not
- * replace it, per its own "no new urgency stimuli invented beyond the two
- * already approved" note.
+ * `extra` (`GACHA-11`) is the Group B urgency content — the odds-boost
+ * countdown banner plus the "N opened in the last hour" line — rendered
+ * beneath the base row when present. A `ReactNode` slot, not a boolean or
+ * the raw urgency data, same reasoning `StoreBrowser`'s own `flashSaleBanner`
+ * prop documents: `StorePage` is the only place that ever knows the study
+ * group, and it decides the *entire* extra subtree server-side (or `null`)
+ * before handing it down, so this component (and `StoreBrowser`, which just
+ * passes it through) never contains a single line of group-conditional
+ * logic itself.
  *
  * `price` arrives as a plain prop rather than importing `LUCKY_BOX_COST_
  * COINS` from `@/lib/gacha` here — this component is reachable from
@@ -39,27 +45,37 @@ import { Coin } from "@/components/ui/coin";
  * button: there is nowhere to link to yet, since `GACHA-12` (the Lucky Box
  * home screen this would open) hasn't shipped.
  */
-export function LuckyBoxCard({ price }: { price: number }) {
+export function LuckyBoxCard({
+  price,
+  extra,
+}: {
+  price: number;
+  extra?: ReactNode;
+}) {
   return (
-    <div className="mb-[11px] flex w-full items-center gap-3 rounded-card border border-border-track bg-warm px-[11px] py-3">
-      <div className="flex size-[52px] flex-none items-center justify-center rounded-[11px] bg-amber-tint">
-        <Gift size={24} strokeWidth={2} className="text-amber-text" aria-hidden />
-      </div>
+    <div className="mb-[11px] w-full rounded-card border border-border-track bg-warm px-[11px] py-3">
+      <div className={cn("flex items-center gap-3", extra ? "mb-[9px]" : undefined)}>
+        <div className="flex size-[52px] flex-none items-center justify-center rounded-[11px] bg-amber-tint">
+          <Gift size={24} strokeWidth={2} className="text-amber-text" aria-hidden />
+        </div>
 
-      <div className="min-w-0 flex-1">
-        <p className="text-[13.5px] font-extrabold">Lucky Box</p>
-        <span className="mt-1 flex items-center gap-[3px]">
-          <Coin size={12} />
-          <span className="text-[12px] font-extrabold text-amber-text">
-            {/* Locale pinned explicitly — see `coin.tsx`'s `CoinPill` for the hydration mismatch this avoids. */}
-            {price.toLocaleString("en-US")}
+        <div className="min-w-0 flex-1">
+          <p className="text-[13.5px] font-extrabold">Lucky Box</p>
+          <span className="mt-1 flex items-center gap-[3px]">
+            <Coin size={12} />
+            <span className="text-[12px] font-extrabold text-amber-text">
+              {/* Locale pinned explicitly — see `coin.tsx`'s `CoinPill` for the hydration mismatch this avoids. */}
+              {price.toLocaleString("en-US")}
+            </span>
           </span>
+        </div>
+
+        <span className="flex-none rounded-[10px] bg-terracotta px-4 py-2 font-display text-[12.5px] font-semibold text-white">
+          Open
         </span>
       </div>
 
-      <span className="flex-none rounded-[10px] bg-terracotta px-4 py-2 font-display text-[12.5px] font-semibold text-white">
-        Open
-      </span>
+      {extra}
     </div>
   );
 }
