@@ -21,6 +21,7 @@ import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { cartForUser } from "@/lib/cart";
+import { LUCKY_BOX_COST_COINS } from "@/lib/gacha";
 import { levelOf, storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
 import { urgencyDataForItems } from "@/lib/urgency";
@@ -104,6 +105,10 @@ export const metadata: Metadata = {
  * `locked` flag — so `StoreBrowser` can show the full-screen "locked by
  * level" state's progress bar/levels-to-go label without a second fetch
  * when a locked card is tapped.
+ *
+ * `luckyBoxPrice` (`GACHA-10`) is `gacha.ts`'s `LUCKY_BOX_COST_COINS`,
+ * passed down as a plain number rather than importing it into the client
+ * `StoreBrowser` directly — see `LuckyBoxCard`'s own doc comment for why.
  */
 export default async function StorePage() {
   const session = await auth();
@@ -165,6 +170,7 @@ export default async function StorePage() {
           urgencyBadges={urgencyBadges}
           urgencyNotes={urgencyNotes}
           level={level}
+          luckyBoxPrice={LUCKY_BOX_COST_COINS}
         />
       </AppShell>
     </CartCountProvider>
