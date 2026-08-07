@@ -244,6 +244,14 @@ model UserEconomy {
   dailyCoinsEarned Int      @default(0)
   dailyXpEarned    Int      @default(0)
   dailyCapResetAt  DateTime @default(now())
+
+  /// Lucky Box hidden hard pity (GACHA-02, GACHA-05). Counts pulls since the
+  /// last Legendary result; `GACHA-04`'s roll forces a Legendary once this
+  /// hits the pity threshold and resets it to 0 on any Legendary pull, natural
+  /// or forced. Deliberately never read by an API response the client sees —
+  /// the Lucky Box home and Drop Rates screens (design board §2) show no pity
+  /// meter or counter, by the approved design.
+  pullsSinceLegendary Int @default(0)
 }
 
 /// INF-18. One record per user, created with the account so the settings screen
