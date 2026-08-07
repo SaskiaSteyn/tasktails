@@ -186,6 +186,7 @@ function samplePet(
       levelRequired: 1,
       coinPrice: 0,
       imageUrl,
+      rarity: null,
     },
   };
 }
@@ -205,6 +206,7 @@ const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
       levelRequired: 1,
       coinPrice: 40,
       imageUrl: "wheat",
+      rarity: "COMMON",
     },
   },
   {
@@ -220,6 +222,7 @@ const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
       levelRequired: 3,
       coinPrice: 120,
       imageUrl: "package",
+      rarity: "RARE",
     },
   },
 ];
