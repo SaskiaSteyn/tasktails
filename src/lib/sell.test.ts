@@ -210,6 +210,25 @@ describe("sellableItemsForUser", () => {
     expect(items[0].sellValue).toBe(2100);
   });
 
+  it("reads unlocked when the item is within GACHA-04's UNLOCK_LEVEL_BUFFER, not just at-or-below level", async () => {
+    // Account is level 5 (mocked above); an item requiring level 6 is one
+    // above — the same buffer pullLuckyBox() uses to grant immediate use.
+    prismaMock.inventoryItem.findMany.mockResolvedValue([
+      {
+        id: "inv-next-tier",
+        storeItemId: "next-tier",
+        quantity: 1,
+        storeItem: { name: "Next tier item", category: "ACCESSORIES", coinPrice: 100, levelRequired: 6 },
+      },
+    ] as never);
+    prismaMock.pet.findMany.mockResolvedValue([]);
+
+    const items = await sellableItemsForUser("user-1");
+
+    expect(items).toHaveLength(1);
+    expect(items[0].locked).toBe(false);
+  });
+
   it("prefers a pet's custom name over the catalogue name in the listing too", async () => {
     prismaMock.inventoryItem.findMany.mockResolvedValue([]);
     prismaMock.pet.findMany.mockResolvedValue([

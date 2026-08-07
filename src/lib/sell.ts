@@ -1,4 +1,5 @@
 import type { StoreItemCategory, UserEconomy } from "@/generated/prisma/client";
+import { UNLOCK_LEVEL_BUFFER } from "@/lib/gacha";
 import { allInventoryForUser } from "@/lib/inventory";
 import { petsForUser } from "@/lib/pets";
 import { prisma } from "@/lib/prisma";
@@ -37,8 +38,8 @@ import { levelOf } from "@/lib/store";
  * for free: `InventoryItem.equippedToPetId` is already `onDelete: SetNull`
  * in the schema (INF-05), so Postgres does this without a manual step here.
  *
- * `SELL_RATE` is not a draft — the user's own brief fixed it at 70%, unlike
- * `gacha.ts`'s price/odds/pity constants which are still pending sign-off.
+ * `SELL_RATE` is not a draft — the user's own brief fixed it at 70%. Same
+ * status as `gacha.ts`'s price/odds/pity constants, confirmed 2026-08-07.
  *
  * SERVER ONLY — imports Prisma.
  */
@@ -135,7 +136,14 @@ export type SellableItem = {
   quantity: number;
   coinPrice: number;
   sellValue: number;
-  /** Above the account's current level — sellable regardless, per `GACHA-07`. */
+  /**
+   * Same `> level + UNLOCK_LEVEL_BUFFER` rule `gacha.ts`'s `pullLuckyBox()`
+   * uses to decide whether a pull is immediately usable — sellable
+   * regardless either way, per `GACHA-07`. A plain store purchase can never
+   * land here above `level` at all (`checkout.ts` blocks it), so the only
+   * way an owned item can be locked is a gacha pull, which makes this the
+   * same rule by construction, not a separate policy that happens to agree.
+   */
   locked: boolean;
 };
 
@@ -162,7 +170,7 @@ export async function sellableItemsForUser(userId: string): Promise<SellableItem
     quantity: item.quantity,
     coinPrice: item.storeItem.coinPrice,
     sellValue: Math.floor(item.storeItem.coinPrice * SELL_RATE),
-    locked: item.storeItem.levelRequired > level,
+    locked: item.storeItem.levelRequired > level + UNLOCK_LEVEL_BUFFER,
   }));
 
   const sellablePets: SellableItem[] = pets.map((pet) => ({
@@ -173,7 +181,7 @@ export async function sellableItemsForUser(userId: string): Promise<SellableItem
     quantity: 1,
     coinPrice: pet.storeItem.coinPrice,
     sellValue: Math.floor(pet.storeItem.coinPrice * SELL_RATE),
-    locked: pet.storeItem.levelRequired > level,
+    locked: pet.storeItem.levelRequired > level + UNLOCK_LEVEL_BUFFER,
   }));
 
   return [...sellableGoods, ...sellablePets];

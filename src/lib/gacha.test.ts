@@ -3,12 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/auth";
 import { AbGroup, type User } from "@/generated/prisma/client";
 import {
-  ABOVE_LEVEL_PULL_CHANCE,
   HARD_PITY_THRESHOLD,
   LUCKY_BOX_COST_COINS,
   luckyBoxUrgencyForUser,
   pullLuckyBox,
   rollRarity,
+  UNLOCK_LEVEL_BUFFER,
 } from "@/lib/gacha";
 import { groupGatedData } from "@/lib/study-group";
 import { prismaMock } from "@/test/prisma-mock";
@@ -107,7 +107,7 @@ describe("pullLuckyBox", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.item.id).toBe("collar");
-    expect(result.item.aboveLevel).toBe(false);
+    expect(result.item.locked).toBe(false);
     expect(result.pet).toBeNull();
     expect(result.spent).toBe(LUCKY_BOX_COST_COINS);
     expect(prismaMock.inventoryItem.create).toHaveBeenCalledWith({
@@ -151,24 +151,52 @@ describe("pullLuckyBox", () => {
     expect(prismaMock.inventoryItem.findFirst).not.toHaveBeenCalled();
   });
 
-  it("falls back to the above-level pool when nothing eligible exists at the account's level", async () => {
-    prismaMock.$queryRaw.mockResolvedValue(account());
-    // First findMany (in-level) empty, second (above-level) has the item.
-    prismaMock.storeItem.findMany
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        storeItem({ id: "crown", name: "Crown", category: "ACCESSORIES", levelRequired: 20, rarity: "LEGENDARY" }),
-      ]);
+  it("draws from the full catalogue for the rarity, with no level filter at all", async () => {
+    prismaMock.$queryRaw.mockResolvedValue(account({ level: 1 }));
+    prismaMock.storeItem.findMany.mockResolvedValue([
+      storeItem({ id: "crown", name: "Crown", category: "ACCESSORIES", levelRequired: 20, rarity: "LEGENDARY" }),
+    ]);
 
     const result = await pullLuckyBox("user-1");
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.item.id).toBe("crown");
-    expect(result.item.aboveLevel).toBe(true);
+    // The one and only storeItem query is rarity-only — no levelRequired
+    // clause of any kind, confirming the pool isn't capped or split.
+    expect(prismaMock.storeItem.findMany).toHaveBeenCalledTimes(1);
+    expect(prismaMock.storeItem.findMany.mock.calls[0][0]).not.toHaveProperty(
+      "where.levelRequired",
+    );
   });
 
-  it("reports empty-catalogue rather than crashing when both pools are empty", async () => {
+  it("unlocks immediately when the pull is exactly one level above the account (UNLOCK_LEVEL_BUFFER)", async () => {
+    prismaMock.$queryRaw.mockResolvedValue(account({ level: 5 }));
+    prismaMock.storeItem.findMany.mockResolvedValue([
+      storeItem({ id: "next-tier", levelRequired: 5 + UNLOCK_LEVEL_BUFFER }),
+    ]);
+
+    const result = await pullLuckyBox("user-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.item.locked).toBe(false);
+  });
+
+  it("stays locked when the pull is more than UNLOCK_LEVEL_BUFFER levels above the account", async () => {
+    prismaMock.$queryRaw.mockResolvedValue(account({ level: 5 }));
+    prismaMock.storeItem.findMany.mockResolvedValue([
+      storeItem({ id: "far-tier", levelRequired: 5 + UNLOCK_LEVEL_BUFFER + 1 }),
+    ]);
+
+    const result = await pullLuckyBox("user-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.item.locked).toBe(true);
+  });
+
+  it("reports empty-catalogue rather than crashing when the rarity has nothing in the catalogue", async () => {
     prismaMock.$queryRaw.mockResolvedValue(account());
     prismaMock.storeItem.findMany.mockResolvedValue([]);
 
@@ -177,14 +205,6 @@ describe("pullLuckyBox", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toBe("empty-catalogue");
-  });
-
-  it("above-level pull chance is only ever consulted when the in-level pool is non-empty", () => {
-    // Documents the invariant the file's own doc comment describes — not a
-    // behavioural assertion, just guards the constant against an accidental
-    // edit that would make it something other than a small probability.
-    expect(ABOVE_LEVEL_PULL_CHANCE).toBeGreaterThan(0);
-    expect(ABOVE_LEVEL_PULL_CHANCE).toBeLessThan(0.1);
   });
 
   describe("hard pity (GACHA-05)", () => {

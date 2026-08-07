@@ -12,10 +12,11 @@ import { LUCKY_BOX_COST_COINS, pullLuckyBox } from "@/lib/gacha";
  * economy, not the client, and the account comes from the session so a
  * participant can't spend someone else's coins.
  *
- * Returns the pulled item (with `aboveLevel` — the design board's "locked"
- * reveal state, per GACHA-14's reveal screen), the adopted pet if the pull
- * was an animal, and the fresh economy snapshot so the persistent header
- * updates from this response rather than a second round trip.
+ * Returns the pulled item (with `locked` — the design board's "Added,
+ * locked — unlocks at Lvl N" reveal state, per GACHA-14's reveal screen),
+ * the adopted pet if the pull was an animal, and the fresh economy snapshot
+ * so the persistent header updates from this response rather than a second
+ * round trip.
  */
 export async function POST() {
   const session = await auth();

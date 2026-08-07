@@ -21,9 +21,8 @@ import { seededInt } from "@/lib/urgency";
  * every other category increments-or-creates an `InventoryItem` row the same
  * way a goods line does.
  *
- * **Price and odds are still drafts**, per `research_gacha_mechanics.md`
- * §4.4 and the `Gatcha.md`/`Gatcha.csv` ticket list — confirm before
- * treating these constants as final.
+ * **Price, odds and the pity threshold are confirmed** (2026-08-07, along
+ * with the two decisions below) — no longer drafts pending sign-off.
  *
  * **Hard pity (`GACHA-05`)** forces a Legendary once `UserEconomy.
  * pullsSinceLegendary` (`GACHA-02`) reaches `HARD_PITY_THRESHOLD`, and
@@ -35,29 +34,26 @@ import { seededInt } from "@/lib/urgency";
  * a lucky one at every layer above this function, not just in what the
  * client happens to render.
  *
- * **A real finding while building this**: the "small chance of an
- * above-level pull" (`research_gacha_mechanics.md` G-5, drafted at 2–5%)
- * turns out not to be a rare edge case for every rarity. `GACHA-03`'s seed
- * only placed Legendary items at `levelRequired: 20` (nothing lower exists
- * in *Gatcha stuffs.pdf* to seed there) and Epic items at 7 or 10 — so for
- * any account below level 20, the "at or below current level" pool for
- * Legendary is *always* empty, and below level 7 the same is true for Epic.
- * `pullLuckyBox()` below therefore falls back to the above-level pool
- * whenever the in-level one is empty, regardless of the `ABOVE_LEVEL_PULL_
- * CHANCE` roll — otherwise a Legendary result would have nothing to grant.
- * This is arguably the *point* of Legendary rather than a bug: it's an
- * aspirational chase tier reachable only through the box, not through
- * levelling (the level system's own thresholds, `levels.ts`, don't even
- * reach 20). Worth surfacing to the user rather than silently working around
- * it, since it changes what "2–5% chance" actually means in practice.
+ * **The pull pool is unrestricted (2026-08-07 decision, superseding this
+ * function's original level-capped design)**: every `StoreItem` of the
+ * rolled rarity is eligible, full stop — "users are allowed to get every
+ * possible item in the catalog." The earlier design (in-level pool, with a
+ * small `ABOVE_LEVEL_PULL_CHANCE` chase roll into an above-level pool) is
+ * gone entirely, not just widened. What still varies by level is whether
+ * the pull is immediately usable: **`locked` is true only when the item's
+ * `levelRequired` is more than one level above the account's current
+ * level** — "allowed to unlock the pulled item if it is within 1 level
+ * above their current level and below." An item exactly one level above
+ * unlocks immediately on pull; anything further stays locked until the
+ * account actually reaches `levelRequired - 1`.
  *
  * SERVER ONLY — imports Prisma.
  */
 
-/** Draft — needs sign-off (`research_gacha_mechanics.md` §4.4). */
+/** Confirmed 2026-08-07. */
 export const LUCKY_BOX_COST_COINS = 150;
 
-/** Draft — needs sign-off. Must sum to 1; `rollRarity()` assumes it does. */
+/** Confirmed 2026-08-07. Must sum to 1; `rollRarity()` assumes it does. */
 export const RARITY_ODDS: Record<StoreItemRarity, number> = {
   COMMON: 0.55,
   RARE: 0.3,
@@ -66,17 +62,17 @@ export const RARITY_ODDS: Record<StoreItemRarity, number> = {
 };
 
 /**
- * Draft, within `research_gacha_mechanics.md` G-5's 2–5% range. Only ever
- * consulted when the in-level pool for the rolled rarity is non-empty — see
- * the file doc comment for when that isn't the case.
- */
-export const ABOVE_LEVEL_PULL_CHANCE = 0.03;
-
-/**
- * Draft — needs sign-off. The pull that brings `pullsSinceLegendary` to this
+ * Confirmed 2026-08-07. The pull that brings `pullsSinceLegendary` to this
  * many is forced Legendary regardless of `rollRarity()`'s result.
  */
 export const HARD_PITY_THRESHOLD = 30;
+
+/**
+ * Confirmed 2026-08-07 — an item pulled at up to this many levels above the
+ * account's current level unlocks immediately; anything further stays
+ * locked. See the file doc comment.
+ */
+export const UNLOCK_LEVEL_BUFFER = 1;
 
 const RARITY_ORDER: StoreItemRarity[] = ["COMMON", "RARE", "EPIC", "LEGENDARY"];
 
@@ -95,8 +91,13 @@ export function rollRarity(random: () => number = Math.random): StoreItemRarity 
 }
 
 export type PulledItem = StoreItem & {
-  /** True when this landed above the puller's level at pull time — the design board's "locked" reveal state. */
-  aboveLevel: boolean;
+  /**
+   * True when `levelRequired` is more than `UNLOCK_LEVEL_BUFFER` levels
+   * above the puller's level at pull time — the design board's "Added,
+   * locked — unlocks at Lvl N" reveal state (GACHA-14). An item exactly one
+   * level above unlocks immediately and reads as `false` here.
+   */
+  locked: boolean;
 };
 
 export type GachaPullResult =
@@ -123,16 +124,14 @@ export type GachaPullResult =
  * Rarity is rolled first, independently of the account's level, then
  * overridden to Legendary if this pull would bring `pullsSinceLegendary`
  * (`GACHA-02`) to `HARD_PITY_THRESHOLD` (`GACHA-05`) — silently; the caller
- * can't tell a forced result from a lucky one. The pool is then every
- * `StoreItem` of that rarity at or below the account's level; if that's
- * empty, or (drafted at `ABOVE_LEVEL_PULL_CHANCE`) the chase roll hits, the
- * pool becomes every item of that rarity *above* the account's level
- * instead — see the file doc comment for why the empty-pool case is the
- * common path for Legendary/Epic today, not a rare exception.
+ * can't tell a forced result from a lucky one. The pool is every `StoreItem`
+ * of that rarity, full stop — no level filter at all (2026-08-07 decision,
+ * see the file doc comment) — so `pool.length === 0` only happens if a
+ * rarity has zero items anywhere in the catalogue.
  */
 export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
   return prisma.$transaction(async (tx) => {
-    const locked = await tx.$queryRaw<
+    const lockedRow = await tx.$queryRaw<
       { coins: number; level: number; pullsSinceLegendary: number }[]
     >`
       SELECT "coins", "level", "pullsSinceLegendary"
@@ -140,7 +139,7 @@ export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
       WHERE "userId" = ${userId}
       FOR UPDATE`;
 
-    const account = locked[0];
+    const account = lockedRow[0];
     if (!account) return { ok: false, reason: "no-account" } as const;
 
     if (account.coins < LUCKY_BOX_COST_COINS) {
@@ -160,31 +159,14 @@ export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
     const pullsSinceLegendary =
       rarity === "LEGENDARY" ? 0 : account.pullsSinceLegendary + 1;
 
-    const inLevelPool = await tx.storeItem.findMany({
-      where: { rarity, levelRequired: { lte: account.level } },
-    });
-
-    let pool = inLevelPool;
-    let aboveLevel = false;
-
-    if (inLevelPool.length === 0 || Math.random() < ABOVE_LEVEL_PULL_CHANCE) {
-      const abovePool = await tx.storeItem.findMany({
-        where: { rarity, levelRequired: { gt: account.level } },
-      });
-      if (abovePool.length > 0) {
-        pool = abovePool;
-        aboveLevel = true;
-      }
-      // If abovePool is also empty, `pool` stays whatever it already was
-      // (possibly still empty) — handled by the check below rather than
-      // assumed away.
-    }
+    const pool = await tx.storeItem.findMany({ where: { rarity } });
 
     if (pool.length === 0) {
       return { ok: false, reason: "empty-catalogue", rarity } as const;
     }
 
     const storeItem = pool[Math.floor(Math.random() * pool.length)];
+    const locked = storeItem.levelRequired > account.level + UNLOCK_LEVEL_BUFFER;
 
     let pet: PetWithItem | null = null;
     if (storeItem.category === "ANIMALS") {
@@ -214,7 +196,7 @@ export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
     return {
       ok: true,
       spent: LUCKY_BOX_COST_COINS,
-      item: { ...storeItem, aboveLevel },
+      item: { ...storeItem, locked },
       pet,
       economy,
     } as const;
@@ -229,11 +211,10 @@ export type LuckyBoxUrgencyData = {
 /**
  * GACHA-09 — the Group B urgency copy for the Lucky Box store card.
  * Deliberately has **no knowledge of the study group itself**, same as
- * `urgencyDataForItems()` (URG-08) — the caller wraps this in
- * `groupGatedData()` when the Store page renders the Lucky Box card
- * (`GACHA-10`/`GACHA-11`, not yet built), exactly the way `store/page.tsx`
- * already wraps `urgencyDataForItems()` rather than branching on the study
- * group itself.
+ * `urgencyDataForItems()` (URG-08) — `StorePage` wraps this in
+ * `groupGatedData()` when rendering the Lucky Box card (`GACHA-10`/
+ * `GACHA-11`), exactly the way it already wraps `urgencyDataForItems()`
+ * rather than branching on the study group itself.
  *
  * Range 15–30, not `urgency.ts`'s 3–7 for a real catalogue item's recent
  * purchases — the approved design board's own mockup shows "23 opened in
