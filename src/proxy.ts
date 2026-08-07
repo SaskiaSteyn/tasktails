@@ -25,10 +25,18 @@ const { auth } = NextAuth(authConfig);
 
 /** Reachable signed out. Everything else redirects to /login. */
 const PUBLIC_PATHS = new Set([
-  "/", // redirects to /register on its own
+  "/", // the marketing site, or the PWA's welcome screen (MKT-01/02/03)
   "/login",
   "/register",
   "/style-guide", // the living design reference; no participant data
+  // The web app manifest (`src/app/manifest.ts`). The matcher below exempts
+  // static assets by extension but has no `.webmanifest` in its list, so
+  // without this the proxy answers it with a redirect to /login — and a
+  // manifest the browser cannot read is a PWA that cannot be installed, which
+  // is silent: nothing errors, the install option simply never appears. Listed
+  // here rather than added to the matcher so it stays one known path, per this
+  // file's allowlist-not-denylist rule. No participant data in it.
+  "/manifest.webmanifest",
 ]);
 
 /**
