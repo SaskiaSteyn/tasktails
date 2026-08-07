@@ -1,9 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SELL_RATE, sellOwnedItem } from "@/lib/sell";
+import { SELL_RATE, sellableItemsForUser, sellOwnedItem } from "@/lib/sell";
 import { prismaMock } from "@/test/prisma-mock";
 
-/** GACHA-07 — the sell transaction against the mocked Prisma client, same pattern gacha.test.ts uses for pullLuckyBox. */
+/**
+ * GACHA-07/08 — the sell transaction and the sellable-items listing, both
+ * against the mocked Prisma client (same pattern gacha.test.ts uses for
+ * pullLuckyBox). `sellableItemsForUser()` composes `inventory.ts`'s and
+ * `pets.ts`'s own reads rather than querying Prisma directly (see sell.ts's
+ * doc comment), but those reads still bottom out in the same mocked
+ * `prismaMock.inventoryItem.findMany`/`.pet.findMany`/`.userEconomy.
+ * findUnique` calls, so no extra mocking of sibling modules is needed.
+ */
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 describe("sellOwnedItem", () => {
@@ -126,5 +134,98 @@ describe("sellOwnedItem", () => {
 
     expect(result).toEqual({ ok: false, reason: "not-found" });
     expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("sellableItemsForUser", () => {
+  beforeEach(() => {
+    prismaMock.userEconomy.findUnique.mockResolvedValue({ level: 5 } as never);
+  });
+
+  it("combines goods and pets into one list, each with its computed sell value", async () => {
+    prismaMock.inventoryItem.findMany.mockResolvedValue([
+      {
+        id: "inv-1",
+        storeItemId: "collar",
+        quantity: 2,
+        storeItem: { name: "Red collar", category: "ACCESSORIES", coinPrice: 65, levelRequired: 1 },
+      },
+    ] as never);
+    prismaMock.pet.findMany.mockResolvedValue([
+      {
+        id: "pet-1",
+        storeItemId: "fox",
+        name: null,
+        happiness: 100,
+        hunger: 0,
+        lastInteractedAt: new Date(),
+        storeItem: { name: "Fox kit", category: "ANIMALS", coinPrice: 550, levelRequired: 7 },
+      },
+    ] as never);
+
+    const items = await sellableItemsForUser("user-1");
+
+    expect(items).toEqual([
+      {
+        id: "inv-1",
+        storeItemId: "collar",
+        name: "Red collar",
+        category: "ACCESSORIES",
+        quantity: 2,
+        coinPrice: 65,
+        sellValue: 45,
+        locked: false,
+      },
+      {
+        id: "pet-1",
+        storeItemId: "fox",
+        name: "Fox kit",
+        category: "ANIMALS",
+        quantity: 1,
+        coinPrice: 550,
+        sellValue: 385,
+        locked: true, // levelRequired 7 > account level 5
+      },
+    ]);
+  });
+
+  it("includes locked items rather than filtering them out", async () => {
+    prismaMock.inventoryItem.findMany.mockResolvedValue([]);
+    prismaMock.pet.findMany.mockResolvedValue([
+      {
+        id: "pet-rhino",
+        storeItemId: "rhino",
+        name: null,
+        happiness: 100,
+        hunger: 0,
+        lastInteractedAt: new Date(),
+        storeItem: { name: "Rhino", category: "ANIMALS", coinPrice: 3000, levelRequired: 20 },
+      },
+    ] as never);
+
+    const items = await sellableItemsForUser("user-1");
+
+    expect(items).toHaveLength(1);
+    expect(items[0].locked).toBe(true);
+    expect(items[0].sellValue).toBe(2100);
+  });
+
+  it("prefers a pet's custom name over the catalogue name in the listing too", async () => {
+    prismaMock.inventoryItem.findMany.mockResolvedValue([]);
+    prismaMock.pet.findMany.mockResolvedValue([
+      {
+        id: "pet-1",
+        storeItemId: "fox",
+        name: "Sunny",
+        happiness: 100,
+        hunger: 0,
+        lastInteractedAt: new Date(),
+        storeItem: { name: "Fox kit", category: "ANIMALS", coinPrice: 550, levelRequired: 1 },
+      },
+    ] as never);
+
+    const items = await sellableItemsForUser("user-1");
+
+    expect(items[0].name).toBe("Sunny");
   });
 });

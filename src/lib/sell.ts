@@ -1,13 +1,23 @@
-import type { UserEconomy } from "@/generated/prisma/client";
+import type { StoreItemCategory, UserEconomy } from "@/generated/prisma/client";
+import { allInventoryForUser } from "@/lib/inventory";
+import { petsForUser } from "@/lib/pets";
 import { prisma } from "@/lib/prisma";
+import { levelOf } from "@/lib/store";
 
 /**
- * GACHA-07 — `POST /api/inventory/[id]/sell`'s pipeline.
+ * GACHA-07/GACHA-08 — `POST /api/inventory/[id]/sell` and
+ * `GET /api/inventory/sellable`.
  *
- * A deliberate exception to the "one module per table" rule, same reasoning
- * `checkout.ts`/`gacha.ts` give for themselves: selling touches
- * `InventoryItem` *or* `Pet`, plus `StoreItem` for the price and
- * `UserEconomy` for the refund, as one atomic unit.
+ * `sellOwnedItem()` (the write) is a deliberate exception to the "one module
+ * per table" rule, same reasoning `checkout.ts`/`gacha.ts` give for
+ * themselves: selling touches `InventoryItem` *or* `Pet`, plus `StoreItem`
+ * for the price and `UserEconomy` for the refund, as one atomic unit.
+ * `sellableItemsForUser()` (the read) doesn't need that exception — it has
+ * no atomicity requirement, so it composes `inventory.ts`'s and `pets.ts`'s
+ * own exported reads (`allInventoryForUser()`, `petsForUser()`) rather than
+ * querying `prisma.inventoryItem`/`prisma.pet` directly, the same
+ * read-vs-write split `store.ts` (reads) and `checkout.ts` (the atomic
+ * write) already use for `StoreItem`.
  *
  * **The route name says "inventory" but this also sells pets.** The ticket
  * text is explicit that *everything* a player owns has to be sellable,
@@ -113,4 +123,58 @@ export async function sellOwnedItem(
       economy,
     } as const;
   });
+}
+
+/** One row of GACHA-17's Sell Items list — either an `InventoryItem` or a `Pet`, `id` being whichever `GACHA-07`'s sell endpoint expects back. */
+export type SellableItem = {
+  id: string;
+  storeItemId: string;
+  name: string;
+  category: StoreItemCategory;
+  /** Always 1 for a pet — an animal has no stack to hold a bigger count. */
+  quantity: number;
+  coinPrice: number;
+  sellValue: number;
+  /** Above the account's current level — sellable regardless, per `GACHA-07`. */
+  locked: boolean;
+};
+
+/**
+ * Everything `userId` owns and could sell — goods and pets together, each
+ * annotated with its `sellValue` (`floor(coinPrice * SELL_RATE)`, the same
+ * arithmetic `sellOwnedItem()` actually charges) and whether it's currently
+ * locked. Locked items are included, not filtered out — `GACHA-07` sells
+ * them exactly like anything else, and the Sell Items screen is explicit
+ * that a locked animal like Rhino belongs in this list too.
+ */
+export async function sellableItemsForUser(userId: string): Promise<SellableItem[]> {
+  const [goods, pets, level] = await Promise.all([
+    allInventoryForUser(userId),
+    petsForUser(userId),
+    levelOf(userId),
+  ]);
+
+  const sellableGoods: SellableItem[] = goods.map((item) => ({
+    id: item.id,
+    storeItemId: item.storeItemId,
+    name: item.storeItem.name,
+    category: item.storeItem.category,
+    quantity: item.quantity,
+    coinPrice: item.storeItem.coinPrice,
+    sellValue: Math.floor(item.storeItem.coinPrice * SELL_RATE),
+    locked: item.storeItem.levelRequired > level,
+  }));
+
+  const sellablePets: SellableItem[] = pets.map((pet) => ({
+    id: pet.id,
+    storeItemId: pet.storeItemId,
+    name: pet.name ?? pet.storeItem.name,
+    category: pet.storeItem.category,
+    quantity: 1,
+    coinPrice: pet.storeItem.coinPrice,
+    sellValue: Math.floor(pet.storeItem.coinPrice * SELL_RATE),
+    locked: pet.storeItem.levelRequired > level,
+  }));
+
+  return [...sellableGoods, ...sellablePets];
 }
