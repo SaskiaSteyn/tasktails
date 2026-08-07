@@ -5,6 +5,7 @@ import type {
 } from "@/generated/prisma/client";
 import { createPetForTransaction, type PetWithItem } from "@/lib/pets";
 import { prisma } from "@/lib/prisma";
+import { seededInt } from "@/lib/urgency";
 
 /**
  * GACHA-04 — `POST /api/gacha/pull`'s pipeline: the Lucky Box.
@@ -218,4 +219,38 @@ export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
       economy,
     } as const;
   });
+}
+
+export type LuckyBoxUrgencyData = {
+  /** "N opened in the last hour" — the design board's recent-purchases pattern for the Lucky Box card (GACHA-11). */
+  recentPulls: number;
+};
+
+/**
+ * GACHA-09 — the Group B urgency copy for the Lucky Box store card.
+ * Deliberately has **no knowledge of the study group itself**, same as
+ * `urgencyDataForItems()` (URG-08) — the caller wraps this in
+ * `groupGatedData()` when the Store page renders the Lucky Box card
+ * (`GACHA-10`/`GACHA-11`, not yet built), exactly the way `store/page.tsx`
+ * already wraps `urgencyDataForItems()` rather than branching on the study
+ * group itself.
+ *
+ * Range 15–30, not `urgency.ts`'s 3–7 for a real catalogue item's recent
+ * purchases — the approved design board's own mockup shows "23 opened in
+ * the last hour" as this exact copy's example value, and 3–7 (sized for one
+ * item among a whole catalogue) could never produce it. The Lucky Box is
+ * framed as a single, unusually popular feature rather than an ordinary
+ * catalogue item, so a higher range fits both the approved example and the
+ * premise.
+ *
+ * No countdown value here on purpose — `GACHA-11`'s "Double your Legendary
+ * chance today" timer is a self-contained client-side countdown, the same
+ * pattern `FlashSaleBanner` (URG-01) already established ("resets on page
+ * load", confirmed with the user rather than server-fabricated) — there is
+ * nothing for the backend to compute for it.
+ */
+export function luckyBoxUrgencyForUser(userId: string): LuckyBoxUrgencyData {
+  return {
+    recentPulls: seededInt(userId, "lucky-box", "recentPurchases", 15, 30),
+  };
 }

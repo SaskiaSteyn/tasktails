@@ -1,16 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { auth } from "@/auth";
+import { AbGroup, type User } from "@/generated/prisma/client";
 import {
   ABOVE_LEVEL_PULL_CHANCE,
   HARD_PITY_THRESHOLD,
   LUCKY_BOX_COST_COINS,
+  luckyBoxUrgencyForUser,
   pullLuckyBox,
   rollRarity,
 } from "@/lib/gacha";
+import { groupGatedData } from "@/lib/study-group";
 import { prismaMock } from "@/test/prisma-mock";
 
-/** GACHA-04/05 — the weighted roll (pure), the pull transaction, and hard pity, all against the mocked Prisma client (same split economy.test.ts uses for buyXp). */
+/** GACHA-04/05/09 — the weighted roll (pure), the pull transaction, hard pity, and the Group B urgency fabrication, all against the mocked Prisma client (same split economy.test.ts uses for buyXp). */
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
+
+const mockedAuth = vi.mocked(auth);
 
 const storeItem = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: "item-1",
@@ -247,5 +253,47 @@ describe("pullLuckyBox", () => {
         where: { rarity: "COMMON" },
       });
     });
+  });
+});
+
+describe("luckyBoxUrgencyForUser", () => {
+  it("stays within the 15–30 range the design board's own example (23) needs to fall inside", () => {
+    for (const userId of ["user-1", "user-2", "user-3", "user-4", "user-5"]) {
+      const { recentPulls } = luckyBoxUrgencyForUser(userId);
+      expect(recentPulls).toBeGreaterThanOrEqual(15);
+      expect(recentPulls).toBeLessThanOrEqual(30);
+    }
+  });
+
+  it("is stable for the same user rather than re-randomising per call", () => {
+    const first = luckyBoxUrgencyForUser("user-1");
+    const second = luckyBoxUrgencyForUser("user-1");
+    expect(second).toEqual(first);
+  });
+
+  it("differs across users (not a constant disguised as a seed)", () => {
+    const values = new Set(
+      ["a", "b", "c", "d", "e", "f", "g", "h"].map(
+        (userId) => luckyBoxUrgencyForUser(userId).recentPulls,
+      ),
+    );
+    expect(values.size).toBeGreaterThan(1);
+  });
+
+  it("integrates with groupGatedData exactly like urgencyDataForItems does: null for Group A, data for Group B", async () => {
+    function userRow(abGroup: AbGroup): User {
+      return { id: "user-1", email: "participant@example.com", abGroup } as User;
+    }
+
+    mockedAuth.mockResolvedValue({ user: { email: "participant@example.com" } } as never);
+
+    prismaMock.user.findUnique.mockResolvedValue(userRow(AbGroup.A));
+    const forGroupA = await groupGatedData(() => luckyBoxUrgencyForUser("user-1"));
+    expect(forGroupA).toBeNull();
+
+    prismaMock.user.findUnique.mockResolvedValue(userRow(AbGroup.B));
+    const forGroupB = await groupGatedData(() => luckyBoxUrgencyForUser("user-1"));
+    expect(forGroupB).not.toBeNull();
+    expect(forGroupB?.recentPulls).toBeGreaterThanOrEqual(15);
   });
 });
