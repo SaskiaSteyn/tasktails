@@ -24,14 +24,15 @@ import { prisma } from "@/lib/prisma";
  * §4.4 and the `Gatcha.md`/`Gatcha.csv` ticket list — confirm before
  * treating these constants as final.
  *
- * **Pity is deliberately out of scope here.** `GACHA-02` added
- * `UserEconomy.pullsSinceLegendary` and `GACHA-05` is the ticket that reads
- * and writes it to force a Legendary at the hard-pity threshold; this
- * function doesn't touch that column at all yet, the same "ship the field,
- * wire it up later" order `SUB-01`/`SUB-02` used before `SUB-04`/`SUB-05`
- * existed. Incrementing the counter without ever forcing anything would be
- * dead bookkeeping with no observable effect, so `GACHA-05` adds both
- * together rather than splitting increment from force across two tickets.
+ * **Hard pity (`GACHA-05`)** forces a Legendary once `UserEconomy.
+ * pullsSinceLegendary` (`GACHA-02`) reaches `HARD_PITY_THRESHOLD`, and
+ * resets it to 0 on any Legendary result, natural or forced. Deliberately
+ * invisible: nothing in `GachaPullResult` or the API response says whether a
+ * given pull was forced, carries the counter, or the threshold — the design
+ * board is explicit that pity has no meter, no counter and no rules copy
+ * anywhere in the UI, so a forced Legendary has to be indistinguishable from
+ * a lucky one at every layer above this function, not just in what the
+ * client happens to render.
  *
  * **A real finding while building this**: the "small chance of an
  * above-level pull" (`research_gacha_mechanics.md` G-5, drafted at 2–5%)
@@ -69,6 +70,12 @@ export const RARITY_ODDS: Record<StoreItemRarity, number> = {
  * the file doc comment for when that isn't the case.
  */
 export const ABOVE_LEVEL_PULL_CHANCE = 0.03;
+
+/**
+ * Draft — needs sign-off. The pull that brings `pullsSinceLegendary` to this
+ * many is forced Legendary regardless of `rollRarity()`'s result.
+ */
+export const HARD_PITY_THRESHOLD = 30;
 
 const RARITY_ORDER: StoreItemRarity[] = ["COMMON", "RARE", "EPIC", "LEGENDARY"];
 
@@ -112,17 +119,22 @@ export type GachaPullResult =
  * and `buyXp()` use — two pulls submitted together must not both pass the
  * balance check against the same starting total.
  *
- * Rarity is rolled first, independently of the account's level. The pool is
- * then every `StoreItem` of that rarity at or below the account's level; if
- * that's empty, or (drafted at `ABOVE_LEVEL_PULL_CHANCE`) the chase roll
- * hits, the pool becomes every item of that rarity *above* the account's
- * level instead — see the file doc comment for why the empty-pool case is
- * the common path for Legendary/Epic today, not a rare exception.
+ * Rarity is rolled first, independently of the account's level, then
+ * overridden to Legendary if this pull would bring `pullsSinceLegendary`
+ * (`GACHA-02`) to `HARD_PITY_THRESHOLD` (`GACHA-05`) — silently; the caller
+ * can't tell a forced result from a lucky one. The pool is then every
+ * `StoreItem` of that rarity at or below the account's level; if that's
+ * empty, or (drafted at `ABOVE_LEVEL_PULL_CHANCE`) the chase roll hits, the
+ * pool becomes every item of that rarity *above* the account's level
+ * instead — see the file doc comment for why the empty-pool case is the
+ * common path for Legendary/Epic today, not a rare exception.
  */
 export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
   return prisma.$transaction(async (tx) => {
-    const locked = await tx.$queryRaw<{ coins: number; level: number }[]>`
-      SELECT "coins", "level"
+    const locked = await tx.$queryRaw<
+      { coins: number; level: number; pullsSinceLegendary: number }[]
+    >`
+      SELECT "coins", "level", "pullsSinceLegendary"
       FROM "UserEconomy"
       WHERE "userId" = ${userId}
       FOR UPDATE`;
@@ -139,7 +151,13 @@ export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
       } as const;
     }
 
-    const rarity = rollRarity();
+    // Hard pity (GACHA-05): this pull is the one that would reach the
+    // threshold, so it's forced regardless of the roll. `+ 1` because
+    // `pullsSinceLegendary` counts pulls *before* this one.
+    const pityForces = account.pullsSinceLegendary + 1 >= HARD_PITY_THRESHOLD;
+    const rarity = pityForces ? "LEGENDARY" : rollRarity();
+    const pullsSinceLegendary =
+      rarity === "LEGENDARY" ? 0 : account.pullsSinceLegendary + 1;
 
     const inLevelPool = await tx.storeItem.findMany({
       where: { rarity, levelRequired: { lte: account.level } },
@@ -189,7 +207,7 @@ export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
 
     const economy = await tx.userEconomy.update({
       where: { userId },
-      data: { coins: { decrement: LUCKY_BOX_COST_COINS } },
+      data: { coins: { decrement: LUCKY_BOX_COST_COINS }, pullsSinceLegendary },
     });
 
     return {

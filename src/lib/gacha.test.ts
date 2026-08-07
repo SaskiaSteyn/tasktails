@@ -1,14 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   ABOVE_LEVEL_PULL_CHANCE,
+  HARD_PITY_THRESHOLD,
   LUCKY_BOX_COST_COINS,
   pullLuckyBox,
   rollRarity,
 } from "@/lib/gacha";
 import { prismaMock } from "@/test/prisma-mock";
 
-/** GACHA-04 — the weighted roll (pure) and the pull transaction (mocked Prisma), same split economy.test.ts uses for buyXp. */
+/** GACHA-04/05 — the weighted roll (pure), the pull transaction, and hard pity, all against the mocked Prisma client (same split economy.test.ts uses for buyXp). */
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 const storeItem = (overrides: Partial<Record<string, unknown>> = {}) => ({
@@ -21,6 +22,11 @@ const storeItem = (overrides: Partial<Record<string, unknown>> = {}) => ({
   rarity: "COMMON",
   ...overrides,
 }) as never;
+
+/** `$queryRaw`'s locked-row shape, with a sensible default `pullsSinceLegendary` so tests that don't care about pity don't have to think about it. */
+const account = (overrides: Partial<Record<string, unknown>> = {}) => [
+  { coins: 500, level: 5, pullsSinceLegendary: 0, ...overrides },
+];
 
 describe("rollRarity", () => {
   it("picks Common at the low end of the range", () => {
@@ -54,6 +60,12 @@ describe("pullLuckyBox", () => {
       (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
     );
     prismaMock.userEconomy.update.mockResolvedValue({ coins: 0 } as never);
+    prismaMock.storeItem.findMany.mockResolvedValue([storeItem()]);
+    prismaMock.inventoryItem.findFirst.mockResolvedValue(null);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("rejects a pull with no account", async () => {
@@ -65,7 +77,7 @@ describe("pullLuckyBox", () => {
   });
 
   it("rejects a pull without enough coins", async () => {
-    prismaMock.$queryRaw.mockResolvedValue([{ coins: 100, level: 1 }]);
+    prismaMock.$queryRaw.mockResolvedValue(account({ coins: 100 }));
 
     const result = await pullLuckyBox("user-1");
 
@@ -79,11 +91,10 @@ describe("pullLuckyBox", () => {
   });
 
   it("creates a new InventoryItem row for a first-time goods pull", async () => {
-    prismaMock.$queryRaw.mockResolvedValue([{ coins: 500, level: 5 }]);
+    prismaMock.$queryRaw.mockResolvedValue(account());
     prismaMock.storeItem.findMany.mockResolvedValue([
       storeItem({ id: "collar", name: "Red collar", category: "ACCESSORIES" }),
     ]);
-    prismaMock.inventoryItem.findFirst.mockResolvedValue(null);
 
     const result = await pullLuckyBox("user-1");
 
@@ -97,14 +108,10 @@ describe("pullLuckyBox", () => {
       data: { userId: "user-1", storeItemId: "collar", quantity: 1 },
     });
     expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
-    expect(prismaMock.userEconomy.update).toHaveBeenCalledWith({
-      where: { userId: "user-1" },
-      data: { coins: { decrement: LUCKY_BOX_COST_COINS } },
-    });
   });
 
   it("increments quantity instead of duplicating when the goods item is already owned", async () => {
-    prismaMock.$queryRaw.mockResolvedValue([{ coins: 500, level: 5 }]);
+    prismaMock.$queryRaw.mockResolvedValue(account());
     prismaMock.storeItem.findMany.mockResolvedValue([storeItem({ id: "collar" })]);
     prismaMock.inventoryItem.findFirst.mockResolvedValue({ id: "inv-1" } as never);
 
@@ -119,7 +126,7 @@ describe("pullLuckyBox", () => {
   });
 
   it("adopts a new Pet, not an InventoryItem row, for an animal pull", async () => {
-    prismaMock.$queryRaw.mockResolvedValue([{ coins: 500, level: 10 }]);
+    prismaMock.$queryRaw.mockResolvedValue(account({ level: 10 }));
     prismaMock.storeItem.findMany.mockResolvedValue([
       storeItem({ id: "fox", name: "Fox kit", category: "ANIMALS", rarity: "EPIC" }),
     ]);
@@ -139,14 +146,13 @@ describe("pullLuckyBox", () => {
   });
 
   it("falls back to the above-level pool when nothing eligible exists at the account's level", async () => {
-    prismaMock.$queryRaw.mockResolvedValue([{ coins: 500, level: 5 }]);
-    // First findMany (in-level) empty, second (above-level) has the Legendary item.
+    prismaMock.$queryRaw.mockResolvedValue(account());
+    // First findMany (in-level) empty, second (above-level) has the item.
     prismaMock.storeItem.findMany
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
         storeItem({ id: "crown", name: "Crown", category: "ACCESSORIES", levelRequired: 20, rarity: "LEGENDARY" }),
       ]);
-    prismaMock.inventoryItem.findFirst.mockResolvedValue(null);
 
     const result = await pullLuckyBox("user-1");
 
@@ -157,7 +163,7 @@ describe("pullLuckyBox", () => {
   });
 
   it("reports empty-catalogue rather than crashing when both pools are empty", async () => {
-    prismaMock.$queryRaw.mockResolvedValue([{ coins: 500, level: 5 }]);
+    prismaMock.$queryRaw.mockResolvedValue(account());
     prismaMock.storeItem.findMany.mockResolvedValue([]);
 
     const result = await pullLuckyBox("user-1");
@@ -173,5 +179,73 @@ describe("pullLuckyBox", () => {
     // edit that would make it something other than a small probability.
     expect(ABOVE_LEVEL_PULL_CHANCE).toBeGreaterThan(0);
     expect(ABOVE_LEVEL_PULL_CHANCE).toBeLessThan(0.1);
+  });
+
+  describe("hard pity (GACHA-05)", () => {
+    it("increments pullsSinceLegendary on a non-Legendary pull", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0); // rolls Common, well under pity
+      prismaMock.$queryRaw.mockResolvedValue(account({ pullsSinceLegendary: 5 }));
+
+      const result = await pullLuckyBox("user-1");
+
+      expect(result.ok).toBe(true);
+      expect(prismaMock.userEconomy.update).toHaveBeenCalledWith({
+        where: { userId: "user-1" },
+        data: { coins: { decrement: LUCKY_BOX_COST_COINS }, pullsSinceLegendary: 6 },
+      });
+    });
+
+    it("resets pullsSinceLegendary to 0 on a natural Legendary pull", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0.99); // rolls Legendary on its own merits
+      prismaMock.$queryRaw.mockResolvedValue(account({ pullsSinceLegendary: 12 }));
+      prismaMock.storeItem.findMany.mockResolvedValue([storeItem({ rarity: "LEGENDARY" })]);
+
+      const result = await pullLuckyBox("user-1");
+
+      expect(result.ok).toBe(true);
+      expect(prismaMock.userEconomy.update).toHaveBeenCalledWith({
+        where: { userId: "user-1" },
+        data: { coins: { decrement: LUCKY_BOX_COST_COINS }, pullsSinceLegendary: 0 },
+      });
+    });
+
+    it("forces Legendary once the threshold is reached, regardless of the roll", async () => {
+      // A roll of 0 would naturally be Common — the force has to override it.
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      prismaMock.$queryRaw.mockResolvedValue(
+        account({ pullsSinceLegendary: HARD_PITY_THRESHOLD - 1 }),
+      );
+      prismaMock.storeItem.findMany.mockResolvedValue([storeItem({ rarity: "LEGENDARY" })]);
+
+      const result = await pullLuckyBox("user-1");
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.item.rarity).toBe("LEGENDARY");
+      expect(prismaMock.storeItem.findMany.mock.calls[0][0]).toMatchObject({
+        where: { rarity: "LEGENDARY" },
+      });
+      // Forced or natural, the API-facing result carries no trace of pity —
+      // no counter, no threshold, no "wasForced" flag.
+      expect(result).not.toHaveProperty("pullsSinceLegendary");
+      expect(prismaMock.userEconomy.update).toHaveBeenCalledWith({
+        where: { userId: "user-1" },
+        data: { coins: { decrement: LUCKY_BOX_COST_COINS }, pullsSinceLegendary: 0 },
+      });
+    });
+
+    it("does not force below the threshold", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0); // Common
+      prismaMock.$queryRaw.mockResolvedValue(
+        account({ pullsSinceLegendary: HARD_PITY_THRESHOLD - 2 }),
+      );
+
+      const result = await pullLuckyBox("user-1");
+
+      expect(result.ok).toBe(true);
+      expect(prismaMock.storeItem.findMany.mock.calls[0][0]).toMatchObject({
+        where: { rarity: "COMMON" },
+      });
+    });
   });
 });
