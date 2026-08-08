@@ -21,15 +21,11 @@ export const metadata: Metadata = {
  * Bespoke header (back chevron + "Lucky Box" + info-icon button), built the
  * same way `CartPage`'s is — neither is `PersistentHeader`'s title variant,
  * which always carries a coin pill the design board doesn't draw here. The
- * back chevron is a real link (`/store` already exists); the info icon is
- * **not yet** — it renders matching the design board exactly but is inert,
+ * back chevron is a real link (`/store` already exists); the info icon now
+ * is too, wired to `GACHA-15`'s `/store/lucky-box/odds` once that route
+ * shipped — it rendered matching the design board but inert before then,
  * same "render the control, wire it up later" pattern `GACHA-10`'s Open
- * button used, since `GACHA-15` (Drop Rates) hasn't shipped a route to link
- * to.
- *
- * `LuckyBoxHome`'s own Open button is inert for the same reason on the
- * content side — `GACHA-13`/`GACHA-14` (the opening animation and reveal
- * screen a real tap would need to lead into) don't exist yet.
+ * button used.
  */
 export default async function LuckyBoxPage() {
   const session = await auth();
@@ -52,12 +48,13 @@ export default async function LuckyBoxPage() {
           <h1 className="min-w-0 flex-1 truncate font-display text-[17px] leading-[1.15] font-semibold">
             Lucky Box
           </h1>
-          <span
-            aria-hidden
-            className="flex size-[32px] flex-none items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft"
+          <Link
+            href="/store/lucky-box/odds"
+            aria-label="Drop rates"
+            className="flex size-[32px] flex-none items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft hover:text-ink"
           >
             <Info size={16} strokeWidth={2.2} aria-hidden />
-          </span>
+          </Link>
         </header>
       }
     >
