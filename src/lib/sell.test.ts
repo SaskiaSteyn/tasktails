@@ -148,7 +148,13 @@ describe("sellableItemsForUser", () => {
         id: "inv-1",
         storeItemId: "collar",
         quantity: 2,
-        storeItem: { name: "Red collar", category: "ACCESSORIES", coinPrice: 65, levelRequired: 1 },
+        storeItem: {
+          name: "Red collar",
+          category: "ACCESSORIES",
+          imageUrl: "shirt",
+          coinPrice: 65,
+          levelRequired: 1,
+        },
       },
     ] as never);
     prismaMock.pet.findMany.mockResolvedValue([
@@ -159,7 +165,13 @@ describe("sellableItemsForUser", () => {
         happiness: 100,
         hunger: 0,
         lastInteractedAt: new Date(),
-        storeItem: { name: "Fox kit", category: "ANIMALS", coinPrice: 550, levelRequired: 7 },
+        storeItem: {
+          name: "Fox kit",
+          category: "ANIMALS",
+          imageUrl: "/animals/fox.svg",
+          coinPrice: 550,
+          levelRequired: 7,
+        },
       },
     ] as never);
 
@@ -171,9 +183,11 @@ describe("sellableItemsForUser", () => {
         storeItemId: "collar",
         name: "Red collar",
         category: "ACCESSORIES",
+        imageUrl: "shirt",
         quantity: 2,
         coinPrice: 65,
         sellValue: 45,
+        levelRequired: 1,
         locked: false,
       },
       {
@@ -181,9 +195,11 @@ describe("sellableItemsForUser", () => {
         storeItemId: "fox",
         name: "Fox kit",
         category: "ANIMALS",
+        imageUrl: "/animals/fox.svg",
         quantity: 1,
         coinPrice: 550,
         sellValue: 385,
+        levelRequired: 7,
         locked: true, // levelRequired 7 > account level 5
       },
     ]);

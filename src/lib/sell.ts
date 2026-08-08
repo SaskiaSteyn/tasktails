@@ -132,10 +132,14 @@ export type SellableItem = {
   storeItemId: string;
   name: string;
   category: StoreItemCategory;
+  /** For `ItemWell` (`GACHA-17`) — a lucide icon name for goods, an SVG path for animals, same as `StoreItem.imageUrl` everywhere else. */
+  imageUrl: string;
   /** Always 1 for a pet — an animal has no stack to hold a bigger count. */
   quantity: number;
   coinPrice: number;
   sellValue: number;
+  /** For `GACHA-17`'s "LOCKED · LVL N" badge — the level the item actually needs, not just whether it's currently met. */
+  levelRequired: number;
   /**
    * Same `> level + UNLOCK_LEVEL_BUFFER` rule `gacha.ts`'s `pullLuckyBox()`
    * uses to decide whether a pull is immediately usable — sellable
@@ -167,9 +171,11 @@ export async function sellableItemsForUser(userId: string): Promise<SellableItem
     storeItemId: item.storeItemId,
     name: item.storeItem.name,
     category: item.storeItem.category,
+    imageUrl: item.storeItem.imageUrl,
     quantity: item.quantity,
     coinPrice: item.storeItem.coinPrice,
     sellValue: Math.floor(item.storeItem.coinPrice * SELL_RATE),
+    levelRequired: item.storeItem.levelRequired,
     locked: item.storeItem.levelRequired > level + UNLOCK_LEVEL_BUFFER,
   }));
 
@@ -178,9 +184,11 @@ export async function sellableItemsForUser(userId: string): Promise<SellableItem
     storeItemId: pet.storeItemId,
     name: pet.name ?? pet.storeItem.name,
     category: pet.storeItem.category,
+    imageUrl: pet.storeItem.imageUrl,
     quantity: 1,
     coinPrice: pet.storeItem.coinPrice,
     sellValue: Math.floor(pet.storeItem.coinPrice * SELL_RATE),
+    levelRequired: pet.storeItem.levelRequired,
     locked: pet.storeItem.levelRequired > level + UNLOCK_LEVEL_BUFFER,
   }));
 
