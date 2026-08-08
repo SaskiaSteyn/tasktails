@@ -1,4 +1,5 @@
 import { Gift } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Coin } from "@/components/ui/coin";
@@ -40,10 +41,14 @@ import { cn } from "@/lib/cn";
  * for it), so faking that shape just to borrow the styling would be more
  * indirection than the two reused class names below.
  *
- * **Inert for now, on purpose** — same "render the control, wire it up
- * later" pattern `STOR-01` used for its own then-unbuilt search/chips/cart
- * button: there is nowhere to link to yet, since `GACHA-12` (the Lucky Box
- * home screen this would open) hasn't shipped.
+ * The "Open" pill is the card's one interactive element — same "the button
+ * is the tap target, not the whole row" pattern `StoreItemCard`'s own "+"
+ * uses, not a wrapper `Link` around the entire card. Originally shipped
+ * inert ("render the control, wire it up later", same as `STOR-01`'s own
+ * then-unbuilt search/chips/cart button) because `GACHA-12` (the Lucky Box
+ * home screen this opens) hadn't shipped yet; wired to `/store/lucky-box`
+ * once it had — found live, 2026-08-08, still pointing nowhere after
+ * `GACHA-12` existed.
  */
 export function LuckyBoxCard({
   price,
@@ -70,9 +75,12 @@ export function LuckyBoxCard({
           </span>
         </div>
 
-        <span className="flex-none rounded-[10px] bg-terracotta px-4 py-2 font-display text-[12.5px] font-semibold text-white">
+        <Link
+          href="/store/lucky-box"
+          className="flex-none rounded-[10px] bg-terracotta px-4 py-2 font-display text-[12.5px] font-semibold text-white"
+        >
           Open
-        </span>
+        </Link>
       </div>
 
       {extra}

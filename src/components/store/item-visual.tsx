@@ -49,6 +49,14 @@ const CATEGORY_WELL: Record<StoreItemCategory, { bg: string; icon: string }> = {
  * well's fill was much narrower than the template). The cart row (STOR-06)
  * is the one place the mock actually does draw a fixed square (`44×44`),
  * so that call site leaves `fullWidth` off.
+ *
+ * `bgClassNameOverride`/`iconClassNameOverride` (GACHA-14) let a caller tint
+ * the well by something other than category — the Lucky Box reveal screen
+ * colours it by the pulled item's *rarity* instead, and (unlike `locked`,
+ * which swaps in a `Lock` glyph for a store card that can't be bought yet)
+ * still shows the item's real icon, since a locked-but-owned pull is shown
+ * with its own art plus a separate "unlocks at Lvl N" chip, not a padlock.
+ * Optional and additive — every existing call site is unaffected.
  */
 export function ItemWell({
   item,
@@ -59,6 +67,8 @@ export function ItemWell({
   rounded = "rounded-[11px]",
   fullWidth = false,
   className,
+  bgClassNameOverride,
+  iconClassNameOverride,
 }: {
   item: Pick<StoreItem, "category" | "imageUrl">;
   locked?: boolean;
@@ -72,6 +82,10 @@ export function ItemWell({
   /** Fixed height, but stretches to the container's width instead of a fixed square — the grid card's well, per the mock. */
   fullWidth?: boolean;
   className?: string;
+  /** Replaces the default category-tinted fill. Ignored when `locked`. */
+  bgClassNameOverride?: string;
+  /** Replaces the default category-tinted icon colour (goods only — animal artwork has no tint to override). */
+  iconClassNameOverride?: string;
 }) {
   const isAnimal = item.category === "ANIMALS";
 
@@ -81,7 +95,9 @@ export function ItemWell({
         "flex items-center justify-center",
         fullWidth ? "w-full" : "flex-none",
         rounded,
-        locked ? "bg-[#E9E3D9]" : isAnimal ? "bg-input" : CATEGORY_WELL[item.category].bg,
+        locked
+          ? "bg-[#E9E3D9]"
+          : (bgClassNameOverride ?? (isAnimal ? "bg-input" : CATEGORY_WELL[item.category].bg)),
         className,
       )}
       style={fullWidth ? { height: size } : { width: size, height: size }}
@@ -105,7 +121,7 @@ export function ItemWell({
           name={item.imageUrl as IconName}
           size={iconSize}
           strokeWidth={2.2}
-          className={CATEGORY_WELL[item.category].icon}
+          className={iconClassNameOverride ?? CATEGORY_WELL[item.category].icon}
           aria-hidden
         />
       )}
