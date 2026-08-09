@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import { LockedByLevelState } from "@/components/store/locked-by-level-state";
+import { LuckyBoxCard } from "@/components/store/lucky-box-card";
 import { StoreItemCard } from "@/components/store/store-item-card";
 import type { StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
@@ -59,6 +60,16 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * swaps it in for the search/chips/grid entirely, the same "replace the
  * content, keep the chrome" pattern `CartPanel`'s empty/confirmation states
  * use, rather than a modal stacked on top.
+ *
+ * `luckyBoxPrice` (`GACHA-10`) renders `<LuckyBoxCard />` full-width above
+ * the grid, per the approved gacha design board — a plain number since it
+ * isn't study-group-gated.
+ *
+ * `luckyBoxUrgency` (`GACHA-11`) is, though — the Group B odds-boost banner
+ * plus recent-pulls line, passed straight through to `LuckyBoxCard`'s own
+ * `extra` slot unexamined, same `ReactNode`-slot reasoning `flashSaleBanner`
+ * already established: this component never branches on it, just forwards
+ * whatever `StorePage` decided.
  */
 export function StoreBrowser({
   items,
@@ -66,12 +77,16 @@ export function StoreBrowser({
   urgencyBadges,
   urgencyNotes,
   level,
+  luckyBoxPrice,
+  luckyBoxUrgency,
 }: {
   items: StoreItemWithLock[];
   flashSaleBanner?: ReactNode;
   urgencyBadges?: Record<string, ReactNode>;
   urgencyNotes?: Record<string, ReactNode>;
   level: number;
+  luckyBoxPrice: number;
+  luckyBoxUrgency?: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<StoreItemCategory | "ALL">("ALL");
@@ -149,6 +164,8 @@ export function StoreBrowser({
           );
         })}
       </div>
+
+      <LuckyBoxCard price={luckyBoxPrice} extra={luckyBoxUrgency} />
 
       {visible.length === 0 ? (
         <p className="py-10 text-center text-[13px] text-ink-soft">

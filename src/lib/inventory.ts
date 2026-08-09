@@ -53,6 +53,24 @@ export async function accessoryInventoryForUser(
 }
 
 /**
+ * Every category the user owns, for GACHA-08's Sell Items listing —
+ * `foodInventoryForUser()`/`accessoryInventoryForUser()` are each scoped to
+ * one category for their specific screens and between them don't cover
+ * `DECORATIONS` at all. Same `quantity: { gt: 0 }` filter as
+ * `foodInventoryForUser()`: a row zeroed out by `GACHA-07`'s sell pipeline
+ * has nothing left to sell either.
+ */
+export async function allInventoryForUser(
+  userId: string,
+): Promise<InventoryItemWithStoreItem[]> {
+  return prisma.inventoryItem.findMany({
+    where: { userId, quantity: { gt: 0 } },
+    orderBy: { id: "asc" },
+    include: { storeItem: true },
+  });
+}
+
+/**
  * PET-08 — atomically decrements one unit of a food item, or does nothing.
  * Takes a `Prisma.TransactionClient` rather than reading `prisma` itself:
  * the caller (`recordFeedInteraction()` in `src/lib/pets.ts`) has to consume

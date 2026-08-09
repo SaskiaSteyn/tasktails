@@ -54,8 +54,13 @@ type UrgencyKind =
  * user and item exist, which satisfies "seeded ... per item per session"
  * (confirmed with the user) at least as strongly as a session-scoped value
  * would.
+ *
+ * Exported (GACHA-09) for `gacha.ts`'s own fabricated urgency value — the
+ * Lucky Box isn't a `StoreItem` row, but the same "no DB row, no cache,
+ * stable per (user, pseudo-id)" reasoning applies, so it reuses this rather
+ * than a second hashing implementation.
  */
-function seededInt(
+export function seededInt(
   userId: string,
   itemId: string,
   kind: UrgencyKind,

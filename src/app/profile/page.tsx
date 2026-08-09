@@ -10,6 +10,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { AchievementsGrid } from "@/components/profile/achievements-grid";
 import { BuyXpCard } from "@/components/profile/buy-xp-card";
 import { ProfileHeader } from "@/components/profile/profile-header";
+import { SellItemsCard } from "@/components/profile/sell-items-card";
 import { StatsGrid } from "@/components/profile/stats-grid";
 import { UsernameCard } from "@/components/profile/username-card";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
@@ -77,12 +78,13 @@ export default async function ProfilePage() {
         <StatsGrid stats={stats} />
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-col gap-[10px]">
         <BuyXpCard
           costCoins={BUY_XP_COST_COINS}
           gainXp={BUY_XP_GAIN_XP}
           coins={economy?.coins ?? 0}
         />
+        <SellItemsCard />
       </div>
 
       <div className="mt-4">
