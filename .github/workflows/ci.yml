@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [dev, main, 165-cicd-automated-testing]
+    branches: [dev, main]
   pull_request:
 
 concurrency:
