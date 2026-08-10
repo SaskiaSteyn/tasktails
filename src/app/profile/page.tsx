@@ -10,12 +10,14 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { AchievementsGrid } from "@/components/profile/achievements-grid";
 import { BuyXpCard } from "@/components/profile/buy-xp-card";
 import { ProfileHeader } from "@/components/profile/profile-header";
+import { RankButton } from "@/components/profile/rank-button";
 import { SellItemsCard } from "@/components/profile/sell-items-card";
 import { StatsGrid } from "@/components/profile/stats-grid";
 import { UsernameCard } from "@/components/profile/username-card";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { currentEconomy } from "@/lib/economy";
+import { allTimeLeaderboard } from "@/lib/leaderboard";
 import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
 import { lifetimeStatsFor } from "@/lib/stats";
 import { displayNameFor, findUserByEmail } from "@/lib/users";
@@ -40,11 +42,12 @@ export default async function ProfilePage() {
   if (!email || !userId) redirect("/login");
   await redirectAdminsAway(userId);
 
-  const [record, economy, stats, achievements] = await Promise.all([
+  const [record, economy, stats, achievements, board] = await Promise.all([
     findUserByEmail(email),
     currentEconomy(),
     lifetimeStatsFor(userId),
     achievementsForUser(userId),
+    allTimeLeaderboard(userId),
   ]);
   if (!record) redirect("/login");
 
@@ -77,6 +80,21 @@ export default async function ProfilePage() {
       <div className="mt-4">
         <StatsGrid stats={stats} />
       </div>
+
+      {/* LEAD-08 — between the stats grid and Buy XP, as the addendum draws it.
+          Hidden rather than shown empty when this account somehow isn't ranked:
+          a card that says "Your rank" with nothing in it is worse than no card,
+          and `you` is only ever null for a non-participant, who is redirected
+          away above. */}
+      {board.you ? (
+        <div className="mt-4">
+          <RankButton
+            rank={board.you.rank}
+            participantCount={board.participantCount}
+            scored={board.you.score > 0}
+          />
+        </div>
+      ) : null}
 
       <div className="mt-4 flex flex-col gap-[10px]">
         <BuyXpCard

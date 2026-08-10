@@ -186,6 +186,53 @@
   --color-urgency-border: #ebd9d2;
   --color-urgency-border-hover: #e9b8ad; /* outlined destructive, hovered */
 
+  /* ---- Leaderboard · podium + rank button (LEAD-06) ----
+     From `design_handoff/ADDENDUM-leaderboard.md`, at the values it draws.
+
+     There is no gold family here because gold is the amber family already:
+     the addendum's pedestal `#F2C879` is `--color-amber-ring`, its avatar fill
+     `#FCEBD3` is `--color-amber-tint`, its ring `#E5A93C` is `--color-amber`,
+     and its `#8A6416` text measures 3.00 BPCA where `--color-amber-text`
+     measures 3.02 — the same colour to the eye, so first place reuses those
+     rather than adding a fifth near-identical amber.
+
+     Silver and bronze have no equivalent anywhere in the palette, so they get
+     the same four-part shape the accents use: fill, ring, tint, text. Measured
+     BPCA on their own pedestals is 2.57 (silver) and 2.48 (bronze); AA-passing
+     variants exist (#434A54 / #473123) but take the metal out of both, so these
+     ship as drawn and join the accepted-exception list in the audit block
+     above. Revisit with the INF-14 pass.
+
+     The pinned "You" row is deliberately absent from this block. It is drawn
+     `#FBEAE3` on `#C23B2E`, and the first of those is exactly
+     `--color-terracotta-tint` while the second sits a hair off
+     `--color-urgency-text` (#BF3A2D) — so it is built from the terracotta
+     family, which already has every value it needs. Urgency red stays reserved
+     for Group B stimuli and destructive actions; a Group A participant must
+     never be shown one. */
+  --color-podium-silver: #d6dee8; /* 2nd pedestal */
+  --color-podium-silver-ring: #b9c6d6; /* 2nd avatar border */
+  --color-podium-silver-tint: #e7eef6; /* 2nd avatar fill */
+  --color-podium-silver-text: #7c8a9c; /* 2nd rank numeral + score */
+  --color-podium-bronze: #e4c9b4; /* 3rd pedestal */
+  --color-podium-bronze-ring: #d8b79e; /* 3rd avatar border */
+  --color-podium-bronze-tint: #f6ede7; /* 3rd avatar fill */
+  --color-podium-bronze-text: #b07b57; /* 3rd rank numeral + score */
+
+  /* The ranked list's well, one step off `surface` so the white row cards read
+     as cards rather than as the page. */
+  --color-list-well: #fbf9f4;
+  /* No ellipsis token. The addendum's "···" collapsed the ranks between the
+     leaders and your own row; the ranked list now holds every rank and sticks
+     your row to the bottom of the scroll instead (see ranked-list.tsx), so
+     there is no gap left to stand in for. */
+
+  /* Profile's rank button (LEAD-08) — an amber card, but with its own border
+     and two text weights the amber family doesn't carry. */
+  --color-rank-border: #f0dcb8;
+  --color-rank-sub: #b08a3c; /* "Top 8% · climbing 3 spots" */
+  --color-rank-numeral: #b67f1e; /* the "#12" itself */
+
   /* ---- Task complexity ramp ---- */
   --color-tier-trivial: #98a2ae; /* 5 coins / 8 xp */
   --color-tier-small: #5fa97e; /* 15 / 20 */
