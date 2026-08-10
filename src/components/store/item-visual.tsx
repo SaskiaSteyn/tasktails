@@ -19,6 +19,18 @@ import { cn } from "@/lib/cn";
  * (the exact error STOR-02 hit and fixed).
  */
 
+/**
+ * PRO-18 — whether an `ANIMALS` item's `imageUrl` is a real SVG path
+ * (`/animals/koala.svg`) rather than a lucide icon-name fallback for a
+ * species with no artwork yet. Exported so every place that renders a
+ * pet's own art directly (`AnimalCard`, `ZooGalleryCard`, `PetCustomizer`'s
+ * stage — none of which go through `ItemWell`) can tell the two apart the
+ * same way, rather than three copies of the same `.startsWith("/")` check.
+ */
+export function hasAnimalArt(imageUrl: string): boolean {
+  return imageUrl.startsWith("/");
+}
+
 export const CATEGORY_LABEL: Record<StoreItemCategory, string> = {
   FOOD: "Food",
   ACCESSORIES: "Accessory",
@@ -30,8 +42,10 @@ const CATEGORY_WELL: Record<StoreItemCategory, { bg: string; icon: string }> = {
   FOOD: { bg: "bg-amber-tint", icon: "text-amber-text" },
   ACCESSORIES: { bg: "bg-sage-tint", icon: "text-sage-text" },
   DECORATIONS: { bg: "bg-violet-tint", icon: "text-violet-text" },
-  // Unused — animals render `Image` artwork instead, never this well's icon.
-  ANIMALS: { bg: "bg-input", icon: "" },
+  // PRO-18 — no longer unused: animals without real artwork (see `isAnimal`
+  // below) fall back to this same icon treatment, neutral rather than an
+  // accent colour since animals don't otherwise carry a category tint.
+  ANIMALS: { bg: "bg-input", icon: "text-ink-soft" },
 };
 
 /**
@@ -57,6 +71,17 @@ const CATEGORY_WELL: Record<StoreItemCategory, { bg: string; icon: string }> = {
  * still shows the item's real icon, since a locked-but-owned pull is shown
  * with its own art plus a separate "unlocks at Lvl N" chip, not a padlock.
  * Optional and additive — every existing call site is unaffected.
+ *
+ * **PRO-18** — an animal no longer *requires* a real SVG. `seed.ts` used to
+ * be limited to the 3 species with actual artwork in `public/animals/`
+ * (Koala/Fox/Penguin) because this well rendered every `ANIMALS` item as
+ * `next/image` unconditionally, and an item with no real file at its
+ * `imageUrl` would 404 across the Store, Pet customizer and feed sheet. The
+ * remaining 19 species (needed so "own every animal" achievements can
+ * target the real 22, not 3) now seed with a lucide icon name instead of a
+ * path — same "one shared icon, not literal artwork" precedent this file's
+ * hat/tie rows already use — and this well tells the two apart by whether
+ * `imageUrl` looks like a path (`/animals/...`) or a bare icon name.
  */
 export function ItemWell({
   item,
@@ -88,6 +113,7 @@ export function ItemWell({
   iconClassNameOverride?: string;
 }) {
   const isAnimal = item.category === "ANIMALS";
+  const showAnimalArt = isAnimal && hasAnimalArt(item.imageUrl);
 
   return (
     <div
@@ -104,7 +130,7 @@ export function ItemWell({
     >
       {locked ? (
         <Lock size={iconSize} strokeWidth={2.2} className="text-ink-disabled" aria-hidden />
-      ) : isAnimal ? (
+      ) : showAnimalArt ? (
         <Image
           src={item.imageUrl}
           alt=""
@@ -115,13 +141,18 @@ export function ItemWell({
         />
       ) : (
         <DynamicIcon
-          // Free-form DB string (icon names for goods, SVG paths for
-          // animals per `seed.ts`) — cast rather than widen `IconName`,
-          // same reasoning `feed-sheet.tsx` documents for its own cast.
+          // Free-form DB string (icon names for goods and art-less animals,
+          // SVG paths for animals with real art) — cast rather than widen
+          // `IconName`, same reasoning `feed-sheet.tsx` documents for its
+          // own cast.
           name={item.imageUrl as IconName}
-          size={iconSize}
+          size={isAnimal ? animalIconSize : iconSize}
           strokeWidth={2.2}
-          className={iconClassNameOverride ?? CATEGORY_WELL[item.category].icon}
+          className={
+            isAnimal
+              ? CATEGORY_WELL.ANIMALS.icon
+              : (iconClassNameOverride ?? CATEGORY_WELL[item.category].icon)
+          }
           aria-hidden
         />
       )}

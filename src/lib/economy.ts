@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import type { UserEconomy } from "@/generated/prisma/client";
+import type { Prisma, UserEconomy } from "@/generated/prisma/client";
 import {
   calendarDaysBetween,
   isSameDay,
@@ -56,6 +56,33 @@ export async function economyForUser(
   userId: string,
 ): Promise<UserEconomy | null> {
   return prisma.userEconomy.findUnique({ where: { userId } });
+}
+
+/**
+ * LEAD-03 — lifetime coins earned for a set of accounts, keyed by user id.
+ *
+ * Lives here rather than in `leaderboard.ts` for the reason at the top of this
+ * file: `prisma.userEconomy` has one owner. `leaderboard.ts` composes this the
+ * way `stats.ts` composes `economyForUser`.
+ *
+ * Accounts with no economy row are simply absent from the map — callers decide
+ * whether that means zero or means skip. Clamped at zero on the way out, same
+ * as `snapshotOf` and `lifetimeStatsFor` do, so a negative can never reach a
+ * ranking.
+ */
+export async function lifetimeEarningsFor(
+  userIds: string[],
+): Promise<Map<string, number>> {
+  if (userIds.length === 0) return new Map();
+
+  const rows = await prisma.userEconomy.findMany({
+    where: { userId: { in: userIds } },
+    select: { userId: true, lifetimeCoinsEarned: true },
+  });
+
+  return new Map(
+    rows.map((row) => [row.userId, Math.max(0, row.lifetimeCoinsEarned)]),
+  );
 }
 
 /**
@@ -664,5 +691,97 @@ export async function buyXp(
       levelUp: xp.levelUp,
       economy,
     } as const;
+  });
+}
+
+/**
+ * PRO-18 — pays out an achievement's seeded XP reward. Same lock-then-
+ * `xpWrite()` shape as `buyXp()`, and for the same reason it deliberately
+ * skips `applyDailyCap()`: a one-time milestone bonus (up to 1000 XP for the
+ * "unlock everything" badge alone) shouldn't be silently trimmed by a cap
+ * that exists to pace daily task-grinding, not one-off achievements.
+ *
+ * No coins — `Achievements.pdf` only seeds an XP figure per badge. Returns
+ * null both when there's nothing to grant (`xp <= 0`) and when the account
+ * has no economy row, the same "can't tell the difference" shape most of
+ * this module's lookups use.
+ */
+export async function grantAchievementReward(
+  userId: string,
+  xp: number,
+): Promise<LevelUpEvent | null> {
+  if (xp <= 0) return null;
+
+  return prisma.$transaction(async (tx) => {
+    const locked = await tx.$queryRaw<{ xp: number }[]>`
+      SELECT "xp"
+      FROM "UserEconomy"
+      WHERE "userId" = ${userId}
+      FOR UPDATE`;
+
+    const current = locked[0];
+    if (!current) return null;
+
+    const write = xpWrite(current.xp, xp);
+    await tx.userEconomy.update({ where: { userId }, data: write.data });
+    return write.levelUp;
+  });
+}
+
+/**
+ * Combines two level-up events from the same request into one celebration
+ * instead of two back-to-back dialogs — e.g. a task's own XP grant crossing
+ * a threshold *and* an achievement it triggered crossing another. `a` is
+ * assumed to have happened first, so `b.to`/`b.xp`/`b.isMaxLevel` are the
+ * final, authoritative state; `levelsGained` is the full climb across both.
+ */
+export function mergeLevelUps(
+  a: LevelUpEvent | null,
+  b: LevelUpEvent | null,
+): LevelUpEvent | null {
+  if (!a) return b;
+  if (!b) return a;
+
+  return {
+    from: a.from,
+    to: b.to,
+    levelsGained: [...a.levelsGained, ...b.levelsGained],
+    xp: b.xp,
+    isMaxLevel: b.isMaxLevel,
+  };
+}
+
+/**
+ * PRO-18 — bumps the lifetime "pet"/"feed" interaction counters the Petting
+ * Zoo achievements ("pet/feed animals 50 times") read. Live here, not in
+ * `pets.ts`, because this module is the sole owner of `prisma.userEconomy`
+ * (same rule `pets.ts`'s own header comment states for `prisma.pet`) —
+ * `pets.ts` calls these from inside its own transaction, the same
+ * "caller owns the transaction, this function just participates" shape
+ * `consumeFoodItem()`/`equipAccessory()` (`src/lib/inventory.ts`) already
+ * use for the same cross-module-write situation.
+ *
+ * `updateMany`, not `update` — an account with no economy row (shouldn't
+ * happen; AUTH-04 creates one with the user) matches zero rows rather than
+ * throwing and aborting the pet interaction it's riding along with, which
+ * has no "already done" state of its own to fail forward-only into.
+ */
+export async function incrementPetInteractionCount(
+  tx: Prisma.TransactionClient,
+  userId: string,
+): Promise<void> {
+  await tx.userEconomy.updateMany({
+    where: { userId },
+    data: { lifetimePetInteractions: { increment: 1 } },
+  });
+}
+
+export async function incrementFeedInteractionCount(
+  tx: Prisma.TransactionClient,
+  userId: string,
+): Promise<void> {
+  await tx.userEconomy.updateMany({
+    where: { userId },
+    data: { lifetimeFeedInteractions: { increment: 1 } },
   });
 }

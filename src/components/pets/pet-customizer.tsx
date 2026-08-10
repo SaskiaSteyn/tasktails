@@ -11,7 +11,10 @@ import {
   AchievementUnlockScreen,
   type AchievementUnlockLike,
 } from "@/components/economy/achievement-unlock-screen";
+import type { LevelUpEventLike } from "@/components/economy/level-up-provider";
+import { LevelUpScreen } from "@/components/economy/level-up-screen";
 import { AppShell } from "@/components/layout/app-shell";
+import { hasAnimalArt } from "@/components/store/item-visual";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 // Type-only: erased at compile time, same reasoning `AnimalCard` documents
@@ -51,7 +54,9 @@ import type { PetWithItem } from "@/lib/pets";
  * component *instantiates* `AppShell` itself rather than being rendered
  * inside one, so it sits above `AppShell`'s provider in the tree and a hook
  * call here could never see it. Same reasoning the style guide's
- * `LevelUpDemo` documents for rendering `LevelUpScreen` directly.
+ * `LevelUpDemo` documents for rendering `LevelUpScreen` directly — which
+ * PRO-18 now also does here, off its own local queue, since equipping grants
+ * no XP itself but an achievement it unlocks can.
  */
 export function PetCustomizer({
   pet,
@@ -77,6 +82,7 @@ export function PetCustomizer({
   const [achievementQueue, setAchievementQueue] = useState<
     AchievementUnlockLike[]
   >([]);
+  const [levelUpQueue, setLevelUpQueue] = useState<LevelUpEventLike[]>([]);
 
   const equippedItem = accessories.find((item) => item.id === equippedId);
 
@@ -137,6 +143,9 @@ export function PetCustomizer({
       if (body.achievementsUnlocked?.length) {
         setAchievementQueue((current) => [...current, ...body.achievementsUnlocked]);
       }
+      if (body.levelUp) {
+        setLevelUpQueue((current) => [...current, body.levelUp]);
+      }
       router.refresh();
     } catch {
       setEquippedId(previous);
@@ -166,13 +175,27 @@ export function PetCustomizer({
     >
       <div className="flex flex-none flex-col items-center rounded-card-lg bg-linear-to-b from-[#EAF3EC] to-[#F3ECE1] px-4 py-5">
         <div className="relative size-[118px]">
-          <Image
-            src={pet.storeItem.imageUrl}
-            alt={name}
-            width={118}
-            height={118}
-            className="block size-[118px]"
-          />
+          {hasAnimalArt(pet.storeItem.imageUrl) ? (
+            <Image
+              src={pet.storeItem.imageUrl}
+              alt={name}
+              width={118}
+              height={118}
+              className="block size-[118px]"
+            />
+          ) : (
+            // PRO-18 — a species with no real artwork yet, same
+            // icon-fallback treatment `ItemWell`/`AnimalCard` use.
+            <div className="flex size-[118px] items-center justify-center rounded-full bg-input">
+              <DynamicIcon
+                name={pet.storeItem.imageUrl as IconName}
+                size={56}
+                strokeWidth={1.6}
+                className="text-ink-soft"
+                aria-hidden
+              />
+            </div>
+          )}
           {equippedItem ? (
             <span
               aria-hidden
@@ -312,6 +335,18 @@ export function PetCustomizer({
           open
           achievement={achievementQueue[0]}
           onDismiss={() => setAchievementQueue((current) => current.slice(1))}
+        />
+      ) : levelUpQueue[0] ? (
+        // Shown only once the achievement queue drains — same "one dialog at
+        // a time" behaviour `LevelUpProvider`/`AchievementUnlockProvider`
+        // each give for free; this component has neither, so it's ordered
+        // by hand here instead.
+        <LevelUpScreen
+          key={`${levelUpQueue[0].from}-${levelUpQueue[0].to}-${levelUpQueue[0].xp}`}
+          open
+          level={levelUpQueue[0].to}
+          previousLevel={levelUpQueue[0].from}
+          onDismiss={() => setLevelUpQueue((current) => current.slice(1))}
         />
       ) : null}
     </AppShell>

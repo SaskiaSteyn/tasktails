@@ -13,13 +13,14 @@ import { Button } from "@/components/ui/button";
  * the catalogue.
  */
 const CATALOGUE = [
-  { key: "task_champion", name: "Task Champion", description: "Complete 10 tasks." },
-  { key: "rising_star", name: "Rising Star", description: "Reach Level 5." },
-  { key: "week_warrior", name: "Week Warrior", description: "Keep a 7-day streak." },
+  { key: "streak_7_day", name: "Week Warrior", description: "Keep a 7-day task streak.", xpReward: 75 },
+  { key: "tasks_10_trivial", name: "Small Steps", description: "Complete 10 Trivial tasks.", xpReward: 40 },
+  { key: "zoo_pet_50", name: "Gentle Hands", description: "Pet animals 50 times.", xpReward: 60 },
   {
-    key: "first_purchase",
-    name: "First Purchase",
-    description: "Buy your first item from the store.",
+    key: "unlock_common_food",
+    name: "Common Snack",
+    description: "Own a Common food item.",
+    xpReward: 15,
   },
 ];
 

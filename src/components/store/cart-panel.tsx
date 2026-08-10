@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
+import { useLevelUp } from "@/components/economy/level-up-provider";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Coin } from "@/components/ui/coin";
@@ -61,6 +62,7 @@ export function CartPanel({
   coins: number;
 }) {
   const { celebrate: celebrateAchievements } = useAchievementUnlock();
+  const { celebrate: celebrateLevelUp } = useLevelUp();
   const [cart, setCart] = useState(initialCart);
   // Which line has a request in flight, so its own stepper disables without
   // freezing every other row.
@@ -94,6 +96,9 @@ export function CartPanel({
       });
       setCart([]);
       celebrateAchievements(body.achievementsUnlocked);
+      // PRO-18 — a purchase itself grants no XP, but an achievement it
+      // unlocks (e.g. "own every accessory") can.
+      celebrateLevelUp(body.levelUp);
     } catch {
       setCheckoutError("Couldn't reach TaskTails. Check your connection and try again.");
     } finally {

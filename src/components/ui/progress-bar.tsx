@@ -24,7 +24,7 @@ import { cn } from "@/lib/cn";
  * Built once here because the sanctuary (ZOO-01) draws two of these beside the
  * header's one.
  */
-export type ProgressTone = "xp" | "goal" | "good" | "caution" | "critical";
+export type ProgressTone = "xp" | "goal" | "good" | "caution" | "critical" | "neutral";
 
 /** The designs draw two heights: 8px in the header, 7px on a quest card. */
 export type ProgressSize = "default" | "sm";
@@ -35,6 +35,10 @@ const tones: Record<ProgressTone, string> = {
   good: "bg-sage",
   caution: "bg-amber",
   critical: "bg-terracotta",
+  // PRO-18 — the Achievements screen's "locked with progress" row
+  // (`design_handoff/ADDENDUM-achievements.md`): a grey fill, since a
+  // locked badge's progress isn't good/bad, just incomplete.
+  neutral: "bg-ink-disabled",
 };
 
 const heights: Record<ProgressSize, string> = {

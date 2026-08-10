@@ -1,6 +1,10 @@
 import type { Pet, Prisma, StoreItem } from "@/generated/prisma/client";
 
 import {
+  incrementFeedInteractionCount,
+  incrementPetInteractionCount,
+} from "@/lib/economy";
+import {
   consumeFoodItem,
   equipAccessory,
   type InventoryItemWithStoreItem,
@@ -117,6 +121,15 @@ const PET_HAPPINESS_BOOST = 7;
  *
  * Returns null when the pet doesn't exist or belongs to someone else, same
  * "can't tell the difference" shape `petForUser()` uses.
+ *
+ * **PRO-18**: also bumps `Pet.timesPetted` and `UserEconomy.
+ * lifetimePetInteractions` (the "pet an animal 50 times" / "pet every type
+ * you own" achievements' data) inside one transaction with the stats write
+ * — both describe the same interaction, so either both land or neither
+ * does. The counter increment goes through `economy.ts`'s
+ * `incrementPetInteractionCount()` rather than touching `prisma.userEconomy`
+ * directly, per this module's own "nothing outside it touches `prisma.pet`,
+ * and it returns the favour for tables it doesn't own" rule.
  */
 export async function recordPetInteraction(
   userId: string,
@@ -129,10 +142,18 @@ export async function recordPetInteraction(
   const decayed = decayedStateFor(pet, now);
   const happiness = Math.min(100, decayed.happiness + PET_HAPPINESS_BOOST);
 
-  return prisma.pet.update({
-    where: { id: petId },
-    data: { happiness, hunger: decayed.hunger, lastInteractedAt: now },
-    include: { storeItem: true },
+  return prisma.$transaction(async (tx) => {
+    await incrementPetInteractionCount(tx, userId);
+    return tx.pet.update({
+      where: { id: petId },
+      data: {
+        happiness,
+        hunger: decayed.hunger,
+        lastInteractedAt: now,
+        timesPetted: { increment: 1 },
+      },
+      include: { storeItem: true },
+    });
   });
 }
 
@@ -190,6 +211,11 @@ export async function recordFeedInteraction(
   return prisma.$transaction(async (tx) => {
     const item = await consumeFoodItem(tx, userId, inventoryItemId);
     if (!item) return { ok: false, reason: "item-not-found" };
+
+    // PRO-18 — "feed animals 50 times" achievement data; see
+    // `recordPetInteraction()`'s doc comment for why this goes through
+    // `economy.ts` rather than touching `prisma.userEconomy` here.
+    await incrementFeedInteractionCount(tx, userId);
 
     const decayed = decayedStateFor(pet, now);
     const hunger = Math.max(0, decayed.hunger + FEED_HUNGER_DELTA);

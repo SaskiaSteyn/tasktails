@@ -19,13 +19,18 @@ import { prisma } from "@/lib/prisma";
  * Animal count: economy_system.md frames the animal unlocks as a "second
  * animal type" at Level 7 and a "third" at Level 10 — a deliberately scarce,
  * timed unlock tied to the study's urgency-exposure design, not a full
- * roster. Only 3 animal types are seeded, matching the only 3 SVGs actually
- * staged in `public/animals/`: Koala (Level 1 starter — the "Buy 1 animal"
- * onboarding goal needs something purchasable immediately, and the gate
- * table's Level 1 row is the baseline tier everything else builds on), Fox
- * (Level 7 — "Fox kit"/"2nd animal"/"Unlocks at Lvl 7" is the Store mock's
- * own explicit label, taken over the README's looser "starter pet" aside),
- * and Penguin (Level 10, the remaining unused asset, as the third type).
+ * roster. Only 3 animal types carry real artwork in `public/animals/` and
+ * are priced/gated to match that design: Koala (Level 1 starter — the "Buy 1
+ * animal" onboarding goal needs something purchasable immediately, and the
+ * gate table's Level 1 row is the baseline tier everything else builds on),
+ * Fox (Level 7 — "Fox kit"/"2nd animal"/"Unlocks at Lvl 7" is the Store
+ * mock's own explicit label, taken over the README's looser "starter pet"
+ * aside), and Penguin (Level 10, the remaining unused asset, as the third
+ * type). **PRO-18 (2026-08-10) added the other 19** (icon-fallback
+ * artwork, see the GACHA-03 note below) so "own every animal" achievements
+ * have the real 22-item catalogue to target — the study's own urgency
+ * pacing is unaffected, since those 19 aren't part of the Level 1/7/10 gate
+ * story above.
  *
  * `imageUrl` for the non-animal items is a lucide-react icon name, not a
  * file path — the mock renders food/accessories/decorations as flat colour
@@ -61,15 +66,22 @@ import { prisma } from "@/lib/prisma";
  * guessing one; whoever eventually reconciles it should treat that as an
  * open gap, not an oversight.
  *
- * The other 62 PDF items are net-new rows — **except the 19 non-seeded
- * animals**, deliberately still not added: `ItemWell` (`item-visual.tsx`)
- * renders every `ANIMALS`-category item as `next/image` off `imageUrl`
- * unconditionally, never a lucide icon, so seeding an animal with no real
- * SVG in `public/animals/` would 404 across the Store, Pet customizer and
- * feed sheet — the same asset constraint INF-20 already documented above,
- * still true. Only the 43 non-animal items (8 food, 19 accessories, 16
- * decorations) are added here; the remaining 19 animals need real artwork
- * before they can be seeded.
+ * The other 62 PDF items are net-new rows: 43 non-animal (8 food, 19
+ * accessories, 16 decorations), plus — **added PRO-18, 2026-08-10** — the
+ * remaining 19 animals this file used to leave out. Reason for the original
+ * gap: `ItemWell` (`item-visual.tsx`) rendered every `ANIMALS`-category item
+ * as `next/image` off `imageUrl` unconditionally, and only 3 species
+ * (Koala/Fox/Penguin) have real SVGs in `public/animals/` — seeding the
+ * other 19 would have 404'd across the Store, Pet customizer and feed
+ * sheet. Resolved, not worked around: `ItemWell` and the three places that
+ * render a pet's own art directly (`AnimalCard`, `ZooGalleryCard`,
+ * `PetCustomizer`) now fall back to a lucide icon (`hasAnimalArt()` in
+ * `item-visual.tsx` tells a real path from an icon-name fallback) — the
+ * same "one shared icon, not literal artwork" precedent this file's own
+ * hat/tie rows already use, all 19 sharing `"paw-print"`. Needed because
+ * PRO-18's "own every animal" achievements (Menagerie, Full House) are
+ * meant to target the real 22-animal catalogue, not the 3 that happened to
+ * have art.
  */
 const catalogue: Array<{
   name: string;
@@ -150,6 +162,36 @@ const catalogue: Array<{
     rarity: StoreItemRarity.EPIC, // = PDF "Penguin"
   },
 
+  // ---- PRO-18 (2026-08-10): the remaining 19 animals from Gatcha stuffs.pdf's
+  // Animals table, completing the real 22-item catalogue "own every animal"
+  // achievements target. No real SVG exists for any of these — `"paw-print"`
+  // is the shared icon-fallback `imageUrl` every one of them uses (the same
+  // "one shared icon, not literal artwork" precedent this file's hat/tie
+  // rows already set), told apart from a real asset path by `hasAnimalArt()`
+  // in `item-visual.tsx`. Level/price/rarity are the PDF's own numbers,
+  // unlike the three real-art animals above, which are priced/gated to the
+  // study's urgency-exposure design rather than the PDF — these 19 aren't
+  // part of that story, so nothing here needed reconciling.
+  { name: "Lion kit", category: StoreItemCategory.ANIMALS, levelRequired: 7, coinPrice: 480, imageUrl: "paw-print", rarity: StoreItemRarity.EPIC },
+  { name: "Bunny kit", category: StoreItemCategory.ANIMALS, levelRequired: 1, coinPrice: 35, imageUrl: "paw-print", rarity: StoreItemRarity.COMMON },
+  { name: "Jaguar kit", category: StoreItemCategory.ANIMALS, levelRequired: 7, coinPrice: 620, imageUrl: "paw-print", rarity: StoreItemRarity.EPIC },
+  { name: "Tiger kit", category: StoreItemCategory.ANIMALS, levelRequired: 10, coinPrice: 1000, imageUrl: "paw-print", rarity: StoreItemRarity.EPIC },
+  { name: "Monkey kit", category: StoreItemCategory.ANIMALS, levelRequired: 3, coinPrice: 170, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
+  { name: "Giraffe kit", category: StoreItemCategory.ANIMALS, levelRequired: 3, coinPrice: 130, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
+  { name: "Elephant kit", category: StoreItemCategory.ANIMALS, levelRequired: 10, coinPrice: 1400, imageUrl: "paw-print", rarity: StoreItemRarity.EPIC },
+  { name: "Donkey kit", category: StoreItemCategory.ANIMALS, levelRequired: 1, coinPrice: 45, imageUrl: "paw-print", rarity: StoreItemRarity.COMMON },
+  { name: "Ostrich kit", category: StoreItemCategory.ANIMALS, levelRequired: 3, coinPrice: 190, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
+  { name: "Otters kit", category: StoreItemCategory.ANIMALS, levelRequired: 1, coinPrice: 65, imageUrl: "paw-print", rarity: StoreItemRarity.COMMON },
+  { name: "Rhino kit", category: StoreItemCategory.ANIMALS, levelRequired: 20, coinPrice: 3000, imageUrl: "paw-print", rarity: StoreItemRarity.LEGENDARY },
+  { name: "Panda kit", category: StoreItemCategory.ANIMALS, levelRequired: 20, coinPrice: 3500, imageUrl: "paw-print", rarity: StoreItemRarity.LEGENDARY },
+  { name: "Zebra kit", category: StoreItemCategory.ANIMALS, levelRequired: 3, coinPrice: 150, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
+  { name: "Flamingo kit", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 230, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
+  { name: "Axolotl kit", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 260, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
+  { name: "Dassie kit", category: StoreItemCategory.ANIMALS, levelRequired: 1, coinPrice: 75, imageUrl: "paw-print", rarity: StoreItemRarity.COMMON },
+  { name: "Platypus kit", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 300, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
+  { name: "Tortoise kit", category: StoreItemCategory.ANIMALS, levelRequired: 1, coinPrice: 55, imageUrl: "paw-print", rarity: StoreItemRarity.COMMON },
+  { name: "Capybara kit", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 340, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
+
   // ---- GACHA-03: the rest of Gatcha stuffs.pdf's Food table ----
   { name: "Steak", category: StoreItemCategory.FOOD, levelRequired: 7, coinPrice: 480, imageUrl: "beef", rarity: StoreItemRarity.EPIC },
   { name: "Chicken", category: StoreItemCategory.FOOD, levelRequired: 3, coinPrice: 150, imageUrl: "drumstick", rarity: StoreItemRarity.RARE },
@@ -204,11 +246,16 @@ const catalogue: Array<{
 ];
 
 /**
- * PRO-09 — the achievement catalogue. `Achievement`'s own doc comment
- * (INF-19) notes the design draws badge tiles but names none of them, so
- * this is the source for what they actually are: one badge per criterion
- * type the schema's example already sketches, with thresholds taken
- * straight from that same example rather than invented fresh.
+ * PRO-18 — the achievement catalogue: all 38 achievements from the approved
+ * `Beta/Planning/Achievements.pdf` (Streaks/Unlocks/Tasks/Petting Zoo),
+ * replacing PRO-09's original 4 invented placeholders (`task_champion`,
+ * `rising_star`, `week_warrior`, `first_purchase`) at the project owner's
+ * direction — those don't map onto the PDF's 4 categories, and the ones
+ * that overlapped in spirit (a task count, a streak) already exist here in
+ * the PDF's own form. `xpReward` values are the PDF's seeded figures; see
+ * that document's own closing notes for how each tier was derived
+ * (unlocks scale by rarity, tasks by economy_system.md's tier table,
+ * streaks compounding, "own everything" as the single largest award).
  *
  * `key` is `@unique`, so — unlike `StoreItem`'s name-based lookup above —
  * this seeds with a real `upsert`.
@@ -218,31 +265,55 @@ const achievements: Array<{
   name: string;
   description: string;
   criteria: AchievementCriterion;
+  xpReward: number;
 }> = [
-  {
-    key: "task_champion",
-    name: "Task Champion",
-    description: "Complete 10 tasks.",
-    criteria: { type: "TASKS_COMPLETED", threshold: 10 },
-  },
-  {
-    key: "rising_star",
-    name: "Rising Star",
-    description: "Reach Level 5.",
-    criteria: { type: "LEVEL_REACHED", threshold: 5 },
-  },
-  {
-    key: "week_warrior",
-    name: "Week Warrior",
-    description: "Keep a 7-day streak.",
-    criteria: { type: "STREAK_DAYS", threshold: 7 },
-  },
-  {
-    key: "first_purchase",
-    name: "First Purchase",
-    description: "Buy your first item from the store.",
-    criteria: { type: "ITEMS_PURCHASED", threshold: 1 },
-  },
+  // Streaks
+  { key: "streak_5_day", name: "On a Roll", description: "Keep a 5-day task streak.", criteria: { type: "STREAK_DAYS", threshold: 5 }, xpReward: 50 },
+  { key: "streak_7_day", name: "Week Warrior", description: "Keep a 7-day task streak.", criteria: { type: "STREAK_DAYS", threshold: 7 }, xpReward: 75 },
+  { key: "streak_14_day", name: "Fortnight Fanatic", description: "Keep a 14-day task streak.", criteria: { type: "STREAK_DAYS", threshold: 14 }, xpReward: 150 },
+  { key: "streak_30_day", name: "Unstoppable", description: "Keep a 30-day task streak.", criteria: { type: "STREAK_DAYS", threshold: 30 }, xpReward: 400 },
+
+  // Unlocks — rarity x category
+  { key: "unlock_common_animal", name: "Common Find", description: "Own a Common animal.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.ANIMALS, rarity: StoreItemRarity.COMMON }, xpReward: 15 },
+  { key: "unlock_common_decor", name: "Common Touch", description: "Own a Common decoration.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.DECORATIONS, rarity: StoreItemRarity.COMMON }, xpReward: 15 },
+  { key: "unlock_common_food", name: "Common Snack", description: "Own a Common food item.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.FOOD, rarity: StoreItemRarity.COMMON }, xpReward: 15 },
+  { key: "unlock_common_accessory", name: "Common Style", description: "Own a Common accessory.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.ACCESSORIES, rarity: StoreItemRarity.COMMON }, xpReward: 15 },
+  { key: "unlock_rare_animal", name: "Rare Find", description: "Own a Rare animal.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.ANIMALS, rarity: StoreItemRarity.RARE }, xpReward: 40 },
+  { key: "unlock_rare_decor", name: "Rare Touch", description: "Own a Rare decoration.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.DECORATIONS, rarity: StoreItemRarity.RARE }, xpReward: 40 },
+  { key: "unlock_rare_food", name: "Rare Snack", description: "Own a Rare food item.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.FOOD, rarity: StoreItemRarity.RARE }, xpReward: 40 },
+  { key: "unlock_rare_accessory", name: "Rare Style", description: "Own a Rare accessory.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.ACCESSORIES, rarity: StoreItemRarity.RARE }, xpReward: 40 },
+  { key: "unlock_epic_animal", name: "Epic Find", description: "Own an Epic animal.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.ANIMALS, rarity: StoreItemRarity.EPIC }, xpReward: 100 },
+  { key: "unlock_epic_decor", name: "Epic Touch", description: "Own an Epic decoration.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.DECORATIONS, rarity: StoreItemRarity.EPIC }, xpReward: 100 },
+  { key: "unlock_epic_food", name: "Epic Snack", description: "Own an Epic food item.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.FOOD, rarity: StoreItemRarity.EPIC }, xpReward: 100 },
+  { key: "unlock_epic_accessory", name: "Epic Style", description: "Own an Epic accessory.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.ACCESSORIES, rarity: StoreItemRarity.EPIC }, xpReward: 100 },
+  { key: "unlock_legendary_animal", name: "Legendary Find", description: "Own a Legendary animal.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.ANIMALS, rarity: StoreItemRarity.LEGENDARY }, xpReward: 250 },
+  { key: "unlock_legendary_decor", name: "Legendary Touch", description: "Own a Legendary decoration.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.DECORATIONS, rarity: StoreItemRarity.LEGENDARY }, xpReward: 250 },
+  { key: "unlock_legendary_food", name: "Legendary Snack", description: "Own a Legendary food item.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.FOOD, rarity: StoreItemRarity.LEGENDARY }, xpReward: 250 },
+  { key: "unlock_legendary_accessory", name: "Legendary Style", description: "Own a Legendary accessory.", criteria: { type: "RARITY_OWNED", category: StoreItemCategory.ACCESSORIES, rarity: StoreItemRarity.LEGENDARY }, xpReward: 250 },
+
+  // Unlocks — full category / full store
+  { key: "unlock_all_animals", name: "Menagerie", description: "Own every animal in the catalogue.", criteria: { type: "CATEGORY_FULLY_OWNED", category: StoreItemCategory.ANIMALS }, xpReward: 300 },
+  { key: "unlock_all_decor", name: "Interior Designer", description: "Own every decoration in the catalogue.", criteria: { type: "CATEGORY_FULLY_OWNED", category: StoreItemCategory.DECORATIONS }, xpReward: 200 },
+  { key: "unlock_all_food", name: "Full Pantry", description: "Own every food item in the catalogue.", criteria: { type: "CATEGORY_FULLY_OWNED", category: StoreItemCategory.FOOD }, xpReward: 150 },
+  { key: "unlock_all_accessories", name: "Fully Accessorized", description: "Own every accessory in the catalogue.", criteria: { type: "CATEGORY_FULLY_OWNED", category: StoreItemCategory.ACCESSORIES }, xpReward: 200 },
+  { key: "unlock_everything", name: "Completionist", description: "Own every item in the store.", criteria: { type: "ALL_ITEMS_OWNED" }, xpReward: 1000 },
+
+  // Tasks
+  { key: "tasks_3_in_day", name: "Quick Start", description: "Complete 3 tasks in one day.", criteria: { type: "TASKS_COMPLETED_IN_DAY", threshold: 3 }, xpReward: 25 },
+  { key: "tasks_5_in_day", name: "Getting Things Done", description: "Complete 5 tasks in one day.", criteria: { type: "TASKS_COMPLETED_IN_DAY", threshold: 5 }, xpReward: 50 },
+  { key: "tasks_10_in_day", name: "Productivity Machine", description: "Complete 10 tasks in one day.", criteria: { type: "TASKS_COMPLETED_IN_DAY", threshold: 10 }, xpReward: 120 },
+  { key: "tasks_one_of_each", name: "Well Rounded", description: "Complete one task of every complexity tier.", criteria: { type: "TASK_TIER_VARIETY" }, xpReward: 80 },
+  { key: "tasks_10_trivial", name: "Small Steps", description: "Complete 10 Trivial tasks.", criteria: { type: "TASKS_COMPLETED_BY_TIER", tier: 1, threshold: 10 }, xpReward: 40 },
+  { key: "tasks_10_small", name: "Steady Progress", description: "Complete 10 Small tasks.", criteria: { type: "TASKS_COMPLETED_BY_TIER", tier: 2, threshold: 10 }, xpReward: 100 },
+  { key: "tasks_10_medium", name: "Solid Effort", description: "Complete 10 Medium tasks.", criteria: { type: "TASKS_COMPLETED_BY_TIER", tier: 3, threshold: 10 }, xpReward: 200 },
+  { key: "tasks_10_large", name: "Heavy Lifter", description: "Complete 10 Large tasks.", criteria: { type: "TASKS_COMPLETED_BY_TIER", tier: 4, threshold: 10 }, xpReward: 400 },
+  { key: "tasks_10_epic", name: "Legend in the Making", description: "Complete 10 Epic tasks.", criteria: { type: "TASKS_COMPLETED_BY_TIER", tier: 5, threshold: 10 }, xpReward: 750 },
+
+  // Petting Zoo
+  { key: "zoo_pet_50", name: "Gentle Hands", description: "Pet animals 50 times.", criteria: { type: "PET_INTERACTIONS", threshold: 50 }, xpReward: 60 },
+  { key: "zoo_feed_50", name: "Caretaker", description: "Feed animals 50 times.", criteria: { type: "FEED_INTERACTIONS", threshold: 50 }, xpReward: 60 },
+  { key: "zoo_best_friend", name: "Nature's Best Friend", description: "Pet every type of animal you own.", criteria: { type: "ANIMAL_VARIETY_PETTED" }, xpReward: 100 },
+  { key: "zoo_adopt_all", name: "Full House", description: "Adopt every type of animal.", criteria: { type: "ANIMAL_VARIETY_OWNED" }, xpReward: 250 },
 ];
 
 async function main() {
@@ -270,7 +341,20 @@ async function main() {
       create: achievement,
     });
   }
-  console.log(`Seeded ${achievements.length} Achievement rows.`);
+
+  // PRO-18 — removes PRO-09's 4 placeholder achievements (`task_champion`
+  // etc.), which no longer appear in the array above. Cascades to
+  // `UserAchievement` via the existing `onDelete: Cascade` (INF-19) — any
+  // account that had earned one of them loses that row, accepted per the
+  // project owner's "replace entirely" call rather than keeping stale rows
+  // upsert alone would never remove.
+  const { count: removed } = await prisma.achievement.deleteMany({
+    where: { key: { notIn: achievements.map((a) => a.key) } },
+  });
+
+  console.log(
+    `Seeded ${achievements.length} Achievement rows (removed ${removed} stale).`,
+  );
 }
 
 main()

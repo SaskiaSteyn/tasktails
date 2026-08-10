@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 import { evaluateAchievements } from "@/lib/achievements";
-import { antiSpamCheck, grantEarnings, recordStreakDay } from "@/lib/economy";
+import {
+  antiSpamCheck,
+  grantEarnings,
+  mergeLevelUps,
+  recordStreakDay,
+} from "@/lib/economy";
 import { calculateReward } from "@/lib/rewards";
 import { markTaskComplete, taskForUser } from "@/lib/tasks";
 
@@ -93,14 +98,15 @@ export async function POST(
   });
 
   const grant = await grantEarnings(userId, priced.granted, completedAt);
-  const achievementsUnlocked = await evaluateAchievements(userId);
+  const { unlocked: achievementsUnlocked, levelUp: achievementLevelUp } =
+    await evaluateAchievements(userId);
 
   if (!streakUpdate || !grant) {
     return NextResponse.json({
       task: completed,
       reward: null,
       streak: null,
-      levelUp: null,
+      levelUp: achievementLevelUp,
       achievementsUnlocked,
     });
   }
@@ -113,7 +119,11 @@ export async function POST(
       capReached: grant.capReached,
     },
     streak: { value: streakUpdate.streak, event: streakUpdate.event },
-    levelUp: grant.levelUp,
+    // Merged, not two separate events — the task's own XP grant and an
+    // achievement it triggered can both cross a threshold in one request
+    // (PRO-18), and one combined celebration reads better than two dialogs
+    // firing back to back for a single tap.
+    levelUp: mergeLevelUps(grant.levelUp, achievementLevelUp),
     achievementsUnlocked,
   });
 }
