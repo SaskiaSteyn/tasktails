@@ -1,0 +1,36 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!--
+  PWA-05 — the maskable variant of icon.svg, for Android adaptive icons.
+
+  A maskable icon's "safe zone" is the circle of 80% of the icon's diameter,
+  centred — content outside it can be cropped by whatever shape a launcher
+  applies (a full circle on most Android launchers, but also squircles,
+  rounded squares, or anything else). icon.svg's fox fills its 80x80 inset
+  flush to every edge (see manifest.ts's own doc comment: "the badge already
+  carries its own tile ... holds down to favicon size without a separate
+  background"), which is exactly why manifest.ts declares it `purpose: "any"`
+  and not `"maskable"` — an aggressive circular crop would clip the ears.
+
+  This variant is the same artwork, not a redraw: full 120x120 bleed in the
+  original plate colour (a maskable icon must have no transparency, so this
+  IS the background, not a copy of icon.svg's own rounded-square plate sitting
+  on top of one), with the fox scaled to 70% and centred. At 70%, the
+  artwork's own furthest points sit at radius ~39.6 from centre — inside the
+  48px (80% x 60) safe-zone radius with an ~8px margin, comfortably clear of
+  a circular crop.
+-->
+<rect width="120" height="120" fill="#EFE7DA"></rect>
+<g transform="translate(60 60) scale(0.7) translate(-60 -60)">
+<g clip-path="url(#clip0_maskable)">
+<path d="M20 43.3648H23.592C33.7008 43.3648 42.416 50.4728 44.448 60.376L52.58 100.001H67.4192L75.5512 60.376C77.5832 50.4736 86.2984 43.3648 96.4072 43.3648H99.9992V26.0824C99.9992 22.7232 97.276 20 93.9168 20H26.0824C22.7232 20 20 22.7232 20 26.0824V43.3648Z" fill="#E27A54"></path>
+</g>
+<path d="M67.42 100V98.8232C67.42 96.432 65.4816 94.4936 63.0904 94.4936H56.9096C54.5184 94.4936 52.58 96.432 52.58 98.8232V100H67.4192H67.42Z" fill="#2E2A26" stroke="#2E2A26" stroke-width="0.75" stroke-miterlimit="10"></path>
+<path d="M32.0416 61.6352C34.3877 61.6352 36.2896 59.7333 36.2896 57.3872C36.2896 55.0411 34.3877 53.1392 32.0416 53.1392C29.6955 53.1392 27.7936 55.0411 27.7936 57.3872C27.7936 59.7333 29.6955 61.6352 32.0416 61.6352Z" fill="#2E2A26" stroke="#2E2A26" stroke-width="0.75" stroke-miterlimit="10"></path>
+<path d="M87.9584 61.6352C90.3045 61.6352 92.2064 59.7333 92.2064 57.3872C92.2064 55.0411 90.3045 53.1392 87.9584 53.1392C85.6123 53.1392 83.7104 55.0411 83.7104 57.3872C83.7104 59.7333 85.6123 61.6352 87.9584 61.6352Z" fill="#2E2A26" stroke="#2E2A26" stroke-width="0.75" stroke-miterlimit="10"></path>
+</g>
+<defs>
+<clipPath id="clip0_maskable">
+<rect width="80" height="80" fill="white" transform="translate(20 20)"></rect>
+</clipPath>
+</defs>
+</svg>

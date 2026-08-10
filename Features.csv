@@ -169,3 +169,15 @@ GATC-14,Reveal state — the pulled item including the locked unlocks at Lvl N c
 GATC-15,Drop Rates screen at /store/lucky-box/odds,Gatcha & Lucky Box,Frontend,Done
 GATC-16,Sell items card on Profile under the Buy XP card,Gatcha & Lucky Box,Frontend,Done
 GATC-17,Sell Items screen — a Sell action per row removing the row on success,Gatcha & Lucky Box,Frontend,Done
+PWA-01,Web app manifest and install path — standalone display start_url theme colours SVG icon appleWebApp meta tags and the proxy allowlist fix,PWA & Offline,Frontend,Done
+PWA-02,Service worker — registration install/activate lifecycle and a cache-first strategy for the static app shell,PWA & Offline,Frontend,Done
+PWA-03,Offline app shell — cached shell renders chrome plus last-known screen when launched with no network,PWA & Offline,Frontend,Done
+PWA-04,Offline task data — cache the task list for offline read access and queue offline edits to replay once back online,PWA & Offline,Frontend,To Do
+PWA-05,Full launcher icon set — PNG rasters with a maskable variant for Android plus an apple-touch-icon for iOS,PWA & Offline,Frontend,Done
+PWA-06,iOS splash screens — apple-touch-startup-image link tags per device size,PWA & Offline,Frontend,Done
+PWA-07,In-app install affordance — beforeinstallprompt capture on Android/desktop plus Add to Home Screen instructions for iOS Safari,PWA & Offline,Frontend,Done
+PWA-08,Update handling — detect a new service worker version on deploy and refresh or prompt the signed-in user,PWA & Offline,Frontend,Done
+PWA-09,Manifest extras — screenshots for the richer install dialog and app shortcuts,PWA & Offline,Frontend,Done
+PWA-10,Push notification groundwork — service worker push handler and subscription storage,PWA & Offline,Backend,To Do
+PWA-11,Lighthouse PWA audit — clear the installability checklist against the deployed build,PWA & Offline,Frontend,Done
+PWA-12,Real-device install verification — install on an Android phone and an iPhone and confirm icon splash standalone chrome and offline launch,PWA & Offline,Frontend,To Do

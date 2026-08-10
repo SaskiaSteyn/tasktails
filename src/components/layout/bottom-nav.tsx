@@ -2,8 +2,8 @@
 
 import { CheckSquare, type LucideIcon, PawPrint, Plus, ShoppingBag, User } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 import { CreateTaskSheet } from "@/components/tasks/create-task-sheet";
 import { cn } from "@/lib/cn";
@@ -43,6 +43,15 @@ const TABS_AFTER_PLUS = [
  * same flex column as this `<nav>`, so this element's real, non-absolute
  * height (fade included) is space `main` can't claim in the first place —
  * content can't scroll into a zone that was never part of `main`'s own box.
+ *
+ * PWA-09's "Add task" shortcut (`manifest.ts`) lands on `/tasks?new=task` —
+ * the effect below opens this same sheet on arrival, since the shortcut
+ * wouldn't be much of a shortcut if it only got you to the tab you'd have
+ * landed on anyway. Reads `window.location.search` directly rather than
+ * `useSearchParams()`, which needs a `Suspense` boundary for no benefit
+ * here — nothing in this component needs to be reactive to the query string
+ * after mount, so a plain read in the effect is simpler than a second
+ * component and boundary just to satisfy that hook's own requirement.
  */
 /** A tab is active on its own route and any route nested under it (PET-01's `/zoo/[id]` drill-in). */
 function isActiveTab(pathname: string, href: string): boolean {
@@ -51,7 +60,30 @@ function isActiveTab(pathname: string, href: string): boolean {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
+
+  // PWA-09's "Add task" shortcut. `openedFromShortcutRef` guards against
+  // React Strict Mode's dev-only double-invoke re-triggering this — it
+  // persists across that double mount/cleanup/mount cycle since it's the
+  // same fiber, so the second pass sees it already set and does nothing.
+  // Deferred a tick (`setTimeout(..., 0)`) rather than called directly in
+  // the effect body — `eslint react-hooks/set-state-in-effect` flags a
+  // synchronous `setState` there, the same fix `FlashSaleBanner` (URG-01)
+  // already uses for the same rule, for an unrelated reason. `router.replace`
+  // strips the query param so a refresh or a later back-navigation doesn't
+  // reopen the sheet.
+  const openedFromShortcutRef = useRef(false);
+  useEffect(() => {
+    if (openedFromShortcutRef.current) return;
+    if (pathname !== "/tasks") return;
+    if (new URLSearchParams(window.location.search).get("new") !== "task") return;
+    openedFromShortcutRef.current = true;
+    setTimeout(() => {
+      setCreateOpen(true);
+      router.replace("/tasks");
+    }, 0);
+  }, [pathname, router]);
 
   return (
     <>
