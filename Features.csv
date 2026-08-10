@@ -137,7 +137,7 @@ MKT-02,Marketing site — three-column feature grid how-it-works steps closing C
 MKT-03,Landing / welcome screen — full terracotta screen fox badge feature chips Get started and Log in,Marketing & Public Site,Frontend,Done
 PWA-01,Web app manifest and install path — standalone display start_url theme colours SVG icon appleWebApp meta tags and the proxy allowlist fix,PWA & Offline,Frontend,Done
 PWA-02,Service worker — registration install/activate lifecycle and a cache-first strategy for the static app shell,PWA & Offline,Frontend,Done
-PWA-03,Offline app shell — cached shell renders chrome plus last-known screen when launched with no network,PWA & Offline,Frontend,To Do
+PWA-03,Offline app shell — cached shell renders chrome plus last-known screen when launched with no network,PWA & Offline,Frontend,Done
 PWA-04,Offline task data — cache the task list for offline read access and queue offline edits to replay once back online,PWA & Offline,Frontend,To Do
 PWA-05,Full launcher icon set — PNG rasters with a maskable variant for Android plus an apple-touch-icon for iOS,PWA & Offline,Frontend,Done
 PWA-06,iOS splash screens — apple-touch-startup-image link tags per device size,PWA & Offline,Frontend,Done

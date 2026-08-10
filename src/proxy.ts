@@ -46,6 +46,14 @@ const PUBLIC_PATHS = new Set([
   // rather than added to the matcher for the same allowlist-not-denylist
   // reason. No participant data in it.
   "/sw.js",
+  // PWA-03's offline fallback (`src/app/offline/page.tsx`). Same failure
+  // mode a third time: `public/sw.js` precaches it during install so it's
+  // available before anyone ever goes offline, and a precache fetch that
+  // gets a `/login` redirect back would cache the *login page* under the
+  // `/offline` key instead of the real content — silently wrong, not
+  // erroring. Generic, no participant data, deliberately reachable whether
+  // signed in or out (offline is offline either way).
+  "/offline",
 ]);
 
 /**

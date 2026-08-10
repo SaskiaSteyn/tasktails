@@ -8,9 +8,14 @@
 // signed-in, per-user app — a cache-first HTML page or API response here
 // would risk one participant seeing another's cached data, or their own gone
 // stale, which is a correctness bug this ticket has no business creating.
-// PWA-03 (offline app shell) and PWA-04 (offline task data) are what decide
-// whether and how navigations/API calls get handled at all — not decided
-// here.
+// PWA-03 adds exactly one exception to "does not touch pages": a navigation
+// whose network fetch fails outright (no connection at all) gets
+// `/offline` instead of the browser's own interstitial — network-first,
+// never cache-first, so a page's real content is still always fresh the
+// moment the network actually is there. Confirmed with the user (2026-08-10)
+// as a plain static fallback, not a cached "last-known screen" — caching
+// real per-user page HTML is the same correctness problem as above, and
+// PWA-04 (offline task data) was confirmed out of scope for the same reason.
 //
 // PWA-08's "SKIP_WAITING" message is the other half of a two-sided handshake
 // with `service-worker-registration.tsx`: without it, a worker that has
@@ -20,10 +25,10 @@
 // mean refresh, rather than a button that does nothing until the page is
 // closed and reopened regardless.
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2"; // PWA-03 — bumped for the new /offline precache entry.
 const CACHE_NAME = `tasktails-shell-${CACHE_VERSION}`;
 
-const PRECACHE_URLS = ["/manifest.webmanifest", "/brand/icon.svg"];
+const PRECACHE_URLS = ["/manifest.webmanifest", "/brand/icon.svg", "/offline"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)));
@@ -56,6 +61,23 @@ function isStaticAsset(url) {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  // A top-level page navigation (typing a URL, a hard reload, opening the
+  // installed app) — not a client-side route transition inside an already
+  // loaded session, which Next serves as its own RSC fetch, a different
+  // request `mode`. Network-first: try the real thing, and only on an
+  // outright failure (no connection) fall back to the cached offline page.
+  // A 4xx/5xx still reaches the browser normally — that's a real answer
+  // from the server, not "no network", and swallowing it into the offline
+  // page would hide an actual bug behind a misleading message.
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        caches.match("/offline").then((cached) => cached ?? Response.error()),
+      ),
+    );
+    return;
+  }
 
   const url = new URL(event.request.url);
   if (!isStaticAsset(url)) return;
