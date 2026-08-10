@@ -59,6 +59,33 @@ export async function economyForUser(
 }
 
 /**
+ * LEAD-03 — lifetime coins earned for a set of accounts, keyed by user id.
+ *
+ * Lives here rather than in `leaderboard.ts` for the reason at the top of this
+ * file: `prisma.userEconomy` has one owner. `leaderboard.ts` composes this the
+ * way `stats.ts` composes `economyForUser`.
+ *
+ * Accounts with no economy row are simply absent from the map — callers decide
+ * whether that means zero or means skip. Clamped at zero on the way out, same
+ * as `snapshotOf` and `lifetimeStatsFor` do, so a negative can never reach a
+ * ranking.
+ */
+export async function lifetimeEarningsFor(
+  userIds: string[],
+): Promise<Map<string, number>> {
+  if (userIds.length === 0) return new Map();
+
+  const rows = await prisma.userEconomy.findMany({
+    where: { userId: { in: userIds } },
+    select: { userId: true, lifetimeCoinsEarned: true },
+  });
+
+  return new Map(
+    rows.map((row) => [row.userId, Math.max(0, row.lifetimeCoinsEarned)]),
+  );
+}
+
+/**
  * Turns a stored row into what the header renders.
  *
  * Level and XP progress are both derived from `xp` rather than read from the
