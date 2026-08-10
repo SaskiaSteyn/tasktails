@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createPetForTransaction,
@@ -21,7 +21,13 @@ import type { StoreItem } from "@/generated/prisma/client";
  * raised hunger, since the displayed stale number jumped straight to the
  * true decayed-then-boosted one). `recordPetInteraction()` does the same
  * catch-up before applying its own +7 happiness boost.
+ *
+ * `@/auth` is mocked because `economy.ts` (imported transitively via
+ * `pets.ts`'s `incrementPetInteractionCount`/`incrementFeedInteractionCount`)
+ * imports it for `currentEconomy`; nothing here signs in. Same pattern as
+ * economy.test.ts/achievements.test.ts.
  */
+vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 const at = (hour: number, minute = 0) => new Date(2026, 6, 20, hour, minute);
 
@@ -112,6 +118,12 @@ describe("petsForUser / petForUser", () => {
 });
 
 describe("recordPetInteraction", () => {
+  beforeEach(() => {
+    prismaMock.$transaction.mockImplementation(
+      (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
+    );
+  });
+
   it("boosts happiness by 7 and leaves hunger unchanged with no elapsed time", async () => {
     const pet = petRow();
     prismaMock.pet.findFirst.mockResolvedValue(pet);
@@ -124,7 +136,7 @@ describe("recordPetInteraction", () => {
 
     expect(prismaMock.pet.update).toHaveBeenCalledWith({
       where: { id: "pet-1" },
-      data: { happiness: 67, hunger: 40, lastInteractedAt: now },
+      data: { happiness: 67, hunger: 40, lastInteractedAt: now, timesPetted: { increment: 1 } },
       include: { storeItem: true },
     });
   });
@@ -143,7 +155,7 @@ describe("recordPetInteraction", () => {
     // 60 − 12 = 48, + boost 7 = 55. Hunger 40 + 15 = 55, unchanged by petting.
     expect(prismaMock.pet.update).toHaveBeenCalledWith({
       where: { id: "pet-1" },
-      data: { happiness: 55, hunger: 55, lastInteractedAt: now },
+      data: { happiness: 55, hunger: 55, lastInteractedAt: now, timesPetted: { increment: 1 } },
       include: { storeItem: true },
     });
   });
