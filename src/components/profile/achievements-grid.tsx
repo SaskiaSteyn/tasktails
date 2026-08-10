@@ -1,14 +1,21 @@
-import { Lock } from "lucide-react";
+import { ChevronRight, Lock } from "lucide-react";
+import Link from "next/link";
 
 import { ACHIEVEMENT_STYLE } from "@/components/profile/achievement-style";
 import { cn } from "@/lib/cn";
 import type { AchievementWithState } from "@/lib/achievements";
 
 /**
- * PRO-07 — the "ACHIEVEMENTS" row: one square tile per catalogue entry,
- * earned or locked. The mock draws exactly four tiles at equal width
- * (`flex:1` each), which is also PRO-09's whole catalogue — no scrolling or
- * overflow case to design for.
+ * PRO-07 — the "ACHIEVEMENTS" row: one square tile per entry, earned or
+ * locked. The mock draws exactly four tiles at equal width (`flex:1` each) —
+ * true of PRO-09's original 4-achievement catalogue, but PRO-18 grew that to
+ * 38, so this component now always renders whatever it's handed as a
+ * **preview slice**, not the whole catalogue; the caller (`/profile`) is
+ * responsible for slicing to 4.
+ *
+ * PRO-18 — the header gained a "See all ›" link per
+ * `design_handoff/ADDENDUM-achievements.md`: the 4-tile strip below is
+ * otherwise unchanged, only its header row and what feeds it changed.
  *
  * Icon/colour per badge comes from `ACHIEVEMENT_STYLE` (shared with
  * `AchievementUnlockScreen`, so the tile and the celebration never
@@ -26,7 +33,16 @@ export function AchievementsGrid({
 }) {
   return (
     <section>
-      <p className="text-overline mb-[10px]">Achievements</p>
+      <div className="mb-[10px] flex items-center justify-between">
+        <p className="text-overline">Achievements</p>
+        <Link
+          href="/profile/achievements"
+          className="flex items-center gap-0.5 text-[11px] font-extrabold text-terracotta"
+        >
+          See all
+          <ChevronRight size={13} strokeWidth={2.5} aria-hidden />
+        </Link>
+      </div>
       <div className="flex gap-[9px]">
         {achievements.map((achievement) => {
           const unlocked = achievement.unlockedAt !== null;

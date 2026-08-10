@@ -201,6 +201,12 @@ model Pet {
   hunger           Int
   lastInteractedAt DateTime
 
+  /// PRO-18. Lifetime count of "pet" interactions on this specific pet —
+  /// `lastInteractedAt` is overwritten on every interaction so it cannot
+  /// answer "has this pet ever been petted", which the "pet every type you
+  /// own" achievement needs per-pet, not as a per-user total.
+  timesPetted Int @default(0)
+
   equippedItems InventoryItem[]
 }
 
@@ -252,6 +258,12 @@ model UserEconomy {
   /// the Lucky Box home and Drop Rates screens (design board §2) show no pity
   /// meter or counter, by the approved design.
   pullsSinceLegendary Int @default(0)
+
+  /// PRO-18. Lifetime pet/feed interaction counts, for the Petting Zoo
+  /// achievements ("pet/feed animals 50 times") — nothing else counted these
+  /// before now; `Pet.lastInteractedAt` is overwritten each time, not summed.
+  lifetimePetInteractions  Int @default(0)
+  lifetimeFeedInteractions Int @default(0)
 }
 
 /// INF-18. One record per user, created with the account so the settings screen
@@ -278,11 +290,12 @@ model UserSettings {
   reduceMotion Boolean @default(false)
 }
 
-/// INF-19. The catalogue — one row per badge that exists, the same for everyone.
-/// Rendered by PRO-07 and evaluated by PRO-09.
+/// INF-19, expanded PRO-18. The catalogue — one row per badge that exists,
+/// the same for everyone. Rendered by PRO-07/the Achievements screen and
+/// evaluated by PRO-09/PRO-18.
 ///
-/// Deliberately not seeded: the design draws six badge tiles but names none of
-/// them, so the catalogue has no source yet. PRO-09 owns what the badges are.
+/// PRO-18 seeds the real 38-achievement catalogue (`Beta/Planning/
+/// Achievements.pdf`), replacing PRO-09's original 4 invented placeholders.
 model Achievement {
   id String @id @default(cuid())
 
@@ -293,16 +306,24 @@ model Achievement {
   name        String
   description String
 
-  /// What has to happen, as a discriminated shape the unlock service reads:
-  ///   { "type": "TASKS_COMPLETED", "threshold": 10 }
-  ///   { "type": "LEVEL_REACHED",   "threshold": 5 }
-  ///   { "type": "STREAK_DAYS",     "threshold": 7 }
-  ///   { "type": "ITEMS_PURCHASED", "threshold": 1 }
+  /// What has to happen, as a discriminated shape the unlock service reads —
+  /// see `AchievementCriterion` in `src/lib/achievements.ts` for the full
+  /// union (streak/task/item-ownership/petting-zoo criteria). A category
+  /// (Streaks/Tasks/Petting Zoo/Items) is derived from `criteria.type` there
+  /// rather than stored as its own column, since every type maps to exactly
+  /// one category.
   ///
   /// JSON rather than columns because the trigger set is not settled — PRO-09
   /// evaluates on task completion, purchase *and* pet interaction, and pinning
   /// that to an enum now would mean a migration per new badge idea.
   criteria Json
+
+  /// PRO-18. XP granted on unlock, seeded from `Achievements.pdf`. Bypasses
+  /// the daily XP cap when paid out (`grantAchievementReward()` in
+  /// `economy.ts`) — a one-time milestone bonus, not daily task-earning.
+  /// `@default(0)` only exists so the migration adding this column is safe;
+  /// every seeded row sets a real value.
+  xpReward Int @default(0)
 
   unlockedBy UserAchievement[]
 }
