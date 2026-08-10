@@ -1,7 +1,8 @@
-import { Drumstick, Heart, type LucideIcon, PawPrint, Play, Sparkles } from "lucide-react";
+import { Drumstick, Heart, type LucideIcon, PawPrint, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { InstallButton } from "@/components/marketing/install-button";
 import { buttonClasses } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { cn } from "@/lib/cn";
@@ -12,13 +13,17 @@ import { MOOD_COPY, moodFor, STATE_TEXT_CLASS, type StateTone, stateTone } from 
  * `design_handoff/TaskTails Screens.dc.html`): eyebrow badge, headline, body,
  * two CTAs and the hero phone.
  *
- * Two departures, recorded rather than silent:
+ * Departures, recorded rather than silent:
  *
- * "Watch demo" points at `#how-it-works`. There is no demo video, and this is a
- * research instrument — a button that promises a recording and delivers nothing
- * is the kind of small deception the study is *about*, so it goes to the section
- * that actually shows how the product works rather than to a dead `#` or a
- * modal with a placeholder in it. The label is the frame's.
+ * **"Watch demo" removed 2026-08-10 at the user's request** ("let's remove
+ * the watch demo button for now"), while PWA-07's install button was being
+ * added to this same row. It pointed at `#how-it-works`, which is still a
+ * real section (reachable from the nav) — only the hero's own link to it is
+ * gone. Its original rationale, kept here rather than deleted in case it
+ * comes back: there is no demo video, and on a deception-study instrument a
+ * button that promises a recording and delivers a dead `#` is exactly the
+ * small lie the study is about, so it went to the section that does show how
+ * the product works rather than to a placeholder.
  *
  * **The frame's avatar stack and "2,400+ students building better habits" are
  * not built.** They were, briefly, on the reasoning that fabricated social proof
@@ -80,18 +85,7 @@ export function MarketingHero() {
             >
               Start for free
             </Link>
-            <a
-              href="#how-it-works"
-              className={buttonClasses({
-                variant: "secondary",
-                size: "hero",
-                fullWidth: false,
-                className: "gap-[9px] px-5 text-[16px] sm:px-[26px] sm:text-[17px]",
-              })}
-            >
-              <Play size={15} strokeWidth={0} className="fill-current" aria-hidden />
-              Watch demo
-            </a>
+            <InstallButton />
           </div>
         </div>
 
