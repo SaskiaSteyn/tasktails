@@ -136,14 +136,14 @@ MKT-01,Marketing site — desktop nav hero with CTAs avatar stack social proof a
 MKT-02,Marketing site — three-column feature grid how-it-works steps closing CTA and dark footer,Marketing & Public Site,Frontend,Done
 MKT-03,Landing / welcome screen — full terracotta screen fox badge feature chips Get started and Log in,Marketing & Public Site,Frontend,Done
 PWA-01,Web app manifest and install path — standalone display start_url theme colours SVG icon appleWebApp meta tags and the proxy allowlist fix,PWA & Offline,Frontend,Done
-PWA-02,Service worker — registration install/activate lifecycle and a cache-first strategy for the static app shell,PWA & Offline,Frontend,To Do
+PWA-02,Service worker — registration install/activate lifecycle and a cache-first strategy for the static app shell,PWA & Offline,Frontend,Done
 PWA-03,Offline app shell — cached shell renders chrome plus last-known screen when launched with no network,PWA & Offline,Frontend,To Do
 PWA-04,Offline task data — cache the task list for offline read access and queue offline edits to replay once back online,PWA & Offline,Frontend,To Do
-PWA-05,Full launcher icon set — PNG rasters with a maskable variant for Android plus an apple-touch-icon for iOS,PWA & Offline,Frontend,To Do
-PWA-06,iOS splash screens — apple-touch-startup-image link tags per device size,PWA & Offline,Frontend,To Do
+PWA-05,Full launcher icon set — PNG rasters with a maskable variant for Android plus an apple-touch-icon for iOS,PWA & Offline,Frontend,Done
+PWA-06,iOS splash screens — apple-touch-startup-image link tags per device size,PWA & Offline,Frontend,Done
 PWA-07,In-app install affordance — beforeinstallprompt capture on Android/desktop plus Add to Home Screen instructions for iOS Safari,PWA & Offline,Frontend,Done
-PWA-08,Update handling — detect a new service worker version on deploy and refresh or prompt the signed-in user,PWA & Offline,Frontend,To Do
-PWA-09,Manifest extras — screenshots for the richer install dialog and app shortcuts,PWA & Offline,Frontend,To Do
+PWA-08,Update handling — detect a new service worker version on deploy and refresh or prompt the signed-in user,PWA & Offline,Frontend,Done
+PWA-09,Manifest extras — screenshots for the richer install dialog and app shortcuts,PWA & Offline,Frontend,Done
 PWA-10,Push notification groundwork — service worker push handler and subscription storage,PWA & Offline,Backend,To Do
-PWA-11,Lighthouse PWA audit — clear the installability checklist against the deployed build,PWA & Offline,Frontend,To Do
+PWA-11,Lighthouse PWA audit — clear the installability checklist against the deployed build,PWA & Offline,Frontend,Done
 PWA-12,Real-device install verification — install on an Android phone and an iPhone and confirm icon splash standalone chrome and offline launch,PWA & Offline,Frontend,To Do

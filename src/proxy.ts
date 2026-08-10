@@ -37,6 +37,15 @@ const PUBLIC_PATHS = new Set([
   // here rather than added to the matcher so it stays one known path, per this
   // file's allowlist-not-denylist rule. No participant data in it.
   "/manifest.webmanifest",
+  // The service worker (PWA-02, `public/sw.js`). Same failure mode as the
+  // manifest above and for the same reason: the matcher exempts static
+  // assets by extension but `.js` isn't in that list, so without this a
+  // signed-out visitor's registration attempt gets a `/login` redirect body
+  // back instead of a script — `navigator.serviceWorker.register()` rejects
+  // on the MIME type, silently, and the worker never installs. Listed here
+  // rather than added to the matcher for the same allowlist-not-denylist
+  // reason. No participant data in it.
+  "/sw.js",
 ]);
 
 /**

@@ -15,6 +15,19 @@ const nextConfig: NextConfig = {
   // Same stray-lockfile problem as `turbopack.root` above, for the file tracer:
   // left to infer, it would walk up past this repo and drag the parent in.
   outputFileTracingRoot: path.resolve(__dirname),
+
+  // PWA-02. `public/sw.js` would otherwise inherit whatever caching a CDN or
+  // browser applies to static files by default, which for a script whose
+  // entire job is deciding what else gets cached is backwards — a stale
+  // cached worker can never deliver its own update. Per Next's own PWA guide.
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
