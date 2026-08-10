@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
+import { useLevelUp } from "@/components/economy/level-up-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 // Type-only: erased at compile time, same reasoning `AnimalCard` documents for
@@ -56,6 +57,7 @@ export function FeedSheet({
   const headingId = useId();
   const router = useRouter();
   const { celebrate: celebrateAchievements } = useAchievementUnlock();
+  const { celebrate: celebrateLevelUp } = useLevelUp();
 
   const [selectedId, setSelectedId] = useState<string>();
   const [notice, setNotice] = useState<string>();
@@ -101,6 +103,9 @@ export function FeedSheet({
       onOpenChange(false);
       onFed?.();
       celebrateAchievements(body.achievementsUnlocked);
+      // PRO-18 — feeding itself grants no XP, but the achievements it can
+      // trigger ("feed animals 50 times" etc.) do.
+      celebrateLevelUp(body.levelUp);
       router.refresh();
     } catch {
       setNotice("Couldn't reach TaskTails. Check your connection and try again.");

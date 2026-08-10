@@ -59,6 +59,26 @@ export async function completedTaskCount(userId: string): Promise<number> {
 }
 
 /**
+ * PRO-18 — the minimal per-completion facts the achievement engine needs
+ * (`src/lib/achievements.ts`): tier and day, for the "N tasks in a day",
+ * "one of each tier" and "N of tier X" criteria. Interpretation (bucketing
+ * by calendar day, checking tier coverage) lives in `achievements.ts`, not
+ * here — this module only owns the read.
+ */
+export async function completedTaskFactsForUser(
+  userId: string,
+): Promise<{ complexityTier: number; completedAt: Date }[]> {
+  const rows = await prisma.task.findMany({
+    where: { userId, completedAt: { not: null } },
+    select: { complexityTier: true, completedAt: true },
+  });
+  return rows.map((row) => ({
+    complexityTier: row.complexityTier,
+    completedAt: row.completedAt as Date,
+  }));
+}
+
+/**
  * A single task, scoped to its owner (TASK-03). Returns null both when the
  * id doesn't exist and when it belongs to someone else — the caller can't
  * tell the difference, which is the point: confirming a task id belongs to

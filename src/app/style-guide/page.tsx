@@ -21,7 +21,11 @@ import { TextField } from "@/components/ui/text-field";
 // Type-only, same reasoning as `EconomySnapshot`/`PetWithItem` below —
 // `achievements.ts` is server-only (Prisma), but the *type* is erased at
 // compile time and safe on this public, statically generated page.
-import type { AchievementWithState } from "@/lib/achievements";
+import type {
+  AchievementCategory,
+  AchievementCriterion,
+  AchievementWithState,
+} from "@/lib/achievements";
 import { AA_TEXT, bpca, bpcaLc, contrast, readColorTokens } from "@/lib/contrast";
 import type { EconomySnapshot } from "@/lib/economy";
 // Type-only: erased at compile time, so this page (a Server Component) can
@@ -179,6 +183,7 @@ function samplePet(
     happiness,
     hunger,
     lastInteractedAt: new Date(),
+    timesPetted: 0,
     storeItem: {
       id: `sample-${name}-item`,
       name,
@@ -228,16 +233,19 @@ const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
 ];
 
 /**
- * PRO-07 samples — the real catalogue's four keys (`prisma/seed.ts`), so
- * `AchievementsGrid`'s per-key icon/colour lookup renders exactly as it does
- * live rather than falling back to the neutral default for an unknown key.
- * `criteria` is unused by the grid (it only reads `unlockedAt`) but required
- * by the type.
+ * PRO-07/18 samples — four real catalogue keys (`prisma/seed.ts`), one per
+ * category, so `AchievementsGrid`'s per-key icon/colour lookup renders
+ * exactly as it does live rather than falling back to the neutral default
+ * for an unknown key. `progress` is unused by the grid (it only reads
+ * `unlockedAt`) but required by the type.
  */
 function sampleAchievement(
   key: string,
   name: string,
   description: string,
+  category: AchievementCategory,
+  criteria: AchievementCriterion,
+  xpReward: number,
   unlocked: boolean,
 ): AchievementWithState {
   return {
@@ -245,16 +253,21 @@ function sampleAchievement(
     key,
     name,
     description,
-    criteria: { type: "TASKS_COMPLETED", threshold: 1 },
+    criteria,
+    xpReward,
     unlockedAt: unlocked ? new Date() : null,
+    category,
+    progress: null,
   };
 }
 
-const ACHIEVEMENT_CATALOGUE: Array<[string, string, string]> = [
-  ["task_champion", "Task Champion", "Complete 10 tasks."],
-  ["rising_star", "Rising Star", "Reach Level 5."],
-  ["week_warrior", "Week Warrior", "Keep a 7-day streak."],
-  ["first_purchase", "First Purchase", "Buy your first item from the store."],
+const ACHIEVEMENT_CATALOGUE: Array<
+  [string, string, string, AchievementCategory, AchievementCriterion, number]
+> = [
+  ["streak_7_day", "Week Warrior", "Keep a 7-day task streak.", "STREAKS", { type: "STREAK_DAYS", threshold: 7 }, 75],
+  ["tasks_10_trivial", "Small Steps", "Complete 10 Trivial tasks.", "TASKS", { type: "TASKS_COMPLETED_BY_TIER", tier: 1, threshold: 10 }, 40],
+  ["zoo_pet_50", "Gentle Hands", "Pet animals 50 times.", "PETTING_ZOO", { type: "PET_INTERACTIONS", threshold: 50 }, 60],
+  ["unlock_common_food", "Common Snack", "Own a Common food item.", "ITEMS", { type: "RARITY_OWNED", category: "FOOD", rarity: "COMMON" }, 15],
 ];
 
 /** A 300px slice of the phone frame, so the header is shown at its real width. */
@@ -912,14 +925,15 @@ export default function StyleGuidePage() {
       <Section
         n="10"
         title="Achievements"
-        blurb="PRO-07's ACHIEVEMENTS grid — one square tile per catalogue entry (prisma/seed.ts's four rows), earned or locked. The real grid on /profile reads live unlock state from achievementsForUser(); these three cards are the same component fed sample data, so every state is visible without needing a real account's progress."
+        blurb="PRO-07/18's ACHIEVEMENTS preview strip — one square tile per achievement, earned or locked (the real strip on /profile shows 4 of the full 38-entry catalogue, unlocked-first). The real grid reads live unlock state from achievementsForUser(); these three cards are the same component fed sample data, one representative achievement per category, so every state is visible without needing a real account's progress."
       >
         <div className="grid gap-4 sm:grid-cols-3">
           <Card label="Fresh account — nothing earned">
             <div className="w-[300px] max-w-full">
               <AchievementsGrid
-                achievements={ACHIEVEMENT_CATALOGUE.map(([key, name, description]) =>
-                  sampleAchievement(key, name, description, false),
+                achievements={ACHIEVEMENT_CATALOGUE.map(
+                  ([key, name, description, category, criteria, xpReward]) =>
+                    sampleAchievement(key, name, description, category, criteria, xpReward, false),
                 )}
               />
             </div>
@@ -928,8 +942,17 @@ export default function StyleGuidePage() {
           <Card label="Two earned">
             <div className="w-[300px] max-w-full">
               <AchievementsGrid
-                achievements={ACHIEVEMENT_CATALOGUE.map(([key, name, description], index) =>
-                  sampleAchievement(key, name, description, index === 1 || index === 3),
+                achievements={ACHIEVEMENT_CATALOGUE.map(
+                  ([key, name, description, category, criteria, xpReward], index) =>
+                    sampleAchievement(
+                      key,
+                      name,
+                      description,
+                      category,
+                      criteria,
+                      xpReward,
+                      index === 1 || index === 3,
+                    ),
                 )}
               />
             </div>
@@ -938,8 +961,9 @@ export default function StyleGuidePage() {
           <Card label="All earned">
             <div className="w-[300px] max-w-full">
               <AchievementsGrid
-                achievements={ACHIEVEMENT_CATALOGUE.map(([key, name, description]) =>
-                  sampleAchievement(key, name, description, true),
+                achievements={ACHIEVEMENT_CATALOGUE.map(
+                  ([key, name, description, category, criteria, xpReward]) =>
+                    sampleAchievement(key, name, description, category, criteria, xpReward, true),
                 )}
               />
             </div>

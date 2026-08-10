@@ -61,8 +61,10 @@ export async function POST(
   }
 
   // PRO-09 — one of the three trigger points (task completion, purchase, pet
-  // interaction); see `evaluateAchievements()`'s doc comment.
-  const achievementsUnlocked = await evaluateAchievements(userId);
+  // interaction); see `evaluateAchievements()`'s doc comment. PRO-18:
+  // `levelUp` is new here, same reasoning as the "pet"/"feed" routes.
+  const { unlocked: achievementsUnlocked, levelUp } =
+    await evaluateAchievements(userId);
 
-  return NextResponse.json({ item: result.item, achievementsUnlocked });
+  return NextResponse.json({ item: result.item, achievementsUnlocked, levelUp });
 }

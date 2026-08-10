@@ -39,6 +39,8 @@ export type AchievementUnlockLike = {
   key: string;
   name: string;
   description: string;
+  /** PRO-18 — the badge's seeded XP reward, shown on the celebration. */
+  xpReward: number;
 };
 
 const CONFETTI_TONES = { violet: "bg-terracotta" };
@@ -104,6 +106,12 @@ export function AchievementUnlockScreen({
         <p className="relative mt-2 text-center text-[13.5px] leading-[1.5] text-brand-soft">
           {achievement.description}
         </p>
+
+        {achievement.xpReward > 0 ? (
+          <p className="relative mt-4 rounded-full bg-white/16 px-4 py-1.5 text-[13px] font-extrabold tracking-[0.5px] text-white">
+            +{achievement.xpReward} XP
+          </p>
+        ) : null}
 
         <div className="relative mt-auto flex w-full flex-col items-center gap-3 pt-8">
           <button

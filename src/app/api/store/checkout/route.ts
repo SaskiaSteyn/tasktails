@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { evaluateAchievements } from "@/lib/achievements";
 import { checkout } from "@/lib/checkout";
-import { snapshotOf } from "@/lib/economy";
+import { economyForUser, snapshotOf } from "@/lib/economy";
 
 /**
  * STOR-16 — `POST /api/store/checkout`. Buys everything in the signed-in
@@ -62,15 +62,29 @@ export async function POST() {
   }
 
   // PRO-09 — one of the three trigger points (task completion, purchase, pet
-  // interaction); see `evaluateAchievements()`'s doc comment.
-  const achievementsUnlocked = await evaluateAchievements(userId);
+  // interaction); see `evaluateAchievements()`'s doc comment. PRO-18: a
+  // purchase itself grants no XP, but an achievement it unlocks (e.g. "own
+  // every accessory") can — `levelUp` is new on this route for that reason.
+  const { unlocked: achievementsUnlocked, levelUp } =
+    await evaluateAchievements(userId);
+
+  // `result.economy` is `checkout()`'s own snapshot, taken *before*
+  // `evaluateAchievements()` could have granted achievement XP on top of
+  // it — found live while verifying this ticket: a Common-food purchase
+  // correctly wrote 215 XP to the database but this response still echoed
+  // 200. Re-read only when something was actually unlocked, since a
+  // purchase's own coin/pet effects (the common case) never touch XP.
+  const economy = achievementsUnlocked.length
+    ? ((await economyForUser(userId)) ?? result.economy)
+    : result.economy;
 
   return NextResponse.json({
     spent: result.spent,
     purchased: result.purchased,
     transactions: result.transactions,
     pets: result.pets,
-    economy: snapshotOf(result.economy),
+    economy: snapshotOf(economy),
     achievementsUnlocked,
+    levelUp,
   });
 }

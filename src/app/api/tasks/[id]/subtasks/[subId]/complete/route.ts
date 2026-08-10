@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 import { evaluateAchievements } from "@/lib/achievements";
-import { grantEarnings, recordStreakDay } from "@/lib/economy";
+import { grantEarnings, mergeLevelUps, recordStreakDay } from "@/lib/economy";
 import { calculateReward } from "@/lib/rewards";
 import { markSubtaskComplete, markTaskComplete, taskForUser } from "@/lib/tasks";
 
@@ -111,7 +111,8 @@ export async function POST(
 
   // PRO-09 — one of the three trigger points (task/subtask completion,
   // purchase, pet interaction); see `evaluateAchievements()`'s doc comment.
-  const achievementsUnlocked = await evaluateAchievements(userId);
+  const { unlocked: achievementsUnlocked, levelUp: achievementLevelUp } =
+    await evaluateAchievements(userId);
 
   if (!streakUpdate || !grant) {
     return NextResponse.json({
@@ -119,7 +120,7 @@ export async function POST(
       task: parentTask,
       reward: null,
       streak: null,
-      levelUp: null,
+      levelUp: achievementLevelUp,
       achievementsUnlocked,
     });
   }
@@ -133,7 +134,8 @@ export async function POST(
       capReached: grant.capReached,
     },
     streak: { value: streakUpdate.streak, event: streakUpdate.event },
-    levelUp: grant.levelUp,
+    // Merged, not two events — see the task-complete route's identical note.
+    levelUp: mergeLevelUps(grant.levelUp, achievementLevelUp),
     achievementsUnlocked,
   });
 }

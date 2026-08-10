@@ -1,7 +1,9 @@
 import { Drumstick, Heart } from "lucide-react";
+import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 
+import { hasAnimalArt } from "@/components/store/item-visual";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { cn } from "@/lib/cn";
 import { MOOD_COPY, moodFor, petDisplayName, STATE_TEXT_CLASS, stateTone } from "@/lib/pet-mood";
@@ -78,18 +80,33 @@ export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
         >
           {moodCopy.label}
         </span>
-        <Image
-          src={pet.storeItem.imageUrl}
-          alt={name}
-          width={62}
-          height={62}
-          // Matches `AnimalCard`'s own grey-out for these two moods, so a
-          // pet doesn't look full-colour here and washed-out one tap away.
-          className={cn(
-            "block size-[62px]",
-            mood === "hungry" || mood === "unhappy" ? "grayscale" : null,
-          )}
-        />
+        {hasAnimalArt(pet.storeItem.imageUrl) ? (
+          <Image
+            src={pet.storeItem.imageUrl}
+            alt={name}
+            width={62}
+            height={62}
+            // Matches `AnimalCard`'s own grey-out for these two moods, so a
+            // pet doesn't look full-colour here and washed-out one tap away.
+            className={cn(
+              "block size-[62px]",
+              mood === "hungry" || mood === "unhappy" ? "grayscale" : null,
+            )}
+          />
+        ) : (
+          // PRO-18 — a species with no real artwork yet (`hasAnimalArt()`),
+          // same icon-fallback treatment `ItemWell`/`AnimalCard` use.
+          <DynamicIcon
+            name={pet.storeItem.imageUrl as IconName}
+            size={34}
+            strokeWidth={1.8}
+            className={cn(
+              "text-ink-soft",
+              mood === "hungry" || mood === "unhappy" ? "grayscale" : null,
+            )}
+            aria-hidden
+          />
+        )}
       </div>
 
       <p className="mt-2 truncate font-display text-[14px] font-semibold">

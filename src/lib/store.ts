@@ -1,4 +1,4 @@
-import type { StoreItem } from "@/generated/prisma/client";
+import type { StoreItem, StoreItemCategory } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -77,4 +77,30 @@ export async function storeItemForUser(
   if (!item) return null;
 
   return { ...item, locked: item.levelRequired > level };
+}
+
+/**
+ * PRO-18 — total catalogue size per category, live off the seeded
+ * `StoreItem` table. Backs the "own every item in category X" / "own every
+ * item in the store" / "own every animal type" achievements' *targets* —
+ * deliberately not a number baked into `Achievement.criteria`, so those
+ * badges automatically get harder as the catalogue grows (more animals,
+ * more accessories) instead of needing a data migration every time it does.
+ */
+export async function catalogueItemCounts(): Promise<
+  Record<StoreItemCategory, number>
+> {
+  const rows = await prisma.storeItem.groupBy({
+    by: ["category"],
+    _count: { _all: true },
+  });
+
+  const counts: Record<StoreItemCategory, number> = {
+    FOOD: 0,
+    ACCESSORIES: 0,
+    ANIMALS: 0,
+    DECORATIONS: 0,
+  };
+  for (const row of rows) counts[row.category] = row._count._all;
+  return counts;
 }

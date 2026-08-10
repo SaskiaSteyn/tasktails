@@ -1,13 +1,16 @@
 "use client";
 
 import { Drumstick, Heart, Sparkles } from "lucide-react";
+import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
+import { useLevelUp } from "@/components/economy/level-up-provider";
 import { FeedSheet } from "@/components/pets/feed-sheet";
+import { hasAnimalArt } from "@/components/store/item-visual";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { cn } from "@/lib/cn";
@@ -105,6 +108,7 @@ export function AnimalCard({
   const petImageRef = useRef<HTMLImageElement>(null);
   const router = useRouter();
   const { celebrate: celebrateAchievements } = useAchievementUnlock();
+  const { celebrate: celebrateLevelUp } = useLevelUp();
 
   // A burst of hearts scattered across the animal itself, at the user's
   // request — earlier versions climbed from the "Pet" button, which sits
@@ -177,6 +181,9 @@ export function AnimalCard({
       const body = await response.json();
       spawnHearts();
       celebrateAchievements(body.achievementsUnlocked);
+      // PRO-18 — petting itself grants no XP, but the achievements it can
+      // trigger ("pet animals 50 times" etc.) do.
+      celebrateLevelUp(body.levelUp);
       router.refresh();
     } catch {
       setNotice("Couldn't reach TaskTails. Check your connection and try again.");
@@ -201,23 +208,44 @@ export function AnimalCard({
             parent box (or a small phone, per NFR-GEN-2) letterboxes the
             animal rather than stretching it. `max-w-[360px]` keeps it from
             ballooning past a sensible size on a wide desktop card. */}
-        <div className="relative z-10 mt-1.5 min-h-0 w-full max-w-[360px] flex-1">
-          <Image
-            ref={petImageRef}
-            src={pet.storeItem.imageUrl}
-            alt={name}
-            fill
-            sizes="(min-width: 480px) 360px, 70vw"
-            // The ref is what lets `spawnHearts()` centre the burst on the
-            // animal's real rendered position rather than the button's.
-            // Greyed out for the two below-par moods, at the user's request —
-            // a visual cue that reads even before the "Hungry"/"Unhappy"
-            // label above or the stat bars below are read.
-            className={cn(
-              "object-contain",
-              mood === "hungry" || mood === "unhappy" ? "grayscale" : null,
-            )}
-          />
+        {/* PRO-18: the ref moved from the `Image` itself to this wrapper so
+            `spawnHearts()` still has something to measure when the species
+            has no real artwork yet and renders a centred icon instead —
+            under `fill`, the wrapper's box is exactly the image's own, so
+            this is not a behaviour change for animals that do have art. */}
+        <div
+          ref={petImageRef}
+          className="relative z-10 mt-1.5 min-h-0 w-full max-w-[360px] flex-1"
+        >
+          {hasAnimalArt(pet.storeItem.imageUrl) ? (
+            <Image
+              src={pet.storeItem.imageUrl}
+              alt={name}
+              fill
+              sizes="(min-width: 480px) 360px, 70vw"
+              // Greyed out for the two below-par moods, at the user's
+              // request — a visual cue that reads even before the
+              // "Hungry"/"Unhappy" label above or the stat bars below are
+              // read.
+              className={cn(
+                "object-contain",
+                mood === "hungry" || mood === "unhappy" ? "grayscale" : null,
+              )}
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center">
+              <DynamicIcon
+                name={pet.storeItem.imageUrl as IconName}
+                size={96}
+                strokeWidth={1.6}
+                className={cn(
+                  "text-ink-soft",
+                  mood === "hungry" || mood === "unhappy" ? "grayscale" : null,
+                )}
+                aria-hidden
+              />
+            </div>
+          )}
         </div>
 
         <div className="mt-auto flex w-full flex-col gap-[9px]">
