@@ -6,45 +6,68 @@
  * would eventually disagree with this one, and a participant seeing a different
  * level in the header than the store gate applies is a broken study instrument.
  *
- * Values are the agreed curve in claude-memory/economy_system.md. Changing any
- * of them changes when the store gates open (economy_system.md's gate table)
- * and the study's exposure schedule, so update that document too.
+ * Values are the agreed curve in claude-memory/economy_system.md and
+ * design_handoff/ADDENDUM-xp-curve.md. Changing any of them changes when the
+ * store gates open (the catalogue's `levelRequired` field in prisma/seed.ts)
+ * and the study's exposure schedule, so update those together.
  *
- * REBALANCED 2026-07-29. The original curve (8/20/35/55/200/500/900/1400/2000)
- * put levels 1-5 inside 55 XP — barely more than one Medium task — and a single
- * Epic task landed on level 6 exactly. Six level-up celebrations could fire in
- * one sitting, which is what the rebalance was asked for: the levels arriving
- * too close together, not there being too many of them. The ceiling stayed at
- * 10 because the gate table is pinned to levels 1/3/5/7/10 and lowering it
- * would mean re-mapping every gate.
+ * REBALANCED AGAIN 2026-08-11 (issue #160 — "too easy to gain xp and level
+ * up"). The 2026-07-29 rebalance fixed the same-sitting jump for small tasks
+ * but still let a single Epic task (200 XP) clear three thresholds from a
+ * fresh account (old Lv 1→4). This curve also doubles the cap from 10 to 20
+ * levels and re-derives everything around two pacing targets instead of the
+ * old ~150 XP/day-only assumption:
  *
- * Only the bottom of the curve moved. Levels 7-10 keep their original values
- * because those were already correct: Requirements §3.6 assumes an average
- * participant earns ~150 XP/day (~5 tasks at ~30 XP), which puts Lv 7 at day
- * ~3.7 and Lv 10 at day ~13 — the timings the study's exposure schedule is
- * built on. Raising them would push Lv 10 past the end of the two weeks.
+ *   - Level 10 = 1,050 XP — reached in exactly 7 days of *normal* use
+ *     (~150 XP/day, the documented average).
+ *   - Level 20 = 5,500 XP (hard cap, no tail past it) — reached in exactly
+ *     12 days only by *hard grinding* (~460 XP/day, ~92% of the daily cap,
+ *     sustained every day). Normal-pace users land around Lv 12-13 by the
+ *     end of the 14-day study — finishing the curve is grind-only by design.
  *
- * A property worth preserving: Lv 6 (380) sits below the 500 XP/day cap
- * (NFR-TASK-2) but Lv 7 (550) sits above it, so a participant who maxes the cap
- * on day one lands on Lv 6 and cannot reach the Lv 7 gate — the second animal
- * type, which the false-urgency exposure schedule depends on — until day two.
- * Keep Lv 6 under 500 and Lv 7 over it, or that guarantee is gone.
+ * The multi-level-jump bug is fixed structurally, not just for the first few
+ * levels: every pair of consecutive gaps sums to more than 200 XP (one Epic
+ * task's full value), so a single Epic task can never clear more than one
+ * level anywhere in the curve. This is tighter than it sounds at the very
+ * start — Level 1 (0 XP) + one Epic task (200 XP) lands 10 XP short of Level
+ * 3's 210 — but it holds everywhere.
+ *
+ * The property from the old curve is preserved, just at different levels: Lv
+ * 5 (425) sits below the 500 XP/day cap (NFR-TASK-2) but Lv 6 (540) sits
+ * above it, so a participant who maxes the cap on day one still cannot reach
+ * Lv 6 — now the boundary between the Common and Rare item-rarity bands in
+ * the catalogue (see ADDENDUM-xp-curve.md) — until day two.
+ *
+ * The old "second/third animal type" story pinned to specific levels
+ * (Lv 7 / Lv 10) is retired. The catalogue now spreads all 22 animals across
+ * the curve like every other category (Johan, 2026-08-11) rather than
+ * special-casing two of them.
  *
  * Pure arithmetic, no imports — safe in client components and in the proxy.
  */
 
-/** Cumulative XP needed to *reach* each level. Index 0 is level 1. */
+/** Cumulative XP needed to *reach* each level. Index 0 is level 1. Hard cap at 20 — no level past this. */
 export const LEVEL_THRESHOLDS = [
   0, // Lv 1
-  40, // Lv 2 — ~2 small tasks
-  110, // Lv 3 — end of a first session
-  190, // Lv 4
-  280, // Lv 5
-  380, // Lv 6 — under the 500/day cap, deliberately
-  550, // Lv 7 — over the cap; ~day 4, second animal type unlocks
-  900, // Lv 8 — ~day 6
-  1400, // Lv 9 — ~day 9
-  2000, // Lv 10 — ~day 13
+  40, // Lv 2 — ~2 small tasks, the one intentional instant win
+  210, // Lv 3
+  315, // Lv 4
+  425, // Lv 5 — under the 500/day cap, deliberately
+  540, // Lv 6 — over the cap; Common/Rare catalogue boundary
+  660, // Lv 7
+  785, // Lv 8
+  915, // Lv 9
+  1050, // Lv 10 — normal pace (~150 XP/day) reaches this in exactly 7 days
+  1270, // Lv 11
+  1540, // Lv 12
+  1860, // Lv 13
+  2230, // Lv 14
+  2650, // Lv 15
+  3120, // Lv 16 — Legendary catalogue tier begins
+  3640, // Lv 17
+  4210, // Lv 18
+  4830, // Lv 19
+  5500, // Lv 20 — hard cap; hard-grind pace (~460 XP/day) reaches this in exactly 12 days
 ] as const;
 
 /** The curve tops out here — the store's highest gate (economy_system.md). */
