@@ -168,6 +168,18 @@ fine, continue.
 placeholders — generate filled-in copies rather than hand-editing the
 committed files:
 
+`github-oidc-trust-policy.json` allows the OIDC token's `sub` claim to match
+`refs/heads/main` **and** `refs/heads/dev`, not just `main`. This isn't
+optional: `deploy.yml` is triggered by a `workflow_run` event, and GitHub
+only evaluates `workflow_run` triggers using the copy of the workflow file
+on the repo's **default branch** — here, `dev` — regardless of which branch
+actually pushed and ran `CI`. That makes the OIDC token GitHub issues claim
+`ref:refs/heads/dev`, so a trust policy scoped to `main` only rejects it with
+`Not authorized to perform sts:AssumeRoleWithWebIdentity` — a real failure
+this deployment hit before this line was added. If your repo's default
+branch is different, adjust accordingly (`git remote show origin` shows it
+as `HEAD branch`).
+
 ```bash
 sed -e "s#<ACCOUNT_ID>#$ACCOUNT_ID#g" -e "s#<GITHUB_ORG>/<GITHUB_REPO>#$GH_REPO#g" \
   deploy/aws/github-oidc-trust-policy.json > /tmp/trust-policy.json

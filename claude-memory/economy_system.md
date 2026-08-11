@@ -33,52 +33,73 @@ metadata:
 - Proportional share of parent's coins+XP on individual subtask completion
 - Parent earns 0 extra when all subtasks done
 
-## XP Level Thresholds (hockey-stick curve)
-Level 2 arrives after ~2 small tasks for the early dopamine hit; the curve then
-paces the rest across the two weeks and steepens for 8–10.
+## XP Level Thresholds (hockey-stick curve, 20 levels)
 
-| Level | XP Required |
-|-------|------------|
-| 1 | 0 |
-| 2 | 40 |
-| 3 | 110 |
-| 4 | 190 |
-| 5 | 280 |
-| 6 | 380 |
-| 7 | 550 |
-| 8 | 900 |
-| 9 | 1,400 |
-| 10 | 2,000 |
+| Level | XP Required | | Level | XP Required |
+|-------|------------|---|-------|------------|
+| 1 | 0 | | 11 | 1,270 |
+| 2 | 40 | | 12 | 1,540 |
+| 3 | 210 | | 13 | 1,860 |
+| 4 | 315 | | 14 | 2,230 |
+| 5 | 425 | | 15 | 2,650 |
+| 6 | 540 | | 16 | 3,120 |
+| 7 | 660 | | 17 | 3,640 |
+| 8 | 785 | | 18 | 4,210 |
+| 9 | 915 | | 19 | 4,830 |
+| 10 | 1,050 | | 20 | 5,500 (hard cap) |
 
-Average user (~5 tasks/day, ~150 XP) reaches Level 7 by day 3–4 and Level 10 by
-day 13. Low performers reach Level 7–8.
+Level 2 still arrives after ~2 small tasks for the early dopamine hit. Every
+pair of consecutive gaps from there on sums to more than 200 XP (one Epic
+task's full value), so a single completion — even the largest task in the
+game — can never clear more than one level.
 
-**Rebalanced 2026-07-29.** The original curve was 8 / 20 / 35 / 55 / 200 / 500 /
-900 / 1,400 / 2,000, which put levels 1–5 inside 55 XP — barely more than one
-Medium task — and landed a single Epic task on Level 6 exactly. Six level-up
-celebrations could fire in one sitting.
+Two pacing anchors, not just "steepens toward the end": Level 10 is reached
+in exactly 7 days of *normal* use (~150 XP/day, the average assumption
+below). Level 20 is reached in exactly 12 days only by *hard grinding*
+(~460 XP/day, ~92% of the daily cap, sustained every day) — a normal-pace
+user is only around Level 12–13 by the end of the 14-day study. There is no
+level past 20.
 
-**Only levels 2–6 moved.** Levels 7–10 keep their original values because those
-were already right for the ~150 XP/day assumption: raising them would push Level
-10 past the end of the two-week study. The ceiling stayed at 10, so the gate
-table below needs no re-mapping.
+**Rebalanced 2026-08-11 (issue #160 — "too easy to gain xp and level up").**
+The 2026-07-29 rebalance fixed the same-sitting jump for small tasks but
+still let a single Epic task (200 XP) clear three thresholds from a fresh
+account. This rebalance doubles the cap from 10 to 20 levels and fixes the
+jump structurally rather than just for the first few levels — see
+`design_handoff/ADDENDUM-xp-curve.md` for the full derivation, the worked
+example, and the item catalogue remap that came with it.
 
-Note Level 6 (380) is under the 500 XP daily cap and Level 7 (550) is over it,
-so a participant who maxes the cap on day one lands on Level 6 and cannot reach
-the Level 7 gate — the second animal type, which the false-urgency exposure
-schedule depends on — until day two. Keep Level 6 under 500 and Level 7 over it
-or that guarantee is lost.
+Level 5 (425) is under the 500 XP daily cap and Level 6 (540) is over it, so
+a participant who maxes the cap on day one lands on Level 5 and cannot reach
+Level 6 — now the boundary between the Common and Rare item-rarity bands in
+the catalogue, not a single named gate — until day two. Keep Level 5 under
+500 and Level 6 over it or that guarantee is lost.
 
-## Store Level Gates & Coin Prices
+## Store Item Rarity Bands & Catalogue
 
-| Level | Items | Price range |
-|-------|-------|------------|
-| 1 | Basic food, simple accessories | 30–80 coins |
-| 3 | Standard treats, medium accessories | 100–200 coins |
-| 5 | Themed accessories, habitat decorations | 200–350 coins |
-| 7 | Rare accessories, second animal type | 400–700 coins |
-| 10 | Legendary items, third animal type | 900–1,500 coins |
+The old single "gate level per tier" table is retired — the full ~69-item
+catalogue (animals/food/decorations/accessories) is spread individually
+across the curve, cheapest-first within each rarity's band. `prisma/seed.ts`
+is the source of truth for every item's exact `levelRequired`; this table is
+just the shape:
 
-**Why:** These numbers were agreed by the user and designed so average users earn ~1,500 coins over 14 days with meaningful but not unlimited purchasing power. Second animal type gates at Level 7 (day 3–4), ensuring all false urgency tiers are exposed during the 2-week study.
+| Rarity | Levels | XP range |
+|--------|--------|----------|
+| Common | 1–5 | 0–425 |
+| Rare | 6–10 | 540–1,050 |
+| Epic | 11–15 | 1,270–2,650 |
+| Legendary | 16–20 | 3,120–5,500 |
 
-**How to apply:** These are the authoritative numbers for implementation. Any changes need to be reflected in `Planning/Requirements.md`.
+The Common/Rare boundary lands on the daily-cap boundary above by
+construction, not by coincidence — see `ADDENDUM-xp-curve.md`.
+
+The old "second/third animal type" story pinned to Level 7/10 specifically
+is retired: all 22 animals are now spread through the curve like every other
+category, no longer special-cased by name.
+
+**Why:** Rebalance agreed by the user (2026-08-11) to fix XP progression
+feeling too easy, and to give every rarity tier real content spread across
+the curve instead of bunching at five checkpoint levels.
+
+**How to apply:** These are the authoritative numbers for implementation.
+`src/lib/levels.ts`, `prisma/seed.ts`, and `Planning/Requirements.md` all
+carry a copy and must agree.
