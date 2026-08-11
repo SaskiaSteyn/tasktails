@@ -1,0 +1,346 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7 no longer accepts `url` here — the connection string lives in
+// prisma.config.ts for the CLI, and reaches the client through an adapter.
+datasource db {
+  provider = "postgresql"
+}
+
+/// A/B study group — assigned once at account creation, permanent (AUTH-5, NFR-TASK-3).
+enum AbGroup {
+  A
+  B
+}
+
+/// Participants are PARTICIPANT; the researcher account is ADMIN, which is what
+/// ADM-09 gates the /api/admin routes on.
+enum UserRole {
+  PARTICIPANT
+  ADMIN
+}
+
+/// INF-01.
+model User {
+  id    String @id @default(cuid())
+  email String @unique
+
+  /// The handle chosen on the onboarding username step (AUTH-07). Lowercase, no
+  /// leading "@". Null until that step is answered or skipped.
+  username String? @unique
+
+  /// Full profile name when the provider gives one — Google does, the register
+  /// form does not. Seeds username suggestions; never shown on its own.
+  displayName String?
+
+  /// Uploaded profile photo (PROF-01). Null until someone sets one.
+  avatarUrl String?
+
+  /// scrypt hash as "salt:derivedKey". Null for OAuth-only accounts.
+  passwordHash    String?
+  role            UserRole         @default(PARTICIPANT)
+  abGroup         AbGroup
+  createdAt       DateTime         @default(now())
+  tasks           Task[]
+  inventoryItems  InventoryItem[]
+  cartItems       CartItem[]
+  transactions    Transaction[]
+  pets            Pet[]
+  telemetryEvents TelemetryEvent[]
+  economy         UserEconomy?
+  settings        UserSettings?
+  achievements    UserAchievement[]
+}
+
+/// INF-02.
+model Task {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title String
+
+  /// Normalised copy of `title` — trimmed, inner whitespace collapsed,
+  /// lowercased — written by `src/lib/tasks.ts` and never shown to anyone.
+  ///
+  /// The anti-spam guardrail (ECO-02) matches on this rather than on `title`
+  /// because it has to catch the same task typed slightly differently: without
+  /// it, "Reply  to email" and "reply to email" are separate tasks to Postgres
+  /// and the guardrail is defeated by a stray space. A stored key rather than a
+  /// query-time expression so the match is an indexed equality, not an ILIKE
+  /// scan of every task the participant owns.
+  titleKey String
+
+  /// Self-reported tier 1-5 (Trivial/Small/Medium/Large/Epic) — see
+  /// economy_system.md's tier table. Trusted input; the anti-spam guardrail
+  /// (ECO-02) is the only check against abuse (Requirements §3.2).
+  complexityTier Int
+
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  subtasks    Subtask[]
+
+  /// ECO-02's two lookups: the last completion of a title, and how many times
+  /// it has been completed today. Both filter userId + titleKey and order or
+  /// range on completedAt.
+  @@index([userId, titleKey, completedAt])
+}
+
+/// INF-03.
+model Subtask {
+  id     String @id @default(cuid())
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  title       String
+  completedAt DateTime?
+}
+
+/// Fixed category set per Features.md STOR-03.
+enum StoreItemCategory {
+  FOOD
+  ACCESSORIES
+  ANIMALS
+  DECORATIONS
+}
+
+/// Rarity tier per every table in Gatcha stuffs.pdf — Common/Rare/Epic/Legendary,
+/// deliberately its own vocabulary rather than reusing the Task complexity tiers
+/// (Gatcha.md GACHA-01, research_gacha_mechanics.md G-3). Drives the Lucky Box
+/// pull's weighting (GACHA-04) once GACHA-03 seeds the real catalogue.
+enum StoreItemRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+/// INF-04.
+model StoreItem {
+  id       String            @id @default(cuid())
+  name     String
+  category StoreItemCategory
+
+  /// Level gate — see economy_system.md's store gate table (1, 3, 5, 7, 10).
+  levelRequired  Int
+  coinPrice      Int
+  imageUrl       String
+
+  /// Nullable (GACHA-01) — INF-20's 7 placeholder items don't map cleanly onto
+  /// Gatcha stuffs.pdf's roster (different names, some invented outright, e.g.
+  /// "Cosy den"), so guessing a rarity for them here would be fabricated data.
+  /// GACHA-03 populates this for the real 69-item catalogue; tighten to
+  /// required once that ticket retires the placeholder seed.
+  rarity         StoreItemRarity?
+  inventoryItems InventoryItem[]
+  cartItems      CartItem[]
+  transactions   Transaction[]
+  pets           Pet[]
+}
+
+/// INF-05.
+model InventoryItem {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  /// Null while unequipped.
+  equippedToPetId String?
+  equippedToPet   Pet?    @relation(fields: [equippedToPetId], references: [id], onDelete: SetNull)
+
+  quantity Int @default(1)
+}
+
+/// INF-06.
+model CartItem {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  quantity Int @default(1)
+}
+
+/// INF-07.
+model Transaction {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  coinSpent   Int
+  purchasedAt DateTime @default(now())
+}
+
+/// INF-08.
+model Pet {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeItemId String
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  /// Null until the owner renames it — falls back to `storeItem.name` (the
+  /// shared species name) until then. Per-pet, not per-species: two owned
+  /// foxes can be renamed independently.
+  name String?
+
+  happiness        Int
+  hunger           Int
+  lastInteractedAt DateTime
+
+  /// PRO-18. Lifetime count of "pet" interactions on this specific pet —
+  /// `lastInteractedAt` is overwritten on every interaction so it cannot
+  /// answer "has this pet ever been petted", which the "pet every type you
+  /// own" achievement needs per-pet, not as a per-user total.
+  timesPetted Int @default(0)
+
+  equippedItems InventoryItem[]
+}
+
+/// INF-09.
+model TelemetryEvent {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Open-ended — e.g. STORE_VISIT, ITEM_VIEWED, ITEM_PURCHASED, SESSION_START,
+  /// SESSION_END (STOR-18, ADM-10). Not an enum: new event types are expected
+  /// as later tickets add logging.
+  eventType String
+  payload   Json
+  createdAt DateTime @default(now())
+}
+
+/// INF-10. One record per user (AUTH-04 initialises it at 0 coins, 0 XP,
+/// level 1, streak 0). See economy_system.md for the coin/XP rules that
+/// operate on these fields (ECO-01..ECO-05).
+model UserEconomy {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  coins Int @default(0)
+  xp    Int @default(0)
+  level Int @default(1)
+
+  /// Cumulative coins ever granted by `grantEarnings` (PRO-04/05's "coins
+  /// earned" lifetime stat). Deliberately separate from `coins`, which is the
+  /// *spendable* balance and falls when the store deducts from it — this only
+  /// ever grows, same shape as `completedTaskCount()` and animals owned.
+  lifetimeCoinsEarned Int @default(0)
+
+  /// Consecutive streak-day count; a streak day = at least 1 task completed.
+  streak         Int       @default(0)
+  lastStreakDate DateTime?
+
+  /// Daily cap tracking — 300 coins / 500 XP max per day (NFR-TASK-2).
+  dailyCoinsEarned Int      @default(0)
+  dailyXpEarned    Int      @default(0)
+  dailyCapResetAt  DateTime @default(now())
+
+  /// Lucky Box hidden hard pity (GACHA-02, GACHA-05). Counts pulls since the
+  /// last Legendary result; `GACHA-04`'s roll forces a Legendary once this
+  /// hits the pity threshold and resets it to 0 on any Legendary pull, natural
+  /// or forced. Deliberately never read by an API response the client sees —
+  /// the Lucky Box home and Drop Rates screens (design board §2) show no pity
+  /// meter or counter, by the approved design.
+  pullsSinceLegendary Int @default(0)
+
+  /// PRO-18. Lifetime pet/feed interaction counts, for the Petting Zoo
+  /// achievements ("pet/feed animals 50 times") — nothing else counted these
+  /// before now; `Pet.lastInteractedAt` is overwritten each time, not summed.
+  lifetimePetInteractions  Int @default(0)
+  lifetimeFeedInteractions Int @default(0)
+}
+
+/// INF-18. One record per user, created with the account so the settings screen
+/// (PRO-10) and its API (PRO-15) can always update a row rather than upsert one.
+///
+/// The four defaults are what the Settings frame draws and what PRO-13/PRO-14
+/// specify: notifications on, preferences off. They live here rather than in
+/// application code so a row created any other way still matches the design.
+model UserSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// "Daily task reminder" (PRO-13).
+  dailyReminder Boolean @default(true)
+  /// "Streak at risk alert" (PRO-13).
+  streakAlert   Boolean @default(true)
+
+  /// "Sound effects" (PRO-14).
+  soundEffects Boolean @default(false)
+  /// "Reduce motion" (PRO-14). Independent of the OS setting, which globals.css
+  /// already honours via `prefers-reduced-motion` — this is the in-app override
+  /// on top of it, so the two are OR-ed, never overwritten.
+  reduceMotion Boolean @default(false)
+}
+
+/// INF-19, expanded PRO-18. The catalogue — one row per badge that exists,
+/// the same for everyone. Rendered by PRO-07/the Achievements screen and
+/// evaluated by PRO-09/PRO-18.
+///
+/// PRO-18 seeds the real 38-achievement catalogue (`Beta/Planning/
+/// Achievements.pdf`), replacing PRO-09's original 4 invented placeholders.
+model Achievement {
+  id String @id @default(cuid())
+
+  /// Stable slug the unlock service refers to — e.g. `first_task`. Code keys off
+  /// this, never off `id` or `name`, so copy can change without breaking logic.
+  key String @unique
+
+  name        String
+  description String
+
+  /// What has to happen, as a discriminated shape the unlock service reads —
+  /// see `AchievementCriterion` in `src/lib/achievements.ts` for the full
+  /// union (streak/task/item-ownership/petting-zoo criteria). A category
+  /// (Streaks/Tasks/Petting Zoo/Items) is derived from `criteria.type` there
+  /// rather than stored as its own column, since every type maps to exactly
+  /// one category.
+  ///
+  /// JSON rather than columns because the trigger set is not settled — PRO-09
+  /// evaluates on task completion, purchase *and* pet interaction, and pinning
+  /// that to an enum now would mean a migration per new badge idea.
+  criteria Json
+
+  /// PRO-18. XP granted on unlock, seeded from `Achievements.pdf`. Bypasses
+  /// the daily XP cap when paid out (`grantAchievementReward()` in
+  /// `economy.ts`) — a one-time milestone bonus, not daily task-earning.
+  /// `@default(0)` only exists so the migration adding this column is safe;
+  /// every seeded row sets a real value.
+  xpReward Int @default(0)
+
+  unlockedBy UserAchievement[]
+}
+
+/// INF-19. The join: a row exists only once someone has earned the badge, so
+/// absence is what "locked" means. Nothing writes a locked row.
+model UserAchievement {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  unlockedAt DateTime @default(now())
+
+  /// Earned once. The constraint is what makes PRO-09 idempotent — it can
+  /// re-evaluate criteria on every event without checking first.
+  @@unique([userId, achievementId])
+}

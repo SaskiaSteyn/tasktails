@@ -26,7 +26,7 @@ A gamified to-do application with three modules:
 
 ## Tech Stack (Confirmed in D3)
 - **Frontend/Backend**: Next.js (full-stack, React-based)
-- **Styling**: Tailwind CSS + shadcn/ui
+- **Styling**: Tailwind CSS v4, with custom components built to the `design_handoff/` style guide. **shadcn/ui was evaluated and is not used** — the TaskTails design system is fully bespoke and shadcn's own token layer fought it (decided 2026-07-26, while building AUTH-01). Design tokens live in `src/app/globals.css` as Tailwind `@theme` variables; shared primitives in `src/components/ui/`.
 - **A/B assignment**: Next.js Middleware
 - **Database**: PostgreSQL + Prisma ORM
 - **Auth**: NextAuth + JWT

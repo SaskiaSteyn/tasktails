@@ -34,22 +34,40 @@ metadata:
 - Parent earns 0 extra when all subtasks done
 
 ## XP Level Thresholds (hockey-stick curve)
-Levels 1–5 arrive in first session (~3–6 tasks) for immediate dopamine hit; curve steepens for 6–10.
+Level 2 arrives after ~2 small tasks for the early dopamine hit; the curve then
+paces the rest across the two weeks and steepens for 8–10.
 
 | Level | XP Required |
 |-------|------------|
 | 1 | 0 |
-| 2 | 8 |
-| 3 | 20 |
-| 4 | 35 |
-| 5 | 55 |
-| 6 | 200 |
-| 7 | 500 |
+| 2 | 40 |
+| 3 | 110 |
+| 4 | 190 |
+| 5 | 280 |
+| 6 | 380 |
+| 7 | 550 |
 | 8 | 900 |
 | 9 | 1,400 |
 | 10 | 2,000 |
 
-Average user (~5 tasks/day) reaches Level 10 by day 13–14. Low performers reach Level 7–8.
+Average user (~5 tasks/day, ~150 XP) reaches Level 7 by day 3–4 and Level 10 by
+day 13. Low performers reach Level 7–8.
+
+**Rebalanced 2026-07-29.** The original curve was 8 / 20 / 35 / 55 / 200 / 500 /
+900 / 1,400 / 2,000, which put levels 1–5 inside 55 XP — barely more than one
+Medium task — and landed a single Epic task on Level 6 exactly. Six level-up
+celebrations could fire in one sitting.
+
+**Only levels 2–6 moved.** Levels 7–10 keep their original values because those
+were already right for the ~150 XP/day assumption: raising them would push Level
+10 past the end of the two-week study. The ceiling stayed at 10, so the gate
+table below needs no re-mapping.
+
+Note Level 6 (380) is under the 500 XP daily cap and Level 7 (550) is over it,
+so a participant who maxes the cap on day one lands on Level 6 and cannot reach
+the Level 7 gate — the second animal type, which the false-urgency exposure
+schedule depends on — until day two. Keep Level 6 under 500 and Level 7 over it
+or that guarantee is lost.
 
 ## Store Level Gates & Coin Prices
 

@@ -50,7 +50,7 @@
 
 | # | Requirement |
 |---|-------------|
-| ONB-1 | New users are presented with three onboarding goals: "Complete 3 tasks", "Buy 1 animal", "Feed 3 animals today" |
+| ONB-1 | New users are presented with three onboarding goals: "Add a task", "Complete a task", "Buy a pet". Completing the first two must leave enough coins for the cheapest animal in the store, so a new user can clear all three in one sitting |
 | ONB-2 | Onboarding goals are tracked and shown as completed once met |
 
 ---
@@ -105,7 +105,7 @@
 
 | # | Requirement |
 |---|-------------|
-| NFR-TASK-1 | **Anti-spam guardrail** — if a user completes a task with the same title within 24 h of a prior completion, the reward is reduced to 50% coins/XP. Within 48 h: 25%. Within 72 h: 10%. Minimum floor: 1 coin, 1 XP. |
+| NFR-TASK-1 | **Anti-spam guardrail** — if a user completes a task with the same title within 24 h of a prior completion, the reward is reduced to 50% coins/XP. Within 48 h: 25%. Within 72 h: 10%. Minimum floor: 1 coin, 1 XP. Titles are matched on a normalised key (trimmed, whitespace-collapsed, lowercased), so capitalisation and spacing cannot evade the check. **Two exemptions** (ECO-02, added after the rule as first written was found to punish honest planning): a duplicate that *already existed* when its title was last completed keeps its full reward, because a task created before the reward was seen was planned rather than spawned in response to it; that exemption lapses after 3 completions of the same title in one calendar day, so a single large batch of identical tasks cannot buy unlimited full rewards. The floor never *raises* a reward — a task already reduced to 0 coins by lateness stays at 0, or a repeat would pay more than a single completion. |
 | NFR-TASK-2 | **Daily cap** — a user may earn a maximum of 300 coins and 500 XP per day across all tasks |
 | NFR-TASK-3 | **A/B group isolation** — Group A users must never see false urgency indicators; Group B users must always see them in the store. Assignment must be enforced server-side |
 
@@ -183,22 +183,28 @@ A *streak day* = at least 1 task completed that day. Bonus applies to coins earn
 
 ### 3.6 XP Level Thresholds
 
-Designed with a **hockey-stick curve**: Levels 1–5 arrive within a single first session (3–6 tasks) for immediate dopamine-hit engagement. The curve then steepens to sustain motivation across the full 2-week study.
+Designed with a **hockey-stick curve**: Level 2 arrives within a first session (~2 small tasks) for immediate dopamine-hit engagement. The curve then steepens to sustain motivation across the full 2-week study.
 
 | Level | Cumulative XP | Typical timing (avg user: ~5 tasks/day, ~30 XP/task) |
 |-------|--------------|------------------------------------------------------|
 | 1 | 0 | Start |
-| 2 | 8 | First trivial task → instant level-up |
-| 3 | 20 | 2–3 trivial tasks or 1 small task |
-| 4 | 35 | ~3–4 tasks into the first session |
-| 5 | 55 | ~4–6 tasks — end of first session |
-| 6 | 200 | Day 1–2 |
-| 7 | 500 | Day 3–4 |
+| 2 | 40 | ~2 small tasks → first level-up |
+| 3 | 110 | ~4–6 tasks — end of first session |
+| 4 | 190 | Day 1–2 |
+| 5 | 280 | Day 2 |
+| 6 | 380 | Day 2–3 |
+| 7 | 550 | Day 3–4 |
 | 8 | 900 | Day 6 |
 | 9 | 1,400 | Day 9–10 |
 | 10 | 2,000 | Day 13–14 (aspirational end-goal) |
 
-**First-session simulation**: 3 tasks (1 trivial + 2 small = 8 + 20 + 20 = 48 XP) → user hits Levels 2, 3, 4, and 5 in a single sitting.
+**First-session simulation**: 3 tasks (1 trivial + 2 small = 8 + 20 + 20 = 48 XP) → user reaches Level 2. Level 3 needs 110 XP, roughly a fourth and fifth task.
+
+> **Rebalanced 2026-07-29.** The curve was previously 8 / 20 / 35 / 55 / 200 / 500 / 900 / 1,400 / 2,000. Levels 1–5 fitted inside 55 XP — barely more than one Medium task — so a participant could see six level-up celebrations in a single sitting, which read as overwhelming rather than rewarding. **Only levels 2–6 changed.** Levels 7–10 keep their original values: they were already correct for the ~30 XP/task assumption in this table's own header, and raising them would push Level 10 past the end of the study. The gate table in §3.7 is unaffected.
+>
+> Level 6 (380) sits under the 500 XP daily cap (NFR-TASK-2) and Level 7 (550) sits over it, so a participant who maxes the cap on day one lands on Level 6 and cannot reach the Level 7 gate — the second animal type — until day two. This is deliberate: §3.7's exposure schedule assumes that gate opens on day 3–4.
+>
+> An earlier note here recorded that the pre-rebalance worked example wrongly claimed 48 XP reached Level 5 (it reached Level 4). That correction is now moot — the example above has been recalculated against the new thresholds.
 
 **Study-range summary**: Low performers (~2 tasks/day) reach Level 7–8. Average performers (~5 tasks/day) reach Level 10 by study end. High performers (~8 tasks/day, larger tasks) reach Level 10 by day 9–10.
 

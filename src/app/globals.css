@@ -1,0 +1,518 @@
+@import "tailwindcss";
+
+/* `standalone:` — true only when the page is running as the installed PWA,
+   launched from the home screen rather than opened in a browser tab. The
+   manifest (`src/app/manifest.ts`) declares `display: "standalone"`, and this is
+   the media query that reports it back.
+
+   It is what separates "the app" from "the website" on one deployment: `/`
+   shows the welcome screen under this variant and the marketing site without it
+   (`src/app/page.tsx`). A media query, not a user-agent test — the question is
+   genuinely "how was this launched", which is exactly what it answers, and a
+   phone browser is still the website however small the screen gets. */
+@custom-variant standalone (@media (display-mode: standalone));
+
+/* ==========================================================================
+   TaskTails design tokens — see design_handoff/TaskTails Style Guide.dc.html
+   Warm flat UI. Neutral base + four accents, each with fill / soft tint /
+   readable dark text variant. Red is reserved for Group B urgency only.
+
+   WCAG AA (NFR-GEN-1, INF-14) — audited 2026-07-26, re-measured 2026-07-28.
+   Measured against the darkest surface (the board, #F1E9DC), so anything passing
+   there passes everywhere. The style guide's claim that all colours meet AA does
+   not hold.
+
+   METHOD CHANGE — ratios are now BPCA (a bridge for WCAG 2 contrast using APCA),
+   not plain WCAG 2. See src/lib/contrast.ts. WCAG 2's formula ignores perception
+   and is badly calibrated in exactly the mid-tone range this warm palette lives
+   in; BPCA measures perceived lightness and re-expresses it as a WCAG 2 style
+   ratio, so 4.5:1 still means what it always meant. Every number below is BPCA.
+
+   FIXED — darkened just enough to reach 4.5:1, hue and saturation preserved so
+   the palette still reads as the same warm family. Do not revert these:
+     ink-soft     #8A8178 → #524C47   (7.02 WCAG 2 → 5.20 BPCA, passes)
+
+   REGRESSED BY THE METHOD CHANGE — these four were darkened to land just on
+   4.5:1 under WCAG 2, which means they were tuned to the wrong ruler. All four
+   clear AA on white but fall short on the three darker surfaces:
+                    on board:  WCAG 2   BPCA     would need
+     ink-faint      #74685A     4.50     3.68     #61574B
+     amber-text     #8C6117     4.54     3.69     #755113
+     sage-text      #357654     4.50     3.66     #2C6246
+     urgency-text   #BF3A2D     4.52     3.59     #9C2F25
+   Not applied — the current values were a deliberate call and darkening them
+   again is a visible change to the palette. INF-14 decides.
+
+   ACCEPTED EXCEPTIONS — deliberate, decided; do not "fix" these. The accents
+   and their white labels stay exactly as the style guide draws them, because
+   both alternatives were tried and rejected on looks: a darker AA-passing fill
+   (#CA4F22) lost the brand's warmth, and an ink label on the existing fill
+   lost the intended white-on-terracotta treatment. BPCA agrees these fail; it
+   just puts them slightly lower than WCAG 2 did:
+     white on terracotta button   2.86  (was 2.94 under WCAG 2)
+     white on sage button         2.76  (was 2.81)
+     terracotta as link text      2.69  (was 2.94)
+   The focus ring stays brand terracotta for the same reason. Revisit only if
+   the pre-study user testing round surfaces legibility complaints.
+
+   MARKETING SITE (MKT-01/02/03) — measured when it landed, all resolved rather
+   than added to the exception pile, because none of them needed the brand
+   colours to move:
+     footer link on ink   #A89E92 → --color-on-dark-soft   3.09 → 4.59, passes
+     body copy            #5C5470 / #8A8178 → ink-soft            6.56+, passes
+   The one genuine exception is the welcome screen, whose ground is terracotta:
+   every ratio on it is already in the accepted list above (white 2.86,
+   brand-soft 2.54, terracotta-on-white 2.69), and it sets `--focus-ring` to
+   white with a dark halo exactly as the level-up celebration does.
+
+   UNDECIDED — shipped by INF-12's persistent header, drawn exactly as the
+   handoff frames specify, and awaiting the INF-14 pass. Measured, not guessed;
+   see /style-guide §06. Each is the same trade already accepted above — an
+   accent at its brand value carrying small text:
+     white on violet             3.79   (34px level disc, "Lv4")
+     terracotta on t-tint        2.43   (streak pill, flame + count)
+     terracotta on surface       2.69   (streak card numeral, and PET-02's
+                                          "critical" happiness/hunger icon +
+                                          numeral — same trade, not a new one)
+   The palette has no in-family fix for the streak pill: terracotta-press on the
+   same tint only reaches 3.38, so passing it means a new darker token or a
+   different treatment, not a swap. The level disc does have one — the pill
+   variant of `LevelBadge` (violet-text on violet-tint) is 4.59.
+
+   NOT YET REACHED — these surfaces don't exist yet. When the store and Group B
+   urgency stimuli land, white text on these fills all falls short of 4.5:
+     white on amber    2.05   ("5 in carts" badge)
+     white on violet   3.79   ("Buy 2 get 1" badge)
+     white on urgency  3.94   (flash-sale banner, destructive button)
+   ========================================================================== */
+
+@theme {
+  /* ---- Breakpoints & layout (INF-13, NFR-GEN-2) ----
+     Tailwind's sm/md/lg/xl defaults are kept as-is; `frame` is added below them.
+
+     Every app screen is drawn in a 300×640 phone frame, so the app is built
+     mobile-first and adapts upward. `frame` is the width at which the screen
+     stops going edge-to-edge and becomes a centred card on the board: 480px,
+     just past the widest phone in portrait (430px, iPhone Pro Max). Stretching a
+     300px-wide design across 500-639px of tablet — which is what using `sm` for
+     this did — leaves the fixed paddings looking sparse and the lines too long.
+
+     `sm` and up stay for genuinely wide layouts: the style guide's two-column
+     grids, the marketing site (MKT-01) and the admin cards (ADM-01/02), all of
+     which are desktop-first and are not phone frames.
+
+     Per-screen desktop adaptation — side rail, two-column dashboard — is INF-22,
+     which consumes this scale rather than adding to it. */
+  --breakpoint-frame: 30rem; /* 480px — phone frame becomes a centred card */
+
+  /* The frame's own width, matching the design's proportions at 400px. */
+  --container-app: 25rem; /* 400px — `max-w-app` */
+
+  /* The marketing site's content column (MKT-01/02) — the width of the browser
+     frame the handoff draws it in, so every band centres on the same measure
+     however wide the viewport gets. Not a phone frame; see the note above. */
+  --container-site: 73.75rem; /* 1180px — `max-w-site` */
+
+  /* ---- Fonts ---- */
+  /* Fredoka: display, headings, numerals. Nunito: body, labels, all UI text. */
+  --font-display: var(--font-fredoka), system-ui, sans-serif;
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+
+  /* ---- Neutrals & surfaces ---- */
+  --color-board: #f1e9dc; /* outermost canvas */
+  --color-warm: #fbf6ef; /* headers, cards, section fills */
+  --color-surface: #ffffff; /* screens, primary cards */
+  --color-input: #f6f1e9; /* text fields */
+  /* Three text tiers, spread across the usable range so the hierarchy the
+     designs rely on survives the contrast fix. Ratios are vs the board. */
+  --color-ink: #2e2a26; /* primary text — 7.94 BPCA on board */
+  --color-ink-soft: #524c47; /* secondary text, labels — 5.20 BPCA on board */
+  --color-ink-faint: #74685a; /* placeholder, small print — 3.68 BPCA, see audit */
+  /* Disabled text only. WCAG 1.4.3 exempts inactive controls, so this keeps the
+     guide's original faint value — it must stay visibly "off". */
+  --color-ink-disabled: #b8afa4;
+  /* Secondary text *on* the ink fill — the marketing footer's links and
+     copyright (MKT-02), the mirror of what `brand-soft` is for terracotta.
+     The frame draws these #A89E92, which is only 3.09 on ink; this is that
+     colour lightened along its own hue and saturation until it clears AA
+     (4.59 BPCA), the same fix and the same method the `ink-soft` entry in the
+     audit block above records. Unlike terracotta, ink *has* an in-family fix,
+     so this one is corrected rather than accepted as an exception. */
+  --color-on-dark-soft: #cdc7c1;
+  --color-scrim: rgb(46 42 38 / 0.42); /* behind modals and sheets */
+  --color-step-idle: #e7ddcc; /* step dots not yet reached */
+  --color-border-track: #efe7da; /* borders, progress tracks */
+  --color-border-input: #ebe2d5; /* input borders */
+  --color-checkbox: #d8cec0; /* idle checkbox / toggle off */
+
+  /* ---- Terracotta · primary ----
+     Kept exactly as the style guide draws it, on request — the darker
+     AA-passing variant lost the warmth. White-on-terracotta is 2.86, so
+     filled terracotta buttons are a known, accepted AA exception. */
+  --color-terracotta: #e27a54;
+  --color-terracotta-hover: #c9633f;
+  --color-terracotta-press: #b85838;
+  --color-terracotta-tint: #fbeae3;
+  --color-terracotta-tint-press: #f6dbcf;
+  --color-terracotta-disabled: #eac3b4; /* primary @40% on white, no shadow */
+  /* Secondary text *on* a terracotta fill — the level-up celebration's overline,
+     subtitle and "Keep going" (level-up addendum), and the landing screen's
+     supporting copy. 2.54 BPCA on terracotta: below AA, like everything on that
+     ground, and recorded in the audit block above. */
+  --color-brand-soft: #fbe3d8;
+
+  /* ---- Sage · success ---- */
+  --color-sage: #5fa97e;
+  --color-sage-hover: #4e9670;
+  --color-sage-press: #437f60;
+  --color-sage-tint: #e7f0e9;
+  --color-sage-text: #357654; /* text use only — 3.66 BPCA on board, see audit */
+
+  /* ---- Amber · coins ---- */
+  --color-amber: #e5a93c;
+  --color-amber-ring: #f2c879;
+  --color-amber-tint: #fcebd3;
+  --color-amber-text: #8c6117; /* 3.69 BPCA on board, see audit */
+
+  /* ---- Violet · XP / level ---- */
+  --color-violet: #8478c4;
+  --color-violet-tint: #eee9f5;
+  --color-violet-text: #5c5470;
+
+  /* ---- Urgency red · GROUP B + destructive ONLY ---- */
+  --color-urgency: #db4c3f; /* borders, decorative fills */
+  --color-urgency-tint: #fde7e3;
+  --color-urgency-text: #bf3a2d; /* 3.59 BPCA on board, see audit */
+  --color-urgency-border: #ebd9d2;
+  --color-urgency-border-hover: #e9b8ad; /* outlined destructive, hovered */
+
+  /* ---- Leaderboard · podium + rank button (LEAD-06) ----
+     From `design_handoff/ADDENDUM-leaderboard.md`, at the values it draws.
+
+     There is no gold family here because gold is the amber family already:
+     the addendum's pedestal `#F2C879` is `--color-amber-ring`, its avatar fill
+     `#FCEBD3` is `--color-amber-tint`, its ring `#E5A93C` is `--color-amber`,
+     and its `#8A6416` text measures 3.00 BPCA where `--color-amber-text`
+     measures 3.02 — the same colour to the eye, so first place reuses those
+     rather than adding a fifth near-identical amber.
+
+     Silver and bronze have no equivalent anywhere in the palette, so they get
+     the same four-part shape the accents use: fill, ring, tint, text. Measured
+     BPCA on their own pedestals is 2.57 (silver) and 2.48 (bronze); AA-passing
+     variants exist (#434A54 / #473123) but take the metal out of both, so these
+     ship as drawn and join the accepted-exception list in the audit block
+     above. Revisit with the INF-14 pass.
+
+     The pinned "You" row is deliberately absent from this block. It is drawn
+     `#FBEAE3` on `#C23B2E`, and the first of those is exactly
+     `--color-terracotta-tint` while the second sits a hair off
+     `--color-urgency-text` (#BF3A2D) — so it is built from the terracotta
+     family, which already has every value it needs. Urgency red stays reserved
+     for Group B stimuli and destructive actions; a Group A participant must
+     never be shown one. */
+  --color-podium-silver: #d6dee8; /* 2nd pedestal */
+  --color-podium-silver-ring: #b9c6d6; /* 2nd avatar border */
+  --color-podium-silver-tint: #e7eef6; /* 2nd avatar fill */
+  --color-podium-silver-text: #7c8a9c; /* 2nd rank numeral + score */
+  --color-podium-bronze: #e4c9b4; /* 3rd pedestal */
+  --color-podium-bronze-ring: #d8b79e; /* 3rd avatar border */
+  --color-podium-bronze-tint: #f6ede7; /* 3rd avatar fill */
+  --color-podium-bronze-text: #b07b57; /* 3rd rank numeral + score */
+
+  /* The ranked list's well, one step off `surface` so the white row cards read
+     as cards rather than as the page. */
+  --color-list-well: #fbf9f4;
+  /* No ellipsis token. The addendum's "···" collapsed the ranks between the
+     leaders and your own row; the ranked list now holds every rank and sticks
+     your row to the bottom of the scroll instead (see ranked-list.tsx), so
+     there is no gap left to stand in for. */
+
+  /* Profile's rank button (LEAD-08) — an amber card, but with its own border
+     and two text weights the amber family doesn't carry. */
+  --color-rank-border: #f0dcb8;
+  --color-rank-sub: #b08a3c; /* "Top 8% · climbing 3 spots" */
+  --color-rank-numeral: #b67f1e; /* the "#12" itself */
+
+  /* ---- Task complexity ramp ---- */
+  --color-tier-trivial: #98a2ae; /* 5 coins / 8 xp */
+  --color-tier-small: #5fa97e; /* 15 / 20 */
+  --color-tier-medium: #e5a93c; /* 35 / 45 */
+  --color-tier-large: #e27a54; /* 75 / 100 */
+  --color-tier-epic: #8478c4; /* 150 / 200 */
+
+  /* ---- Radius ---- */
+  --radius-chip: 8px;
+  --radius-input: 12px;
+  --radius-btn: 13px;
+  --radius-card: 15px;
+  --radius-card-lg: 18px;
+  --radius-pill: 20px;
+  --radius-modal: 22px;
+  --radius-frame: 34px;
+
+  /* ---- Shadow ---- */
+  --shadow-card: 0 16px 34px rgb(46 42 38 / 0.1);
+  --shadow-modal: 0 20px 44px rgb(46 42 38 / 0.28);
+  --shadow-popover: 0 14px 26px rgb(46 42 38 / 0.12);
+  --shadow-btn: 0 6px 14px rgb(226 122 84 / 0.35);
+  --shadow-btn-hover: 0 9px 20px rgb(226 122 84 / 0.45);
+  --shadow-btn-press: 0 3px 8px rgb(226 122 84 / 0.4);
+  --shadow-btn-danger: 0 6px 14px rgb(219 76 63 / 0.35);
+  --shadow-btn-sage: 0 5px 12px rgb(95 169 126 / 0.32);
+  --shadow-btn-sage-hover: 0 8px 16px rgb(95 169 126 / 0.42);
+  --shadow-nav-idle: 0 4px 12px rgb(46 42 38 / 0.1);
+  --shadow-nav-active: 0 6px 14px rgb(226 122 84 / 0.4);
+  --shadow-fab: 0 8px 18px rgb(226 122 84 / 0.4);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-board);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Fredoka for every heading — display type per the style guide scale. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+
+  a {
+    color: var(--color-terracotta);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-terracotta-hover);
+  }
+
+  /* WCAG 1.4.11 / 2.4.7 (NFR-GEN-1, INF-14): every interactive element keeps a
+     visible focus ring, and the ring itself must clear 3:1 against whatever it
+     sits on.
+
+     Was brand terracotta, which failed on every surface in the palette — 2.69 on
+     white, 2.40 on the board. Sage was considered and is worse (2.60 / 2.34): at
+     its brand value it is lighter than terracotta. Ink clears it everywhere with
+     room to spare (12.88 / 7.94 / 10.53 / 9.37).
+
+     CSS cannot sample the colour behind an element, so the ring cannot adapt on
+     its own. `--focus-ring` is the substitute: it inherits, so any container
+     drawn on a dark or saturated fill — the terracotta landing screen, Group B's
+     red banner — sets it once on itself and everything inside picks it up.
+
+     Caveat for whoever builds that landing screen: a terracotta *background* is
+     the one surface in this palette where nothing reaches 3:1 (white 2.86, ink
+     2.96). It needs a darker fill or a two-tone ring, not a token swap. */
+  :root {
+    --focus-ring: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-ink-faint);
+  }
+}
+
+/* ==========================================================================
+   Type scale — named utilities so every screen uses the same steps
+   ========================================================================== */
+
+@utility text-brand-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1.05;
+}
+
+@utility text-section {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+@utility text-screen-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+@utility text-stat {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+}
+
+@utility text-body-strong {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+@utility text-secondary {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--color-ink-soft);
+}
+
+@utility text-overline {
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
+/* TASK-05's reward pop, above a just-completed task row's checkbox. Centering
+   is baked into the keyframe itself (not a Tailwind translate utility on the
+   element) because a CSS animation's `transform` replaces rather than
+   composes with one set by a class. */
+@keyframes task-reward-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(-18px);
+  }
+}
+
+/* PET-03's "Pet" button — a burst of hearts that climbs from the button
+   itself (`AnimalCard` measures its real position; this keyframe only
+   handles the climb). Same "centering baked into the keyframe" reasoning
+   `task-reward-float` documents above.
+
+   `--pet-heart-drift` is a per-element custom property (set inline by
+   `AnimalCard`, one random value per heart) for the sideways wander — a
+   keyframe is one shared set of rules for every element it's applied to, so
+   it cannot itself pick a different drift per heart the way JS can; reading
+   it back via `var()` is what lets five hearts drift five different ways
+   instead of climbing in a single flat row. The scale pop-in (0.5 → 1) is
+   what makes several hearts read as one "poof" rather than one heart
+   repeated five times, and the gentle shrink after 60% (1 → 0.9) is what
+   sells "getting further away" as they climb past the stage. */
+@keyframes pet-heart-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(0, 0) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%)
+      translate(calc(var(--pet-heart-drift, 0px) * 0.65), -140px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(var(--pet-heart-drift, 0px), -220px)
+      scale(0.9);
+  }
+}
+
+/* ECO-07 — the level-up celebration. The addendum asks for the confetti to fall
+   on mount and the medallion to arrive with it. Both are gated behind Tailwind's
+   `motion-safe:` in the component *and* neutralised by the reduce-motion block
+   below, so the screen is legible either way — nothing here carries meaning that
+   the static frame does not. */
+/* Falls the full height of whatever it is drawn in — `--confetti-fall` is set on
+   the container, because the celebration is 100dvh on a phone and a fixed 640px
+   card from `frame:` up, and a single hard-coded distance would either stop
+   short or overshoot wildly on one of them.
+
+   Only translation here, never rotation: each piece's angle lives on an inner
+   element, so an animated `transform` cannot clobber it. */
+@keyframes confetti-fall {
+  from {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  8% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--confetti-fall, 720px));
+  }
+}
+
+@keyframes medallion-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@theme {
+  /* Slow and linear-ish — confetti falls at a fairly steady rate once it is
+     moving, and an ease-out would have it drift to a halt in mid-air. Each
+     piece overrides the duration inline so they do not descend in lockstep. */
+  --animate-confetti-fall: confetti-fall 2600ms cubic-bezier(0.3, 0.5, 0.6, 1)
+    both;
+  --animate-medallion-pop: medallion-pop 420ms cubic-bezier(0.2, 0.8, 0.3, 1.1)
+    both;
+}
+
+/* Respect the OS reduce-motion setting. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* PRO-14's in-app "Reduce motion" toggle — an override on top of the OS
+   setting above, not a replacement for it: `<html data-reduce-motion="true">`
+   is set by the root layout from the signed-in account's stored preference
+   (`UserSettings.reduceMotion`), so the two are OR-ed exactly as INF-18's
+   schema comment promises — either one reduces motion, neither can un-reduce
+   what the other requires. Same declarations, deliberately duplicated rather
+   than shared: a `@media` block and an attribute selector are different rule
+   *contexts*, so there's no single selector that means "either of these". */
+:root[data-reduce-motion="true"] *,
+:root[data-reduce-motion="true"] *::before,
+:root[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

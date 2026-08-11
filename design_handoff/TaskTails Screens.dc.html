@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#F1E9DC;color:#2E2A26;font-family:Nunito,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  *{box-sizing:border-box}
+  a{color:#E27A54;text-decoration:none}
+  a:hover{color:#C9633F}
+  ::-webkit-scrollbar{display:none}
+</style>
+<script src="./image-slot.js"></script>
+</helmet>
+
+<div style="padding:56px 60px 90px">
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+    <img src="uploads/icon.svg" alt="TaskTails" style="width:46px;height:46px;border-radius:14px;flex:none;display:block">
+    <div>
+      <div style="font-family:Fredoka;font-weight:600;font-size:32px;line-height:1">TaskTails</div>
+      <div style="font-size:14px;color:#8A8178;margin-top:2px">Gamified todo &amp; pet sanctuary · IMY761 dark-patterns study · screen board</div>
+    </div>
+  </div>
+  <div style="font-size:13px;color:#A89E92;margin:14px 0 40px;max-width:640px">Mobile-first. Warm flat UI. Try it: check off tasks on the dashboard, pet &amp; feed Mochi in the sanctuary, and watch the Group&nbsp;B urgency timers tick. Drag to pan, scroll to zoom.</div>
+
+  <!-- ============ GROUP: AUTH ============ -->
+  <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+    <div style="width:26px;height:26px;border-radius:8px;background:#2E2A26;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center">1</div>
+    <div style="font-family:Fredoka;font-weight:600;font-size:22px">Auth</div>
+    <div style="font-size:13px;color:#A89E92">Register &amp; login · random A/B group assigned at signup</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:38px;align-items:flex-start;margin-bottom:60px">
+
+    <!-- Landing / welcome -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#E27A54;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700;color:#fff"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:14px 26px 24px;text-align:center">
+          <!-- fox mark -->
+          <img src="uploads/icon-light.svg" alt="TaskTails" style="width:120px;height:120px;margin-top:20px;display:block">
+          <div style="height:0"></div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:30px;color:#fff;margin-top:18px;line-height:1.05">Do tasks.<br>Raise pets.</div>
+          <div style="font-size:13.5px;color:#FBE3D8;margin-top:10px;line-height:1.45">Turn your to-do list into a cosy sanctuary. Finish tasks, earn coins, and grow a zoo of little friends.</div>
+          <!-- feature chips -->
+          <div style="display:flex;flex-direction:column;gap:8px;width:100%;margin-top:20px">
+            <div style="display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.16);border-radius:12px;padding:10px 13px"><div style="width:26px;height:26px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><div style="width:11px;height:11px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div></div><span style="font-size:12.5px;font-weight:700;color:#fff;text-align:left">Earn coins &amp; XP for every task</span></div>
+            <div style="display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.16);border-radius:12px;padding:10px 13px"><div style="width:26px;height:26px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><div style="width:12px;height:12px;border-radius:50%;background:#5FA97E"></div></div><span style="font-size:12.5px;font-weight:700;color:#fff;text-align:left">Feed &amp; pet your growing zoo</span></div>
+            <div style="display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.16);border-radius:12px;padding:10px 13px"><div style="width:26px;height:26px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><div style="width:12px;height:12px;background:#8478C4;transform:rotate(45deg)"></div></div><span style="font-size:12.5px;font-weight:700;color:#fff;text-align:left">Level up to unlock rare animals</span></div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="width:100%;height:50px;border-radius:13px;background:#fff;color:#E27A54;font-family:Fredoka;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(46,42,38,.18)">Get started</div>
+          <div style="font-size:13px;color:#fff;margin-top:14px">Already have an account? <span style="font-weight:800;text-decoration:underline">Log in</span></div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Landing / welcome</span> <span style="font-size:12px;color:#A89E92">· first launch · entry to Register / Login</span></div>
+    </div>
+
+    <!-- Register -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700;color:#2E2A26">
+          <span>9:41</span><span style="letter-spacing:2px">◗◗◗</span>
+        </div>
+        <div style="flex:1;padding:26px 24px;display:flex;flex-direction:column">
+          <img src="uploads/icon.svg" alt="TaskTails" style="width:60px;height:60px;display:block;margin:2px auto 14px">
+          <div style="font-family:Fredoka;font-weight:600;font-size:23px;text-align:center;line-height:1.1">Create your account</div>
+          <div style="font-size:13px;color:#8A8178;text-align:center;margin:6px 0 22px">Turn your to-dos into tail wags.</div>
+          <label style="font-size:12px;font-weight:700;color:#8A8178">Email</label>
+          <div style="margin:5px 0 11px;height:42px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 14px;font-size:14px;color:#2E2A26">your.name@email.com</div>
+          <label style="font-size:12px;font-weight:700;color:#8A8178">Password</label>
+          <div style="margin:5px 0 11px;height:42px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 14px;font-size:14px;color:#B8AFA4;letter-spacing:3px">••••••••</div>
+          <label style="font-size:12px;font-weight:700;color:#8A8178">Confirm password</label>
+          <div style="margin:5px 0 14px;height:42px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 14px;font-size:14px;color:#B8AFA4;letter-spacing:3px">••••••••</div>
+          <div style="height:48px;border-radius:13px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.35)">Create account</div>
+          <div style="display:flex;align-items:center;gap:10px;margin:12px 0"><div style="flex:1;height:1px;background:#EBE2D5"></div><span style="font-size:11px;font-weight:700;color:#B8AFA4">or sign up with</span><div style="flex:1;height:1px;background:#EBE2D5"></div></div>
+          <div style="height:44px;border-radius:12px;background:#fff;border:1px solid #EBE2D5;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:13px"><div style="width:17px;height:17px;border-radius:50%;background:conic-gradient(#EA4335 0 25%,#FBBC05 25% 50%,#34A853 50% 75%,#4285F4 75% 100%)"></div>Continue with Google</div>
+          <div style="font-size:10.5px;color:#B8AFA4;text-align:center;margin:10px 0 0;line-height:1.4">You'll be randomly placed in a study group — this can't be changed during the study.</div>
+          <div style="flex:1;min-height:8px"></div>
+          <div style="font-size:13px;color:#8A8178;text-align:center">Already have an account? <a href="#">Log in</a></div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Register</span> <span style="font-size:12px;color:#A89E92">· AUTH-1, AUTH-5</span></div>
+    </div>
+
+    <!-- Login -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="flex:1;padding:26px 24px;display:flex;flex-direction:column">
+          <img src="uploads/icon.svg" alt="TaskTails" style="width:60px;height:60px;display:block;margin:24px auto 16px">
+          <div style="font-family:Fredoka;font-weight:600;font-size:25px;text-align:center">Welcome back</div>
+          <div style="font-size:13px;color:#8A8178;text-align:center;margin:6px 0 26px">Your pets missed you.</div>
+          <label style="font-size:12px;font-weight:700;color:#8A8178">Email</label>
+          <div style="margin:5px 0 14px;height:44px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 14px;font-size:14px">your.name@email.com</div>
+          <label style="font-size:12px;font-weight:700;color:#8A8178">Password</label>
+          <div style="margin:5px 0 8px;height:44px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 14px;font-size:14px;color:#B8AFA4;letter-spacing:3px">••••••••</div>
+          <div style="text-align:right;margin-bottom:20px"><a href="#" style="font-size:12px;font-weight:700">Forgot password?</a></div>
+          <div style="height:48px;border-radius:13px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.35)">Log in</div>
+          <div style="display:flex;align-items:center;gap:10px;margin:18px 0"><div style="flex:1;height:1px;background:#EBE2D5"></div><span style="font-size:11px;font-weight:700;color:#B8AFA4">or continue with</span><div style="flex:1;height:1px;background:#EBE2D5"></div></div>
+          <div style="height:46px;border-radius:12px;background:#fff;border:1px solid #EBE2D5;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:13px"><div style="width:17px;height:17px;border-radius:50%;background:conic-gradient(#EA4335 0 25%,#FBBC05 25% 50%,#34A853 50% 75%,#4285F4 75% 100%)"></div>Continue with Google</div>
+          <div style="flex:1"></div>
+          <div style="font-size:13px;color:#8A8178;text-align:center">New here? <a href="#">Create an account</a></div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Login</span> <span style="font-size:12px;color:#A89E92">· AUTH-2, AUTH-4 (JWT session)</span></div>
+    </div>
+
+    <!-- Onboarding -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#FBF6EF;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="flex:1;padding:22px 22px 24px;display:flex;flex-direction:column;overflow:hidden">
+          <div style="font-size:12px;font-weight:700;color:#E27A54;letter-spacing:.5px">WELCOME, NICO</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:22px;line-height:1.15;margin:4px 0 4px">Your first three quests</div>
+          <div style="font-size:12.5px;color:#8A8178;margin-bottom:16px">Finish these to meet your first pet.</div>
+          <!-- progress ring -->
+          <div style="display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #EFE7DA;border-radius:16px;padding:14px;margin-bottom:16px">
+            <div style="width:52px;height:52px;border-radius:50%;background:conic-gradient(#5FA97E 0deg 60deg,#EBE2D5 60deg 360deg);display:flex;align-items:center;justify-content:center;flex:none">
+              <div style="width:38px;height:38px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-family:Fredoka;font-weight:600;font-size:13px">17%</div>
+            </div>
+            <div><div style="font-weight:800;font-size:14px">Getting started</div><div style="font-size:12px;color:#8A8178">1 of 3 quests underway</div></div>
+          </div>
+          <!-- goal cards -->
+          <div style="display:flex;flex-direction:column;gap:11px">
+            <div style="background:#fff;border:1px solid #EFE7DA;border-radius:15px;padding:13px 14px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800;font-size:13.5px">Complete 3 tasks</div><div style="font-size:11px;font-weight:700;color:#5FA97E">1/3</div></div>
+              <div style="height:7px;border-radius:5px;background:#EFE7DA;margin-top:9px;overflow:hidden"><div style="width:33%;height:100%;background:#5FA97E;border-radius:5px"></div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #EFE7DA;border-radius:15px;padding:13px 14px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800;font-size:13.5px">Buy 1 animal</div><div style="font-size:11px;font-weight:700;color:#98A2AE">0/1</div></div>
+              <div style="height:7px;border-radius:5px;background:#EFE7DA;margin-top:9px;overflow:hidden"><div style="width:0%;height:100%;background:#5FA97E;border-radius:5px"></div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #EFE7DA;border-radius:15px;padding:13px 14px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800;font-size:13.5px">Feed 3 animals today</div><div style="font-size:11px;font-weight:700;color:#98A2AE">0/3</div></div>
+              <div style="height:7px;border-radius:5px;background:#EFE7DA;margin-top:9px;overflow:hidden"><div style="width:0%;height:100%;background:#5FA97E;border-radius:5px"></div></div>
+            </div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="height:48px;border-radius:13px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.35)">Let's go</div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Onboarding · welcome flow</span> <span style="font-size:12px;color:#A89E92">· ONB-1, ONB-2</span></div>
+    </div>
+  </div>
+
+  <!-- ============ GROUP: TASK DASHBOARD ============ -->
+  <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+    <div style="width:26px;height:26px;border-radius:8px;background:#2E2A26;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center">2</div>
+    <div style="font-family:Fredoka;font-weight:600;font-size:22px">Task dashboard</div>
+    <div style="font-size:13px;color:#A89E92">XP · level · streak · coins · create &amp; edit</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:38px;align-items:flex-start;margin-bottom:60px">
+
+    <!-- Dashboard (interactive) -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <!-- HEADER (persistent) -->
+        <div style="padding:6px 18px 14px;background:#FBF6EF;border-bottom:1px solid #EFE7DA">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div><div style="font-size:12px;color:#8A8178">Good morning</div><div style="font-family:Fredoka;font-weight:600;font-size:19px;line-height:1">Nico</div></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div style="display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #EFE7DA;border-radius:20px;padding:5px 10px 5px 6px">
+                <div style="width:18px;height:18px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div>
+                <span style="font-weight:800;font-size:13px;color:#B67F1E">{{ coins }}</span>
+              </div>
+              <div style="width:34px;height:34px;border-radius:50%;background:#8478C4;color:#fff;font-family:Fredoka;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center">Lv{{ level }}</div>
+            </div>
+          </div>
+          <!-- xp + streak -->
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;background:#fff;border:1px solid #EFE7DA;border-radius:12px;padding:8px 11px">
+              <div style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;color:#8A8178"><span>XP TO LVL 5</span><span style="color:#8478C4">{{ xpText }}</span></div>
+              <div style="height:8px;border-radius:5px;background:#EFE7DA;margin-top:6px;overflow:hidden"><div style="height:100%;background:#8478C4;border-radius:5px;width:{{ xpPct }}"></div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #EFE7DA;border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <div style="font-family:Fredoka;font-weight:600;font-size:17px;color:#E27A54;line-height:1">{{ streak }}</div>
+              <div style="font-size:9px;font-weight:700;color:#8A8178;letter-spacing:.3px">DAY STREAK</div>
+            </div>
+          </div>
+        </div>
+        <!-- TASK LIST -->
+        <div style="flex:1;padding:16px 16px 8px;overflow:hidden">
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.5px;margin-bottom:10px">TODAY</div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ tasks }}" as="task" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:11px;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:14px;padding:11px 12px" onClick="{{ task.toggle }}">
+                <sc-if value="{{ task.done }}" hint-placeholder-val="{{ true }}">
+                  <div style="width:22px;height:22px;border-radius:50%;background:#5FA97E;flex:none;position:relative">
+                    <div style="position:absolute;left:7px;top:5px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)"></div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ task.done }}" hint-placeholder-val="{{ false }}">
+                  <div></div>
+                </sc-if>
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:700;font-size:13.5px;{{ task.titleStyle }}">{{ task.title }}</div>
+                  <div style="display:flex;align-items:center;gap:7px;margin-top:4px">
+                    <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;color:{{ task.tierColor }};background:{{ task.tierBg }}">{{ task.tier }}</span>
+                    <span style="font-size:11px;color:#A89E92">{{ task.due }}</span>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:3px;flex:none">
+                  <div style="width:13px;height:13px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div>
+                  <span style="font-weight:800;font-size:12px;color:#B67F1E">{{ task.coins }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <!-- FAB + NAV -->
+        <div style="display:flex;justify-content:center;gap:16px;align-items:center;padding:8px 16px 14px;background:#fff">
+            <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+            <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+            <div style="width:46px;height:46px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(226,122,84,.4)"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg></div><div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg></div>
+            <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Task list / dashboard</span> <span style="font-size:12px;color:#A89E92">· tap a task to complete — coins &amp; XP update live · TASK-7/8/9</span></div>
+    </div>
+
+    <!-- Task detail / edit -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 18px 14px;border-bottom:1px solid #EFE7DA">
+          <div style="font-size:22px;color:#8A8178">‹</div><div style="font-family:Fredoka;font-weight:600;font-size:17px">Edit task</div>
+        </div>
+        <div style="flex:1;padding:18px 18px 8px;overflow:hidden">
+          <label style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px">TITLE</label>
+          <div style="margin:6px 0 16px;min-height:44px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:10px 13px;font-weight:700;font-size:14px">Draft methodology section</div>
+          <div style="display:flex;gap:10px;margin-bottom:16px">
+            <div style="flex:1"><label style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px">DUE DATE</label><div style="margin-top:6px;height:44px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 13px;font-size:13px">Jul 21, 2026</div></div>
+          </div>
+          <label style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px">COMPLEXITY</label>
+          <div style="display:flex;gap:6px;margin:8px 0 16px">
+            <div style="flex:1;text-align:center;padding:8px 2px;border-radius:10px;background:#F6F1E9;border:1px solid #EBE2D5;font-size:10px;font-weight:800;color:#98A2AE">Triv</div>
+            <div style="flex:1;text-align:center;padding:8px 2px;border-radius:10px;background:#F6F1E9;border:1px solid #EBE2D5;font-size:10px;font-weight:800;color:#5FA97E">Small</div>
+            <div style="flex:1;text-align:center;padding:8px 2px;border-radius:10px;background:#F6F1E9;border:1px solid #EBE2D5;font-size:10px;font-weight:800;color:#E5A93C">Med</div>
+            <div style="flex:1;text-align:center;padding:8px 2px;border-radius:10px;background:#E27A54;border:1px solid #E27A54;font-size:10px;font-weight:800;color:#fff">Large</div>
+            <div style="flex:1;text-align:center;padding:8px 2px;border-radius:10px;background:#F6F1E9;border:1px solid #EBE2D5;font-size:10px;font-weight:800;color:#8478C4">Epic</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><label style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px">SUBTASKS</label><span style="font-size:11px;font-weight:700;color:#E27A54">+ Add</span></div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:center;gap:10px;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:11px;padding:9px 11px"><div style="width:18px;height:18px;border-radius:50%;background:#5FA97E;position:relative"><div style="position:absolute;left:6px;top:4px;width:4px;height:7px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)"></div></div><span style="flex:1;font-size:12.5px;text-decoration:line-through;color:#B8AFA4">Outline sections</span><span style="font-size:11px;font-weight:800;color:#B67F1E">25</span></div>
+            <div style="display:flex;align-items:center;gap:10px;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:11px;padding:9px 11px"><div style="width:18px;height:18px;border-radius:50%;border:2px solid #D8CEC0"></div><span style="flex:1;font-size:12.5px;font-weight:600">Write sampling method</span><span style="font-size:11px;font-weight:800;color:#B67F1E">25</span></div>
+            <div style="display:flex;align-items:center;gap:10px;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:11px;padding:9px 11px"><div style="width:18px;height:18px;border-radius:50%;border:2px solid #D8CEC0"></div><span style="flex:1;font-size:12.5px;font-weight:600">Cite instruments</span><span style="font-size:11px;font-weight:800;color:#B67F1E">25</span></div>
+          </div>
+        </div>
+        <div style="padding:12px 16px 18px;border-top:1px solid #EFE7DA;background:#FBF6EF">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:10px"><span style="color:#8A8178">Reward on completion</span><span style="font-weight:800;color:#B67F1E">75 coins · 100 XP</span></div>
+          <div style="display:flex;gap:8px">
+            <div style="width:48px;height:46px;border-radius:12px;background:#fff;border:1px solid #EBD9D2;color:#DB6A54;display:flex;align-items:center;justify-content:center;font-size:18px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></div>
+            <div style="flex:1;height:46px;border-radius:12px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center">Save changes</div>
+          </div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Task detail / edit</span> <span style="font-size:12px;color:#A89E92">· TASK-3/4, SUB-1/2/3</span></div>
+    </div>
+
+    <!-- Create task modal -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column;position:relative;background:#EEE6DA">
+        <div style="position:absolute;inset:0;background:rgba(46,42,38,.42)"></div>
+        <!-- faint dashboard behind -->
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700;color:#fff;position:relative;z-index:2"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="flex:1"></div>
+        <!-- sheet -->
+        <div style="position:relative;z-index:2;background:#fff;border-radius:26px 26px 0 0;padding:20px 20px 24px">
+          <div style="width:40px;height:5px;border-radius:3px;background:#E3DACC;margin:0 auto 16px"></div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:20px;margin-bottom:16px">New task</div>
+          <label style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px">WHAT NEEDS DOING?</label>
+          <div style="margin:6px 0 16px;height:46px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 13px;font-size:14px;color:#B8AFA4">e.g. Email my supervisor</div>
+          <label style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px">HOW BIG?</label>
+          <div style="display:flex;gap:6px;margin:8px 0 16px">
+            <div style="flex:1;text-align:center;padding:9px 2px;border-radius:10px;background:#F6F1E9;border:1px solid #EBE2D5;font-size:10px;font-weight:800;color:#98A2AE">Triv<br><span style="color:#B67F1E">5</span></div>
+            <div style="flex:1;text-align:center;padding:9px 2px;border-radius:10px;background:#5FA97E;border:1px solid #5FA97E;font-size:10px;font-weight:800;color:#fff">Small<br><span>15</span></div>
+            <div style="flex:1;text-align:center;padding:9px 2px;border-radius:10px;background:#F6F1E9;border:1px solid #EBE2D5;font-size:10px;font-weight:800;color:#E5A93C">Med<br><span style="color:#B67F1E">35</span></div>
+            <div style="flex:1;text-align:center;padding:9px 2px;border-radius:10px;background:#F6F1E9;border:1px solid #EBE2D5;font-size:10px;font-weight:800;color:#E27A54">Lrg<br><span style="color:#B67F1E">75</span></div>
+            <div style="flex:1;text-align:center;padding:9px 2px;border-radius:10px;background:#F6F1E9;border:1px solid #EBE2D5;font-size:10px;font-weight:800;color:#8478C4">Epic<br><span style="color:#B67F1E">150</span></div>
+          </div>
+          <label style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px">DUE (OPTIONAL)</label>
+          <div style="margin:6px 0 18px;height:44px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 13px;font-size:13px;color:#B8AFA4">Pick a date</div>
+          <div style="height:48px;border-radius:13px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.35)">Add task</div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Create task (modal)</span> <span style="font-size:12px;color:#A89E92">· TASK-1/2/3</span></div>
+    </div>
+
+    <!-- Date picker sheet -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column;position:relative;background:#EEE6DA">
+        <div style="position:absolute;inset:0;background:rgba(46,42,38,.42)"></div>
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700;color:#fff;position:relative;z-index:2"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="flex:1"></div>
+        <!-- create-task sheet with inline calendar under the Due field -->
+        <div style="position:relative;z-index:2;background:#fff;border-radius:26px 26px 0 0;padding:18px 18px 22px">
+          <div style="width:40px;height:5px;border-radius:3px;background:#E3DACC;margin:0 auto 16px"></div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:20px;margin-bottom:14px">New task</div>
+          <label style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px">WHAT NEEDS DOING?</label>
+          <div style="margin:6px 0 14px;height:44px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;padding:0 13px;font-size:14px">Draft methodology section</div>
+          <label style="font-size:11px;font-weight:800;color:#E27A54;letter-spacing:.4px">DUE DATE</label>
+          <!-- trigger field (active) -->
+          <div style="margin:6px 0 0;height:44px;border-radius:12px 12px 0 0;background:#fff;border:2px solid #E27A54;border-bottom:none;display:flex;align-items:center;justify-content:space-between;padding:0 13px">
+            <div style="display:flex;align-items:center;gap:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E27A54" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg><span style="font-size:14px;font-weight:700">Jul 21, 2026</span></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E27A54" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <!-- popover panel attached under the field -->
+          <div style="border:2px solid #E27A54;border-top:1px solid #F3D9CE;border-radius:0 0 14px 14px;background:#fff;padding:12px 12px 14px;box-shadow:0 14px 26px rgba(46,42,38,.12)">
+            <div style="display:flex;gap:6px;margin-bottom:12px">
+              <span style="flex:1;text-align:center;font-size:10.5px;font-weight:800;padding:7px 0;border-radius:9px;background:#F6F1E9;border:1px solid #EBE2D5;color:#8A8178">Today</span>
+              <span style="flex:1;text-align:center;font-size:10.5px;font-weight:800;padding:7px 0;border-radius:9px;background:#F6F1E9;border:1px solid #EBE2D5;color:#8A8178">Tomorrow</span>
+              <span style="flex:1;text-align:center;font-size:10.5px;font-weight:800;padding:7px 0;border-radius:9px;background:#F6F1E9;border:1px solid #EBE2D5;color:#8A8178">Weekend</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="width:28px;height:28px;border-radius:8px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8178" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></div>
+              <div style="font-family:Fredoka;font-weight:600;font-size:14px">July 2026</div>
+              <div style="width:28px;height:28px;border-radius:8px;background:#F6F1E9;border:1px solid #EBE2D5;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8178" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-bottom:3px">
+              <div style="text-align:center;font-size:9.5px;font-weight:800;color:#B8AFA4;padding:3px 0">M</div>
+              <div style="text-align:center;font-size:9.5px;font-weight:800;color:#B8AFA4;padding:3px 0">T</div>
+              <div style="text-align:center;font-size:9.5px;font-weight:800;color:#B8AFA4;padding:3px 0">W</div>
+              <div style="text-align:center;font-size:9.5px;font-weight:800;color:#B8AFA4;padding:3px 0">T</div>
+              <div style="text-align:center;font-size:9.5px;font-weight:800;color:#B8AFA4;padding:3px 0">F</div>
+              <div style="text-align:center;font-size:9.5px;font-weight:800;color:#B8AFA4;padding:3px 0">S</div>
+              <div style="text-align:center;font-size:9.5px;font-weight:800;color:#B8AFA4;padding:3px 0">S</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px">
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;color:#D8CEC0">30</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">1</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">2</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">3</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">4</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">5</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">6</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">7</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">8</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">9</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">10</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">11</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">12</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">13</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">14</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">15</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">16</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">17</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">18</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#E27A54;border:1.5px solid #E27A54;border-radius:50%">19</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">20</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;background:#E27A54;border-radius:50%;box-shadow:0 4px 10px rgba(226,122,84,.4)">21</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">22</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">23</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">24</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">25</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">26</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">27</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">28</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">29</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">30</div>
+              <div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">31</div>
+            </div>
+          </div>
+          <div style="height:48px;border-radius:13px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.35);margin-top:16px">Add task</div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Date picker (inline popover)</span> <span style="font-size:12px;color:#A89E92">· expands under the Due field · today ring · selected day · TASK-3</span></div>
+    </div>
+  </div>
+
+  <!-- ============ GROUP: STORE ============ -->
+  <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 6px">
+    <div style="width:26px;height:26px;border-radius:8px;background:#2E2A26;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center">3</div>
+    <div style="font-family:Fredoka;font-weight:600;font-size:22px">Store</div>
+    <div style="font-size:13px;color:#A89E92">the A/B research variable — control vs. false-urgency</div>
+  </div>
+  <div style="font-size:13px;color:#A89E92;margin:0 0 22px;max-width:640px">Same catalogue, same layout, same prices. Group&nbsp;A sees neutral cards; Group&nbsp;B sees fabricated urgency stimuli (numbered pins map to the 7 prioritised patterns).</div>
+  <div style="display:flex;flex-wrap:wrap;gap:38px;align-items:flex-start;margin-bottom:26px">
+
+    <!-- STORE A (neutral) -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="padding:6px 16px 12px;background:#FBF6EF;border-bottom:1px solid #EFE7DA">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
+            <div style="font-family:Fredoka;font-weight:600;font-size:19px">Store</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid #EFE7DA;display:flex;align-items:center;justify-content:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A8178" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-7.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></div><div style="display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #EFE7DA;border-radius:20px;padding:5px 10px 5px 6px"><div style="width:18px;height:18px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:13px;color:#B67F1E">{{ coins }}</span></div>
+            </div>
+          </div>
+          <div style="height:38px;border-radius:11px;background:#fff;border:1px solid #EBE2D5;display:flex;align-items:center;gap:8px;padding:0 12px;margin-bottom:10px"><div style="width:14px;height:14px;border-radius:50%;border:2px solid #C7BDB0"></div><span style="font-size:13px;color:#B8AFA4">Search items…</span></div>
+          <div style="display:flex;gap:6px;overflow:hidden">
+            <span style="font-size:11px;font-weight:800;padding:5px 12px;border-radius:20px;background:#E27A54;color:#fff">All</span>
+            <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #EBE2D5;color:#8A8178">Food</span>
+            <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #EBE2D5;color:#8A8178">Toys</span>
+            <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #EBE2D5;color:#8A8178">Habitat</span>
+          </div>
+        </div>
+        <div style="flex:1;padding:14px 14px 8px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+            <!-- item -->
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:15px;padding:12px 11px">
+              <div style="height:54px;border-radius:11px;background:#FCEBD3;display:flex;align-items:center;justify-content:center;margin-bottom:9px"><div style="width:26px;height:26px;border-radius:6px;background:#E5A93C"></div></div>
+              <div style="font-weight:800;font-size:12.5px">Sunflower seeds</div>
+              <div style="font-size:10.5px;color:#A89E92;margin-bottom:8px">Basic food</div>
+              <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:3px"><div style="width:12px;height:12px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">40</span></div><div style="width:26px;height:26px;border-radius:8px;background:#E27A54;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">+</div></div>
+            </div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:15px;padding:12px 11px">
+              <div style="height:54px;border-radius:11px;background:#E7F0E9;display:flex;align-items:center;justify-content:center;margin-bottom:9px"><div style="width:30px;height:16px;border-radius:9px;background:#5FA97E"></div></div>
+              <div style="font-weight:800;font-size:12.5px">Red collar</div>
+              <div style="font-size:10.5px;color:#A89E92;margin-bottom:8px">Accessory</div>
+              <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:3px"><div style="width:12px;height:12px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">65</span></div><div style="width:26px;height:26px;border-radius:8px;background:#E27A54;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">+</div></div>
+            </div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:15px;padding:12px 11px">
+              <div style="height:54px;border-radius:11px;background:#EEE9F5;display:flex;align-items:center;justify-content:center;margin-bottom:9px"><div style="width:24px;height:24px;background:#8478C4;transform:rotate(45deg)"></div></div>
+              <div style="font-weight:800;font-size:12.5px">Cosy den</div>
+              <div style="font-size:10.5px;color:#A89E92;margin-bottom:8px">Habitat</div>
+              <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:3px"><div style="width:12px;height:12px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">280</span></div><div style="width:26px;height:26px;border-radius:8px;background:#E27A54;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">+</div></div>
+            </div>
+            <!-- locked -->
+            <div style="background:#F2EEE7;border:1px solid #EFE7DA;border-radius:15px;padding:12px 11px;position:relative">
+              <div style="height:54px;border-radius:11px;background:#E9E3D9;display:flex;align-items:center;justify-content:center;margin-bottom:9px"><div style="width:22px;height:26px;border-radius:5px;background:#B8AFA4;position:relative"><div style="position:absolute;top:-8px;left:5px;width:12px;height:12px;border:3px solid #B8AFA4;border-bottom:none;border-radius:7px 7px 0 0"></div></div></div>
+              <div style="font-weight:800;font-size:12.5px;color:#98918682">Fox kit</div>
+              <div style="font-size:10.5px;color:#A89E92;margin-bottom:8px">2nd animal</div>
+              <div style="text-align:center;font-size:11px;font-weight:800;color:#8A8178;background:#E9E3D9;border-radius:8px;padding:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Unlocks at Lvl 7</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:16px;align-items:center;padding:8px 16px 14px;background:#fff">
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+          <div style="width:46px;height:46px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(226,122,84,.4)"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg></div><div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        </div>
+      </div>
+      <div style="width:300px;display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:800;background:#E7F0E9;color:#3F8C63;padding:2px 9px;border-radius:6px">GROUP A</span><span style="font-size:12px;color:#A89E92">control · neutral cards · STORE-10</span></div>
+    </div>
+
+    <!-- STORE B (urgency) -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="padding:6px 16px 12px;background:#FBF6EF;border-bottom:1px solid #EFE7DA">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-family:Fredoka;font-weight:600;font-size:19px">Store</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid #EFE7DA;display:flex;align-items:center;justify-content:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A8178" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-7.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></div><div style="display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #EFE7DA;border-radius:20px;padding:5px 10px 5px 6px"><div style="width:18px;height:18px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:13px;color:#B67F1E">{{ coins }}</span></div>
+            </div>
+          </div>
+          <div style="height:38px;border-radius:11px;background:#fff;border:1px solid #EBE2D5;display:flex;align-items:center;gap:8px;padding:0 12px;margin-bottom:9px"><div style="width:14px;height:14px;border-radius:50%;border:2px solid #C7BDB0"></div><span style="font-size:13px;color:#B8AFA4">Search items…</span></div>
+          <!-- flash sale banner (pin 1) -->
+          <div style="position:relative;background:#DB4C3F;border-radius:11px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;color:#fff;margin-bottom:9px">
+            <div style="position:absolute;left:-8px;top:-8px;width:20px;height:20px;border-radius:50%;background:#2E2A26;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;z-index:3">1</div>
+            <span style="font-size:12px;font-weight:800"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg> Flash sale · everything 20% off</span>
+            <span style="font-family:Fredoka;font-weight:600;font-size:14px;background:rgba(0,0,0,.18);padding:2px 8px;border-radius:7px">{{ saleTimer }}</span>
+          </div>
+          <div style="display:flex;gap:6px;overflow:hidden">
+            <span style="font-size:11px;font-weight:800;padding:5px 12px;border-radius:20px;background:#E27A54;color:#fff">All</span>
+            <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #EBE2D5;color:#8A8178">Food</span>
+            <span style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid #EBE2D5;color:#8A8178">Toys</span>
+          </div>
+        </div>
+        <div style="flex:1;padding:8px 14px 6px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <!-- item: stock depletion (2) + recent purchases (4) -->
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:15px;padding:11px 10px;position:relative">
+              <div style="position:absolute;right:8px;top:8px;font-size:9px;font-weight:800;background:#DB4C3F;color:#fff;padding:2px 7px;border-radius:20px;z-index:2">Only 3 left! <span style="background:#2E2A26;border-radius:50%;padding:0 4px;margin-left:2px">2</span></div>
+              <div style="height:50px;border-radius:11px;background:#FCEBD3;display:flex;align-items:center;justify-content:center;margin:2px 0 8px"><div style="width:24px;height:24px;border-radius:6px;background:#E5A93C"></div></div>
+              <div style="font-weight:800;font-size:12.5px">Sunflower seeds</div>
+              <div style="font-size:9.5px;color:#DB4C3F;font-weight:800;margin:2px 0 7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> 8 sold in the last hour <span style="background:#2E2A26;color:#fff;border-radius:50%;padding:0 4px">4</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:3px"><div style="width:12px;height:12px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">40</span></div><div style="width:26px;height:26px;border-radius:8px;background:#E27A54;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">+</div></div>
+            </div>
+            <!-- item: cart activity (3) + urgency language (5) -->
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:15px;padding:11px 10px;position:relative">
+              <div style="position:absolute;right:8px;top:8px;font-size:9px;font-weight:800;background:#E5A93C;color:#fff;padding:2px 7px;border-radius:20px;z-index:2">5 in carts <span style="background:#2E2A26;border-radius:50%;padding:0 4px;margin-left:2px">3</span></div>
+              <div style="height:50px;border-radius:11px;background:#E7F0E9;display:flex;align-items:center;justify-content:center;margin:2px 0 8px"><div style="width:28px;height:15px;border-radius:9px;background:#5FA97E"></div></div>
+              <div style="font-weight:800;font-size:12.5px">Red collar</div>
+              <div style="font-size:9.5px;color:#DB4C3F;font-weight:800;margin:2px 0 7px">Last chance — don't miss out! <span style="background:#2E2A26;color:#fff;border-radius:50%;padding:0 4px">5</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:3px"><div style="width:12px;height:12px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">65</span></div><div style="width:26px;height:26px;border-radius:8px;background:#E27A54;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">+</div></div>
+            </div>
+            <!-- bundle timer (6) -->
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:15px;padding:11px 10px;position:relative;grid-column:span 1">
+              <div style="height:50px;border-radius:11px;background:#EEE9F5;display:flex;align-items:center;justify-content:center;margin:2px 0 8px"><div style="width:22px;height:22px;background:#8478C4;transform:rotate(45deg)"></div></div>
+              <div style="font-weight:800;font-size:12.5px">Cosy den</div>
+              <div style="font-size:9px;color:#fff;font-weight:800;margin:3px 0 7px;background:#8478C4;border-radius:7px;padding:3px 6px;display:inline-block">Buy 2 get 1 · {{ bundleTimer }} <span style="background:#2E2A26;border-radius:50%;padding:0 4px">6</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:3px"><div style="width:12px;height:12px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">280</span></div><div style="width:26px;height:26px;border-radius:8px;background:#E27A54;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">+</div></div>
+            </div>
+            <!-- currency urgency (7) -->
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:15px;padding:11px 10px;position:relative">
+              <div style="height:50px;border-radius:11px;background:#FDE7E3;display:flex;align-items:center;justify-content:center;margin:2px 0 8px"><div style="width:24px;height:24px;border-radius:50%;background:#DB6A54"></div></div>
+              <div style="font-weight:800;font-size:12.5px">Treat box</div>
+              <div style="font-size:9px;color:#fff;font-weight:800;margin:3px 0 7px;background:#DB4C3F;border-radius:7px;padding:3px 6px;display:inline-block">Double XP this hour only <span style="background:#2E2A26;border-radius:50%;padding:0 4px">7</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:3px"><div style="width:12px;height:12px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">120</span></div><div style="width:26px;height:26px;border-radius:8px;background:#E27A54;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">+</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:16px;align-items:center;padding:8px 16px 14px;background:#fff">
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+          <div style="width:46px;height:46px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(226,122,84,.4)"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg></div><div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        </div>
+      </div>
+      <div style="width:300px;display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:800;background:#FDE7E3;color:#C23B2E;padding:2px 9px;border-radius:6px">GROUP B</span><span style="font-size:12px;color:#A89E92">false urgency · timers tick live · STORE-9</span></div>
+    </div>
+
+    <!-- ANNOTATION LEGEND -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:320px;background:#fff;border-radius:20px;border:1px solid #EFE7DA;box-shadow:0 16px 34px rgba(46,42,38,.08);padding:20px 20px 18px">
+        <div style="font-family:Fredoka;font-weight:600;font-size:17px;margin-bottom:3px">Dark-pattern layer</div>
+        <div style="font-size:12px;color:#8A8178;margin-bottom:16px">The 7 prioritised urgency stimuli — pins map to Group&nbsp;B above. All values are fabricated study stimuli.</div>
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <div style="display:flex;gap:11px;align-items:flex-start"><div style="width:20px;height:20px;border-radius:50%;background:#2E2A26;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">1</div><div><div style="font-weight:800;font-size:13px">Countdown timer</div><div style="font-size:11.5px;color:#8A8178">Flash-sale MM:SS — "Sale ends in 14:32"</div></div></div>
+          <div style="display:flex;gap:11px;align-items:flex-start"><div style="width:20px;height:20px;border-radius:50%;background:#2E2A26;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">2</div><div><div style="font-weight:800;font-size:13px">Stock depletion</div><div style="font-size:11.5px;color:#8A8178">"Only 3 left!", "Running low"</div></div></div>
+          <div style="display:flex;gap:11px;align-items:flex-start"><div style="width:20px;height:20px;border-radius:50%;background:#2E2A26;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">3</div><div><div style="font-weight:800;font-size:13px">Cart activity</div><div style="font-size:11.5px;color:#8A8178">"5 people have this in their cart"</div></div></div>
+          <div style="display:flex;gap:11px;align-items:flex-start"><div style="width:20px;height:20px;border-radius:50%;background:#2E2A26;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">4</div><div><div style="font-weight:800;font-size:13px">Recent purchases</div><div style="font-size:11.5px;color:#8A8178">"8 sold in the last hour"</div></div></div>
+          <div style="display:flex;gap:11px;align-items:flex-start"><div style="width:20px;height:20px;border-radius:50%;background:#2E2A26;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">5</div><div><div style="font-weight:800;font-size:13px">Urgency language</div><div style="font-size:11.5px;color:#8A8178">"Last chance!", "Don't miss out!"</div></div></div>
+          <div style="display:flex;gap:11px;align-items:flex-start"><div style="width:20px;height:20px;border-radius:50%;background:#2E2A26;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">6</div><div><div style="font-weight:800;font-size:13px">Bundle timer</div><div style="font-size:11.5px;color:#8A8178">"Buy 2 get 1 free — ends in 04:59"</div></div></div>
+          <div style="display:flex;gap:11px;align-items:flex-start"><div style="width:20px;height:20px;border-radius:50%;background:#2E2A26;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">7</div><div><div style="font-weight:800;font-size:13px">Currency urgency</div><div style="font-size:11.5px;color:#8A8178">"Double XP for purchases this hour"</div></div></div>
+        </div>
+        <div style="margin-top:16px;padding:11px 12px;background:#FBF6EF;border-radius:12px;font-size:11px;color:#8A8178;line-height:1.5"><b style="color:#C23B2E">Group A never sees these.</b> Assignment is server-enforced &amp; permanent (NFR-TASK-3).</div>
+      </div>
+      <div style="width:320px"><span style="font-weight:700;font-size:12.5px">Annotation / variant layer</span> <span style="font-size:12px;color:#A89E92">· §4.1 pattern set</span></div>
+    </div>
+
+    <!-- Cart / checkout -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 18px 14px;border-bottom:1px solid #EFE7DA"><div style="font-size:22px;color:#8A8178">‹</div><div style="font-family:Fredoka;font-weight:600;font-size:17px">Your cart</div></div>
+        <div style="flex:1;padding:16px 16px 8px;overflow:hidden">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:11px;align-items:center;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:14px;padding:10px"><div style="width:44px;height:44px;border-radius:10px;background:#FCEBD3;display:flex;align-items:center;justify-content:center"><div style="width:20px;height:20px;border-radius:5px;background:#E5A93C"></div></div><div style="flex:1"><div style="font-weight:800;font-size:13px">Sunflower seeds</div><div style="font-size:11px;color:#A89E92">Basic food</div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:22px;height:22px;border-radius:6px;background:#fff;border:1px solid #EBE2D5;display:flex;align-items:center;justify-content:center;font-size:14px;color:#8A8178">−</div><span style="font-weight:800;font-size:13px">2</span><div style="width:22px;height:22px;border-radius:6px;background:#fff;border:1px solid #EBE2D5;display:flex;align-items:center;justify-content:center;font-size:14px;color:#8A8178">+</div></div></div>
+            <div style="display:flex;gap:11px;align-items:center;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:14px;padding:10px"><div style="width:44px;height:44px;border-radius:10px;background:#E7F0E9;display:flex;align-items:center;justify-content:center"><div style="width:24px;height:12px;border-radius:7px;background:#5FA97E"></div></div><div style="flex:1"><div style="font-weight:800;font-size:13px">Red collar</div><div style="font-size:11px;color:#A89E92">Accessory</div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:22px;height:22px;border-radius:6px;background:#fff;border:1px solid #EBE2D5;display:flex;align-items:center;justify-content:center;font-size:14px;color:#8A8178">−</div><span style="font-weight:800;font-size:13px">1</span><div style="width:22px;height:22px;border-radius:6px;background:#fff;border:1px solid #EBE2D5;display:flex;align-items:center;justify-content:center;font-size:14px;color:#8A8178">+</div></div></div>
+          </div>
+          <div style="margin-top:18px;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:14px;padding:14px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span style="color:#8A8178">Subtotal</span><span style="font-weight:800;color:#B67F1E">145</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span style="color:#8A8178">Balance now</span><span style="font-weight:700">{{ coins }}</span></div>
+            <div style="height:1px;background:#EBE2D5;margin:8px 0"></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:800">Balance after</span><span style="font-weight:800;color:#5FA97E">100</span></div>
+          </div>
+        </div>
+        <div style="padding:12px 16px 18px;border-top:1px solid #EFE7DA">
+          <div style="height:48px;border-radius:13px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;gap:7px;box-shadow:0 6px 14px rgba(226,122,84,.35)">Check out · <div style="width:14px;height:14px;border-radius:50%;background:#F2C879;border:2px solid #fff"></div> 145</div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Cart / checkout</span> <span style="font-size:12px;color:#A89E92">· STORE-3/4/5</span></div>
+    </div>
+
+    <!-- Purchase history -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 18px 14px;border-bottom:1px solid #EFE7DA"><div style="font-size:22px;color:#8A8178">‹</div><div style="font-family:Fredoka;font-weight:600;font-size:17px">Purchase history</div></div>
+        <div style="flex:1;padding:16px 16px 8px;overflow:hidden">
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:9px">TODAY</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:11px;padding:2px 0"><div style="width:38px;height:38px;border-radius:10px;background:#FCEBD3;display:flex;align-items:center;justify-content:center"><div style="width:17px;height:17px;border-radius:5px;background:#E5A93C"></div></div><div style="flex:1"><div style="font-weight:700;font-size:13px">Sunflower seeds ×2</div><div style="font-size:11px;color:#A89E92">14:02</div></div><div style="font-weight:800;font-size:13px;color:#DB6A54">−80</div></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:2px 0"><div style="width:38px;height:38px;border-radius:10px;background:#E7F0E9;display:flex;align-items:center;justify-content:center"><div style="width:20px;height:10px;border-radius:6px;background:#5FA97E"></div></div><div style="flex:1"><div style="font-weight:700;font-size:13px">Red collar</div><div style="font-size:11px;color:#A89E92">13:41</div></div><div style="font-weight:800;font-size:13px;color:#DB6A54">−65</div></div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:9px">YESTERDAY</div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <div style="display:flex;align-items:center;gap:11px;padding:2px 0"><div style="width:38px;height:38px;border-radius:10px;background:#EEE9F5;display:flex;align-items:center;justify-content:center"><div style="width:16px;height:16px;background:#8478C4;transform:rotate(45deg)"></div></div><div style="flex:1"><div style="font-weight:700;font-size:13px">Cosy den</div><div style="font-size:11px;color:#A89E92">Jul 20 · 19:20</div></div><div style="font-weight:800;font-size:13px;color:#DB6A54">−280</div></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:2px 0"><div style="width:38px;height:38px;border-radius:10px;background:#EEE9F5;display:flex;align-items:center;justify-content:center;color:#8478C4;font-weight:800;font-size:14px">XP</div><div style="flex:1"><div style="font-weight:700;font-size:13px">Bought 40 XP</div><div style="font-size:11px;color:#A89E92">Jul 20 · 18:55</div></div><div style="font-weight:800;font-size:13px;color:#DB6A54">−100</div></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:2px 0"><div style="width:38px;height:38px;border-radius:10px;background:#FCEBD3;display:flex;align-items:center;justify-content:center"><div style="width:17px;height:17px;border-radius:5px;background:#E5A93C"></div></div><div style="flex:1"><div style="font-weight:700;font-size:13px">Grain mix</div><div style="font-size:11px;color:#A89E92">Jul 20 · 09:12</div></div><div style="font-weight:800;font-size:13px;color:#DB6A54">−50</div></div>
+          </div>
+        </div>
+        <div style="padding:12px 16px 20px;border-top:1px solid #EFE7DA;background:#FBF6EF;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#8A8178">Spent this week</span><span style="font-family:Fredoka;font-weight:600;font-size:18px;color:#B67F1E">575 coins</span></div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Purchase history</span> <span style="font-size:12px;color:#A89E92">· STORE-8 · transaction log</span></div>
+    </div>
+  </div>
+
+  <!-- ============ GROUP: PETTING ZOO ============ -->
+  <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+    <div style="width:26px;height:26px;border-radius:8px;background:#2E2A26;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center">4</div>
+    <div style="font-family:Fredoka;font-weight:600;font-size:22px">Petting zoo</div>
+    <div style="font-size:13px;color:#A89E92">view · pet · feed · customize · happiness &amp; hunger states</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:38px;align-items:flex-start;margin-bottom:60px">
+
+    <!-- Sanctuary (interactive) -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="padding:6px 18px 12px;background:#FBF6EF;border-bottom:1px solid #EFE7DA;display:flex;justify-content:space-between;align-items:center"><div style="font-family:Fredoka;font-weight:600;font-size:19px">Sanctuary</div><div style="display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #EFE7DA;border-radius:20px;padding:5px 10px 5px 6px"><div style="width:18px;height:18px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:13px;color:#B67F1E">{{ coins }}</span></div></div>
+        <!-- stage -->
+        <div style="flex:1;background:linear-gradient(#EAF3EC,#F3ECE1);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center">
+          <div style="font-family:Fredoka;font-weight:600;font-size:18px;margin-top:16px">Mochi</div>
+          <div style="font-size:12px;font-weight:800;margin-top:3px;color:{{ moodColor }}">{{ moodLabel }}</div>
+          <!-- creature -->
+          <img src="uploads/animals/fox.svg" alt="Mochi the fox" style="width:150px;height:150px;margin-top:6px;display:block">
+
+          <!-- stat bars -->
+          <div style="width:82%;margin-top:auto;margin-bottom:14px;display:flex;flex-direction:column;gap:9px">
+            <div style="background:#fff;border:1px solid #EFE7DA;border-radius:12px;padding:9px 12px">
+              <div style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:800;color:#8A8178;margin-bottom:6px"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> HAPPINESS</span><span style="color:#5FA97E">{{ happyPct }}</span></div>
+              <div style="height:8px;border-radius:5px;background:#EFE7DA;overflow:hidden"><div style="height:100%;background:#5FA97E;border-radius:5px;width:{{ happyPct }}"></div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #EFE7DA;border-radius:12px;padding:9px 12px">
+              <div style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:800;color:#8A8178;margin-bottom:6px"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg> HUNGER</span><span style="color:#E5A93C">{{ hungerPct }}</span></div>
+              <div style="height:8px;border-radius:5px;background:#EFE7DA;overflow:hidden"><div style="height:100%;background:#E5A93C;border-radius:5px;width:{{ hungerPct }}"></div></div>
+            </div>
+          </div>
+        </div>
+        <!-- actions -->
+        <div style="padding:12px 16px;display:flex;gap:8px;background:#fff">
+          <div style="flex:1;height:44px;border-radius:12px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 12px rgba(226,122,84,.32)" onClick="{{ pet }}">Pet</div>
+          <div style="flex:1;height:44px;border-radius:12px;background:#5FA97E;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 12px rgba(95,169,126,.32)" onClick="{{ feed }}">Feed</div>
+          <div style="width:52px;height:44px;border-radius:12px;background:#F6F1E9;border:1px solid #EBE2D5;color:#8A8178;display:flex;align-items:center;justify-content:center;font-size:18px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg></div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:16px;align-items:center;padding:8px 16px 14px;background:#fff">
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+          <div style="width:46px;height:46px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(226,122,84,.4)"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg></div><div style="width:42px;height:42px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Petting zoo / sanctuary</span> <span style="font-size:12px;color:#A89E92">· tap Pet / Feed — bars &amp; face react · PET-1→9</span></div>
+    </div>
+
+    <!-- Zoo collection + customize -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 18px 14px;border-bottom:1px solid #EFE7DA"><div style="font-size:22px;color:#8A8178">‹</div><div style="font-family:Fredoka;font-weight:600;font-size:17px">Customize Mochi</div></div>
+        <div style="flex:1;padding:16px;overflow:hidden">
+          <div style="background:#EAF3EC;border-radius:16px;padding:20px;display:flex;justify-content:center;margin-bottom:16px;position:relative">
+            <div style="position:relative;width:118px;height:118px">
+              <img src="uploads/animals/fox.svg" alt="Mochi the fox" style="width:118px;height:118px;display:block">
+              <!-- collar -->
+              <div style="position:absolute;left:28px;bottom:12px;width:62px;height:9px;border-radius:6px;background:#5FA97E"></div>
+            </div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:10px">YOUR ACCESSORIES</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px">
+            <div style="aspect-ratio:1;border-radius:13px;background:#E7F0E9;border:2px solid #5FA97E;display:flex;align-items:center;justify-content:center"><div style="width:26px;height:12px;border-radius:7px;background:#5FA97E"></div></div>
+            <div style="aspect-ratio:1;border-radius:13px;background:#FBF6EF;border:1px solid #EFE7DA;display:flex;align-items:center;justify-content:center"><div style="width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:20px solid #E5A93C"></div></div>
+            <div style="aspect-ratio:1;border-radius:13px;background:#FBF6EF;border:1px solid #EFE7DA;display:flex;align-items:center;justify-content:center"><div style="width:22px;height:22px;background:#8478C4;transform:rotate(45deg)"></div></div>
+            <div style="aspect-ratio:1;border-radius:13px;background:#F2EEE7;border:1px dashed #D8CEC0;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#B8AFA4"><div style="font-size:16px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><span style="font-size:8px;font-weight:800">Lvl 5</span></div>
+            <div style="aspect-ratio:1;border-radius:13px;background:#F2EEE7;border:1px dashed #D8CEC0;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#B8AFA4"><div style="font-size:16px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><span style="font-size:8px;font-weight:800">Lvl 7</span></div>
+            <div style="aspect-ratio:1;border-radius:13px;background:#F2EEE7;border:1px dashed #D8CEC0;display:flex;align-items:center;justify-content:center;color:#C7BDB0;font-size:22px">+</div>
+          </div>
+          <div style="margin-top:14px;font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:10px">OTHER ANIMALS</div>
+          <div style="display:flex;gap:10px">
+            <div style="width:52px;height:52px;border-radius:14px;background:#EEE9F5;display:flex;align-items:center;justify-content:center"><img src="uploads/animals/koala.svg" alt="Koala" style="width:42px;height:42px;display:block"></div>
+            <div style="width:52px;height:52px;border-radius:14px;background:#F2EEE7;border:1px dashed #D8CEC0;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#B8AFA4"><div style="font-size:15px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><span style="font-size:8px;font-weight:800">Lvl 7</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Customize &amp; collection</span> <span style="font-size:12px;color:#A89E92">· PET-4/5 · accessory &amp; animal gating</span></div>
+    </div>
+  </div>
+
+  <!-- ============ GROUP: PROFILE ============ -->
+  <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+    <div style="width:26px;height:26px;border-radius:8px;background:#2E2A26;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center">5</div>
+    <div style="font-family:Fredoka;font-weight:600;font-size:22px">Profile &amp; settings</div>
+    <div style="font-size:13px;color:#A89E92">account · lifetime stats · buy XP · preferences · log out</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:38px;align-items:flex-start;margin-bottom:60px">
+
+    <!-- Profile -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <!-- profile header -->
+        <div style="padding:14px 18px 16px;background:#FBF6EF;border-bottom:1px solid #EFE7DA;display:flex;align-items:center;gap:13px">
+          <image-slot id="profile-avatar" shape="circle" placeholder="Add photo" style="width:56px;height:56px;flex:none"></image-slot>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:Fredoka;font-weight:600;font-size:19px;line-height:1.1">Nico</div>
+            <div style="font-size:11.5px;color:#8A8178">your.name@email.com</div>
+            <div style="display:flex;gap:5px;margin-top:6px"><span style="font-size:9.5px;font-weight:800;background:#F3EFFA;color:#8478C4;padding:2px 8px;border-radius:20px">LEVEL 4</span><span style="font-size:9.5px;font-weight:800;background:#FDE7E3;color:#C23B2E;padding:2px 8px;border-radius:20px">STUDY GROUP B</span></div>
+          </div>
+        </div>
+        <div style="flex:1;padding:16px 16px 8px;overflow:hidden">
+          <!-- lifetime stats -->
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:10px">LIFETIME</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;padding:11px 12px"><div style="font-family:Fredoka;font-weight:600;font-size:20px;color:#5FA97E;line-height:1">41</div><div style="font-size:10.5px;color:#8A8178;font-weight:700;margin-top:2px">tasks done</div></div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;padding:11px 12px"><div style="font-family:Fredoka;font-weight:600;font-size:20px;color:#B67F1E;line-height:1">1,180</div><div style="font-size:10.5px;color:#8A8178;font-weight:700;margin-top:2px">coins earned</div></div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;padding:11px 12px"><div style="font-family:Fredoka;font-weight:600;font-size:20px;color:#E27A54;line-height:1">5</div><div style="font-size:10.5px;color:#8A8178;font-weight:700;margin-top:2px">day streak</div></div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;padding:11px 12px"><div style="font-family:Fredoka;font-weight:600;font-size:20px;color:#8478C4;line-height:1">2</div><div style="font-size:10.5px;color:#8A8178;font-weight:700;margin-top:2px">animals</div></div>
+          </div>
+          <!-- buy XP -->
+          <div style="background:#EEE9F5;border:1px solid #E1D8F0;border-radius:14px;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div><div style="font-weight:800;font-size:13px;color:#5C5470">Buy XP with coins</div><div style="font-size:11px;color:#8478C4;font-weight:700">100 coins → 40 XP</div></div>
+            <div style="height:34px;padding:0 15px;border-radius:10px;background:#8478C4;color:#fff;font-family:Fredoka;font-weight:600;font-size:13px;display:flex;align-items:center">Convert</div>
+          </div>
+          <!-- badges -->
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:10px">ACHIEVEMENTS</div>
+          <div style="display:flex;gap:9px">
+            <div style="flex:1;aspect-ratio:1;border-radius:14px;background:#E7F0E9;border:1px solid #D6E7DC;display:flex;align-items:center;justify-content:center"><div style="width:24px;height:24px;border-radius:50%;background:#5FA97E"></div></div>
+            <div style="flex:1;aspect-ratio:1;border-radius:14px;background:#FCEBD3;border:1px solid #F0DCB8;display:flex;align-items:center;justify-content:center"><div style="width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:22px solid #E5A93C"></div></div>
+            <div style="flex:1;aspect-ratio:1;border-radius:14px;background:#F3EFFA;border:1px solid #E4DBF2;display:flex;align-items:center;justify-content:center"><div style="width:22px;height:22px;background:#8478C4;transform:rotate(45deg)"></div></div>
+            <div style="flex:1;aspect-ratio:1;border-radius:14px;background:#F2EEE7;border:1px dashed #D8CEC0;display:flex;align-items:center;justify-content:center;color:#B8AFA4;font-size:18px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:16px;align-items:center;padding:8px 16px 14px;background:#fff">
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+          <div style="width:46px;height:46px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(226,122,84,.4)"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg></div><div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Profile</span> <span style="font-size:12px;color:#A89E92">· lifetime stats · buy XP (100→40) · A/B group</span></div>
+    </div>
+
+    <!-- Settings -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:300px;height:640px;background:#fff;border-radius:34px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column">
+        <div style="height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:700"><span>9:41</span><span style="letter-spacing:2px">◗◗◗</span></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 18px 14px;border-bottom:1px solid #EFE7DA"><div style="font-size:22px;color:#8A8178">‹</div><div style="font-family:Fredoka;font-weight:600;font-size:17px">Settings</div></div>
+        <div style="flex:1;padding:10px 16px 4px;overflow:hidden">
+          <!-- Account -->
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:9px">ACCOUNT</div>
+          <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;overflow:hidden;margin-bottom:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-bottom:1px solid #EFE7DA"><span style="font-size:13px;font-weight:700">Email</span><span style="font-size:12px;color:#A89E92">your.name@email.com</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px"><span style="font-size:13px;font-weight:700">Change password</span><span style="font-size:16px;color:#C7BDB0">›</span></div>
+          </div>
+          <!-- Notifications -->
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:9px">NOTIFICATIONS</div>
+          <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;overflow:hidden;margin-bottom:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-bottom:1px solid #EFE7DA"><span style="font-size:13px;font-weight:700">Daily task reminder</span><div style="width:40px;height:23px;border-radius:20px;background:#5FA97E;position:relative"><div style="position:absolute;top:2.5px;right:2.5px;width:18px;height:18px;border-radius:50%;background:#fff"></div></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px"><span style="font-size:13px;font-weight:700">Streak at risk alert</span><div style="width:40px;height:23px;border-radius:20px;background:#5FA97E;position:relative"><div style="position:absolute;top:2.5px;right:2.5px;width:18px;height:18px;border-radius:50%;background:#fff"></div></div></div>
+          </div>
+          <!-- Preferences -->
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:9px">PREFERENCES</div>
+          <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;overflow:hidden;margin-bottom:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-bottom:1px solid #EFE7DA"><span style="font-size:13px;font-weight:700">Sound effects</span><div style="width:40px;height:23px;border-radius:20px;background:#D8CEC0;position:relative"><div style="position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;border-radius:50%;background:#fff"></div></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 13px"><span style="font-size:13px;font-weight:700">Reduce motion</span><div style="width:40px;height:23px;border-radius:20px;background:#D8CEC0;position:relative"><div style="position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;border-radius:50%;background:#fff"></div></div></div>
+          </div>
+          <!-- research note -->
+          <div style="background:#EEE9F5;border-radius:11px;padding:9px 11px;font-size:10.5px;color:#5C5470;line-height:1.45;margin-bottom:8px"><b>Research participant.</b> Anonymous usage is logged for the IMY761 study. Contact the researcher to withdraw.</div>
+          <div style="height:44px;border-radius:12px;background:#fff;border:1px solid #EBD9D2;color:#DB4C3F;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center">Log out</div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:16px;align-items:center;padding:8px 16px 14px;background:#fff">
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+          <div style="width:46px;height:46px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(226,122,84,.4)"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg></div><div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        </div>
+      </div>
+      <div style="width:300px"><span style="font-weight:700;font-size:12.5px">Settings</span> <span style="font-size:12px;color:#A89E92">· account · notifications · preferences · consent · log out</span></div>
+    </div>
+  </div>
+
+  <!-- ============ GROUP: ADMIN ============ -->
+  <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+    <div style="width:26px;height:26px;border-radius:8px;background:#2E2A26;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center">6</div>
+    <div style="font-family:Fredoka;font-weight:600;font-size:22px">Admin / researcher dashboard</div>
+    <div style="font-size:13px;color:#A89E92">desktop · aggregate A vs B · per-user telemetry</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:38px;align-items:flex-start;margin-bottom:60px">
+
+    <!-- Admin overview -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:520px;background:#fff;border-radius:18px;border:1px solid rgba(46,42,38,.08);box-shadow:0 16px 34px rgba(46,42,38,.10);overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid #EFE7DA;background:#FBF6EF"><div><div style="font-family:Fredoka;font-weight:600;font-size:18px">Study overview</div><div style="font-size:12px;color:#8A8178">IMY761 · 20 participants · 20 Sep – 10 Oct 2026</div></div><div style="font-size:12px;font-weight:800;color:#5FA97E;background:#E7F0E9;padding:4px 11px;border-radius:20px">● Live</div></div>
+        <div style="padding:20px 22px">
+          <!-- KPI row -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:20px">
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;padding:12px"><div style="font-size:11px;color:#8A8178;font-weight:700">Participants</div><div style="font-family:Fredoka;font-weight:600;font-size:22px">20</div></div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;padding:12px"><div style="font-size:11px;color:#8A8178;font-weight:700">Telemetry events</div><div style="font-family:Fredoka;font-weight:600;font-size:22px">11.2k</div></div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;padding:12px"><div style="font-size:11px;color:#8A8178;font-weight:700">Tasks done</div><div style="font-family:Fredoka;font-weight:600;font-size:22px">1,340</div></div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:13px;padding:12px"><div style="font-size:11px;color:#8A8178;font-weight:700">Purchases</div><div style="font-family:Fredoka;font-weight:600;font-size:22px">208</div></div>
+          </div>
+          <div style="font-size:12px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:14px">GROUP A (CONTROL) &nbsp;vs&nbsp; GROUP B (URGENCY)</div>
+          <!-- comparison bars -->
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:6px"><span>Avg. store visits / user</span></div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><span style="width:22px;font-size:10px;font-weight:800;color:#3F8C63">A</span><div style="flex:1;height:16px;background:#EFE7DA;border-radius:5px;overflow:hidden"><div style="width:52%;height:100%;background:#5FA97E;border-radius:5px"></div></div><span style="width:34px;font-size:12px;font-weight:800;text-align:right">8.4</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;font-size:10px;font-weight:800;color:#C23B2E">B</span><div style="flex:1;height:16px;background:#EFE7DA;border-radius:5px;overflow:hidden"><div style="width:82%;height:100%;background:#DB4C3F;border-radius:5px"></div></div><span style="width:34px;font-size:12px;font-weight:800;text-align:right">13.1</span></div>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:700;margin-bottom:6px">Items viewed → purchased (conversion)</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><span style="width:22px;font-size:10px;font-weight:800;color:#3F8C63">A</span><div style="flex:1;height:16px;background:#EFE7DA;border-radius:5px;overflow:hidden"><div style="width:38%;height:100%;background:#5FA97E;border-radius:5px"></div></div><span style="width:34px;font-size:12px;font-weight:800;text-align:right">31%</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;font-size:10px;font-weight:800;color:#C23B2E">B</span><div style="flex:1;height:16px;background:#EFE7DA;border-radius:5px;overflow:hidden"><div style="width:68%;height:100%;background:#DB4C3F;border-radius:5px"></div></div><span style="width:34px;font-size:12px;font-weight:800;text-align:right">54%</span></div>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:700;margin-bottom:6px">Perceived trust (McKnight, 1–7)</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><span style="width:22px;font-size:10px;font-weight:800;color:#3F8C63">A</span><div style="flex:1;height:16px;background:#EFE7DA;border-radius:5px;overflow:hidden"><div style="width:76%;height:100%;background:#5FA97E;border-radius:5px"></div></div><span style="width:34px;font-size:12px;font-weight:800;text-align:right">5.3</span></div>
+              <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;font-size:10px;font-weight:800;color:#C23B2E">B</span><div style="flex:1;height:16px;background:#EFE7DA;border-radius:5px;overflow:hidden"><div style="width:53%;height:100%;background:#DB4C3F;border-radius:5px"></div></div><span style="width:34px;font-size:12px;font-weight:800;text-align:right">3.7</span></div>
+            </div>
+          </div>
+          <div style="margin-top:18px;padding:12px 14px;background:#EEE9F5;border-radius:12px;font-size:12px;color:#5C5470;line-height:1.5"><b style="color:#8478C4">AI insight:</b> Group B shows +56% conversion but −30% trust — consistent with the study hypothesis that false urgency lifts spending while eroding perceived fairness.</div>
+        </div>
+      </div>
+      <div style="width:520px"><span style="font-weight:700;font-size:12.5px">Admin overview — aggregate A vs B</span> <span style="font-size:12px;color:#A89E92">· ADMIN-4</span></div>
+    </div>
+
+    <!-- Per-user telemetry -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:420px;background:#fff;border-radius:18px;border:1px solid rgba(46,42,38,.08);box-shadow:0 16px 34px rgba(46,42,38,.10);overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid #EFE7DA;background:#FBF6EF;display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:11px"><div style="width:38px;height:38px;border-radius:50%;background:#8478C4;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center">P07</div><div><div style="font-weight:800;font-size:14px">Participant #07</div><div style="font-size:11px;color:#8A8178">joined 21 Sep · 6 active days</div></div></div><span style="font-size:11px;font-weight:800;background:#FDE7E3;color:#C23B2E;padding:3px 10px;border-radius:20px">GROUP B</span></div>
+        <div style="padding:18px 20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:12px;padding:11px"><div style="font-size:11px;color:#8A8178;font-weight:700">Sessions</div><div style="font-family:Fredoka;font-weight:600;font-size:19px">24</div></div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:12px;padding:11px"><div style="font-size:11px;color:#8A8178;font-weight:700">Time in app</div><div style="font-family:Fredoka;font-weight:600;font-size:19px">3h 12m</div></div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:12px;padding:11px"><div style="font-size:11px;color:#8A8178;font-weight:700">Tasks completed</div><div style="font-family:Fredoka;font-weight:600;font-size:19px">41</div></div>
+            <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:12px;padding:11px"><div style="font-size:11px;color:#8A8178;font-weight:700">Store visits</div><div style="font-family:Fredoka;font-weight:600;font-size:19px">13</div></div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:10px">STORE FUNNEL</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:9px"><span style="width:70px;font-size:11px;color:#8A8178">Viewed</span><div style="flex:1;height:14px;background:#EFE7DA;border-radius:5px;overflow:hidden"><div style="width:100%;height:100%;background:#C7BDB0;border-radius:5px"></div></div><span style="width:28px;font-size:11px;font-weight:800;text-align:right">57</span></div>
+            <div style="display:flex;align-items:center;gap:9px"><span style="width:70px;font-size:11px;color:#8A8178">Added cart</span><div style="flex:1;height:14px;background:#EFE7DA;border-radius:5px;overflow:hidden"><div style="width:56%;height:100%;background:#E5A93C;border-radius:5px"></div></div><span style="width:28px;font-size:11px;font-weight:800;text-align:right">32</span></div>
+            <div style="display:flex;align-items:center;gap:9px"><span style="width:70px;font-size:11px;color:#8A8178">Purchased</span><div style="flex:1;height:14px;background:#EFE7DA;border-radius:5px;overflow:hidden"><div style="width:33%;height:100%;background:#DB4C3F;border-radius:5px"></div></div><span style="width:28px;font-size:11px;font-weight:800;text-align:right">19</span></div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#8A8178;letter-spacing:.4px;margin-bottom:10px">RETURN PATTERN (14 DAYS)</div>
+          <div style="display:flex;gap:4px;align-items:flex-end;height:44px">
+            <div style="flex:1;background:#8478C4;border-radius:3px;height:60%"></div><div style="flex:1;background:#8478C4;border-radius:3px;height:80%"></div><div style="flex:1;background:#EFE7DA;border-radius:3px;height:20%"></div><div style="flex:1;background:#8478C4;border-radius:3px;height:100%"></div><div style="flex:1;background:#8478C4;border-radius:3px;height:70%"></div><div style="flex:1;background:#8478C4;border-radius:3px;height:90%"></div><div style="flex:1;background:#EFE7DA;border-radius:3px;height:20%"></div><div style="flex:1;background:#8478C4;border-radius:3px;height:50%"></div><div style="flex:1;background:#EFE7DA;border-radius:3px;height:20%"></div><div style="flex:1;background:#8478C4;border-radius:3px;height:75%"></div><div style="flex:1;background:#8478C4;border-radius:3px;height:85%"></div><div style="flex:1;background:#EFE7DA;border-radius:3px;height:20%"></div><div style="flex:1;background:#8478C4;border-radius:3px;height:40%"></div><div style="flex:1;background:#8478C4;border-radius:3px;height:65%"></div>
+          </div>
+        </div>
+      </div>
+      <div style="width:420px"><span style="font-weight:700;font-size:12.5px">Per-user telemetry detail</span> <span style="font-size:12px;color:#A89E92">· ADMIN-1/2/3</span></div>
+    </div>
+  </div>
+
+  <!-- ============ GROUP: SHARED / STATES ============ -->
+  <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+    <div style="width:26px;height:26px;border-radius:8px;background:#2E2A26;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center">7</div>
+    <div style="font-family:Fredoka;font-weight:600;font-size:22px">Shared — header/nav &amp; states</div>
+    <div style="font-size:13px;color:#A89E92">persistent chrome · empty &amp; locked states</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:38px;align-items:flex-start">
+
+    <!-- Persistent header/nav spec -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:340px;background:#fff;border-radius:18px;border:1px solid #EFE7DA;box-shadow:0 16px 34px rgba(46,42,38,.08);padding:20px">
+        <div style="font-family:Fredoka;font-weight:600;font-size:16px;margin-bottom:14px">Persistent header</div>
+        <div style="border:1px solid #EFE7DA;border-radius:14px;overflow:hidden;margin-bottom:20px">
+          <div style="padding:12px 14px;background:#FBF6EF;display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:11px;color:#8A8178">Good morning</div><div style="font-family:Fredoka;font-weight:600;font-size:16px;line-height:1">Nico</div></div>
+            <div style="display:flex;gap:7px;align-items:center">
+              <div style="display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #EFE7DA;border-radius:20px;padding:4px 10px 4px 5px"><div style="width:16px;height:16px;border-radius:50%;background:#E5A93C;border:2px solid #F2C879"></div><span style="font-weight:800;font-size:12px;color:#B67F1E">245</span></div>
+              <div style="display:flex;align-items:center;gap:4px;background:#F3EFFA;border-radius:20px;padding:4px 9px"><span style="font-weight:800;font-size:12px;color:#8478C4">Lv4</span></div>
+              <div style="display:flex;align-items:center;gap:4px;background:#FBEAE3;border-radius:20px;padding:4px 9px"><span style="font-weight:800;font-size:12px;color:#E27A54"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>5</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:Fredoka;font-weight:600;font-size:16px;margin-bottom:12px">Bottom nav (4 tabs)</div>
+        <div style="border:1px solid #EFE7DA;border-radius:14px;display:flex;justify-content:space-around;align-items:center;padding:10px 8px">
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(226,122,84,.4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+          <div style="width:46px;height:46px;flex:none;border-radius:50%;background:#E27A54;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(226,122,84,.4)"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg></div><div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg></div>
+          <div style="width:42px;height:42px;flex:none;border-radius:50%;background:#fff;border:1px solid #EFE7DA;color:#8A8178;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(46,42,38,.10)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        </div>
+        <div style="margin-top:14px;font-size:11.5px;color:#8A8178;line-height:1.5">Coins, level &amp; streak are visible on every logged-in screen (TASK-9, STORE-7).</div>
+      </div>
+      <div style="width:340px"><span style="font-weight:700;font-size:12.5px">Persistent header / nav</span> <span style="font-size:12px;color:#A89E92">· shared chrome</span></div>
+    </div>
+
+    <!-- Empty tasks -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:240px;height:400px;background:#fff;border-radius:30px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center">
+        <div style="width:64px;height:64px;border-radius:18px;background:#F6F1E9;border:2px dashed #DCD2C4;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><div style="width:24px;height:24px;border-radius:7px;border:3px solid #D8CEC0"></div></div>
+        <div style="font-family:Fredoka;font-weight:600;font-size:17px">All clear!</div>
+        <div style="font-size:12.5px;color:#8A8178;margin:6px 0 18px">No tasks yet. Add your first to start earning coins.</div>
+        <div style="height:42px;padding:0 20px;border-radius:12px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;box-shadow:0 5px 12px rgba(226,122,84,.3)">+ New task</div>
+      </div>
+      <div style="width:240px"><span style="font-weight:700;font-size:12.5px">Empty · tasks</span></div>
+    </div>
+
+    <!-- Empty cart -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:240px;height:400px;background:#fff;border-radius:30px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center">
+        <div style="width:64px;height:56px;border-radius:8px 8px 16px 16px;border:3px solid #DCD2C4;position:relative;margin-bottom:16px"><div style="position:absolute;top:-14px;left:14px;width:28px;height:16px;border:3px solid #DCD2C4;border-bottom:none;border-radius:14px 14px 0 0"></div></div>
+        <div style="font-family:Fredoka;font-weight:600;font-size:17px">Cart's empty</div>
+        <div style="font-size:12.5px;color:#8A8178;margin:6px 0 18px">Browse the store to treat your pets.</div>
+        <div style="height:42px;padding:0 20px;border-radius:12px;background:#fff;border:1.5px solid #E27A54;color:#E27A54;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center">Go to store</div>
+      </div>
+      <div style="width:240px"><span style="font-weight:700;font-size:12.5px">Empty · cart</span></div>
+    </div>
+
+    <!-- Locked by level -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:240px;height:400px;background:#fff;border-radius:30px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center">
+        <div style="width:60px;height:66px;border-radius:12px;background:#F3EFFA;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><div style="width:24px;height:28px;border-radius:6px;background:#B7A9E0;position:relative"><div style="position:absolute;top:-11px;left:5px;width:14px;height:14px;border:4px solid #B7A9E0;border-bottom:none;border-radius:9px 9px 0 0"></div></div></div>
+        <div style="font-family:Fredoka;font-weight:600;font-size:17px">Locked — Level 7</div>
+        <div style="font-size:12.5px;color:#8A8178;margin:6px 0 16px">The fox kit unlocks at level 7. You're level 4 — keep completing tasks!</div>
+        <div style="width:100%;height:8px;border-radius:5px;background:#EFE7DA;overflow:hidden"><div style="width:57%;height:100%;background:#8478C4;border-radius:5px"></div></div>
+        <div style="font-size:11px;color:#A89E92;margin-top:7px">Level 4 · 3 to go</div>
+      </div>
+      <div style="width:240px"><span style="font-weight:700;font-size:12.5px">State · locked by level</span> <span style="font-size:12px;color:#A89E92">· STORE-6</span></div>
+    </div>
+
+    <!-- Error / offline -->
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="width:240px;height:400px;background:#fff;border-radius:30px;overflow:hidden;border:1px solid rgba(46,42,38,.06);box-shadow:0 16px 34px rgba(46,42,38,.10);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center">
+        <div style="width:64px;height:64px;border-radius:50%;background:#FDECE3;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><div style="width:6px;height:26px;border-radius:3px;background:#E39B7B"></div></div>
+        <div style="font-family:Fredoka;font-weight:600;font-size:17px">Can't reach TaskTails</div>
+        <div style="font-size:12.5px;color:#8A8178;margin:6px 0 18px">You're offline. We'll sync your progress once you're back.</div>
+        <div style="height:42px;padding:0 22px;border-radius:12px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;box-shadow:0 5px 12px rgba(226,122,84,.3)">Retry</div>
+      </div>
+      <div style="width:240px"><span style="font-weight:700;font-size:12.5px">State · error / offline</span></div>
+    </div>
+  </div>
+
+  <!-- ============ GROUP: MARKETING SITE ============ -->
+  <div style="display:flex;align-items:baseline;gap:12px;margin:56px 0 22px">
+    <div style="width:26px;height:26px;border-radius:8px;background:#2E2A26;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center">8</div>
+    <div style="font-family:Fredoka;font-weight:600;font-size:22px">Marketing site</div>
+    <div style="font-size:13px;color:#A89E92">public web landing · desktop</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:11px;margin-bottom:40px">
+    <!-- browser frame -->
+    <div style="width:1180px;border-radius:16px;overflow:hidden;border:1px solid rgba(46,42,38,.10);box-shadow:0 22px 50px rgba(46,42,38,.16);background:#fff">
+      <!-- chrome -->
+      <div style="height:40px;background:#EFE7DA;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid #E3D9C9">
+        <div style="display:flex;gap:6px"><div style="width:11px;height:11px;border-radius:50%;background:#E88A6F"></div><div style="width:11px;height:11px;border-radius:50%;background:#EEC66B"></div><div style="width:11px;height:11px;border-radius:50%;background:#8FCB9B"></div></div>
+        <div style="flex:1;max-width:420px;margin:0 auto;height:24px;border-radius:7px;background:#fff;border:1px solid #E0D6C6;display:flex;align-items:center;padding:0 12px;font-size:11px;color:#8A8178">tasktails.app</div>
+      </div>
+
+      <!-- nav -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 40px;border-bottom:1px solid #F1EADF">
+        <div style="display:flex;align-items:center;gap:11px">
+          <img src="uploads/icon.svg" alt="TaskTails" style="width:38px;height:38px;border-radius:11px;flex:none;display:block">
+          <span style="font-family:Fredoka;font-weight:600;font-size:22px">Task<span style="color:#E27A54">Tails</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:30px">
+          <span style="font-size:14px;font-weight:700;color:#5C5470">Features</span>
+          <span style="font-size:14px;font-weight:700;color:#5C5470">How it works</span>
+          <span style="font-size:14px;font-weight:700;color:#5C5470">The zoo</span>
+          <span style="font-size:14px;font-weight:700;color:#E27A54">Log in</span>
+          <div style="height:42px;padding:0 22px;border-radius:12px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:14px;display:flex;align-items:center;box-shadow:0 6px 14px rgba(226,122,84,.32)">Get started free</div>
+        </div>
+      </div>
+
+      <!-- hero -->
+      <div style="display:flex;align-items:center;gap:40px;padding:64px 40px;background:#FBF6EF">
+        <div style="flex:1">
+          <div style="display:inline-block;font-size:12px;font-weight:800;letter-spacing:1px;color:#E27A54;background:#FBEAE3;padding:6px 13px;border-radius:20px;margin-bottom:20px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg> PRODUCTIVITY, BUT COSY</div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:58px;line-height:1.03;letter-spacing:-1px">Do your tasks.<br>Raise a zoo of<br><span style="color:#E27A54">little friends.</span></div>
+          <div style="font-size:17px;color:#5C5470;line-height:1.55;margin:22px 0 30px;max-width:460px">TaskTails turns your to-do list into a game. Complete tasks to earn coins and XP, then spend them feeding, petting and customising your very own sanctuary.</div>
+          <div style="display:flex;gap:14px;align-items:center">
+            <div style="height:52px;padding:0 28px;border-radius:14px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:17px;display:flex;align-items:center;box-shadow:0 8px 18px rgba(226,122,84,.35)">Start for free</div>
+            <div style="height:52px;padding:0 26px;border-radius:14px;background:#fff;border:1.5px solid #E27A54;color:#E27A54;font-family:Fredoka;font-weight:600;font-size:17px;display:flex;align-items:center;gap:9px"><div style="width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:11px solid #E27A54"></div>Watch demo</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;margin-top:24px">
+            <div style="display:flex"><div style="width:30px;height:30px;border-radius:50%;background:#E27A54;border:2px solid #FBF6EF"></div><div style="width:30px;height:30px;border-radius:50%;background:#5FA97E;border:2px solid #FBF6EF;margin-left:-9px"></div><div style="width:30px;height:30px;border-radius:50%;background:#8478C4;border:2px solid #FBF6EF;margin-left:-9px"></div><div style="width:30px;height:30px;border-radius:50%;background:#E5A93C;border:2px solid #FBF6EF;margin-left:-9px"></div></div>
+            <span style="font-size:13px;color:#8A8178"><b style="color:#2E2A26">2,400+</b> students building better habits</span>
+          </div>
+        </div>
+        <!-- hero phone -->
+        <div style="width:288px;height:500px;background:#fff;border-radius:34px;border:1px solid rgba(46,42,38,.08);box-shadow:0 26px 54px rgba(46,42,38,.20);flex:none;overflow:hidden;display:flex;flex-direction:column">
+          <div style="background:linear-gradient(#EAF3EC,#F3ECE1);flex:1;display:flex;flex-direction:column;align-items:center;padding-top:34px">
+            <div style="font-family:Fredoka;font-weight:600;font-size:19px">Mochi</div>
+            <div style="font-size:12px;font-weight:800;color:#5FA97E;margin-top:3px">Happy</div>
+            <img src="uploads/animals/fox.svg" alt="Mochi the fox" style="width:150px;height:150px;margin-top:8px;display:block">
+            <div style="width:80%;margin-top:auto;margin-bottom:16px;display:flex;flex-direction:column;gap:8px">
+              <div style="background:#fff;border:1px solid #EFE7DA;border-radius:11px;padding:8px 11px"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;color:#8A8178;margin-bottom:5px"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;flex:none"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> HAPPINESS</span><span style="color:#5FA97E">85%</span></div><div style="height:7px;border-radius:5px;background:#EFE7DA;overflow:hidden"><div style="width:85%;height:100%;background:#5FA97E;border-radius:5px"></div></div></div>
+            </div>
+          </div>
+          <div style="padding:12px;display:flex;gap:8px;background:#fff"><div style="flex:1;height:40px;border-radius:11px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center">Pet</div><div style="flex:1;height:40px;border-radius:11px;background:#5FA97E;color:#fff;font-family:Fredoka;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center">Feed</div></div>
+        </div>
+      </div>
+
+      <!-- features -->
+      <div style="padding:64px 40px 20px;text-align:center">
+        <div style="font-family:Fredoka;font-weight:600;font-size:36px">Everything you need to stay on track</div>
+        <div style="font-size:16px;color:#8A8178;margin-top:10px">A real task manager underneath the fluff — with rewards that actually make you come back.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:34px 40px 56px">
+        <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:18px;padding:26px">
+          <div style="width:52px;height:52px;border-radius:14px;background:#FCEBD3;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><div style="width:22px;height:22px;border-radius:6px;background:#E5A93C"></div></div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:20px;margin-bottom:7px">Tasks &amp; subtasks</div>
+          <div style="font-size:14px;color:#5C5470;line-height:1.55">Due dates, five complexity tiers and nested subtasks. Every finish pays out coins and XP.</div>
+        </div>
+        <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:18px;padding:26px">
+          <div style="width:52px;height:52px;border-radius:14px;background:#F3EFFA;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><div style="width:22px;height:22px;background:#8478C4;transform:rotate(45deg)"></div></div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:20px;margin-bottom:7px">Levels &amp; streaks</div>
+          <div style="font-size:14px;color:#5C5470;line-height:1.55">Build a daily streak, climb levels, and unlock rarer animals and accessories as you grow.</div>
+        </div>
+        <div style="background:#FBF6EF;border:1px solid #EFE7DA;border-radius:18px;padding:26px">
+          <div style="width:52px;height:52px;border-radius:14px;background:#E7F0E9;display:flex;align-items:center;justify-content:center;margin-bottom:16px"><div style="width:24px;height:24px;border-radius:50%;background:#5FA97E"></div></div>
+          <div style="font-family:Fredoka;font-weight:600;font-size:20px;margin-bottom:7px">Your own sanctuary</div>
+          <div style="font-size:14px;color:#5C5470;line-height:1.55">Spend coins in the store, then feed, pet and customise a zoo of creatures with real moods.</div>
+        </div>
+      </div>
+
+      <!-- how it works -->
+      <div style="background:#FBF6EF;padding:60px 40px">
+        <div style="text-align:center;font-family:Fredoka;font-weight:600;font-size:36px;margin-bottom:44px">Three steps to a happier list</div>
+        <div style="display:flex;gap:26px;max-width:980px;margin:0 auto">
+          <div style="flex:1;text-align:center"><div style="width:56px;height:56px;border-radius:50%;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">1</div><div style="font-family:Fredoka;font-weight:600;font-size:19px;margin-bottom:6px">Add your tasks</div><div style="font-size:14px;color:#5C5470;line-height:1.5">Capture to-dos, set a size and due date. That's it.</div></div>
+          <div style="flex:1;text-align:center"><div style="width:56px;height:56px;border-radius:50%;background:#E5A93C;color:#fff;font-family:Fredoka;font-weight:600;font-size:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">2</div><div style="font-family:Fredoka;font-weight:600;font-size:19px;margin-bottom:6px">Finish &amp; earn</div><div style="font-size:14px;color:#5C5470;line-height:1.5">Check things off to bank coins and XP, and keep your streak alive.</div></div>
+          <div style="flex:1;text-align:center"><div style="width:56px;height:56px;border-radius:50%;background:#5FA97E;color:#fff;font-family:Fredoka;font-weight:600;font-size:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">3</div><div style="font-family:Fredoka;font-weight:600;font-size:19px;margin-bottom:6px">Grow your zoo</div><div style="font-size:14px;color:#5C5470;line-height:1.5">Spend rewards on animals and treats, and watch them thrive.</div></div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div style="padding:70px 40px;text-align:center">
+        <div style="font-family:Fredoka;font-weight:600;font-size:42px;line-height:1.1">Your to-do list has<br>never been this cute.</div>
+        <div style="font-size:16px;color:#8A8178;margin:16px 0 28px">Free to start. No card required.</div>
+        <div style="display:inline-flex;height:54px;padding:0 32px;border-radius:14px;background:#E27A54;color:#fff;font-family:Fredoka;font-weight:600;font-size:18px;align-items:center;box-shadow:0 8px 18px rgba(226,122,84,.35)">Get started free</div>
+      </div>
+
+      <!-- footer -->
+      <div style="background:#2E2A26;padding:34px 40px;display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <img src="uploads/icon-light.svg" alt="TaskTails" style="width:32px;height:32px;border-radius:9px;flex:none;display:block">
+          <span style="font-family:Fredoka;font-weight:600;font-size:17px;color:#fff">TaskTails</span>
+        </div>
+        <div style="display:flex;gap:26px"><span style="font-size:13px;color:#A89E92">Privacy</span><span style="font-size:13px;color:#A89E92">Terms</span><span style="font-size:13px;color:#A89E92">Contact</span><span style="font-size:13px;color:#A89E92">© 2026 TaskTails</span></div>
+      </div>
+    </div>
+    <div style="width:1180px"><span style="font-weight:700;font-size:12.5px">Marketing site — desktop landing</span> <span style="font-size:12px;color:#A89E92">· public web · hero · features · how-it-works · CTA</span></div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { done: { t1: true }, coins: 245, xp: 42, happy: 78, hunger: 35, sale: 872, bundle: 299 };
+  componentDidMount() {
+    this._t = setInterval(() => this.setState(s => ({
+      sale: s.sale > 0 ? s.sale - 1 : 900,
+      bundle: s.bundle > 0 ? s.bundle - 1 : 300
+    })), 1000);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  fmt(n) { const m = Math.floor(n / 60), s = n % 60; return m + ':' + String(s).padStart(2, '0'); }
+  toggle(id, coins, xp) {
+    this.setState(s => {
+      const done = { ...s.done }; const was = done[id]; done[id] = !was;
+      const k = was ? -1 : 1;
+      return { done, coins: Math.max(0, s.coins + k * coins), xp: Math.max(0, s.xp + k * xp) };
+    });
+  }
+  pet() { this.setState(s => ({ happy: Math.min(100, s.happy + 7) })); }
+  feed() { this.setState(s => ({ hunger: Math.max(0, s.hunger - 18), happy: Math.min(100, s.happy + 4) })); }
+  renderVals() {
+    const tierC = { Trivial: '#98A2AE', Small: '#5FA97E', Medium: '#E5A93C', Large: '#E27A54', Epic: '#8478C4' };
+    const defs = [
+      { id: 't1', title: 'Reply to supervisor email', tier: 'Trivial', coins: 5, xp: 8, due: 'Done today' },
+      { id: 't2', title: 'Draft methodology section', tier: 'Large', coins: 75, xp: 100, due: 'Due today' },
+      { id: 't3', title: 'Prep D4 presentation slides', tier: 'Medium', coins: 35, xp: 45, due: 'Due tomorrow' },
+      { id: 't4', title: 'Read 2 papers on dark patterns', tier: 'Small', coins: 15, xp: 20, due: 'Due Fri' }
+    ];
+    const tasks = defs.map(t => {
+      const done = !!this.state.done[t.id];
+      return {
+        ...t, done, tierColor: tierC[t.tier],
+        tierBg: tierC[t.tier] + '22',
+        titleStyle: done ? 'text-decoration:line-through;color:#B8AFA4' : 'color:#2E2A26',
+        toggle: () => this.toggle(t.id, t.coins, t.xp)
+      };
+    });
+    const xpNeed = 55;
+    const happy = this.state.happy, hunger = this.state.hunger;
+    const moodLabel = happy >= 70 ? 'Happy' : happy >= 40 ? 'Content' : 'Needs love';
+    const moodColor = happy >= 70 ? '#5FA97E' : happy >= 40 ? '#E5A93C' : '#DB6A54';
+    return {
+      coins: this.state.coins, level: 4, streak: 5,
+      xpText: this.state.xp + ' / ' + xpNeed + ' XP',
+      xpPct: Math.min(100, this.state.xp / xpNeed * 100) + '%',
+      tasks,
+      happy, hunger, happyPct: happy + '%', hungerPct: hunger + '%',
+      moodLabel, moodColor,
+      moodHappy: happy >= 70, moodSad: happy < 40,
+      pet: () => this.pet(), feed: () => this.feed(),
+      saleTimer: this.fmt(this.state.sale), bundleTimer: this.fmt(this.state.bundle)
+    };
+  }
+}
+</script>
+</body>
+</html>

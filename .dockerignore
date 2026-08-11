@@ -1,0 +1,27 @@
+# Everything the image builds for itself, or must never contain (INF-15).
+
+node_modules
+.next
+.git
+.claude
+
+# Real secrets. Only .env.example belongs in the repo, and even that is not
+# needed inside the image — the container is configured through the environment.
+.env
+.env.*
+!.env.example
+
+# Generated during the build by `prisma generate`; a host copy would be built
+# for the host's platform, not the image's.
+src/generated
+
+# Docs, design references and tooling — none of it is needed to run the app, and
+# design_handoff alone is several megabytes of HTML and SVG.
+design_handoff
+claude-memory
+scripts
+*.md
+!README.md
+
+.DS_Store
+npm-debug.log*
