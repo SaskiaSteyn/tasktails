@@ -519,9 +519,12 @@ describe("recordStreakDay", () => {
 });
 
 /**
- * ECO-05 — level-up against INF-21's threshold table. The curve hands out
- * levels 2–5 inside a first session (§3.6), so crossing several thresholds on
- * one completion is the normal case here, not an edge case.
+ * ECO-05 — level-up against INF-21's threshold table. The 2026-08-11 curve
+ * (issue #160) guarantees every pair of consecutive gaps sums to more than
+ * 200 XP — one Epic task's full value — so a single completion can never
+ * cross more than one threshold past the Level 1→2 freebie. Crossing several
+ * levels at once, which the old curve allowed routinely, is no longer
+ * possible at all.
  */
 describe("levelUpBetween", () => {
   it("returns null when no threshold was crossed", () => {
@@ -541,24 +544,25 @@ describe("levelUpBetween", () => {
     });
   });
 
-  it("lists every level when one completion crosses several", () => {
-    // One Epic task is 200 XP, which clears levels 2 (40), 3 (110) and 4 (190)
-    // in a single completion — the widest jump a single task can produce under
-    // the 2026-07-29 curve. It used to reach level 6.
+  it("never lets a single completion cross more than one level", () => {
+    // One Epic task is 200 XP — the largest single reward in the game — and
+    // from a fresh account it lands 10 XP short of level 3's 210 threshold.
+    // This is the bug issue #160 reported: the old curve let this same grant
+    // reach level 4 (or "feel like" level 5) in one completion.
     const event = levelUpBetween(0, 200);
 
-    expect(event?.to).toBe(4);
-    expect(event?.levelsGained).toEqual([2, 3, 4]);
+    expect(event?.to).toBe(2);
+    expect(event?.levelsGained).toEqual([2]);
 
-    // Requirements §3.6's first-session simulation, 1 trivial + 2 small, now
-    // stops at level 2 rather than sweeping up to 4.
-    expect(levelUpBetween(0, 48)?.to).toBe(2);
+    // Starting exactly at level 2 (40 XP) and landing another Epic task still
+    // only clears one threshold — level 3's 210.
+    expect(levelUpBetween(40, 240)?.levelsGained).toEqual([3]);
   });
 
   it("flags the top of the curve", () => {
-    const event = levelUpBetween(1400, 2000);
+    const event = levelUpBetween(4830, 5500);
 
-    expect(event?.to).toBe(10);
+    expect(event?.to).toBe(20);
     expect(event?.isMaxLevel).toBe(true);
   });
 
@@ -587,16 +591,16 @@ describe("grantEarnings level-up", () => {
       { xp: 0, dailyCoinsEarned: 0, dailyXpEarned: 0, dailyCapResetAt: now },
     ]);
 
-    // Epic — the only single tier that crosses more than one threshold now.
+    // Epic — no single tier crosses more than one threshold anymore.
     const grant = await grantEarnings("user-1", { coins: 150, xp: 200 }, now);
 
     expect(grant?.levelUp?.from).toBe(1);
-    expect(grant?.levelUp?.to).toBe(4);
-    expect(grant?.levelUp?.levelsGained).toEqual([2, 3, 4]);
+    expect(grant?.levelUp?.to).toBe(2);
+    expect(grant?.levelUp?.levelsGained).toEqual([2]);
 
     const data = prismaMock.userEconomy.update.mock.calls[0][0]
       .data as never as { level: number };
-    expect(data.level).toBe(4);
+    expect(data.level).toBe(2);
   });
 
   it("reports no level-up when the grant does not reach a threshold", async () => {
@@ -626,9 +630,9 @@ describe("grantEarnings level-up", () => {
 
 describe("syncLevel", () => {
   it("repairs a stale level column", async () => {
-    // 380 is level 6's threshold.
+    // 540 is level 6's threshold.
     prismaMock.userEconomy.findUnique.mockResolvedValue({
-      xp: 380,
+      xp: 540,
       level: 3,
     } as never);
 
@@ -643,7 +647,7 @@ describe("syncLevel", () => {
 
   it("writes nothing when the column already agrees with the XP", async () => {
     prismaMock.userEconomy.findUnique.mockResolvedValue({
-      xp: 380,
+      xp: 540,
       level: 6,
     } as never);
 
@@ -672,7 +676,7 @@ describe("xpWrite", () => {
       [0, 8],
       [0, 200],
       [48, 20],
-      [1990, 10],
+      [5490, 10],
       [500, 0],
     ] as const) {
       const write = xpWrite(before, delta);
@@ -685,8 +689,8 @@ describe("xpWrite", () => {
   it("reports the crossing that the same write represents", () => {
     expect(xpWrite(0, 40).levelUp?.to).toBe(2);
     expect(xpWrite(0, 39).levelUp).toBeNull();
-    // 270 + 20 = 290, crossing Lv 5's 280 threshold.
-    expect(xpWrite(270, 20).levelUp?.levelsGained).toEqual([5]);
+    // 520 + 20 = 540, crossing Lv 6's 540 threshold.
+    expect(xpWrite(520, 20).levelUp?.levelsGained).toEqual([6]);
   });
 
   it("never derives a level from a negative total", () => {
@@ -729,14 +733,13 @@ describe("buyXp", () => {
     };
     expect(data.coins).toEqual({ decrement: 100 });
     expect(data.xp).toEqual({ increment: 40 });
-    // 20 + 40 = 60 XP, still below Lv 3's 110 — stays at level 2.
+    // 20 + 40 = 60 XP, still below Lv 3's 210 — stays at level 2.
     expect(data.level).toBe(2);
   });
 
   it("reports the level-up the purchase caused", async () => {
-    // Two purchases (80 XP) from 0 crosses Lv 2 (40) only. Buying from 100 XP
-    // one more purchase (140) crosses Lv 3 (110).
-    prismaMock.$queryRaw.mockResolvedValue([{ coins: 100, xp: 100 }]);
+    // Buying from 200 XP (level 2) adds 40, landing on 240 — past Lv 3's 210.
+    prismaMock.$queryRaw.mockResolvedValue([{ coins: 100, xp: 200 }]);
 
     const result = await buyXp("user-1");
 
