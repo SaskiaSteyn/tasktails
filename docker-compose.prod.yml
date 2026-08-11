@@ -1,0 +1,84 @@
+# TaskTails — production stack for the EC2 host (DEP, GitHub #164).
+#
+# Deliberately a separate, self-contained file rather than an override merged
+# with docker-compose.yml: production has no local `db` service (INF-15's
+# compose runs its own Postgres container for the whole-stack-on-one-box case,
+# but this deployment uses RDS instead — see DEPLOY.md for why), and merge
+# semantics for dropping a `depends_on: db` entry are fiddly enough that a
+# plain, readable file beats a clever override.
+#
+# Images are built in CI and pushed to ECR (.github/workflows/deploy.yml), not
+# built here — a t3.micro's 1GB RAM is not a reliable place to run `next build`.
+# `docker compose -f docker-compose.prod.yml pull` fetches the `*-latest` tags;
+# `up -d` recreates any service whose pulled image ID no longer matches the
+# running container, which is what makes `pull && up -d` a deploy.
+#
+# Secrets and connection details come from a `.env` file that lives ONLY on the
+# EC2 host, next to this file — never in the image, never in git (INF-16's rule
+# for "EC2 / Vercel": the environment itself, never a file in the image). See
+# DEPLOY.md for what that file must contain.
+services:
+  # One-shot: applies pending migrations against RDS, then exits. `app` waits
+  # for it to succeed, so a deploy can never serve against a stale schema.
+  migrate:
+    image: ${ECR_REGISTRY}/tasktails:migrator-latest
+    container_name: tasktails-migrate
+    restart: "no"
+    env_file:
+      - path: .env
+        required: true
+    # RDS's cert chains to Amazon's own CA, not a publicly-trusted one, so
+    # `sslmode=verify-full` in DATABASE_URL needs this bundle to validate it —
+    # see the SSL trap documented in .env.example. `docker compose` resolves
+    # the host path relative to /opt/tasktails, where DEPLOY.md §7 puts it.
+    volumes:
+      - ./rds-global-bundle.pem:/app/certs/rds-global-bundle.pem:ro
+
+  app:
+    image: ${ECR_REGISTRY}/tasktails:runner-latest
+    container_name: tasktails-app
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      # Caddy terminates TLS and forwards Host/X-Forwarded-*; without this
+      # NextAuth refuses to trust those headers and every redirect breaks
+      # (same reasoning as docker-compose.yml's app service).
+      AUTH_TRUST_HOST: "true"
+    volumes:
+      - ./rds-global-bundle.pem:/app/certs/rds-global-bundle.pem:ro
+    # No host port publish — Caddy is the only thing allowed to reach this, over
+    # the compose network. Nothing but 80/443 is open on the instance's security
+    # group anyway (see DEPLOY.md), but this keeps it true at the compose level
+    # too.
+    expose:
+      - "3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Reverse proxy + automatic TLS. Caddy requests and renews the Let's Encrypt
+  # certificate for DOMAIN itself — no certbot, no cron job, no ALB (an ALB's
+  # ~$16/mo minimum would roughly double this deployment's cost for a feature
+  # Caddy does for free).
+  caddy:
+    image: caddy:2-alpine
+    container_name: tasktails-caddy
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  caddy-data:
+  caddy-config:
