@@ -412,4 +412,21 @@ describe("achievementsForUser", () => {
     expect(result[0].unlockedAt).toBeNull();
     expect(result[0].progress).toBeNull();
   });
+
+  it("treats a row with an unrecognised criterion type as locked rather than crashing the list", async () => {
+    // `criteria` is a Prisma `Json` column trusted via a type assertion, not
+    // a runtime guarantee — a row left over from an older seed (a stale
+    // criterion type the current switch doesn't handle) must not take the
+    // whole catalogue down with it.
+    setupSnapshot({});
+    prismaMock.achievement.findMany.mockResolvedValue([
+      { id: "a1", key: "k1", name: "N", description: "D", criteria: { type: "ITEMS_PURCHASED", threshold: 1 }, xpReward: 10 },
+      { id: "a2", key: "k2", name: "N", description: "D", criteria: { type: "STREAK_DAYS", threshold: 5 }, xpReward: 50 },
+    ] as never);
+
+    const result = await achievementsForUser("user-1");
+    expect(result.find((a) => a.id === "a1")?.progress).toBeNull();
+    expect(result.find((a) => a.id === "a1")?.unlockedAt).toBeNull();
+    expect(result.find((a) => a.id === "a2")?.progress).toEqual({ current: 0, target: 5 });
+  });
 });

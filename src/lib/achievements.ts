@@ -280,6 +280,15 @@ function evaluateCriterion(
       const current = distinctOwnedIdsInCategory(snapshot, "ANIMALS").size;
       return { unlocked: target > 0 && current >= target, progress: { current, target } };
     }
+    default:
+      // `criteria` is a Prisma `Json` column read back with `as
+      // AchievementCriterion` — a type assertion, not a runtime guarantee.
+      // A row seeded by an older/newer version of this file's `criteria`
+      // union (or a partially-applied seed) would otherwise fall through
+      // with no case matched, returning `undefined` here and crashing every
+      // caller's `.map` over the *whole* catalogue for the one bad row.
+      // Treating it as unlocked-but-unmet keeps the rest of the list alive.
+      return { unlocked: false, progress: null };
   }
 }
 
