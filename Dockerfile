@@ -57,14 +57,29 @@ RUN npm run build
 # A separate stage because the standalone runtime has no Prisma CLI and no
 # migrations directory. Compose runs this as a one-shot service that the app
 # waits on; see docker-compose.yml.
+#
+# Also runs `prisma db seed` (prisma.config.ts's `migrations.seed`) after
+# migrating — `migrate deploy` never seeds on its own, unlike `migrate dev`/
+# `migrate reset`, which only run in local development. Without this the
+# `StoreItem`/`Achievement` tables stay empty after every fresh deploy: an
+# empty shop, a Lucky Box that can't find a Common item for the rarity it
+# rolled, and `achievementsForUser()` fed a catalogue of zero. `prisma/seed.ts`
+# is upsert-based and safe to re-run on every deploy. Needs `tsconfig.json`
+# and `src` (not just `prisma/`) because the seed script imports the
+# generated Prisma client and `src/lib/prisma.ts` through the `@/*` path
+# alias that `tsx` resolves from `tsconfig.json`; the generated client itself
+# comes from `deps`, same as the `builder` stage above, since `src/generated`
+# is gitignored and absent from the build context.
 FROM node:22-alpine AS migrator
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY package.json prisma.config.ts ./
+COPY --from=deps /app/src/generated ./src/generated
+COPY package.json prisma.config.ts tsconfig.json ./
 COPY prisma ./prisma
+COPY src ./src
 
-CMD ["npx", "prisma", "migrate", "deploy"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed"]
 
 # ---------------------------------------------------------------------------
 # runner — what actually ships
