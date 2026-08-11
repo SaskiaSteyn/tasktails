@@ -189,6 +189,16 @@ Behind a reverse proxy, set `AUTH_URL` to the public origin and make sure the
 proxy forwards `Host` (or `X-Forwarded-Host`) and `X-Forwarded-Proto` — the
 sign-in redirect in [`src/proxy.ts`](src/proxy.ts) is built from those.
 
+## Deploying to AWS (DEP)
+
+[`DEPLOY.md`](DEPLOY.md) is the full runbook — EC2 + RDS + ECR + Caddy for
+free TLS, wired to auto-deploy on every push to `main` via
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). Targets
+NFR-GEN-3's $0-during-the-study Free Tier budget.
+[`docker-compose.prod.yml`](docker-compose.prod.yml) and
+[`Caddyfile`](Caddyfile) are what actually ship to the instance; this repo's
+`docker-compose.yml` above stays the local/manual-deploy path.
+
 ## Project layout
 
 ```

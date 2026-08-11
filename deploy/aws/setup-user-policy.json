@@ -1,0 +1,86 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "StsIdentity",
+      "Effect": "Allow",
+      "Action": "sts:GetCallerIdentity",
+      "Resource": "*"
+    },
+    {
+      "Sid": "EcrSetup",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository",
+        "ecr:DescribeRepositories"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "IamSetup",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateOpenIDConnectProvider",
+        "iam:GetOpenIDConnectProvider",
+        "iam:ListOpenIDConnectProviders",
+        "iam:CreateRole",
+        "iam:GetRole",
+        "iam:PutRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:CreateInstanceProfile",
+        "iam:GetInstanceProfile",
+        "iam:AddRoleToInstanceProfile"
+      ],
+      "Resource": [
+        "arn:aws:iam::<ACCOUNT_ID>:oidc-provider/token.actions.githubusercontent.com",
+        "arn:aws:iam::<ACCOUNT_ID>:role/tasktails-*",
+        "arn:aws:iam::<ACCOUNT_ID>:instance-profile/tasktails-*"
+      ]
+    },
+    {
+      "Sid": "PassRolesToEc2",
+      "Comment": "EC2 launch (console, Advanced details -> IAM instance profile) needs this to attach tasktails-ec2-ecr-pull. Scoped to that one role so this user can never pass a more privileged role to something else.",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::<ACCOUNT_ID>:role/tasktails-ec2-ecr-pull",
+      "Condition": {
+        "StringEquals": { "iam:PassedToService": "ec2.amazonaws.com" }
+      }
+    },
+    {
+      "Sid": "Ec2Setup",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateKeyPair",
+        "ec2:DescribeKeyPairs",
+        "ec2:AllocateAddress",
+        "ec2:AssociateAddress",
+        "ec2:DescribeAddresses",
+        "ec2:RunInstances",
+        "ec2:DescribeInstances",
+        "ec2:CreateSecurityGroup",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeImages",
+        "ec2:CreateTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "RdsSetup",
+      "Effect": "Allow",
+      "Action": [
+        "rds:CreateDBInstance",
+        "rds:DescribeDBInstances",
+        "rds:CreateDBSubnetGroup",
+        "rds:DescribeDBSubnetGroups",
+        "rds:DescribeDBEngineVersions",
+        "rds:AddTagsToResource",
+        "rds:DeleteDBInstance"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

@@ -47,3 +47,5 @@ next-env.d.ts
 
 # LEAD-16 dev fixture — real participant scores, saved before `seed-leaderboard.ts empty`
 /.leaderboard-score-backup.json
+
+DEPLOY.md

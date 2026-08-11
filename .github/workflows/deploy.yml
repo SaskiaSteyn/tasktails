@@ -1,0 +1,97 @@
+name: Deploy
+
+# DEP (GitHub #164). Runs after ci.yml's checks pass on main, builds the two
+# Dockerfile targets (INF-15) that docker-compose.prod.yml deploys — `runner`
+# (the app) and `migrator` (applies pending migrations first) — pushes both to
+# ECR, then tells the EC2 instance to pull and restart. See DEPLOY.md for the
+# one-time AWS setup this workflow assumes already exists (ECR repo, IAM OIDC
+# role, EC2 instance with docker-compose.prod.yml + Caddyfile + .env in
+# /opt/tasktails).
+#
+# No AWS access keys are stored in this repo: build-and-push assumes an IAM
+# role via GitHub's OIDC provider, and the EC2 instance pulls from ECR using
+# its own instance profile, not credentials shipped over SSH.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+
+concurrency:
+  # One deploy in flight at a time; never cancel one mid-way through a restart.
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # for aws-actions/configure-aws-credentials's OIDC exchange
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Immutable sha tags for rollback/audit, `-latest` for what
+      # docker-compose.prod.yml on the instance actually deploys.
+      - name: Build and push runner
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runner
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/tasktails:runner-${{ github.event.workflow_run.head_sha }}
+            ${{ steps.ecr.outputs.registry }}/tasktails:runner-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push migrator
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: migrator
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/tasktails:migrator-${{ github.event.workflow_run.head_sha }}
+            ${{ steps.ecr.outputs.registry }}/tasktails:migrator-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull new images and restart on EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_SSH_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/tasktails
+            aws ecr get-login-password --region ${{ vars.AWS_REGION }} \
+              | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker image prune -f
+          envs: ECR_REGISTRY
+        env:
+          ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}

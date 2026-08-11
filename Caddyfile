@@ -1,0 +1,16 @@
+# TaskTails — TLS termination + reverse proxy (DEP, GitHub #164).
+#
+# {$DOMAIN} is read from the `.env` file docker-compose.prod.yml loads into
+# this container — set DOMAIN=your-study-domain.example there. On first
+# request to that host, Caddy obtains a Let's Encrypt certificate for it
+# automatically and renews it in the background for as long as the container
+# runs. This requires the domain's DNS A record to already point at the
+# instance's Elastic IP and ports 80 + 443 to be reachable — see DEPLOY.md.
+#
+# reverse_proxy sets X-Forwarded-For, X-Forwarded-Proto and X-Forwarded-Host by
+# default, which is what src/proxy.ts's externalOrigin() and NextAuth's
+# AUTH_TRUST_HOST read to build the real https://<domain> origin instead of the
+# container's own http://localhost:3000.
+{$DOMAIN} {
+	reverse_proxy app:3000
+}
