@@ -26,6 +26,7 @@ import { cartForUser } from "@/lib/cart";
 import { LUCKY_BOX_COST_COINS, luckyBoxUrgencyForUser } from "@/lib/gacha";
 import { levelOf, storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
+import { logTelemetryEvent } from "@/lib/telemetry";
 import { urgencyDataForItems } from "@/lib/urgency";
 
 export const metadata: Metadata = {
@@ -125,6 +126,7 @@ export default async function StorePage() {
   await redirectAdminsAway(userId);
 
   const items = await storeItemsForUser(userId);
+  await logTelemetryEvent(userId, "STORE_VISIT", {});
 
   const [cart, showFlashSale, urgencyRows, level, luckyBoxUrgencyRow] = await Promise.all([
     cartForUser(userId),

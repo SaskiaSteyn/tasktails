@@ -4,11 +4,16 @@ import { GroupPill } from "./group-pill";
 
 /**
  * ADM-03 — per-user store telemetry table: participant, A/B group, store
- * visits, items viewed, items purchased, avg time on store page.
+ * visits, items purchased, avg time on store page.
  *
  * A separate table from `EngagementTable` rather than more columns bolted
  * onto it, matching ADM-02/03 being two distinct tickets with two distinct
  * column sets in the design.
+ *
+ * No "items viewed" column: there's no "view an item" UI in the app yet to
+ * generate that signal, so `ITEM_VIEWED` never fires and the column would
+ * only ever read 0 (issue #178's follow-up — removed rather than shown as a
+ * permanent zero).
  */
 export function StoreTable({
   participants,
@@ -34,7 +39,6 @@ export function StoreTable({
               <th className="px-5 py-2 font-bold">Participant</th>
               <th className="px-3 py-2 font-bold">Group</th>
               <th className="px-3 py-2 font-bold">Store visits</th>
-              <th className="px-3 py-2 font-bold">Items viewed</th>
               <th className="px-3 py-2 font-bold">Items purchased</th>
               <th className="px-3 py-2 font-bold">Avg. time on store page</th>
             </tr>
@@ -60,7 +64,6 @@ export function StoreTable({
                   <GroupPill group={participant.abGroup} />
                 </td>
                 <td className="px-3 py-2.5 font-bold text-ink">{participant.storeVisits}</td>
-                <td className="px-3 py-2.5 text-ink">{participant.itemsViewed}</td>
                 <td className="px-3 py-2.5 text-ink">{participant.itemsPurchased}</td>
                 <td className="px-3 py-2.5 text-ink">
                   {participant.avgTimeOnStorePageMs > 0
@@ -71,7 +74,7 @@ export function StoreTable({
             ))}
             {participants.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-6 text-center text-ink-faint">
+                <td colSpan={5} className="px-5 py-6 text-center text-ink-faint">
                   No participants yet.
                 </td>
               </tr>
