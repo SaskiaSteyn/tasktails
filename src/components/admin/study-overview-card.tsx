@@ -1,7 +1,6 @@
 import type { StudyAggregate } from "@/lib/admin";
 
 import { CompareBar } from "./compare-bar";
-import { formatPercent } from "./format";
 
 /** One tile in the KPI row — same tile styling for every stat, only the value differs. */
 function StatTile({ label, value }: { label: string; value: string }) {
@@ -19,10 +18,13 @@ function StatTile({ label, value }: { label: string; value: string }) {
  * ADM-05 — the study overview card: KPI row, then a Group A vs Group B bar
  * per metric there's real data for, then ADM-11's AI insight callout.
  *
- * Only two comparison metrics are drawn — avg store visits and conversion
- * rate — not the design mock's three. The mock's third bar is "perceived
- * trust", and ADM-12 documents that no instrument for it exists yet; drawing
- * an empty or fabricated bar would be worse than one fewer row.
+ * Only one comparison metric is drawn — avg store visits — not the design
+ * mock's three. The mock's second bar is "items viewed → purchased
+ * conversion", removed (issue #178's follow-up) because there's no "view an
+ * item" UI yet to generate `ITEM_VIEWED` events, so it only ever read 0%;
+ * its third bar is "perceived trust", and ADM-12 documents that no
+ * instrument for it exists yet. Drawing an empty or fabricated bar would be
+ * worse than one fewer row.
  *
  * `insight` is computed by the server page (`studyInsight()`, `@/lib/admin`)
  * and passed down as a plain string, not called from here: this component
@@ -42,7 +44,6 @@ export function StudyOverviewCard({
   const [groupA, groupB] = aggregate.groups;
 
   const maxStoreVisits = Math.max(groupA.avgStoreVisits, groupB.avgStoreVisits, 1);
-  const maxConversion = Math.max(groupA.avgConversionRate, groupB.avgConversionRate, 0.01);
 
   return (
     <section className="rounded-card-lg border border-[rgb(46_42_38/0.08)] bg-surface shadow-card">
@@ -90,24 +91,6 @@ export function StudyOverviewCard({
                 group="B"
                 value={groupB.avgStoreVisits.toFixed(1)}
                 widthPercent={(groupB.avgStoreVisits / maxStoreVisits) * 100}
-              />
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-2 text-[12px] text-ink-soft">
-              Items viewed → purchased (conversion)
-            </p>
-            <div className="flex flex-col gap-1.5">
-              <CompareBar
-                group="A"
-                value={formatPercent(groupA.avgConversionRate)}
-                widthPercent={(groupA.avgConversionRate / maxConversion) * 100}
-              />
-              <CompareBar
-                group="B"
-                value={formatPercent(groupB.avgConversionRate)}
-                widthPercent={(groupB.avgConversionRate / maxConversion) * 100}
               />
             </div>
           </div>

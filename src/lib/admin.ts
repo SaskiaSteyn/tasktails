@@ -199,31 +199,36 @@ export async function studyAggregate(): Promise<StudyAggregate> {
 /**
  * ADM-11 — the overview's violet "AI insight" callout.
  *
- * Templated from the real deltas the study is actually measuring, not an LLM
+ * Templated from the real delta the study is actually measuring, not an LLM
  * call: nothing in this codebase talks to a model API today, and a one-
- * sentence summary of two numbers doesn't need one. Returns null rather
- * than a divide-by-zero sentence when Group A has no store visits or
- * conversions yet to compare against — an empty study has nothing to say
- * yet, and a fabricated percentage would be worse than no callout at all.
+ * sentence summary of one number doesn't need one. Returns null rather than
+ * a divide-by-zero sentence when Group A has no store visits yet to compare
+ * against — an empty study has nothing to say yet, and a fabricated
+ * percentage would be worse than no callout at all.
+ *
+ * Conversion-rate deliberately dropped from this sentence (issue #178's
+ * follow-up): `avgConversionRate` is items-viewed-derived, and with no
+ * "view an item" UI yet to generate `ITEM_VIEWED` events it never leaves 0
+ * — the old two-metric sentence's gate (`avgConversionRate === 0`) meant
+ * this callout had silently never fired at all, even once store visits
+ * started tracking for real. Re-add the clause once ITEM_VIEWED has a real
+ * source.
  *
  * Never mentions trust: ADM-12 documents that no instrument for it exists,
  * so a sentence that implied one would be measuring something invented.
  */
 export function studyInsight(aggregate: StudyAggregate): string | null {
   const [groupA, groupB] = aggregate.groups;
-  if (groupA.avgStoreVisits === 0 || groupA.avgConversionRate === 0) return null;
+  if (groupA.avgStoreVisits === 0) return null;
 
   const percentDelta = (from: number, to: number) => Math.round(((to - from) / from) * 100);
   const signed = (value: number) => (value >= 0 ? `+${value}` : `${value}`);
 
   const visitsDelta = signed(percentDelta(groupA.avgStoreVisits, groupB.avgStoreVisits));
-  const conversionDelta = signed(
-    percentDelta(groupA.avgConversionRate, groupB.avgConversionRate),
-  );
 
   return (
-    `Group B shows ${visitsDelta}% store visits and ${conversionDelta}% conversion versus ` +
-    `Group A — consistent with the study hypothesis that false urgency increases engagement. ` +
-    `Perceived-trust data isn't collected yet (ADM-12), so this can't yet speak to the fairness cost.`
+    `Group B shows ${visitsDelta}% store visits versus Group A — consistent with the study ` +
+    `hypothesis that false urgency increases engagement. Perceived-trust data isn't collected ` +
+    `yet (ADM-12), so this can't yet speak to the fairness cost.`
   );
 }
