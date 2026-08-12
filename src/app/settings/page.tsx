@@ -43,7 +43,11 @@ export default async function SettingsPage() {
       className="px-4 pt-[10px] pb-[14px]"
       nav={<BottomNav />}
       header={
-        <header className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] p-3">
+        <header
+          // 8px top / 18px sides / 14px bottom per the mock's back-chevron
+          // header frames, safe-area-aware on top same as `AppHeader`.
+          className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] py-[14px]"
+        >
           <Link
             href="/profile"
             aria-label="Back to profile"

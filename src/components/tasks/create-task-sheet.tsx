@@ -69,7 +69,7 @@ export function CreateTaskSheet({
     if (value) setSubtasks((current) => [...current, value]);
     setSubtaskDraft("");
     // Stays open — adding several subtasks in a row is the point, same as
-    // SubtaskList's "+ Add" would otherwise take a fresh click each time.
+    // SubtaskList's "Add" would otherwise take a fresh click each time.
     subtaskInputRef.current?.focus();
   }
 
@@ -226,7 +226,12 @@ export function CreateTaskSheet({
               aria-invalid={titleError ? true : undefined}
               aria-describedby={titleError ? titleErrorId : undefined}
               className={cn(
-                "mt-[6px] h-[46px] w-full rounded-input border px-[13px] text-[14px] text-ink outline-none",
+                // 16px, not the design's 14px: below 16px, iOS Safari/Chrome
+                // zooms the whole page in on focus (no way to opt out short
+                // of disabling pinch-zoom entirely, which NFR-GEN-1's
+                // accessibility bar rules out) — same fix as every other text
+                // input in this pass.
+                "mt-[6px] h-[46px] w-full rounded-input border px-[13px] text-[16px] text-ink outline-none",
                 "transition-[background-color,border-color,box-shadow] duration-120",
                 titleError
                   ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"
@@ -285,7 +290,7 @@ export function CreateTaskSheet({
                   onClick={() => setAddingSubtask(true)}
                   className="text-[12px] font-bold text-terracotta hover:text-terracotta-hover"
                 >
-                  + Add
+                  Add
                 </button>
               ) : null}
             </div>
@@ -337,7 +342,8 @@ export function CreateTaskSheet({
                   }}
                   placeholder="e.g. Draft the outline"
                   className={cn(
-                    "h-[40px] min-w-0 flex-1 rounded-input border border-border-input bg-input px-3 text-[13px] text-ink outline-none",
+                    // 16px — see the title field's comment above.
+                    "h-[40px] min-w-0 flex-1 rounded-input border border-border-input bg-input px-3 text-[16px] text-ink outline-none",
                     "transition-[background-color,border-color,box-shadow] duration-120",
                     "focus:border-terracotta focus:bg-surface",
                     "focus:shadow-[0_0_0_1px_var(--color-terracotta),0_0_0_5px_rgb(226_122_84/0.16)]",

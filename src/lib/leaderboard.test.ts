@@ -17,6 +17,7 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 const row = (userId: string, score: number, name = userId) => ({
   userId,
   name,
+  avatarUrl: null,
   score,
 });
 

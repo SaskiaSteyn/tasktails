@@ -46,7 +46,7 @@ export function AchievementsList({
       <div
         role="radiogroup"
         aria-label="Category"
-        className="mb-[11px] flex flex-none gap-[7px] overflow-x-auto"
+        className="no-scrollbar mb-[11px] flex flex-none gap-[7px] overflow-x-auto"
       >
         {TABS.map((entry) => {
           const active = entry.value === tab;

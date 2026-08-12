@@ -1,6 +1,5 @@
 "use client";
 
-import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -93,7 +92,6 @@ export function UsernameCard({ username }: { username: string }) {
             setEditing(true);
           }}
         >
-          <Pencil size={15} strokeWidth={2.2} aria-hidden />
           Edit
         </Button>
       </div>

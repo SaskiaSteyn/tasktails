@@ -135,7 +135,7 @@ export function UsernameField({
               ),
         )}
       >
-        <span aria-hidden className="text-[14px] text-ink-faint">
+        <span aria-hidden className="text-[16px] text-ink-faint">
           @
         </span>
         <input
@@ -152,7 +152,10 @@ export function UsernameField({
           aria-invalid={invalid || undefined}
           aria-describedby="username-availability"
           onChange={(event) => onChange(event.target.value)}
-          className="w-full bg-transparent text-[14px] font-bold text-ink outline-none placeholder:font-normal"
+          // 16px, not the design's 14px — below 16px, iOS Safari/Chrome
+          // zooms the whole page in on focus. The "@" above matches it so
+          // the two don't sit at mismatched sizes on the same line.
+          className="w-full bg-transparent text-[16px] font-bold text-ink outline-none placeholder:font-normal"
         />
       </div>
 

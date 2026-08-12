@@ -18,7 +18,6 @@ type Confirmation = {
   spent: number;
   purchased: PurchasedLine[];
   coins: number;
-  adoptedCount: number;
 };
 
 /**
@@ -46,9 +45,8 @@ type Confirmation = {
  * part of the same screen family rather than a one-off. Shows what was
  * bought, coins spent, and the new balance — the three things STOR-07's own
  * wording ("confirms purchase, deducts coins, shows confirmation") asks for
- * — plus a link into the zoo when an animal was among the purchases, since
- * "go see it" is the obvious next step and `pets.length` is already on the
- * response.
+ * — plus a link into the zoo, since food, accessories and decorations are
+ * all spent there too, not just a newly adopted animal.
  *
  * A checkout is one of PRO-09's three achievement-unlock trigger points; any
  * newly unlocked badge goes to `useAchievementUnlock().celebrate()`, same
@@ -92,7 +90,6 @@ export function CartPanel({
         spent: body.spent,
         purchased: body.purchased,
         coins: body.economy.coins,
-        adoptedCount: body.pets.length,
       });
       setCart([]);
       celebrateAchievements(body.achievementsUnlocked);
@@ -150,11 +147,9 @@ export function CartPanel({
           {confirmation.spent.toLocaleString("en-US")} spent · {confirmation.coins.toLocaleString("en-US")} left
         </p>
         <div className="mt-[18px] flex w-full flex-col gap-[10px]">
-          {confirmation.adoptedCount > 0 ? (
-            <Link href="/zoo" className={buttonClasses({ size: "inline" })}>
-              Go see your zoo
-            </Link>
-          ) : null}
+          <Link href="/zoo" className={buttonClasses({ size: "inline" })}>
+            Go see your zoo
+          </Link>
           <Link
             href="/store"
             className={buttonClasses({

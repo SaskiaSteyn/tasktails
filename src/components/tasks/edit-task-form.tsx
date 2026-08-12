@@ -18,7 +18,7 @@ import type { TaskWithSubtasks } from "@/lib/tasks";
  * complexity, subtask list (SUB-01), and a footer with delete + save.
  *
  * The subtask list is read-only here — adding one (SUB-02/04) and completing
- * one (SUB-03/05) are separate, unbuilt tickets, so "+ Add" is an inert label
+ * one (SUB-03/05) are separate, unbuilt tickets, so "Add" is an inert label
  * and each row's checkbox just reflects `completedAt`, the same stub pattern
  * TASK-02's create sheet used ahead of TASK-08.
  *
@@ -133,7 +133,10 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
             aria-invalid={titleError ? true : undefined}
             aria-describedby={titleError ? titleErrorId : undefined}
             className={cn(
-              "mt-[6px] h-[46px] w-full rounded-input border px-[13px] text-[14px] font-bold text-ink outline-none",
+              // 16px, not the design's 14px — below that, iOS Safari/Chrome
+              // zooms the whole page in on focus. Same fix as
+              // `CreateTaskSheet`'s title field.
+              "mt-[6px] h-[46px] w-full rounded-input border px-[13px] text-[16px] font-bold text-ink outline-none",
               "transition-[background-color,border-color,box-shadow] duration-120",
               titleError
                 ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"
