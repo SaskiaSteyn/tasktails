@@ -49,6 +49,11 @@ export type LeaderboardEntry = {
   userId: string;
   /** What every participant sees for this row — never an email. See `nameFor`. */
   name: string;
+  /** PRO-02/03's uploaded photo — null for the (majority) of accounts without
+   * one, which `MonogramAvatar` already renders as initials instead. Unlike
+   * `email`, showing this to other participants is opt-in: nobody has one
+   * unless they chose to upload it. */
+  avatarUrl: string | null;
   score: number;
   /** 1-based, competition-ranked: equal scores share a rank and the next skips. */
   rank: number;
@@ -104,7 +109,7 @@ export function nameFor(
  * between reads, while still showing the same rank number.
  */
 export function rankParticipants(
-  rows: { userId: string; name: string; score: number }[],
+  rows: { userId: string; name: string; avatarUrl: string | null; score: number }[],
   youId: string | null,
 ): LeaderboardEntry[] {
   // Sort is stable in every runtime this targets (ES2019+), so equal scores keep
@@ -124,6 +129,7 @@ export function rankParticipants(
     return {
       userId: row.userId,
       name: row.name,
+      avatarUrl: row.avatarUrl,
       score: row.score,
       rank,
       isYou: row.userId === youId,
@@ -152,6 +158,7 @@ export async function allTimeLeaderboard(
   const rows = participants.map((participant, index) => ({
     userId: participant.id,
     name: nameFor(participant, index + 1),
+    avatarUrl: participant.avatarUrl,
     score: earnings.get(participant.id) ?? 0,
   }));
 

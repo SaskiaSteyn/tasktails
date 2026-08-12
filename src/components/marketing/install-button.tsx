@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Share } from "lucide-react";
+import { Share } from "lucide-react";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
 import { Button, buttonClasses } from "@/components/ui/button";
@@ -126,10 +126,9 @@ export function InstallButton() {
           variant: "secondary",
           size: "hero",
           fullWidth: false,
-          className: "gap-[9px] px-5 text-[16px] sm:px-[26px] sm:text-[17px]",
+          className: "px-5 text-[16px] sm:px-[26px] sm:text-[17px]",
         })}
       >
-        <Download size={15} strokeWidth={2.4} aria-hidden />
         Install app
       </button>
 

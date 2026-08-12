@@ -65,7 +65,12 @@ export function TextField({
             // 44px per the style guide's INPUTS card and the Login frame; the
             // Register frame's 42px is the outlier, and a shared primitive
             // follows the component spec.
-            "h-[44px] w-full rounded-input border px-[14px] text-[14px] text-ink",
+            //
+            // Text is 16px, not the design's 14px — below 16px, iOS
+            // Safari/Chrome zooms the whole page in on focus. Covers every
+            // caller of this primitive at once (login, register, password
+            // reveal).
+            "h-[44px] w-full rounded-input border px-[14px] text-[16px] text-ink",
             "outline-none transition-[background-color,border-color,box-shadow] duration-120",
             trailing ? "pr-[42px]" : null,
             error

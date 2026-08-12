@@ -60,7 +60,11 @@ export default async function SanctuaryPage({
   return (
     <AppShell
       header={
-        <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] pt-[14px] pb-[14px]">
+        <header
+          // 8px top / 18px sides / 14px bottom, safe-area-aware — see the
+          // note on this same header shape in settings/page.tsx.
+          className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] py-[14px]"
+        >
           <Link
             href="/zoo"
             aria-label="Back to your zoo"

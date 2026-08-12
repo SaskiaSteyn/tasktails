@@ -123,7 +123,9 @@ export function StoreBrowser({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search items…"
-          className="w-full bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-disabled py-[5px]"
+          // 16px, not the design's 13px — below 16px, iOS Safari/Chrome
+          // zooms the whole page in on focus.
+          className="w-full bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-disabled py-[5px]"
         />
       </label>
 
@@ -141,7 +143,7 @@ export function StoreBrowser({
         // `main` is short on vertical space, which is exactly the 0-height
         // collapse reported live. Nothing else on the page has this overflow
         // + flex-child combination, which is why only this row broke.
-        className="mb-[11px] flex flex-none gap-[6px] overflow-x-auto"
+        className="no-scrollbar mb-[11px] flex flex-none gap-[6px] overflow-x-auto"
       >
         {CATEGORY_CHIPS.map((chip) => {
           const active = chip.value === category;

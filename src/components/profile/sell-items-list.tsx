@@ -1,9 +1,10 @@
 "use client";
 
-import { PackageOpen } from "lucide-react";
+import { Coins, PackageOpen } from "lucide-react";
 import { useState } from "react";
 
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
+import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 import type { SellableItem } from "@/lib/sell";
 
@@ -25,11 +26,22 @@ import type { SellableItem } from "@/lib/sell";
  * prop as-is — the desaturated fill + `Lock` glyph it already draws for
  * `StoreItemCard` (STOR-04) is pixel-for-pixel the same treatment the mock
  * draws here, so no new variant was needed.
+ *
+ * **Updated at the user's request**: a tap on "Sell" no longer fires
+ * `GACHA-07` straight away — it opens the shared `Modal` (the same
+ * destructive-confirm dialog `EditTaskForm`'s "Delete task" and
+ * `LogoutSubmit` already use) naming the item and its payout, and only
+ * `onConfirm` calls the real endpoint. Selling is exactly the kind of
+ * one-way loss that dialog exists for (the footer copy below already says
+ * so — "for good"), and unlike those two callers this list can have the
+ * confirm target change per row, so `pendingSell` holds the whole item
+ * (name/sellValue for the copy) rather than a bare boolean.
  */
 export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }) {
   const [items, setItems] = useState(initialItems);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
+  const [pendingSell, setPendingSell] = useState<SellableItem | null>(null);
 
   async function handleSell(id: string) {
     if (pendingId) return;
@@ -47,6 +59,7 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
       setErrorId(id);
     } finally {
       setPendingId(null);
+      setPendingSell(null);
     }
   }
 
@@ -106,7 +119,7 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
 
               <button
                 type="button"
-                onClick={() => handleSell(item.id)}
+                onClick={() => setPendingSell(item)}
                 disabled={pendingId === item.id}
                 className={cn(
                   "flex flex-none items-center gap-1 rounded-[10px] bg-sage px-3 py-[7px]",
@@ -125,6 +138,23 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
         Everything you own can be sold — including animals you haven&rsquo;t unlocked yet. Selling
         removes the item from your account for good.
       </p>
+
+      <Modal
+        open={pendingSell !== null}
+        icon={Coins}
+        iconTint="destructive"
+        title={pendingSell ? `Sell ${pendingSell.name}?` : ""}
+        body={
+          pendingSell
+            ? `You'll get ${pendingSell.sellValue.toLocaleString("en-US")} coins. This can't be undone — it's gone from your account for good.`
+            : ""
+        }
+        confirmLabel={pendingId ? "Selling…" : "Sell"}
+        confirmVariant="destructive"
+        cancelLabel="Keep it"
+        onConfirm={() => pendingSell && handleSell(pendingSell.id)}
+        onCancel={() => setPendingSell(null)}
+      />
     </>
   );
 }

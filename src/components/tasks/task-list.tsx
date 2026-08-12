@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, PartyPopper } from "lucide-react";
+import { Check, ChevronDown, PartyPopper } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -14,6 +14,7 @@ import {
 } from "@/components/economy/level-up-provider";
 import { EmptyTasksState } from "@/components/tasks/empty-tasks-state";
 import { TaskRow } from "@/components/tasks/task-row";
+import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 import type { OnboardingStatus } from "@/lib/onboarding";
 import { taskTier } from "@/lib/task-tiers";
@@ -48,6 +49,16 @@ type CompleteSubtaskResponse = {
  * `router.refresh()` on success re-runs `tasksForUser()` *and*
  * `currentEconomy()` for the header, so a completion updates the coin/XP/
  * streak the participant sees without a second round trip of its own.
+ *
+ * **Confirm-before-complete (2026-08-12), at the user's request**: since
+ * there's no un-complete, an accidental tap used to be permanent with no
+ * recourse. A tap on either kind of row's checkbox no longer fires the
+ * request directly — it opens the shared `Modal` (same pattern as
+ * `EditTaskForm`'s "Delete task") naming the row, and only `onConfirm` calls
+ * `handleCompleteTask`/`handleCompleteSubtask`. `pendingComplete` carries
+ * enough to route to the right handler and word the dialog (`kind` picks the
+ * request; `taskId` is only present for a subtask, whose endpoint needs its
+ * parent's id).
  *
  * The reward pop shows the *actual* granted amount from the response, not
  * the tier's base figure `TaskRow` shows on the row itself — efficiency,
@@ -149,6 +160,11 @@ export function TaskList({
   } | null>(null);
   const [error, setError] = useState<string>();
   const [showCompleted, setShowCompleted] = useState(false);
+  const [pendingComplete, setPendingComplete] = useState<
+    | { kind: "task"; id: string; title: string }
+    | { kind: "subtask"; taskId: string; id: string; title: string }
+    | null
+  >(null);
 
   useEffect(() => {
     if (!celebration) return;
@@ -285,7 +301,9 @@ export function TaskList({
               ? { coins: celebration.coins, xp: celebration.xp }
               : null
           }
-          onComplete={() => handleCompleteTask(task.id)}
+          onComplete={() =>
+            setPendingComplete({ kind: "task", id: task.id, title: task.title })
+          }
         />
 
         {task.subtasks.length > 0 ? (
@@ -303,7 +321,14 @@ export function TaskList({
                       ? { coins: celebration.coins, xp: celebration.xp }
                       : null
                   }
-                  onComplete={() => handleCompleteSubtask(task.id, subtask.id)}
+                  onComplete={() =>
+                    setPendingComplete({
+                      kind: "subtask",
+                      taskId: task.id,
+                      id: subtask.id,
+                      title: subtask.title,
+                    })
+                  }
                   indent
                 />
               </li>
@@ -381,6 +406,27 @@ export function TaskList({
           {error}
         </p>
       ) : null}
+
+      <Modal
+        open={pendingComplete !== null}
+        icon={Check}
+        iconTint="terracotta"
+        title={pendingComplete ? `Complete "${pendingComplete.title}"?` : ""}
+        body="You'll earn the coins and XP right away. There's no way to undo it afterward, so make sure this one's really done."
+        confirmLabel="Complete"
+        confirmVariant="primary"
+        cancelLabel="Not yet"
+        onConfirm={() => {
+          if (!pendingComplete) return;
+          if (pendingComplete.kind === "task") {
+            handleCompleteTask(pendingComplete.id);
+          } else {
+            handleCompleteSubtask(pendingComplete.taskId, pendingComplete.id);
+          }
+          setPendingComplete(null);
+        }}
+        onCancel={() => setPendingComplete(null)}
+      />
     </div>
   );
 }

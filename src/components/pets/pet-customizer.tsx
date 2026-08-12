@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, Pencil } from "lucide-react";
+import { Check, ChevronLeft, Pencil, Sparkles } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -15,7 +15,7 @@ import type { LevelUpEventLike } from "@/components/economy/level-up-provider";
 import { LevelUpScreen } from "@/components/economy/level-up-screen";
 import { AppShell } from "@/components/layout/app-shell";
 import { hasAnimalArt } from "@/components/store/item-visual";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 // Type-only: erased at compile time, same reasoning `AnimalCard` documents
 // for `PetWithItem`/`InventoryItemWithStoreItem` — this stays a client
@@ -158,7 +158,11 @@ export function PetCustomizer({
   return (
     <AppShell
       header={
-        <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] pt-[14px] pb-[14px]">
+        <header
+          // 8px top / 18px sides / 14px bottom, safe-area-aware — see the
+          // note on this same header shape in settings/page.tsx.
+          className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] py-[14px]"
+        >
           <Link
             href={`/zoo/${pet.id}`}
             aria-label={`Back to ${name}'s sanctuary`}
@@ -275,9 +279,21 @@ export function PetCustomizer({
         <p className="text-overline mb-[10px] flex-none text-ink-faint">Your accessories</p>
 
         {accessories.length === 0 ? (
-          <p className="text-[13px] text-ink-soft">
-            You don&rsquo;t have any accessories yet. Buy some in the store first.
-          </p>
+          // Nothing to equip, so this replaces the grid entirely rather than
+          // showing an empty one — same prompt-and-redirect shape as
+          // `FeedSheet`'s empty-food state.
+          <div className="flex flex-col items-center px-1 pt-2 pb-1 text-center">
+            <span className="mb-4 flex size-16 flex-none items-center justify-center rounded-card-lg bg-violet-tint text-violet-text">
+              <Sparkles size={28} strokeWidth={2} aria-hidden />
+            </span>
+            <p className="font-display text-[20px] font-semibold">No accessories</p>
+            <p className="mt-2 mb-5 text-[13px] leading-[1.5] text-ink-soft">
+              {name} has nothing to wear yet — grab an accessory from the store.
+            </p>
+            <Link href="/store" className={buttonClasses()}>
+              Go to store
+            </Link>
+          </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div role="radiogroup" aria-label="Accessories" className="grid grid-cols-3 gap-[9px] pb-2">

@@ -82,7 +82,12 @@ function PodiumPlace({ place }: { place: Place }) {
         />
       ) : null}
 
-      <MonogramAvatar name={entry.name} size={avatar} tone={tone} />
+      <MonogramAvatar
+        name={entry.name}
+        avatarUrl={entry.avatarUrl}
+        size={avatar}
+        tone={tone}
+      />
 
       <p
         className={cn(

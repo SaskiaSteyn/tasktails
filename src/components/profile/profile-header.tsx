@@ -25,7 +25,7 @@ export function ProfileHeader({
 }) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-[13px]">
-      <AvatarUpload avatarUrl={avatarUrl} />
+      <AvatarUpload name={name} avatarUrl={avatarUrl} />
 
       <div className="min-w-0 flex-1">
         <h1 className="truncate font-display text-[19px] leading-[1.1] font-semibold">

@@ -37,7 +37,11 @@ export default async function EditTaskPage({
   return (
     <AppShell
       header={
-        <header className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] p-3">
+        <header
+          // 8px top / 18px sides / 14px bottom, safe-area-aware — see the
+          // note on this same header shape in settings/page.tsx.
+          className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] py-[14px]"
+        >
           <Link
             href="/tasks"
             aria-label="Back to tasks"
