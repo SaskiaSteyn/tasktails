@@ -16,7 +16,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
 
 /**
  * ADM-05 — the study overview card: KPI row, then a Group A vs Group B bar
- * per metric there's real data for, then ADM-11's AI insight callout.
+ * per metric there's real data for.
  *
  * Only one comparison metric is drawn — avg store visits — not the design
  * mock's three. The mock's second bar is "items viewed → purchased
@@ -26,21 +26,10 @@ function StatTile({ label, value }: { label: string; value: string }) {
  * instrument for it exists yet. Drawing an empty or fabricated bar would be
  * worse than one fewer row.
  *
- * `insight` is computed by the server page (`studyInsight()`, `@/lib/admin`)
- * and passed down as a plain string, not called from here: this component
- * is rendered inside `AdminDashboard`'s `"use client"` tree, and `@/lib/
- * admin`'s runtime module drags in the full Prisma client — importing it as
- * a value here (rather than the type-only import above) would bundle that
- * into the browser and fail to compile (confirmed live — see this ticket's
- * status note).
+ * No ADM-11 "AI insight" callout — removed by request. `studyInsight()`
+ * went with it; nothing else called it.
  */
-export function StudyOverviewCard({
-  aggregate,
-  insight,
-}: {
-  aggregate: StudyAggregate;
-  insight: string | null;
-}) {
+export function StudyOverviewCard({ aggregate }: { aggregate: StudyAggregate }) {
   const [groupA, groupB] = aggregate.groups;
 
   const maxStoreVisits = Math.max(groupA.avgStoreVisits, groupB.avgStoreVisits, 1);
@@ -94,17 +83,6 @@ export function StudyOverviewCard({
               />
             </div>
           </div>
-        </div>
-
-        <div className="mt-5 rounded-[12px] bg-violet-tint px-[14px] py-3 text-[12px] text-violet-text">
-          {insight ? (
-            <p>
-              <b className="font-extrabold text-violet">AI insight: </b>
-              {insight}
-            </p>
-          ) : (
-            <p>Not enough data in both groups yet to compare Group A and Group B.</p>
-          )}
         </div>
       </div>
     </section>
