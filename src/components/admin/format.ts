@@ -13,7 +13,3 @@ export function formatShortDate(date: Date): string {
   return new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short" }).format(date);
 }
 
-/** 0.312 → "31%" for a conversion-style rate. */
-export function formatPercent(rate: number): string {
-  return `${Math.round(rate * 100)}%`;
-}

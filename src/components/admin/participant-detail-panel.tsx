@@ -119,7 +119,7 @@ export function ParticipantDetailPanel({ participantId }: { participantId: strin
   }
 
   const initials = detail.displayName.slice(0, 3).toUpperCase();
-  const maxFunnel = Math.max(detail.itemsViewed, 1);
+  const maxFunnel = Math.max(detail.itemsAddedToCart, detail.itemsPurchased, 1);
 
   return (
     <section className="rounded-card-lg border border-[rgb(46_42_38/0.08)] bg-surface shadow-card">
@@ -151,12 +151,6 @@ export function ParticipantDetailPanel({ participantId }: { participantId: strin
           STORE FUNNEL
         </p>
         <div className="flex flex-col gap-2">
-          <FunnelRow
-            label="Viewed"
-            value={detail.itemsViewed}
-            max={maxFunnel}
-            fill="bg-ink-disabled"
-          />
           <FunnelRow
             label="Added cart"
             value={detail.itemsAddedToCart}
