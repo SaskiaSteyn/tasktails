@@ -1,12 +1,14 @@
 "use client";
 
+import { Utensils } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { useLevelUp } from "@/components/economy/level-up-provider";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 // Type-only: erased at compile time, same reasoning `AnimalCard` documents for
 // `PetWithItem` — this stays a client component without pulling
@@ -139,83 +141,107 @@ export function FeedSheet({
         </button>
 
         <div className="overflow-y-auto px-5 pt-1 pb-5">
-          <h2 id={headingId} className="mb-4 font-display text-[20px] font-semibold">
-            Feed {petName}
-          </h2>
-
           {foodItems.length === 0 ? (
-            <p className="mb-4 text-[13px] text-ink-soft">
-              You don&rsquo;t have any food yet. Buy some in the store first.
-            </p>
-          ) : (
-            <div role="radiogroup" aria-label="Food" className="mb-4 flex flex-col gap-[9px]">
-              {foodItems.map((item) => {
-                const isSelected = item.id === selectedId;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    onClick={() => {
-                      setSelectedId(item.id);
-                      setNotice(undefined);
-                    }}
-                    className={cn(
-                      "flex items-center gap-[11px] rounded-[14px] border px-[10px] py-[10px] text-left transition-colors duration-120",
-                      isSelected
-                        ? "border-terracotta bg-terracotta-tint"
-                        : "border-border-track bg-warm hover:border-checkbox",
-                    )}
-                  >
-                    <span className="flex size-11 flex-none items-center justify-center rounded-[10px] bg-amber-tint text-amber-text">
-                      <DynamicIcon
-                        // `imageUrl` is a free-form DB string (SVG paths for
-                        // animals, icon names for everything else per
-                        // `seed.ts`) — cast rather than widen `IconName`,
-                        // since the seed data is the only source of truth for
-                        // what's actually in it.
-                        name={item.storeItem.imageUrl as IconName}
-                        size={20}
-                        strokeWidth={2.2}
-                        aria-hidden
-                      />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-extrabold">
-                        {item.storeItem.name}
-                      </span>
-                      <span className="text-[11px] text-ink-soft">×{item.quantity} owned</span>
-                    </span>
-                  </button>
-                );
-              })}
+            // There's nothing to pick, so this replaces the picker entirely
+            // rather than showing a "Feed" sheet with nothing feedable in it —
+            // same prompt-and-redirect shape as `PetCustomizer`'s empty
+            // accessories state below.
+            <div className="flex flex-col items-center px-1 pt-2 pb-1 text-center">
+              <span className="mb-4 flex size-16 flex-none items-center justify-center rounded-card-lg bg-terracotta-tint text-terracotta">
+                <Utensils size={28} strokeWidth={2} aria-hidden />
+              </span>
+              <h2 id={headingId} className="font-display text-[20px] font-semibold">
+                Out of food
+              </h2>
+              <p className="mt-2 mb-5 text-[13px] leading-[1.5] text-ink-soft">
+                {petName}&rsquo;s hungry — grab a snack from the store to feed them.
+              </p>
+              <Link href="/store" className={buttonClasses()}>
+                Go to store
+              </Link>
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="mt-2 rounded-chip px-3 py-2 text-[13px] font-bold text-ink-soft transition-colors duration-120 hover:text-ink"
+              >
+                Not now
+              </button>
             </div>
-          )}
+          ) : (
+            <>
+              <h2 id={headingId} className="mb-4 font-display text-[20px] font-semibold">
+                Feed {petName}
+              </h2>
 
-          <div className="flex flex-col items-center gap-2">
-            <Button
-              type="button"
-              variant="positive"
-              size="full"
-              disabled={!selected || feeding}
-              onClick={handleFeed}
-            >
-              Feed
-            </Button>
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="rounded-chip px-3 py-1 text-[13px] font-bold text-ink-soft transition-colors duration-120 hover:text-ink"
-            >
-              Cancel
-            </button>
-          </div>
-          {notice ? (
-            <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
-              {notice}
-            </p>
-          ) : null}
+              <div role="radiogroup" aria-label="Food" className="mb-4 flex flex-col gap-[9px]">
+                {foodItems.map((item) => {
+                  const isSelected = item.id === selectedId;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      onClick={() => {
+                        setSelectedId(item.id);
+                        setNotice(undefined);
+                      }}
+                      className={cn(
+                        "flex items-center gap-[11px] rounded-[14px] border px-[10px] py-[10px] text-left transition-colors duration-120",
+                        isSelected
+                          ? "border-terracotta bg-terracotta-tint"
+                          : "border-border-track bg-warm hover:border-checkbox",
+                      )}
+                    >
+                      <span className="flex size-11 flex-none items-center justify-center rounded-[10px] bg-amber-tint text-amber-text">
+                        <DynamicIcon
+                          // `imageUrl` is a free-form DB string (SVG paths for
+                          // animals, icon names for everything else per
+                          // `seed.ts`) — cast rather than widen `IconName`,
+                          // since the seed data is the only source of truth for
+                          // what's actually in it.
+                          name={item.storeItem.imageUrl as IconName}
+                          size={20}
+                          strokeWidth={2.2}
+                          aria-hidden
+                        />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-extrabold">
+                          {item.storeItem.name}
+                        </span>
+                        <span className="text-[11px] text-ink-soft">×{item.quantity} owned</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-col items-center gap-2">
+                <Button
+                  type="button"
+                  variant="positive"
+                  size="full"
+                  disabled={!selected || feeding}
+                  onClick={handleFeed}
+                >
+                  Feed
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => onOpenChange(false)}
+                  className="rounded-chip px-3 py-1 text-[13px] font-bold text-ink-soft transition-colors duration-120 hover:text-ink"
+                >
+                  Cancel
+                </button>
+              </div>
+              {notice ? (
+                <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
+                  {notice}
+                </p>
+              ) : null}
+            </>
+          )}
         </div>
       </div>
     </dialog>

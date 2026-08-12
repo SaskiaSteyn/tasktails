@@ -383,6 +383,18 @@
   color: var(--color-ink-soft);
 }
 
+/* Store/Achievements category-chip rows scroll sideways (`overflow-x-auto`)
+   but read as a single pill-shaped control, not a document pane — a visible
+   scrollbar under them looks like stray chrome. Content still scrolls with
+   touch/trackpad/arrow keys; this only hides the bar itself. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* TASK-05's reward pop, above a just-completed task row's checkbox. Centering
    is baked into the keyframe itself (not a Tailwind translate utility on the
    element) because a CSS animation's `transform` replaces rather than

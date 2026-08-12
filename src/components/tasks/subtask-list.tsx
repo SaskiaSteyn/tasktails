@@ -23,13 +23,13 @@ type CompleteResponse = {
  * SUB-01/02/03/04/05 — subtask list on the task edit screen. Matches the
  * "Task detail / edit" frame's SUBTASKS block: `bg-warm` rows, 18px
  * completion circle, strikethrough title once done, coin share on the
- * right, "+ Add" above.
+ * right, "Add" above.
  *
  * The list has no fixed height and simply grows with `subtasks.length`,
  * which is what the ticket's "expandable" means here — the mock has no
  * accordion/collapse affordance for this block.
  *
- * "+ Add" (SUB-02) opens an inline title input, matching the app's input
+ * "Add" (SUB-02) opens an inline title input, matching the app's input
  * styling, and `POST`s SUB-04's `/api/tasks/[id]/subtasks` for real (wired
  * the same day that ticket shipped — same convention as TASK-02→TASK-08).
  * `router.refresh()` on success re-runs `taskForUser()` on the page, which
@@ -182,7 +182,7 @@ export function SubtaskList({
             onClick={openAdd}
             className="text-[11px] font-bold text-terracotta hover:text-terracotta-hover"
           >
-            + Add
+            Add
           </button>
         )}
       </div>
@@ -275,7 +275,9 @@ export function SubtaskList({
               aria-invalid={titleError ? true : undefined}
               aria-describedby={titleError ? errorId : undefined}
               className={cn(
-                "h-[38px] w-full rounded-input border px-[11px] text-[12.5px] font-semibold text-ink outline-none",
+                // 16px, not the design's 12.5px — below that, iOS
+                // Safari/Chrome zooms the whole page in on focus.
+                "h-[38px] w-full rounded-input border px-[11px] text-[16px] font-semibold text-ink outline-none",
                 "transition-[background-color,border-color,box-shadow] duration-120",
                 titleError
                   ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"

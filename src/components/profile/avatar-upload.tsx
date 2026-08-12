@@ -1,9 +1,9 @@
 "use client";
 
-import { ImagePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
+import { MonogramAvatar } from "@/components/ui/monogram-avatar";
 import { cn } from "@/lib/cn";
 
 /**
@@ -12,12 +12,25 @@ import { cn } from "@/lib/cn";
  * device's file picker; there's no separate edit mode to enter first, since
  * the design draws only the one state per avatar.
  *
+ * Empty state is `MonogramAvatar` (LEAD-07's letter-avatar primitive, until
+ * now only used on the leaderboard) rather than the earlier dashed-border
+ * `ImagePlus` placeholder — same "temp picture until you set a real one"
+ * pattern most apps use, at the user's request. Also picks up that
+ * component's own handling of PRO-03's base64 data URLs for free once a
+ * photo *is* set, replacing this file's own plain `<img>`.
+ *
  * `router.refresh()` on success rather than local state: the avatar is read
  * from the `User` row on the server (`ProfileHeader`'s prop), and this way
  * there's exactly one source of truth for it rather than a client copy that
  * could drift.
  */
-export function AvatarUpload({ avatarUrl }: { avatarUrl: string | null }) {
+export function AvatarUpload({
+  name,
+  avatarUrl,
+}: {
+  name: string;
+  avatarUrl: string | null;
+}) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState(false);
@@ -62,21 +75,7 @@ export function AvatarUpload({ avatarUrl }: { avatarUrl: string | null }) {
           pending && "opacity-60",
         )}
       >
-        {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={avatarUrl}
-            alt=""
-            className="size-14 rounded-full object-cover"
-          />
-        ) : (
-          <div
-            aria-hidden
-            className="flex size-14 items-center justify-center rounded-full border-2 border-dashed border-checkbox bg-input text-ink-faint"
-          >
-            <ImagePlus size={20} strokeWidth={2} />
-          </div>
-        )}
+        <MonogramAvatar name={name} avatarUrl={avatarUrl} size={56} />
       </button>
 
       <input

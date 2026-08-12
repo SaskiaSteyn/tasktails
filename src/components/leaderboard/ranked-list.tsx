@@ -60,7 +60,12 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
         <span className="sr-only">Rank {entry.rank}</span>
       </span>
 
-      <MonogramAvatar name={entry.name} size={30} tone={you ? "you" : "neutral"} />
+      <MonogramAvatar
+        name={entry.name}
+        avatarUrl={entry.avatarUrl}
+        size={30}
+        tone={you ? "you" : "neutral"}
+      />
 
       <span
         className={cn(

@@ -31,7 +31,7 @@ export function EmptyTasksState() {
         onClick={() => setCreateOpen(true)}
         className="rounded-input bg-terracotta px-5 py-[10.5px] font-display text-[14px] font-semibold text-white shadow-btn transition-all duration-120 ease-out hover:bg-terracotta-hover"
       >
-        + New task
+        New task
       </button>
 
       <CreateTaskSheet open={createOpen} onOpenChange={setCreateOpen} />
