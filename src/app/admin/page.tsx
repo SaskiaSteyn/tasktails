@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { participantSummaries, requireAdmin, studyAggregate, studyInsight } from "@/lib/admin";
+import { participantSummaries, requireAdmin, studyAggregate } from "@/lib/admin";
 
 export const metadata: Metadata = {
   title: "Admin · TaskTails",
@@ -36,7 +36,6 @@ export default async function AdminPage() {
     participantSummaries(),
     studyAggregate(),
   ]);
-  const insight = studyInsight(aggregate);
 
   return (
     // `h-full overflow-y-auto`, not `min-h-full`: the root layout pins `body`
@@ -49,7 +48,6 @@ export default async function AdminPage() {
       <AdminDashboard
         participants={participants}
         aggregate={aggregate}
-        insight={insight}
         logoutSlot={<LogoutButton fullWidth={false} />}
       />
     </div>

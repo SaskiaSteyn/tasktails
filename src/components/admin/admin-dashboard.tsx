@@ -27,12 +27,10 @@ import { StudyOverviewCard } from "./study-overview-card";
 export function AdminDashboard({
   participants,
   aggregate,
-  insight,
   logoutSlot,
 }: {
   participants: ParticipantTelemetrySummary[];
   aggregate: StudyAggregate;
-  insight: string | null;
   logoutSlot: ReactNode;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -53,7 +51,7 @@ export function AdminDashboard({
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_420px] xl:items-start">
         <div className="flex flex-col gap-6">
-          <StudyOverviewCard aggregate={aggregate} insight={insight} />
+          <StudyOverviewCard aggregate={aggregate} />
           <EngagementTable
             participants={participants}
             selectedId={selectedId}
