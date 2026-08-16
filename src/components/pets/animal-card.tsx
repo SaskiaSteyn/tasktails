@@ -10,14 +10,21 @@ import { useRef, useState } from "react";
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { FeedSheet } from "@/components/pets/feed-sheet";
-import { hasAnimalArt } from "@/components/store/item-visual";
+import { hasRealArt } from "@/components/store/item-visual";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { cn } from "@/lib/cn";
 // Type-only: erased at compile time, so this doesn't pull `src/lib/inventory.ts`
 // or `src/lib/pets.ts`'s Prisma imports into the client bundle.
 import type { InventoryItemWithStoreItem } from "@/lib/inventory";
-import { MOOD_COPY, moodFor, petDisplayName, STATE_TEXT_CLASS, stateTone } from "@/lib/pet-mood";
+import {
+  backgroundImageStyle,
+  MOOD_COPY,
+  moodFor,
+  petDisplayName,
+  STATE_TEXT_CLASS,
+  stateTone,
+} from "@/lib/pet-mood";
 import type { PetWithItem } from "@/lib/pets";
 
 /**
@@ -86,10 +93,13 @@ const HEART_ANIMATION_MS = 1200;
 export function AnimalCard({
   pet,
   foodItems,
+  backgroundUrl,
 }: {
   pet: PetWithItem;
   /** The user's owned food (PET-04) — per-user, not per-animal, so `/zoo/[id]` fetches it once and passes the same list to every card. */
   foodItems: InventoryItemWithStoreItem[];
+  /** This pet's equipped decoration art, if any (`equippedBackgroundForPet()` in `src/lib/inventory.ts`) — replaces the stage's flat gradient outright when present. */
+  backgroundUrl?: string;
 }) {
   const name = petDisplayName(pet);
   const mood = moodFor(pet);
@@ -197,7 +207,13 @@ export function AnimalCard({
       ref={cardRef}
       className="relative flex flex-1 min-h-fit flex-col overflow-hidden rounded-card-lg border border-border-track bg-surface"
     >
-      <div className="flex flex-1 flex-col items-center bg-linear-to-b from-[#EAF3EC] to-[#F3ECE1] px-4 pt-4 pb-[14px]">
+      <div
+        className={cn(
+          "flex flex-1 flex-col items-center px-4 pt-4 pb-[14px]",
+          !backgroundUrl && "bg-linear-to-b from-[#EAF3EC] to-[#F3ECE1]",
+        )}
+        style={backgroundImageStyle(backgroundUrl)}
+      >
         <p className="font-display text-[18px] font-semibold">{name}</p>
         <p className={cn("mt-[3px] text-[12px] font-extrabold", className)}>{label}</p>
         {/* `flex-1 min-h-0` is what lets the animal claim whatever vertical
@@ -217,7 +233,7 @@ export function AnimalCard({
           ref={petImageRef}
           className="relative z-10 mt-1.5 min-h-0 w-full max-w-[360px] flex-1"
         >
-          {hasAnimalArt(pet.storeItem.imageUrl) ? (
+          {hasRealArt(pet.storeItem.imageUrl) ? (
             <Image
               src={pet.storeItem.imageUrl}
               alt={name}

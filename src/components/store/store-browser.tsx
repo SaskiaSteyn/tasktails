@@ -79,6 +79,7 @@ export function StoreBrowser({
   level,
   luckyBoxPrice,
   luckyBoxUrgency,
+  initialCategory = "ALL",
 }: {
   items: StoreItemWithLock[];
   flashSaleBanner?: ReactNode;
@@ -87,9 +88,11 @@ export function StoreBrowser({
   level: number;
   luckyBoxPrice: number;
   luckyBoxUrgency?: ReactNode;
+  /** Pre-selects a category chip on load — `StorePage`'s own `?category=` deep link (e.g. `PetCustomizer`'s "Add accessory"/"Add decoration" tile), read once and otherwise behaving exactly like tapping the chip by hand. */
+  initialCategory?: StoreItemCategory | "ALL";
 }) {
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<StoreItemCategory | "ALL">("ALL");
+  const [category, setCategory] = useState<StoreItemCategory | "ALL">(initialCategory);
   const [selectedLocked, setSelectedLocked] = useState<StoreItemWithLock | null>(null);
 
   const visible = useMemo(() => {
