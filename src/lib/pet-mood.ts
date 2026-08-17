@@ -90,8 +90,22 @@ export const STATE_TEXT_CLASS: Record<StateTone, string> = {
   critical: "text-terracotta",
 };
 
-/** The repeat unit's rendered size for `backgroundImageStyle()`'s tiled patterns — see that function's own comment. */
-const BACKGROUND_TILE_SIZE = "44px";
+/**
+ * The repeat unit's rendered size for `backgroundImageStyle()`'s tiled
+ * patterns — see that function's own comment. 44px → 90px → 160px → 500px
+ * (2026-08-16/17, live user feedback each round). The first three rounds
+ * kept undershooting because of what each source SVG actually contains:
+ * opening one directly (e.g. `/backgrounds/hearts.svg`) shows the *whole
+ * motif already repeated many times* inside that one 1080×1080 file, not a
+ * single heart — so shrinking that file down to any size well under 1080px
+ * just packs the same already-dense grid into a smaller box, making it
+ * denser and smaller-looking, not "one big legible tile." 500px is the
+ * point where individual motifs (a single heart, a single bow) finally read
+ * as large, unmistakable shapes rather than fine texture, while a stage
+ * panel (300px+) still shows visible repetition rather than one giant
+ * unrepeated crop.
+ */
+const BACKGROUND_TILE_SIZE = "500px";
 
 /**
  * A pet's equipped decoration (its background), turned into a `style` prop —
@@ -104,8 +118,10 @@ const BACKGROUND_TILE_SIZE = "44px";
  * alongside `className={cn(..., !url && "bg-linear-to-b from-... to-...")}`.
  *
  * Tiled (`repeat`), not stretched (`cover`) — the backgrounds art pack is a
- * square, seamlessly-repeatable pattern (a single motif, not an illustrated
- * scene), at the user's request after the asset pack itself changed shape.
+ * square, seamlessly-repeatable pattern (each file is itself a swatch of a
+ * larger tileable design, not an illustrated scene — see
+ * `BACKGROUND_TILE_SIZE`'s own comment for what that means for sizing), at
+ * the user's request after the asset pack itself changed shape.
  * `backgroundSize` is a single length rather than `cover`/`contain`/a
  * percentage: the source SVGs are already square (1080×1080), so one fixed
  * value scales both axes equally regardless of the panel's own aspect ratio
