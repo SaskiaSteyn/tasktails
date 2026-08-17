@@ -7,7 +7,7 @@ import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AnimalCard } from "@/components/pets/animal-card";
-import { foodInventoryForUser } from "@/lib/inventory";
+import { equippedBackgroundForPet, foodInventoryForUser } from "@/lib/inventory";
 import { petDisplayName } from "@/lib/pet-mood";
 import { petForUser } from "@/lib/pets";
 
@@ -51,9 +51,10 @@ export default async function SanctuaryPage({
   if (!userId) redirect("/login");
 
   const { id } = await params;
-  const [pet, foodItems] = await Promise.all([
+  const [pet, foodItems, backgroundUrl] = await Promise.all([
     petForUser(userId, id),
     foodInventoryForUser(userId),
+    equippedBackgroundForPet(userId, id),
   ]);
   if (!pet) redirect("/zoo");
 
@@ -80,7 +81,7 @@ export default async function SanctuaryPage({
       nav={<BottomNav />}
       className="gap-3 px-4 pt-4 pb-4"
     >
-      <AnimalCard pet={pet} foodItems={foodItems} />
+      <AnimalCard pet={pet} foodItems={foodItems} backgroundUrl={backgroundUrl} />
     </AppShell>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, Pencil, Sparkles } from "lucide-react";
+import { Check, ChevronLeft, Pencil, Plus } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -14,16 +14,37 @@ import {
 import type { LevelUpEventLike } from "@/components/economy/level-up-provider";
 import { LevelUpScreen } from "@/components/economy/level-up-screen";
 import { AppShell } from "@/components/layout/app-shell";
-import { hasAnimalArt } from "@/components/store/item-visual";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { hasRealArt, ItemWell } from "@/components/store/item-visual";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 // Type-only: erased at compile time, same reasoning `AnimalCard` documents
 // for `PetWithItem`/`InventoryItemWithStoreItem` — this stays a client
 // component without pulling `src/lib/pets.ts`/`src/lib/inventory.ts`'s
 // Prisma imports into the browser bundle.
 import type { InventoryItemWithStoreItem } from "@/lib/inventory";
-import { petDisplayName } from "@/lib/pet-mood";
+import { backgroundImageStyle, petDisplayName } from "@/lib/pet-mood";
 import type { PetWithItem } from "@/lib/pets";
+
+/** The customize screen's two equippable categories, and the tab that shows each. */
+type CustomizeTab = "accessories" | "decorations";
+
+const TAB_COPY: Record<
+  CustomizeTab,
+  { label: string; heading: string; addLabel: string; storeCategory: "ACCESSORIES" | "DECORATIONS" }
+> = {
+  accessories: {
+    label: "Accessories",
+    heading: "Your accessories",
+    addLabel: "Add accessory",
+    storeCategory: "ACCESSORIES",
+  },
+  decorations: {
+    label: "Decorations",
+    heading: "Your decorations",
+    addLabel: "Add decoration",
+    storeCategory: "DECORATIONS",
+  },
+};
 
 /**
  * The full-page customize screen, replacing PET-05's original bottom sheet
@@ -31,8 +52,8 @@ import type { PetWithItem } from "@/lib/pets";
  * screen with the pet fixed at the top and its owned accessories scrollable
  * underneath, rather than a modal that closed after one pick. Matches the
  * design handoff's "Customize Mochi" frame (`TaskTails Screens.dc.html`,
- * Petting Zoo group) — pet stage panel up top, "YOUR ACCESSORIES" grid below
- * — filtered to owned items only, per this ticket's own scope (the mock's
+ * Petting Zoo group) — pet stage panel up top, owned-items grid below —
+ * filtered to owned items only, per this ticket's own scope (the mock's
  * dashed locked/gated tiles and "OTHER ANIMALS" row are a different concern
  * this rework doesn't touch).
  *
@@ -43,6 +64,30 @@ import type { PetWithItem } from "@/lib/pets";
  * `CustomizeSheet` used), the preview is a badge over the pet's own image
  * rather than a literal composited garment — the clearest "here's what's
  * equipped" treatment the real data supports.
+ *
+ * A second tab, Decorations, was added later for the `DECORATIONS`
+ * category once those items grew real background art (`public/backgrounds/`)
+ * — named to match the store's own category label (`CATEGORY_LABEL.DECORATIONS`
+ * in `item-visual.tsx`) rather than "Backgrounds", since this tab's "Add
+ * decoration" tile deep-links to that exact store category and calling the
+ * same category two different things across the two screens read as a
+ * mismatch. Unlike accessories, a decoration's preview *is* a literal
+ * composited image: the equipped one replaces the stage panel's flat
+ * gradient outright (`backgroundImageStyle()` in `src/lib/pet-mood.ts`), the
+ * same treatment `AnimalCard`/`ZooGalleryCard` give it wherever else the pet
+ * is shown. The two tabs share one tap flow (`handleTap()`/`POST`+`DELETE
+ * .../customize`) but track separate optimistic "currently equipped" ids,
+ * since the server now equips at most one item *per category*, not one
+ * overall — equipping a decoration must never visibly unequip an accessory,
+ * or the reverse.
+ *
+ * Each grid ends with a dashed "Add accessory"/"Add decoration" tile linking
+ * to `/store?category=...` (`StoreBrowser`'s `initialCategory`, `StorePage`'s
+ * own `?category=` deep link) — same "grid always renders, even with nothing
+ * owned yet" shape `ZooPage`'s "Adopt another" tile uses, at the user's
+ * explicit request to match it, replacing this screen's earlier separate
+ * empty-state prompt (a full "No accessories"/"nothing to wear yet, go to
+ * the store" block that only appeared at zero owned items).
  *
  * No `nav` on `AppShell` — a focused drill-in from the Sanctuary screen, same
  * "no bottom nav" call `EditTaskPage` makes for the same reason (this is an
@@ -61,9 +106,12 @@ import type { PetWithItem } from "@/lib/pets";
 export function PetCustomizer({
   pet,
   accessories,
+  decorations,
 }: {
   pet: PetWithItem;
   accessories: InventoryItemWithStoreItem[];
+  /** Owned DECORATIONS inventory — the Decorations tab's grid. */
+  decorations: InventoryItemWithStoreItem[];
 }) {
   const router = useRouter();
   const nameInputId = useId();
@@ -74,8 +122,17 @@ export function PetCustomizer({
   const [nameError, setNameError] = useState<string>();
   const [savingName, setSavingName] = useState(false);
 
-  const [equippedId, setEquippedId] = useState(
+  const [tab, setTab] = useState<CustomizeTab>("accessories");
+
+  // One equipped id per category, not one shared id — `equipCustomization()`
+  // (src/lib/inventory.ts) only ever displaces whatever the pet had on *in
+  // the same category*, so an accessory and a background can be equipped at
+  // once and each needs its own optimistic-update slot.
+  const [equippedAccessoryId, setEquippedAccessoryId] = useState(
     () => accessories.find((item) => item.equippedToPetId === pet.id)?.id,
+  );
+  const [equippedDecorationId, setEquippedDecorationId] = useState(
+    () => decorations.find((item) => item.equippedToPetId === pet.id)?.id,
   );
   const [equipping, setEquipping] = useState(false);
   const [equipError, setEquipError] = useState<string>();
@@ -84,7 +141,16 @@ export function PetCustomizer({
   >([]);
   const [levelUpQueue, setLevelUpQueue] = useState<LevelUpEventLike[]>([]);
 
-  const equippedItem = accessories.find((item) => item.id === equippedId);
+  const equippedAccessory = accessories.find((item) => item.id === equippedAccessoryId);
+  const equippedDecoration = decorations.find((item) => item.id === equippedDecorationId);
+  const backgroundUrl =
+    equippedDecoration && hasRealArt(equippedDecoration.storeItem.imageUrl)
+      ? equippedDecoration.storeItem.imageUrl
+      : undefined;
+
+  const items = tab === "accessories" ? accessories : decorations;
+  const equippedId = tab === "accessories" ? equippedAccessoryId : equippedDecorationId;
+  const copy = TAB_COPY[tab];
 
   async function handleRename(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -121,34 +187,55 @@ export function PetCustomizer({
     }
   }
 
-  async function handleEquip(item: InventoryItemWithStoreItem) {
-    if (equipping || item.id === equippedId) return;
+  /**
+   * Tapping a tile equips it — except tapping the tile that's *already*
+   * equipped, which unequips it instead, at the user's request (previously a
+   * no-op: clicking the selected tile did nothing, with no way to clear a
+   * slot back to "nothing equipped" short of picking a different item).
+   */
+  async function handleTap(item: InventoryItemWithStoreItem) {
+    // Which optimistic-update slot this item belongs to — an accessory can
+    // never displace a background's slot or vice versa, matching the
+    // category-scoped equip on the server (`equipCustomization()`).
+    const isDecoration = item.storeItem.category === "DECORATIONS";
+    const currentId = isDecoration ? equippedDecorationId : equippedAccessoryId;
+    const setCurrentId = isDecoration ? setEquippedDecorationId : setEquippedAccessoryId;
+    if (equipping) return;
 
-    const previous = equippedId;
-    setEquippedId(item.id);
+    const alreadyEquipped = item.id === currentId;
+    setCurrentId(alreadyEquipped ? undefined : item.id);
     setEquipping(true);
     setEquipError(undefined);
     try {
       const response = await fetch(`/api/pets/${pet.id}/customize`, {
-        method: "POST",
+        method: alreadyEquipped ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ inventoryItemId: item.id }),
       });
       if (!response.ok) {
-        setEquippedId(previous);
-        setEquipError(`Couldn't equip ${item.storeItem.name}. Try again.`);
+        setCurrentId(currentId);
+        setEquipError(
+          alreadyEquipped
+            ? `Couldn't unequip ${item.storeItem.name}. Try again.`
+            : `Couldn't equip ${item.storeItem.name}. Try again.`,
+        );
         return;
       }
-      const body = await response.json();
-      if (body.achievementsUnlocked?.length) {
-        setAchievementQueue((current) => [...current, ...body.achievementsUnlocked]);
-      }
-      if (body.levelUp) {
-        setLevelUpQueue((current) => [...current, body.levelUp]);
+      // Unequipping never unlocks anything (`recordUnequipInteraction()`'s
+      // own doc comment), so `DELETE`'s response carries no achievement/
+      // level-up data to check here the way `POST`'s does.
+      if (!alreadyEquipped) {
+        const body = await response.json();
+        if (body.achievementsUnlocked?.length) {
+          setAchievementQueue((current) => [...current, ...body.achievementsUnlocked]);
+        }
+        if (body.levelUp) {
+          setLevelUpQueue((current) => [...current, body.levelUp]);
+        }
       }
       router.refresh();
     } catch {
-      setEquippedId(previous);
+      setCurrentId(currentId);
       setEquipError("Couldn't reach TaskTails. Check your connection and try again.");
     } finally {
       setEquipping(false);
@@ -177,9 +264,15 @@ export function PetCustomizer({
       }
       className="gap-4 p-4"
     >
-      <div className="flex flex-none flex-col items-center rounded-card-lg bg-linear-to-b from-[#EAF3EC] to-[#F3ECE1] px-4 py-5">
+      <div
+        className={cn(
+          "flex flex-none flex-col items-center rounded-card-lg px-4 py-5",
+          !backgroundUrl && "bg-linear-to-b from-[#EAF3EC] to-[#F3ECE1]",
+        )}
+        style={backgroundImageStyle(backgroundUrl)}
+      >
         <div className="relative size-[118px]">
-          {hasAnimalArt(pet.storeItem.imageUrl) ? (
+          {hasRealArt(pet.storeItem.imageUrl) ? (
             <Image
               src={pet.storeItem.imageUrl}
               alt={name}
@@ -200,13 +293,13 @@ export function PetCustomizer({
               />
             </div>
           )}
-          {equippedItem ? (
+          {equippedAccessory ? (
             <span
               aria-hidden
               className="absolute right-0 bottom-0 flex size-9 items-center justify-center rounded-full bg-violet-tint text-violet-text ring-2 ring-surface shadow-card"
             >
               <DynamicIcon
-                name={equippedItem.storeItem.imageUrl as IconName}
+                name={equippedAccessory.storeItem.imageUrl as IconName}
                 size={18}
                 strokeWidth={2.2}
               />
@@ -276,67 +369,91 @@ export function PetCustomizer({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
-        <p className="text-overline mb-[10px] flex-none text-ink-faint">Your accessories</p>
+        {/* No design-handoff mock for this control — it postdates the
+            "Customize Mochi" frame, which only ever drew an accessory grid.
+            Same two-state segmented-chip visual language `StoreBrowser`'s
+            category chips already establish (`bg-terracotta` active, bordered
+            inactive), but as a real tablist: unlike those chips, which filter
+            one grid in place, these swap the whole grid/empty-state content
+            below, so `tablist`/`tab`/`aria-selected` is the correct roles
+            rather than `radiogroup`/`radio`. */}
+        <div role="tablist" aria-label="Customize" className="mb-3 flex flex-none gap-[6px]">
+          {(Object.keys(TAB_COPY) as CustomizeTab[]).map((key) => {
+            const active = key === tab;
+            return (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(key)}
+                className={cn(
+                  "flex-1 rounded-pill px-3 py-[7px] text-[12px] transition-colors duration-120",
+                  active
+                    ? "bg-terracotta font-extrabold text-white"
+                    : "border border-border-input bg-surface font-bold text-ink-soft hover:border-checkbox",
+                )}
+              >
+                {TAB_COPY[key].label}
+              </button>
+            );
+          })}
+        </div>
 
-        {accessories.length === 0 ? (
-          // Nothing to equip, so this replaces the grid entirely rather than
-          // showing an empty one — same prompt-and-redirect shape as
-          // `FeedSheet`'s empty-food state.
-          <div className="flex flex-col items-center px-1 pt-2 pb-1 text-center">
-            <span className="mb-4 flex size-16 flex-none items-center justify-center rounded-card-lg bg-violet-tint text-violet-text">
-              <Sparkles size={28} strokeWidth={2} aria-hidden />
-            </span>
-            <p className="font-display text-[20px] font-semibold">No accessories</p>
-            <p className="mt-2 mb-5 text-[13px] leading-[1.5] text-ink-soft">
-              {name} has nothing to wear yet — grab an accessory from the store.
-            </p>
-            <Link href="/store" className={buttonClasses()}>
-              Go to store
+        <p className="text-overline mb-[10px] flex-none text-ink-faint">{copy.heading}</p>
+
+        {/* Grid always renders, even with nothing owned yet — the trailing
+            dashed tile is then the only tile, same as `ZooPage`'s "Adopt
+            another" slot at zero pets. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div role="radiogroup" aria-label={copy.label} className="grid grid-cols-3 gap-[9px] pb-2">
+            {items.map((item) => {
+              const isEquipped = item.id === equippedId;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={isEquipped}
+                  disabled={equipping}
+                  onClick={() => handleTap(item)}
+                  className={cn(
+                    "relative flex flex-col items-center gap-1.5 rounded-[13px] border p-2.5 text-center transition-colors duration-120",
+                    isEquipped
+                      ? "border-sage bg-sage-tint"
+                      : "border-border-track bg-warm hover:border-checkbox",
+                    equipping && "cursor-wait",
+                  )}
+                >
+                  {isEquipped ? (
+                    <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-sage text-white">
+                      <Check size={10} strokeWidth={3} aria-hidden />
+                    </span>
+                  ) : null}
+                  <ItemWell
+                    item={item.storeItem}
+                    size={44}
+                    iconSize={20}
+                    animalIconSize={32}
+                    rounded="rounded-[10px]"
+                  />
+                  <span className="w-full truncate text-[11px] font-extrabold">
+                    {item.storeItem.name}
+                  </span>
+                </button>
+              );
+            })}
+            <Link
+              href={`/store?category=${copy.storeCategory}`}
+              className="flex flex-col items-center gap-1.5 rounded-[13px] border-2 border-dashed border-checkbox p-2.5 text-center text-ink-faint transition-colors duration-120 hover:border-ink-disabled hover:text-ink-soft"
+            >
+              <span className="flex size-11 items-center justify-center rounded-[10px] border-2 border-checkbox">
+                <Plus size={18} strokeWidth={2.4} aria-hidden />
+              </span>
+              <span className="w-full truncate text-[11px] font-extrabold">{copy.addLabel}</span>
             </Link>
           </div>
-        ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <div role="radiogroup" aria-label="Accessories" className="grid grid-cols-3 gap-[9px] pb-2">
-              {accessories.map((item) => {
-                const isEquipped = item.id === equippedId;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={isEquipped}
-                    disabled={equipping}
-                    onClick={() => handleEquip(item)}
-                    className={cn(
-                      "relative flex flex-col items-center gap-1.5 rounded-[13px] border p-2.5 text-center transition-colors duration-120",
-                      isEquipped
-                        ? "border-sage bg-sage-tint"
-                        : "border-border-track bg-warm hover:border-checkbox",
-                      equipping && "cursor-wait",
-                    )}
-                  >
-                    {isEquipped ? (
-                      <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-sage text-white">
-                        <Check size={10} strokeWidth={3} aria-hidden />
-                      </span>
-                    ) : null}
-                    <span className="flex size-11 items-center justify-center rounded-[10px] bg-violet-tint text-violet-text">
-                      <DynamicIcon
-                        name={item.storeItem.imageUrl as IconName}
-                        size={20}
-                        strokeWidth={2.2}
-                        aria-hidden
-                      />
-                    </span>
-                    <span className="w-full truncate text-[11px] font-extrabold">
-                      {item.storeItem.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        </div>
 
         {equipError ? (
           <p role="alert" className="mt-2 flex-none text-[11px] font-bold text-urgency-text">

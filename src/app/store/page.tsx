@@ -119,11 +119,23 @@ export const metadata: Metadata = {
  * .../></>` pair — the entire decided subtree, not a boolean, per
  * `StoreBrowser`'s own `luckyBoxUrgency` doc comment.
  */
-export default async function StorePage() {
+/** The four real `StoreItemCategory` values `?category=` may deep-link to — anything else falls back to "ALL", same as never passing the param at all. */
+const DEEP_LINKABLE_CATEGORIES = ["FOOD", "ACCESSORIES", "ANIMALS", "DECORATIONS"];
+
+export default async function StorePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
   await redirectAdminsAway(userId);
+
+  const { category } = await searchParams;
+  const initialCategory = DEEP_LINKABLE_CATEGORIES.includes(category ?? "")
+    ? (category as "FOOD" | "ACCESSORIES" | "ANIMALS" | "DECORATIONS")
+    : "ALL";
 
   const items = await storeItemsForUser(userId);
   await logTelemetryEvent(userId, "STORE_VISIT", {});
@@ -181,6 +193,7 @@ export default async function StorePage() {
           urgencyBadges={urgencyBadges}
           urgencyNotes={urgencyNotes}
           level={level}
+          initialCategory={initialCategory}
           luckyBoxPrice={LUCKY_BOX_COST_COINS}
           luckyBoxUrgency={
             luckyBoxUrgencyRow ? (

@@ -20,14 +20,17 @@ import { cn } from "@/lib/cn";
  */
 
 /**
- * PRO-18 — whether an `ANIMALS` item's `imageUrl` is a real SVG path
- * (`/animals/koala.svg`) rather than a lucide icon-name fallback for a
- * species with no artwork yet. Exported so every place that renders a
- * pet's own art directly (`AnimalCard`, `ZooGalleryCard`, `PetCustomizer`'s
- * stage — none of which go through `ItemWell`) can tell the two apart the
- * same way, rather than three copies of the same `.startsWith("/")` check.
+ * Whether a `StoreItem.imageUrl` is a real art path (`/animals/koala.svg`,
+ * `/backgrounds/river.svg`) rather than a lucide icon-name fallback for an
+ * item with no artwork yet. Originally PRO-18's animal-only check
+ * (`hasAnimalArt`) — the mapping's the same for every category, so this
+ * generalized rather than growing a second copy once DECORATIONS items
+ * started carrying real background art too. Exported so every place that
+ * renders a pet's or item's own art directly (`AnimalCard`, `ZooGalleryCard`,
+ * `PetCustomizer`'s stage — none of which go through `ItemWell`) can tell
+ * the two apart the same way, rather than repeated `.startsWith("/")` checks.
  */
-export function hasAnimalArt(imageUrl: string): boolean {
+export function hasRealArt(imageUrl: string): boolean {
   return imageUrl.startsWith("/");
 }
 
@@ -81,7 +84,26 @@ const CATEGORY_WELL: Record<StoreItemCategory, { bg: string; icon: string }> = {
  * target the real 22, not 3) now seed with a lucide icon name instead of a
  * path — same "one shared icon, not literal artwork" precedent this file's
  * hat/tie rows already use — and this well tells the two apart by whether
- * `imageUrl` looks like a path (`/animals/...`) or a bare icon name.
+ * `imageUrl` looks like a path or a bare icon name (`hasRealArt()`).
+ *
+ * That real-art-or-icon-fallback check isn't animal-specific any more: the
+ * 16 `DECORATIONS` rows that carry real background art (`/backgrounds/...`,
+ * added alongside PET-05's Backgrounds tab) render the same way here —
+ * `showArt` only special-cases *sizing* by category (animal artwork wants
+ * more room than a flat icon), not which category gets to show art at all.
+ *
+ * A decoration's art gets a different *treatment* from an animal's, though
+ * (`fillArt`, at the user's request after seeing it live): an animal's SVG is
+ * a standalone creature illustration, centred and contained at a fixed size
+ * like the icon it replaces. A decoration's SVG is a small, seamlessly-
+ * repeatable tile — centring a single copy of it inside the well read as
+ * mostly-blank padding around one tiny swatch, not as the pattern. `fillArt`
+ * instead paints it as the well's own tiled `background-image`
+ * (`repeat`/an 18px tile), the same tiling treatment `backgroundImageStyle()`
+ * gives a pet's stage panel in `src/lib/pet-mood.ts` (at a larger 44px tile,
+ * since that panel is a lot bigger than this well) — not reused directly
+ * from here since that module is pets-side and this is store-side, but the
+ * same shape.
  */
 export function ItemWell({
   item,
@@ -101,7 +123,7 @@ export function ItemWell({
   size: number;
   /** Lucide icon size for goods; also the lock glyph size. */
   iconSize: number;
-  /** Animal artwork tends to want more room than a flat lucide icon does — defaults to `iconSize` if not given separately. */
+  /** Real art (animal *or* decoration) tends to want more room than a flat lucide icon does — defaults to `iconSize` if not given separately. */
   animalIconSize?: number;
   rounded?: string;
   /** Fixed height, but stretches to the container's width instead of a fixed square — the grid card's well, per the mock. */
@@ -113,7 +135,10 @@ export function ItemWell({
   iconClassNameOverride?: string;
 }) {
   const isAnimal = item.category === "ANIMALS";
-  const showAnimalArt = isAnimal && hasAnimalArt(item.imageUrl);
+  const showArt = hasRealArt(item.imageUrl);
+  // Only a *non-animal* real-art item (today: DECORATIONS) fills the well —
+  // an animal's illustration stays centred/contained via the `<Image>` below.
+  const fillArt = showArt && !isAnimal && !locked;
 
   return (
     <div
@@ -123,14 +148,32 @@ export function ItemWell({
         rounded,
         locked
           ? "bg-[#E9E3D9]"
-          : (bgClassNameOverride ?? (isAnimal ? "bg-input" : CATEGORY_WELL[item.category].bg)),
+          // Real art (animal or decoration) sits on a neutral fill, same as
+          // an art-less animal's icon well always has — only an icon
+          // fallback for a *goods* category (food/accessories/an art-less
+          // decoration like `Cosy den`) gets that category's tint. Moot for
+          // `fillArt` either way, since the pattern paints over it, but kept
+          // so the well isn't briefly the wrong colour while the image loads.
+          : (bgClassNameOverride ?? (isAnimal || showArt ? "bg-input" : CATEGORY_WELL[item.category].bg)),
         className,
       )}
-      style={fullWidth ? { height: size } : { width: size, height: size }}
+      style={{
+        ...(fullWidth ? { height: size } : { width: size, height: size }),
+        // Tiled, not stretched — same reasoning `backgroundImageStyle()` in
+        // `src/lib/pet-mood.ts` documents for the pet stage's own background,
+        // just a smaller repeat unit: these wells run as small as ~38px, and
+        // that function's 44px tile would barely repeat once at that size.
+        ...(fillArt ? { backgroundImage: `url(${item.imageUrl})`, backgroundSize: "18px", backgroundRepeat: "repeat" } : null),
+      }}
     >
       {locked ? (
         <Lock size={iconSize} strokeWidth={2.2} className="text-ink-disabled" aria-hidden />
-      ) : showAnimalArt ? (
+      ) : fillArt ? null : showArt ? (
+        // Real art always gets `animalIconSize`'s larger treatment, not just
+        // for `ANIMALS` — a decoration's background-pattern thumbnail is just
+        // as cramped at flat-icon size as an animal's would be. Only the
+        // fallback icon below stays category-scoped, since a bare lucide glyph
+        // for a goods category was never meant to fill as much of the well.
         <Image
           src={item.imageUrl}
           alt=""
