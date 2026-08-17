@@ -161,9 +161,15 @@ export function ItemWell({
         ...(fullWidth ? { height: size } : { width: size, height: size }),
         // Tiled, not stretched — same reasoning `backgroundImageStyle()` in
         // `src/lib/pet-mood.ts` documents for the pet stage's own background,
-        // just a smaller repeat unit: these wells run as small as ~38px, and
-        // that function's 44px tile would barely repeat once at that size.
-        ...(fillArt ? { backgroundImage: `url(${item.imageUrl})`, backgroundSize: "18px", backgroundRepeat: "repeat" } : null),
+        // including *why* the tile has to be this big: each source SVG is
+        // already a whole pre-repeated grid of the motif inside one
+        // 1080×1080 file, not a single instance of it, so a small
+        // `backgroundSize` just packs that existing grid tighter rather than
+        // showing one big, legible shape. 18px → 32px → 56px → 150px
+        // (2026-08-16/17, live feedback each round) — smaller than 150px,
+        // individual motifs in these ~38-112px wells read as faint texture
+        // rather than a recognisable shape.
+        ...(fillArt ? { backgroundImage: `url(${item.imageUrl})`, backgroundSize: "150px", backgroundRepeat: "repeat" } : null),
       }}
     >
       {locked ? (
