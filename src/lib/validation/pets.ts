@@ -14,12 +14,13 @@ export type FeedPetInput = z.infer<typeof feedPetSchema>;
 
 /**
  * PET-09's `POST /api/pets/[id]/customize` body — same shape as
- * `feedPetSchema`, one field picking which inventory row to act on.
- * Ownership/category are `recordCustomizeInteraction()`'s job
- * (`equipAccessory()` in `src/lib/inventory.ts`).
+ * `feedPetSchema`, one field picking which inventory row to act on
+ * (an accessory or a decoration/background). Ownership/category are
+ * `recordCustomizeInteraction()`'s job (`equipCustomization()` in
+ * `src/lib/inventory.ts`).
  */
 export const customizePetSchema = z.object({
-  inventoryItemId: z.string().trim().min(1, "Pick an accessory."),
+  inventoryItemId: z.string().trim().min(1, "Pick an item to equip."),
 });
 
 export type CustomizePetInput = z.infer<typeof customizePetSchema>;

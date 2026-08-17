@@ -3,10 +3,17 @@ import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 
-import { hasAnimalArt } from "@/components/store/item-visual";
+import { hasRealArt } from "@/components/store/item-visual";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { cn } from "@/lib/cn";
-import { MOOD_COPY, moodFor, petDisplayName, STATE_TEXT_CLASS, stateTone } from "@/lib/pet-mood";
+import {
+  backgroundImageStyle,
+  MOOD_COPY,
+  moodFor,
+  petDisplayName,
+  STATE_TEXT_CLASS,
+  stateTone,
+} from "@/lib/pet-mood";
 import type { PetWithItem } from "@/lib/pets";
 
 /**
@@ -32,7 +39,14 @@ function speciesOf(storeItemName: string): string {
   return storeItemName.replace(/\s+kit$/i, "");
 }
 
-export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
+export function ZooGalleryCard({
+  pet,
+  backgroundUrl,
+}: {
+  pet: PetWithItem;
+  /** This pet's equipped decoration art, if any — replaces the species gradient outright, same as `AnimalCard`. */
+  backgroundUrl?: string;
+}) {
   const name = petDisplayName(pet);
   const mood = moodFor(pet);
   const moodCopy = MOOD_COPY[mood];
@@ -66,9 +80,10 @@ export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
     >
       <div
         className={cn(
-          "relative flex h-[78px] items-center justify-center rounded-btn bg-linear-to-b",
-          gradient,
+          "relative flex h-[78px] items-center justify-center rounded-btn",
+          !backgroundUrl && cn("bg-linear-to-b", gradient),
         )}
+        style={backgroundImageStyle(backgroundUrl)}
       >
         <span
           className={cn(
@@ -80,7 +95,7 @@ export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
         >
           {moodCopy.label}
         </span>
-        {hasAnimalArt(pet.storeItem.imageUrl) ? (
+        {hasRealArt(pet.storeItem.imageUrl) ? (
           <Image
             src={pet.storeItem.imageUrl}
             alt={name}
@@ -94,7 +109,7 @@ export function ZooGalleryCard({ pet }: { pet: PetWithItem }) {
             )}
           />
         ) : (
-          // PRO-18 — a species with no real artwork yet (`hasAnimalArt()`),
+          // PRO-18 — a species with no real artwork yet (`hasRealArt()`),
           // same icon-fallback treatment `ItemWell`/`AnimalCard` use.
           <DynamicIcon
             name={pet.storeItem.imageUrl as IconName}

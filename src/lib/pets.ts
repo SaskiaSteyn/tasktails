@@ -6,8 +6,9 @@ import {
 } from "@/lib/economy";
 import {
   consumeFoodItem,
-  equipAccessory,
+  equipCustomization,
   type InventoryItemWithStoreItem,
+  unequipCustomization,
 } from "@/lib/inventory";
 import { decayedStateFor } from "@/lib/pet-decay";
 import { prisma } from "@/lib/prisma";
@@ -245,9 +246,11 @@ export type CustomizeResult =
 
 /**
  * PET-09 — records a "Customize" interaction (PET-05's sheet): equips an
- * accessory to a pet. The equip logic itself is `equipAccessory()` in
- * `src/lib/inventory.ts` — this module doesn't touch `prisma.inventoryItem`
- * directly, same rule that file's own comment states for `prisma.pet`.
+ * accessory *or* a decoration (a pet's background) to a pet, whichever
+ * category the item actually is — the equip logic itself is
+ * `equipCustomization()` in `src/lib/inventory.ts` — this module doesn't
+ * touch `prisma.inventoryItem` directly, same rule that file's own comment
+ * states for `prisma.pet`.
  *
  * The pet's existence/ownership is checked with `findPetRaw()` *before*
  * opening the transaction, same "fail fast, cheap read-only check first"
@@ -255,14 +258,14 @@ export type CustomizeResult =
  * equip anything, to anyone, let alone unequip whatever a *real* pet
  * already had on.
  *
- * Wrapped in `prisma.$transaction` even though a single accessory move
- * isn't racy the way `consumeFoodItem()`'s quantity decrement is (see
- * `equipAccessory()`'s own comment on why) — the transaction here is about
- * keeping "unequip the old one" and "equip the new one" as one atomic
+ * Wrapped in `prisma.$transaction` even though a single item move isn't
+ * racy the way `consumeFoodItem()`'s quantity decrement is (see
+ * `equipCustomization()`'s own comment on why) — the transaction here is
+ * about keeping "unequip the old one" and "equip the new one" as one atomic
  * write, not about guarding against concurrent requests.
  *
  * Not forward-only, same as feeding/petting — equipping the same or a
- * different accessory can be repeated freely.
+ * different accessory/decoration can be repeated freely.
  */
 export async function recordCustomizeInteraction(
   userId: string,
@@ -273,7 +276,35 @@ export async function recordCustomizeInteraction(
   if (!pet) return { ok: false, reason: "pet-not-found" };
 
   return prisma.$transaction(async (tx) => {
-    const item = await equipAccessory(tx, userId, petId, inventoryItemId);
+    const item = await equipCustomization(tx, userId, petId, inventoryItemId);
+    if (!item) return { ok: false, reason: "item-not-found" };
+
+    return { ok: true, item };
+  });
+}
+
+/**
+ * The reverse of `recordCustomizeInteraction()`, at the user's request:
+ * tapping the already-equipped tile again clears it instead of being a
+ * no-op. Same shape as its counterpart — `findPetRaw()` first so a bad pet
+ * id can't unequip anything, the real work delegated to
+ * `unequipCustomization()` in `src/lib/inventory.ts` for the same
+ * "this module never touches `prisma.inventoryItem` directly" reason.
+ *
+ * No achievement/level-up evaluation here unlike the equip path — PRO-09's
+ * trigger points are about *owning/wearing* something, and clearing a slot
+ * back to nothing doesn't newly satisfy any criterion an equip could.
+ */
+export async function recordUnequipInteraction(
+  userId: string,
+  petId: string,
+  inventoryItemId: string,
+): Promise<CustomizeResult> {
+  const pet = await findPetRaw(userId, petId);
+  if (!pet) return { ok: false, reason: "pet-not-found" };
+
+  return prisma.$transaction(async (tx) => {
+    const item = await unequipCustomization(tx, userId, petId, inventoryItemId);
     if (!item) return { ok: false, reason: "item-not-found" };
 
     return { ok: true, item };

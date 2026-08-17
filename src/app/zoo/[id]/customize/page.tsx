@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { PetCustomizer } from "@/components/pets/pet-customizer";
-import { accessoryInventoryForUser } from "@/lib/inventory";
+import { accessoryInventoryForUser, decorationInventoryForUser } from "@/lib/inventory";
 import { petDisplayName } from "@/lib/pet-mood";
 import { petForUser } from "@/lib/pets";
 
@@ -38,11 +38,12 @@ export default async function CustomizePetPage({
   if (!userId) redirect("/login");
 
   const { id } = await params;
-  const [pet, accessories] = await Promise.all([
+  const [pet, accessories, decorations] = await Promise.all([
     petForUser(userId, id),
     accessoryInventoryForUser(userId),
+    decorationInventoryForUser(userId),
   ]);
   if (!pet) redirect("/zoo");
 
-  return <PetCustomizer pet={pet} accessories={accessories} />;
+  return <PetCustomizer pet={pet} accessories={accessories} decorations={decorations} />;
 }

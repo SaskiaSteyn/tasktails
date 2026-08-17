@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 /**
  * PET-02's mood derivation — pure, no Prisma import (unlike `src/lib/pets.ts`,
  * same "pure calc" split `task-tiers.ts` uses so a client component like
@@ -87,3 +89,33 @@ export const STATE_TEXT_CLASS: Record<StateTone, string> = {
   caution: "text-amber-text",
   critical: "text-terracotta",
 };
+
+/** The repeat unit's rendered size for `backgroundImageStyle()`'s tiled patterns — see that function's own comment. */
+const BACKGROUND_TILE_SIZE = "44px";
+
+/**
+ * A pet's equipped decoration (its background), turned into a `style` prop —
+ * shared by `AnimalCard`, `ZooGalleryCard` and `PetCustomizer`'s stage, the
+ * three places a pet's own gradient backdrop is drawn, so "replace the
+ * gradient with the equipped background" is one rule rather than three
+ * copies of the same `backgroundImage`/`backgroundSize`/`backgroundRepeat`
+ * trio. Returns `undefined` for no background, so a caller can fall back to
+ * its own default gradient class unconditionally: `style={backgroundImageStyle(url)}`
+ * alongside `className={cn(..., !url && "bg-linear-to-b from-... to-...")}`.
+ *
+ * Tiled (`repeat`), not stretched (`cover`) — the backgrounds art pack is a
+ * square, seamlessly-repeatable pattern (a single motif, not an illustrated
+ * scene), at the user's request after the asset pack itself changed shape.
+ * `backgroundSize` is a single length rather than `cover`/`contain`/a
+ * percentage: the source SVGs are already square (1080×1080), so one fixed
+ * value scales both axes equally regardless of the panel's own aspect ratio
+ * — a percentage would scale width/height independently and stretch the
+ * pattern out of square on any panel that isn't itself square. No
+ * `backgroundPosition` override: `repeat`'s default top-left origin is fine
+ * for a seamless tile, unlike `cover`'s single non-repeating image, which
+ * needed `center` to avoid an arbitrary corner crop.
+ */
+export function backgroundImageStyle(url: string | undefined): CSSProperties | undefined {
+  if (!url) return undefined;
+  return { backgroundImage: `url(${url})`, backgroundSize: BACKGROUND_TILE_SIZE, backgroundRepeat: "repeat" };
+}

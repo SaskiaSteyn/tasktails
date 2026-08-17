@@ -8,12 +8,15 @@ import { prisma } from "@/lib/prisma";
  * rows (see the AGENTS.md note on INF-20), so this is the single source for
  * them.
  *
- * `imageUrl` for the non-animal items is a lucide-react icon name, not a
- * file path — the mock renders food/accessories/decorations as flat colour
- * swatches, not illustrated artwork, and no such artwork exists yet. Animal
- * items point at the real SVGs in `public/animals/` where they exist
- * (Koala/Fox/Penguin), and share the `"paw-print"` icon fallback otherwise
- * (`hasAnimalArt()` in `item-visual.tsx` tells them apart).
+ * `imageUrl` for FOOD/ACCESSORIES items (and `Cosy den`, the one DECORATIONS
+ * exception) is a lucide-react icon name, not a file path — the mock renders
+ * those as flat colour swatches, not illustrated artwork, and no such
+ * artwork exists yet. Animal items point at the real SVGs in
+ * `public/animals/` where they exist (Koala/Fox/Penguin), and share the
+ * `"paw-print"` icon fallback otherwise. The other 16 DECORATIONS rows point
+ * at real background art in `public/backgrounds/` (see that section below)
+ * — `hasRealArt()` in `item-visual.tsx` tells a real path apart from an icon
+ * name for every category, not just animals.
  *
  * Idempotent: looks up by `name` + `category` before writing, so re-running
  * the seed updates the existing row instead of duplicating it. Neither field
@@ -199,22 +202,47 @@ const catalogue: Array<{
 
   // ---- GACHA-03: the rest of Gatcha stuffs.pdf's Decor table. levelRequired
   // is the 2026-08-11 remap (ADDENDUM-xp-curve.md), not the PDF's own numbers.
-  { name: "Hearts", category: StoreItemCategory.DECORATIONS, levelRequired: 1, coinPrice: 30, imageUrl: "heart", rarity: StoreItemRarity.COMMON },
-  { name: "Stars", category: StoreItemCategory.DECORATIONS, levelRequired: 2, coinPrice: 35, imageUrl: "star", rarity: StoreItemRarity.COMMON },
-  { name: "Triangle", category: StoreItemCategory.DECORATIONS, levelRequired: 3, coinPrice: 40, imageUrl: "triangle", rarity: StoreItemRarity.COMMON },
-  { name: "Stripes", category: StoreItemCategory.DECORATIONS, levelRequired: 4, coinPrice: 45, imageUrl: "layers", rarity: StoreItemRarity.COMMON },
-  { name: "Pillow", category: StoreItemCategory.DECORATIONS, levelRequired: 6, coinPrice: 110, imageUrl: "sofa", rarity: StoreItemRarity.RARE },
-  { name: "Carrots", category: StoreItemCategory.DECORATIONS, levelRequired: 7, coinPrice: 130, imageUrl: "carrot", rarity: StoreItemRarity.RARE },
-  { name: "Fish", category: StoreItemCategory.DECORATIONS, levelRequired: 8, coinPrice: 150, imageUrl: "fish", rarity: StoreItemRarity.RARE },
-  { name: "Straw", category: StoreItemCategory.DECORATIONS, levelRequired: 10, coinPrice: 250, imageUrl: "wheat", rarity: StoreItemRarity.RARE },
-  { name: "Water", category: StoreItemCategory.DECORATIONS, levelRequired: 5, coinPrice: 55, imageUrl: "droplet", rarity: StoreItemRarity.COMMON },
-  { name: "Savannah", category: StoreItemCategory.DECORATIONS, levelRequired: 11, coinPrice: 450, imageUrl: "mountain", rarity: StoreItemRarity.EPIC },
-  { name: "Mona Lisa (fox logo)", category: StoreItemCategory.DECORATIONS, levelRequired: 17, coinPrice: 3200, imageUrl: "image", rarity: StoreItemRarity.LEGENDARY },
-  { name: "Starry night", category: StoreItemCategory.DECORATIONS, levelRequired: 19, coinPrice: 3400, imageUrl: "moon-star", rarity: StoreItemRarity.LEGENDARY },
-  { name: "Gradient", category: StoreItemCategory.DECORATIONS, levelRequired: 5, coinPrice: 50, imageUrl: "palette", rarity: StoreItemRarity.COMMON },
-  { name: "Flowers", category: StoreItemCategory.DECORATIONS, levelRequired: 9, coinPrice: 220, imageUrl: "flower", rarity: StoreItemRarity.RARE },
-  { name: "Trees", category: StoreItemCategory.DECORATIONS, levelRequired: 13, coinPrice: 500, imageUrl: "trees", rarity: StoreItemRarity.EPIC },
-  { name: "Chicken legs", category: StoreItemCategory.DECORATIONS, levelRequired: 15, coinPrice: 1100, imageUrl: "drumstick", rarity: StoreItemRarity.EPIC },
+  //
+  // `imageUrl` for all 16 now points at real background art in
+  // `public/backgrounds/` rather than a lucide icon name — these decorations
+  // double as a pet's equippable stage background (see `equippedBackgroundsForUser()`
+  // in `src/lib/inventory.ts`), not just a store icon, so real artwork exists
+  // for every one of them.
+  //
+  // Seven rows were renamed 2026-08-16 to match a reworked asset pack (small
+  // repeatable tile patterns, replacing the original single-scene SVGs):
+  // "Pillow" -> "Sprinkles", "Straw" -> "Bows", "Savannah" -> "Rainbow",
+  // "Mona Lisa (fox logo)" -> "Gingham", "Starry night" -> "Retro",
+  // "Gradient" -> "Maze", "Trees" -> "Squiggles" — `name` and `imageUrl`
+  // both changed together so every row's display name matches its own file
+  // again. **Renaming `name` here alone does not rename the existing DB
+  // row** — this file's own header comment documents the seed's lookup as
+  // `name` + `category`, so a changed `name` makes a re-run `create` a new
+  // row instead of updating the old one, stranding the old-named row as a
+  // duplicate. The six pre-existing rows were renamed in place directly in
+  // Postgres before re-running this seed, specifically to avoid that; a
+  // fresh database has no such duplicate to worry about. `Chicken legs` (->
+  // chicken.svg) still keeps its own name despite the same name/asset
+  // mismatch, since it wasn't part of either rename request. `Cosy den`
+  // (this catalogue's other DECORATIONS row, above) is deliberately
+  // untouched — no matching background art exists for it, same "no real
+  // artwork yet" icon-fallback treatment the art-less animal species use.
+  { name: "Hearts", category: StoreItemCategory.DECORATIONS, levelRequired: 1, coinPrice: 30, imageUrl: "/backgrounds/hearts.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Stars", category: StoreItemCategory.DECORATIONS, levelRequired: 2, coinPrice: 35, imageUrl: "/backgrounds/stars.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Triangle", category: StoreItemCategory.DECORATIONS, levelRequired: 3, coinPrice: 40, imageUrl: "/backgrounds/triangles.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Stripes", category: StoreItemCategory.DECORATIONS, levelRequired: 4, coinPrice: 45, imageUrl: "/backgrounds/stripes.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Sprinkles", category: StoreItemCategory.DECORATIONS, levelRequired: 6, coinPrice: 110, imageUrl: "/backgrounds/sprinkles.svg", rarity: StoreItemRarity.RARE },
+  { name: "Carrots", category: StoreItemCategory.DECORATIONS, levelRequired: 7, coinPrice: 130, imageUrl: "/backgrounds/carrots.svg", rarity: StoreItemRarity.RARE },
+  { name: "Fish", category: StoreItemCategory.DECORATIONS, levelRequired: 8, coinPrice: 150, imageUrl: "/backgrounds/fish.svg", rarity: StoreItemRarity.RARE },
+  { name: "Bows", category: StoreItemCategory.DECORATIONS, levelRequired: 10, coinPrice: 250, imageUrl: "/backgrounds/bows.svg", rarity: StoreItemRarity.RARE },
+  { name: "Water", category: StoreItemCategory.DECORATIONS, levelRequired: 5, coinPrice: 55, imageUrl: "/backgrounds/water.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Rainbow", category: StoreItemCategory.DECORATIONS, levelRequired: 11, coinPrice: 450, imageUrl: "/backgrounds/rainbow.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Gingham", category: StoreItemCategory.DECORATIONS, levelRequired: 17, coinPrice: 3200, imageUrl: "/backgrounds/gingham.svg", rarity: StoreItemRarity.LEGENDARY },
+  { name: "Retro", category: StoreItemCategory.DECORATIONS, levelRequired: 19, coinPrice: 3400, imageUrl: "/backgrounds/retro.svg", rarity: StoreItemRarity.LEGENDARY },
+  { name: "Maze", category: StoreItemCategory.DECORATIONS, levelRequired: 5, coinPrice: 50, imageUrl: "/backgrounds/maze.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Flowers", category: StoreItemCategory.DECORATIONS, levelRequired: 9, coinPrice: 220, imageUrl: "/backgrounds/flowers.svg", rarity: StoreItemRarity.RARE },
+  { name: "Squiggles", category: StoreItemCategory.DECORATIONS, levelRequired: 13, coinPrice: 500, imageUrl: "/backgrounds/squiggles.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Chicken legs", category: StoreItemCategory.DECORATIONS, levelRequired: 15, coinPrice: 1100, imageUrl: "/backgrounds/chicken.svg", rarity: StoreItemRarity.EPIC },
 ];
 
 /**
