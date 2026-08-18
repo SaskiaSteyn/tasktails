@@ -91,6 +91,20 @@ export const STATE_TEXT_CLASS: Record<StateTone, string> = {
 };
 
 /**
+ * Worse-of-two-stats band for `ZooGalleryCard`'s mood face
+ * (`design_handoff/ADDENDUM-store-zoo-art.md`'s "face + bars share one band")
+ * and its warning border. Distinct from `moodFor()`'s four-state
+ * happy/neutral/hungry/unhappy (used by the Sanctuary/`AnimalCard`, which
+ * checks hunger first as a more actionable signal) — the gallery face is a
+ * plain three-way traffic light with no such precedence, so it just takes
+ * whichever of the two `StateTone`s is worse.
+ */
+export function worseTone(a: StateTone, b: StateTone): StateTone {
+  const rank: Record<StateTone, number> = { good: 0, caution: 1, critical: 2 };
+  return rank[a] >= rank[b] ? a : b;
+}
+
+/**
  * The repeat unit's rendered size for `backgroundImageStyle()`'s tiled
  * patterns — see that function's own comment. 44px → 90px → 160px → 500px
  * (2026-08-16/17, live user feedback each round). The first three rounds

@@ -21,10 +21,16 @@
  * pick to keep all four mutually exclusive, same pattern as URG-06's own
  * extension.
  */
-export function CurrencyUrgencyBadge() {
+export function CurrencyUrgencyBadge({ overlay = false }: { overlay?: boolean }) {
   return (
-    <p className="mb-[7px] mt-[2px] inline-block rounded-[7px] bg-urgency px-[6px] py-[3px] text-[9px] font-extrabold text-white">
-      Double XP this hour only
+    <p
+      className={
+        overlay
+          ? "rounded-pill bg-urgency px-[7px] py-[2px] text-[9px] font-extrabold text-white"
+          : "mb-[7px] mt-[2px] inline-block rounded-[7px] bg-urgency px-[6px] py-[3px] text-[9px] font-extrabold text-white"
+      }
+    >
+      Double XP this hour only!
     </p>
   );
 }

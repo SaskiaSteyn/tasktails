@@ -108,6 +108,21 @@ export type ItemUrgencyData = {
   showCurrencyUrgency: boolean;
 };
 
+/**
+ * `design_handoff/ADDENDUM-store-zoo-art.md`'s Group-B fake discount —
+ * struck-through "list" price inflated 20% above the real `coinPrice`, and a
+ * bold "sale" price 20% off that inflated number, netting back to
+ * approximately (not exactly, thanks to rounding) the real price. Purely a
+ * display-layer fabrication, like every other Group-B urgency stimulus (§4):
+ * checkout still charges `coinPrice` itself, never `sale` — nothing in
+ * `cart.ts`/`checkout` route reads this.
+ */
+export function fakeDiscountPricing(basePrice: number): { list: number; sale: number } {
+  const list = Math.round(basePrice * 1.2);
+  const sale = Math.round(list * 0.8);
+  return { list, sale };
+}
+
 /** One fabricated row per item in `itemIds`, seeded against `userId`. */
 export function urgencyDataForItems(
   userId: string,

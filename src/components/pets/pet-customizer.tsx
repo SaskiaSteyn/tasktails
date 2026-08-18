@@ -81,6 +81,13 @@ const TAB_COPY: Record<
  * overall — equipping a decoration must never visibly unequip an accessory,
  * or the reverse.
  *
+ * Grid tiles are square and label-less: the item's art fills the whole
+ * frame, with no name underneath (user request, 2026-08-18 — the names read
+ * as clutter under art that already identifies the item, and the tab above
+ * already says which category you're looking at). Both the item tiles and
+ * the trailing "Add …" tile carry their text as `aria-label` instead, so
+ * nothing is lost to a screen reader.
+ *
  * Each grid ends with a dashed "Add accessory"/"Add decoration" tile linking
  * to `/store?category=...` (`StoreBrowser`'s `initialCategory`, `StorePage`'s
  * own `?category=` deep link) — same "grid always renders, even with nothing
@@ -415,42 +422,59 @@ export function PetCustomizer({
                   type="button"
                   role="radio"
                   aria-checked={isEquipped}
+                  // The tile's visible name is gone (below), so the item's
+                  // own name has to reach a screen reader some other way —
+                  // without this the radio's only content is `aria-hidden`
+                  // art and it would announce as an unnamed option.
+                  aria-label={item.storeItem.name}
                   disabled={equipping}
                   onClick={() => handleTap(item)}
                   className={cn(
-                    "relative flex flex-col items-center gap-1.5 rounded-[13px] border p-2.5 text-center transition-colors duration-120",
+                    // `aspect-square` + `overflow-hidden` and no padding: the
+                    // art fills the frame edge to edge (user request,
+                    // 2026-08-18), so the tile itself owns the dimensions and
+                    // `ItemWell`'s `fill` stretches into them. The equipped
+                    // state can no longer show through as a tint behind the
+                    // art, so it reads as the border plus an inset ring
+                    // instead — a ring rather than a thicker border because
+                    // border-width changes would resize the art on select.
+                    "relative aspect-square overflow-hidden rounded-[13px] border transition-colors duration-120",
                     isEquipped
-                      ? "border-sage bg-sage-tint"
-                      : "border-border-track bg-warm hover:border-checkbox",
+                      ? "border-sage ring-1 ring-sage ring-inset"
+                      : "border-border-track hover:border-checkbox",
                     equipping && "cursor-wait",
                   )}
                 >
+                  <ItemWell
+                    item={item.storeItem}
+                    size={44}
+                    // Scaled up with the tile: the old 44px well showed its
+                    // icon at 20px (~45% of the well), and these tiles are
+                    // ~108px wide at the 3-column mobile grid, so a 20px
+                    // glyph would read as a speck floating in a big frame.
+                    iconSize={48}
+                    animalIconSize={72}
+                    rounded="rounded-none"
+                    fill
+                  />
                   {isEquipped ? (
                     <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-sage text-white">
                       <Check size={10} strokeWidth={3} aria-hidden />
                     </span>
                   ) : null}
-                  <ItemWell
-                    item={item.storeItem}
-                    size={44}
-                    iconSize={20}
-                    animalIconSize={32}
-                    rounded="rounded-[10px]"
-                  />
-                  <span className="w-full truncate text-[11px] font-extrabold">
-                    {item.storeItem.name}
-                  </span>
                 </button>
               );
             })}
+            {/* Matches the item tiles' new square, label-less shape so the
+                grid stays on one rhythm — its wording moves to `aria-label`
+                the same way theirs did, leaving the dashed border and the
+                "+" to carry the affordance. */}
             <Link
               href={`/store?category=${copy.storeCategory}`}
-              className="flex flex-col items-center gap-1.5 rounded-[13px] border-2 border-dashed border-checkbox p-2.5 text-center text-ink-faint transition-colors duration-120 hover:border-ink-disabled hover:text-ink-soft"
+              aria-label={copy.addLabel}
+              className="flex aspect-square items-center justify-center rounded-[13px] border-2 border-dashed border-checkbox text-ink-faint transition-colors duration-120 hover:border-ink-disabled hover:text-ink-soft"
             >
-              <span className="flex size-11 items-center justify-center rounded-[10px] border-2 border-checkbox">
-                <Plus size={18} strokeWidth={2.4} aria-hidden />
-              </span>
-              <span className="w-full truncate text-[11px] font-extrabold">{copy.addLabel}</span>
+              <Plus size={32} strokeWidth={2.2} aria-hidden />
             </Link>
           </div>
         </div>
