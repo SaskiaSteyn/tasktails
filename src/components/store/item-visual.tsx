@@ -41,6 +41,27 @@ export const CATEGORY_LABEL: Record<StoreItemCategory, string> = {
   ANIMALS: "Animal",
 };
 
+const RARITY_LABEL: Record<string, string> = {
+  COMMON: "Common",
+  RARE: "Rare",
+  EPIC: "Epic",
+  LEGENDARY: "Legendary",
+};
+
+/**
+ * The grid card's subtitle, per `design_handoff/ADDENDUM-store-zoo-art.md`'s
+ * card spec ("Common food", "Rare animal") — rarity ahead of the existing
+ * category label, lowercased so it reads as a phrase rather than two title-
+ * cased words jammed together. Falls back to the bare category label for the
+ * placeholder rows with no `rarity` yet (`schema.prisma`'s own "guessing a
+ * rarity here would be fabricated data" note) — there's no rarity to prefix.
+ */
+export function itemSubtitle(item: Pick<StoreItem, "category" | "rarity">): string {
+  const category = CATEGORY_LABEL[item.category];
+  const rarity = item.rarity ? RARITY_LABEL[item.rarity] : null;
+  return rarity ? `${rarity} ${category.toLowerCase()}` : category;
+}
+
 const CATEGORY_WELL: Record<StoreItemCategory, { bg: string; icon: string }> = {
   FOOD: { bg: "bg-amber-tint", icon: "text-amber-text" },
   ACCESSORIES: { bg: "bg-sage-tint", icon: "text-sage-text" },
@@ -65,7 +86,10 @@ const CATEGORY_WELL: Record<StoreItemCategory, { bg: string; icon: string }> = {
  * read as the icon stuck to the left rather than centred, and the animal
  * well's fill was much narrower than the template). The cart row (STOR-06)
  * is the one place the mock actually does draw a fixed square (`44×44`),
- * so that call site leaves `fullWidth` off.
+ * so that call site leaves `fullWidth` off. `fill` goes one step further and
+ * stretches the well in both axes, for a container that already has its own
+ * dimensions — `PetCustomizer`'s `aspect-square` tiles, where the user asked
+ * for the item art to reach every edge of the frame (2026-08-18).
  *
  * `bgClassNameOverride`/`iconClassNameOverride` (GACHA-14) let a caller tint
  * the well by something other than category — the Lucky Box reveal screen
@@ -113,13 +137,14 @@ export function ItemWell({
   animalIconSize = iconSize,
   rounded = "rounded-[11px]",
   fullWidth = false,
+  fill = false,
   className,
   bgClassNameOverride,
   iconClassNameOverride,
 }: {
   item: Pick<StoreItem, "category" | "imageUrl">;
   locked?: boolean;
-  /** Height always; also the fixed width when `fullWidth` is false. */
+  /** Height always; also the fixed width when `fullWidth` is false. Ignored entirely under `fill`. */
   size: number;
   /** Lucide icon size for goods; also the lock glyph size. */
   iconSize: number;
@@ -128,6 +153,8 @@ export function ItemWell({
   rounded?: string;
   /** Fixed height, but stretches to the container's width instead of a fixed square — the grid card's well, per the mock. */
   fullWidth?: boolean;
+  /** Fills the parent in *both* axes, ignoring `size` — the customize grid's tiles, where the container (an `aspect-square` button) owns the dimensions and the art is meant to reach every edge of it. Wins over `fullWidth` if both are passed. */
+  fill?: boolean;
   className?: string;
   /** Replaces the default category-tinted fill. Ignored when `locked`. */
   bgClassNameOverride?: string;
@@ -144,7 +171,7 @@ export function ItemWell({
     <div
       className={cn(
         "flex items-center justify-center",
-        fullWidth ? "w-full" : "flex-none",
+        fill ? "size-full" : fullWidth ? "w-full" : "flex-none",
         rounded,
         locked
           ? "bg-[#E9E3D9]"
@@ -158,7 +185,7 @@ export function ItemWell({
         className,
       )}
       style={{
-        ...(fullWidth ? { height: size } : { width: size, height: size }),
+        ...(fill ? null : fullWidth ? { height: size } : { width: size, height: size }),
         // Tiled, not stretched — same reasoning `backgroundImageStyle()` in
         // `src/lib/pet-mood.ts` documents for the pet stage's own background,
         // including *why* the tile has to be this big: each source SVG is

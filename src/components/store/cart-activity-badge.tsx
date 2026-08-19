@@ -14,7 +14,7 @@
 export function CartActivityBadge({ count }: { count: number }) {
   return (
     <span className="rounded-pill bg-amber px-[7px] py-[2px] text-[9px] font-extrabold text-white">
-      {count} in carts
+      In {count} carts
     </span>
   );
 }
