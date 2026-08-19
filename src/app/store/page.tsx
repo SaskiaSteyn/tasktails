@@ -8,6 +8,7 @@ import { PersistentHeader } from "@/components/layout/persistent-header";
 import type { ReactNode } from "react";
 
 import { BundleTimerBadge } from "@/components/store/bundle-timer-badge";
+import { BuyOneGetOneBadge } from "@/components/store/buy-one-get-one-badge";
 import { CartActivityBadge } from "@/components/store/cart-activity-badge";
 import { CartCountProvider } from "@/components/store/cart-count-context";
 import { CartLink } from "@/components/store/cart-link";
@@ -27,7 +28,7 @@ import { LUCKY_BOX_COST_COINS, luckyBoxUrgencyForUser } from "@/lib/gacha";
 import { levelOf, storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
 import { logTelemetryEvent } from "@/lib/telemetry";
-import { urgencyDataForItems } from "@/lib/urgency";
+import { fakeDiscountPricing, urgencyDataForItems } from "@/lib/urgency";
 
 export const metadata: Metadata = {
   title: "Store · TaskTails",
@@ -102,6 +103,25 @@ export const metadata: Metadata = {
  * for a 172px card. `urgencyDataForItems()`'s `noteSelection` seed (URG-08)
  * already guarantees at most one of the four is ever true, so this is a
  * plain if/else-if chain rather than needing its own selection logic here.
+ *
+ * `design_handoff/ADDENDUM-store-zoo-art.md` layers a curated override on
+ * top of that random seed, for exactly three named catalogue items (the
+ * addendum's own pictured cards) — Sunflower seeds, Red collar, Hearts —
+ * replacing whatever `urgencyDataForItems()` happened to pick for those
+ * three with the addendum's fixed copy, since it specifies each verbatim
+ * (down to "In 7 carts" as a *second*, stacked badge alongside "Only 4
+ * left!" — the one place the corner slot's badges aren't mutually
+ * exclusive). Every other catalogue item keeps the plain random seed
+ * untouched. Hearts' wide "Double XP this hour only!" pill goes through the
+ * ordinary `urgencyBadges` corner slot rather than a centred one of its own
+ * (the addendum draws it top-centred; the user asked for it aligned with the
+ * other cards' badges instead, 2026-08-18). `urgencyFooterNotes` (the
+ * sold-in-the-last-hour line stacked above the price row) is one more
+ * per-item map, for the addendum's new `StoreItemCard` slot, alongside
+ * `pricing` — the addendum's fake discount
+ * (`fakeDiscountPricing()`), computed for *every* unlocked Group-B item, not
+ * just the three curated ones, per its own "applied to every purchasable
+ * Group-B item" wording.
  *
  * `level` (SHR-06) is read via `levelOf()` — the same gate check
  * `storeItemsForUser()` already runs internally to resolve each item's own
@@ -178,6 +198,43 @@ export default async function StorePage({
     }
   }
 
+  const urgencyFooterNotes: Record<string, ReactNode> = {};
+  const pricing: Record<string, { list: number; sale: number }> = {};
+  if (showFlashSale) {
+    for (const item of items) {
+      if (item.locked) continue;
+      pricing[item.id] = fakeDiscountPricing(item.coinPrice);
+
+      // The addendum's three curated cards — fixed copy, overriding
+      // whatever `urgencyDataForItems()` seeded above for these three names
+      // (both the corner badge and the inline note, so no random pick leaks
+      // in alongside the curated one).
+      if (["Sunflower seeds", "Red collar", "Hearts"].includes(item.name)) {
+        delete urgencyBadges[item.id];
+        delete urgencyNotes[item.id];
+      }
+      if (item.name === "Sunflower seeds") {
+        // A plain wrapper, not a bare `<>...</>` Fragment — `StoreItemCard`'s
+        // badge slot renders whatever it's handed as a single child, and two
+        // *unwrapped* elements passed down as one prop value read to React
+        // as an unkeyed list (the same class of warning a raw `.map()` sans
+        // `key` would trigger).
+        urgencyBadges[item.id] = (
+          <div className="flex flex-col items-end gap-1">
+            <StockBadge stock={4} />
+            <CartActivityBadge count={7} />
+          </div>
+        );
+        urgencyFooterNotes[item.id] = <RecentPurchasesBadge count={12} />;
+      } else if (item.name === "Red collar") {
+        urgencyBadges[item.id] = <BuyOneGetOneBadge />;
+      } else if (item.name === "Hearts") {
+        urgencyBadges[item.id] = <CurrencyUrgencyBadge overlay />;
+        urgencyFooterNotes[item.id] = <RecentPurchasesBadge count={4} />;
+      }
+    }
+  }
+
   return (
     <CartCountProvider initialCount={cartCount}>
       <AppShell
@@ -192,6 +249,8 @@ export default async function StorePage({
           flashSaleBanner={showFlashSale ? <FlashSaleBanner /> : null}
           urgencyBadges={urgencyBadges}
           urgencyNotes={urgencyNotes}
+          urgencyFooterNotes={urgencyFooterNotes}
+          pricing={pricing}
           level={level}
           initialCategory={initialCategory}
           luckyBoxPrice={LUCKY_BOX_COST_COINS}

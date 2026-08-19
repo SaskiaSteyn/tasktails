@@ -54,6 +54,12 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * />`, kept as a separate map from `urgencyBadges` since it renders through
  * `StoreItemCard`'s different `note` slot, not the corner-badge one.
  *
+ * `footerNotes` and `pricing` (`ADDENDUM-store-zoo-art.md`) are two more
+ * per-item maps, same lookup-by-id pattern — `StorePage`
+ * builds the curated Group-B overrides (Sunflower seeds/Red collar/Hearts)
+ * and the general fake-discount pricing, this component just forwards
+ * whichever of them an item has straight to `StoreItemCard`'s matching slot.
+ *
  * `level` (SHR-06) is the signed-in user's current level, read once here so
  * tapping a locked card can show the full-screen "locked by level" state
  * (`LockedByLevelState`) without a second round trip — `selectedLocked`
@@ -76,6 +82,8 @@ export function StoreBrowser({
   flashSaleBanner,
   urgencyBadges,
   urgencyNotes,
+  urgencyFooterNotes,
+  pricing,
   level,
   luckyBoxPrice,
   luckyBoxUrgency,
@@ -85,6 +93,8 @@ export function StoreBrowser({
   flashSaleBanner?: ReactNode;
   urgencyBadges?: Record<string, ReactNode>;
   urgencyNotes?: Record<string, ReactNode>;
+  urgencyFooterNotes?: Record<string, ReactNode>;
+  pricing?: Record<string, { list: number; sale: number }>;
   level: number;
   luckyBoxPrice: number;
   luckyBoxUrgency?: ReactNode;
@@ -188,6 +198,8 @@ export function StoreBrowser({
               item={item}
               badge={urgencyBadges?.[item.id]}
               note={urgencyNotes?.[item.id]}
+              footerNote={urgencyFooterNotes?.[item.id]}
+              pricing={pricing?.[item.id]}
               onLockedClick={() => setSelectedLocked(item)}
             />
           ))}
