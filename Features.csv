@@ -25,7 +25,7 @@ INF-23,CI/CD — automated testing via GitHub Actions on every push to dev/main 
 AUTH-01,Register page — form with email and password fields,Authentication,Frontend,Done
 AUTH-02,Login page — form with email and password fields,Authentication,Frontend,Done
 AUTH-03,Logout button and action in global header,Authentication,Frontend,Done
-AUTH-04,POST /api/auth/register — create user hash password assign A/B group randomly initialise UserEconomy record,Authentication,Backend,Done
+AUTH-04,POST /api/auth/register — create user hash password assign A/B group initialise UserEconomy record,Authentication,Backend,Done
 AUTH-05,NextAuth sign-in handler (POST /api/auth/[...nextauth]) — validate credentials issue JWT,Authentication,Backend,Done
 AUTH-06,Protected route middleware — redirect unauthenticated users to login,Authentication,Backend,Done
 AUTH-07,Change username from the profile — inline editor with the same live availability check as the onboarding step,Authentication,Frontend,Done

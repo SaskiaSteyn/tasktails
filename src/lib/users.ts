@@ -1,4 +1,4 @@
-import { randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 import { AbGroup, type User, UserRole } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +14,9 @@ import { prisma } from "@/lib/prisma";
 /** A/B study group — assigned once at account creation, permanent (AUTH-5). */
 export type StudyGroup = AbGroup;
 
+/** Bootstrap value: the very first account in the study starts the split on A. */
+const FIRST_STUDY_GROUP: AbGroup = AbGroup.A;
+
 /** What the whole app means by "a user". */
 export type { User };
 
@@ -21,11 +24,21 @@ const normaliseEmail = (email: string) => email.trim().toLowerCase();
 const normaliseUsername = (username: string) => username.trim().toLowerCase();
 
 /**
- * Random, unbiased A/B assignment. NFR-TASK-3 requires this to be
- * server-enforced — it is only ever called from server-side code.
+ * Alternating A/B assignment — each new account flips from whichever group
+ * the most recently created participant landed in, so the study split stays
+ * exactly even as accounts are created (first account: A, second: B, third:
+ * A, ...). NFR-TASK-3 requires this to be server-enforced — it is only ever
+ * called from server-side code.
  */
-function assignStudyGroup(): AbGroup {
-  return randomInt(2) === 0 ? AbGroup.A : AbGroup.B;
+async function assignStudyGroup(): Promise<AbGroup> {
+  const lastParticipant = await prisma.user.findFirst({
+    where: { role: UserRole.PARTICIPANT },
+    orderBy: { createdAt: "desc" },
+    select: { abGroup: true },
+  });
+
+  if (!lastParticipant) return FIRST_STUDY_GROUP;
+  return lastParticipant.abGroup === AbGroup.A ? AbGroup.B : AbGroup.A;
 }
 
 function hashPassword(password: string): string {
@@ -258,7 +271,7 @@ export async function createUser(
       data: {
         email: normaliseEmail(email),
         passwordHash: hashPassword(password),
-        abGroup: assignStudyGroup(),
+        abGroup: await assignStudyGroup(),
         economy: { create: {} },
         // Empty on purpose — every default lives in the schema (INF-18), so the
         // row matches the Settings frame without repeating the values here.
@@ -282,6 +295,12 @@ export async function upsertOAuthUser(
 ): Promise<User> {
   const key = normaliseEmail(email);
 
+  // Only a first-time sign-in takes the `create` branch below, but it's
+  // resolved before the upsert either way — compute it once here rather than
+  // running the lookup on every returning-user sign-in.
+  const existing = await findUserByEmail(key);
+  const abGroup = existing ? existing.abGroup : await assignStudyGroup();
+
   return prisma.user.upsert({
     where: { email: key },
     // Backfill for an account that predates its provider handing us a name;
@@ -290,7 +309,7 @@ export async function upsertOAuthUser(
     create: {
       email: key,
       displayName: name ?? null,
-      abGroup: assignStudyGroup(),
+      abGroup,
       economy: { create: {} },
       settings: { create: {} },
     },
