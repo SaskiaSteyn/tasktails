@@ -90,35 +90,36 @@ export const metadata: Metadata = {
  * of `/api/store/items`.
  *
  * Each unlocked item gets exactly one of `<StockBadge />`/`<CartActivityBadge
- * />`, per `urgencyDataForItems()`'s own seeded `badgeSelection` — mutually
- * exclusive per the user (2026-08-04, after both tickets had already
- * shipped allowing both at once), same convention as the note slot below.
- *
- * `urgencyNotes` (URG-04/URG-05/URG-06/URG-07) is a second map for a
- * different card slot (below the category label, not the corner badges) —
- * `<RecentPurchasesBadge />`, `<UrgencyLanguageNote />`, `<BundleTimerBadge
- * />`, or `<CurrencyUrgencyBadge />`, never more than one: the user chose
- * mutual exclusivity for this slot (unlike the corner badges' "both
- * allowed"), since several full sentences/pills stacked read as too crowded
- * for a 172px card. `urgencyDataForItems()`'s `noteSelection` seed (URG-08)
- * already guarantees at most one of the four is ever true, so this is a
- * plain if/else-if chain rather than needing its own selection logic here.
+ * />` (corner, top-right on the art region), per `urgencyDataForItems()`'s
+ * own seeded `badgeSelection` — mutually exclusive per the user (2026-08-04,
+ * after both tickets had already shipped allowing both at once) — plus,
+ * independently, at most one of `<RecentPurchasesBadge />`/
+ * `<UrgencyLanguageNote />`/`<BundleTimerBadge />`/`<CurrencyUrgencyBadge
+ * />` per `noteSelection`, in the footer below the image and above the
+ * price. **Fixed 2026-08-25 (#202, "labels are all over the place")**: the
+ * three notes other than `<RecentPurchasesBadge />` used to render through a
+ * *third* card position instead (below the category label) — a spot
+ * `design_handoff` never actually draws, so which of an item's urgency
+ * stimuli ended up where looked arbitrary. `design_handoff/
+ * ADDENDUM-store-zoo-art.md`'s placement is exactly two spots per card —
+ * corner badges (stock/cart-activity, plus two curated exceptions below),
+ * and a line above the price — so `noteSelection`'s four outcomes all build
+ * into `urgencyFooterNotes` now, alongside `badgeSelection`'s pick in
+ * `urgencyBadges`, and the removed third slot is gone from `StoreItemCard`
+ * entirely.
  *
  * `design_handoff/ADDENDUM-store-zoo-art.md` layers a curated override on
  * top of that random seed, for exactly three named catalogue items (the
  * addendum's own pictured cards) — Sunflower seeds, Red collar, Hearts —
  * replacing whatever `urgencyDataForItems()` happened to pick for those
  * three with the addendum's fixed copy, since it specifies each verbatim
- * (down to "In 7 carts" as a *second*, stacked badge alongside "Only 4
- * left!" — the one place the corner slot's badges aren't mutually
- * exclusive). Every other catalogue item keeps the plain random seed
- * untouched. Hearts' wide "Double XP this hour only!" pill goes through the
- * ordinary `urgencyBadges` corner slot rather than a centred one of its own
- * (the addendum draws it top-centred; the user asked for it aligned with the
- * other cards' badges instead, 2026-08-18). `urgencyFooterNotes` (the
- * sold-in-the-last-hour line stacked above the price row) is one more
- * per-item map, for the addendum's new `StoreItemCard` slot, alongside
- * `pricing` — the addendum's fake discount
+ * (down to "In 7 carts" as a *second*, stacked corner badge alongside "Only
+ * 4 left!", and Hearts' "Double XP" pill rendering in the corner too rather
+ * than the footer — the addendum's own art for these three specific cards,
+ * confirmed with the user rather than generalised to every Group-B item).
+ * Every other catalogue item keeps the plain random seed untouched.
+ * `urgencyFooterNotes` is the same per-item map `noteSelection` already
+ * builds above, alongside `pricing` — the addendum's fake discount
  * (`fakeDiscountPricing()`), computed for *every* unlocked Group-B item, not
  * just the three curated ones, per its own "applied to every purchasable
  * Group-B item" wording.
@@ -175,30 +176,31 @@ export default async function StorePage({
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
   const urgencyBadges: Record<string, ReactNode> = {};
-  const urgencyNotes: Record<string, ReactNode> = {};
+  const urgencyFooterNotes: Record<string, ReactNode> = {};
   if (urgencyRows) {
     for (const item of items) {
       if (item.locked) continue;
       const row = urgencyRows.find((candidate) => candidate.itemId === item.id);
       if (!row) continue;
+      // Corner badge, top-right on the art region — stock/cart-activity only.
       if (row.showStockBadge) {
         urgencyBadges[item.id] = <StockBadge stock={row.stock} />;
       } else if (row.showCartActivityBadge) {
         urgencyBadges[item.id] = <CartActivityBadge count={row.cartActivity} />;
       }
+      // Footer note, below the image and above the price — everything else.
       if (row.showRecentPurchases) {
-        urgencyNotes[item.id] = <RecentPurchasesBadge count={row.recentPurchases} />;
+        urgencyFooterNotes[item.id] = <RecentPurchasesBadge count={row.recentPurchases} />;
       } else if (row.showUrgencyLanguage) {
-        urgencyNotes[item.id] = <UrgencyLanguageNote />;
+        urgencyFooterNotes[item.id] = <UrgencyLanguageNote />;
       } else if (row.showBundleTimer) {
-        urgencyNotes[item.id] = <BundleTimerBadge />;
+        urgencyFooterNotes[item.id] = <BundleTimerBadge />;
       } else if (row.showCurrencyUrgency) {
-        urgencyNotes[item.id] = <CurrencyUrgencyBadge />;
+        urgencyFooterNotes[item.id] = <CurrencyUrgencyBadge />;
       }
     }
   }
 
-  const urgencyFooterNotes: Record<string, ReactNode> = {};
   const pricing: Record<string, { list: number; sale: number }> = {};
   if (showFlashSale) {
     for (const item of items) {
@@ -207,11 +209,11 @@ export default async function StorePage({
 
       // The addendum's three curated cards — fixed copy, overriding
       // whatever `urgencyDataForItems()` seeded above for these three names
-      // (both the corner badge and the inline note, so no random pick leaks
+      // (both the corner badge and the footer note, so no random pick leaks
       // in alongside the curated one).
       if (["Sunflower seeds", "Red collar", "Hearts"].includes(item.name)) {
         delete urgencyBadges[item.id];
-        delete urgencyNotes[item.id];
+        delete urgencyFooterNotes[item.id];
       }
       if (item.name === "Sunflower seeds") {
         // A plain wrapper, not a bare `<>...</>` Fragment — `StoreItemCard`'s
@@ -229,6 +231,9 @@ export default async function StorePage({
       } else if (item.name === "Red collar") {
         urgencyBadges[item.id] = <BuyOneGetOneBadge />;
       } else if (item.name === "Hearts") {
+        // The one exception: this stays in the corner (`overlay`), per the
+        // addendum's own curated art for this specific card — see
+        // `CurrencyUrgencyBadge`'s doc comment.
         urgencyBadges[item.id] = <CurrencyUrgencyBadge overlay />;
         urgencyFooterNotes[item.id] = <RecentPurchasesBadge count={4} />;
       }
@@ -248,7 +253,6 @@ export default async function StorePage({
           items={items}
           flashSaleBanner={showFlashSale ? <FlashSaleBanner /> : null}
           urgencyBadges={urgencyBadges}
-          urgencyNotes={urgencyNotes}
           urgencyFooterNotes={urgencyFooterNotes}
           pricing={pricing}
           level={level}
