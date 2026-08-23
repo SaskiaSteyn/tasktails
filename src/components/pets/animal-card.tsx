@@ -2,7 +2,6 @@
 
 import { Drumstick, Heart, Sparkles } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -10,6 +9,7 @@ import { useRef, useState } from "react";
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { FeedSheet } from "@/components/pets/feed-sheet";
+import { PetArt } from "@/components/pets/pet-art";
 import { hasRealArt } from "@/components/store/item-visual";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -70,7 +70,7 @@ import type { PetWithItem } from "@/lib/pets";
  * `--pet-heart-drift` custom property the `pet-heart-float` keyframe reads,
  * since a keyframe can't itself pick a different random value per element.
  * `layer` decides whether this heart paints behind or in front of the pet's
- * `Image` (itself `z-10`) — mixing both, scattered across the animal's own
+ * art (whose wrapper is `z-10`) — mixing both, scattered across the animal's own
  * footprint rather than one shared point, is what sells "the hearts are
  * floating around the animal" rather than all of them sitting flatly on top
  * of it.
@@ -94,12 +94,15 @@ export function AnimalCard({
   pet,
   foodItems,
   backgroundUrl,
+  accessoryUrl,
 }: {
   pet: PetWithItem;
   /** The user's owned food (PET-04) — per-user, not per-animal, so `/zoo/[id]` fetches it once and passes the same list to every card. */
   foodItems: InventoryItemWithStoreItem[];
   /** This pet's equipped decoration art, if any (`equippedBackgroundForPet()` in `src/lib/inventory.ts`) — replaces the stage's flat gradient outright when present. */
   backgroundUrl?: string;
+  /** This pet's equipped accessory art, if any (`equippedAccessoryForPet()`) — painted onto the animal itself, see `PetArt`. */
+  accessoryUrl?: string;
 }) {
   const name = petDisplayName(pet);
   const mood = moodFor(pet);
@@ -224,7 +227,7 @@ export function AnimalCard({
             parent box (or a small phone, per NFR-GEN-2) letterboxes the
             animal rather than stretching it. `max-w-[360px]` keeps it from
             ballooning past a sensible size on a wide desktop card. */}
-        {/* PRO-18: the ref moved from the `Image` itself to this wrapper so
+        {/* PRO-18: the ref moved from the image itself to this wrapper so
             `spawnHearts()` still has something to measure when the species
             has no real artwork yet and renders a centred icon instead —
             under `fill`, the wrapper's box is exactly the image's own, so
@@ -234,19 +237,26 @@ export function AnimalCard({
           className="relative z-10 mt-1.5 min-h-0 w-full max-w-[360px] flex-1"
         >
           {hasRealArt(pet.storeItem.imageUrl) ? (
-            <Image
-              src={pet.storeItem.imageUrl}
-              alt={name}
+            // The pack's own sad cut for every mood that isn't "Happy" (the
+            // user's call, 2026-08-23) — so the art agrees with the label
+            // above it rather than lagging a state behind, and the cue reads
+            // before either the label or the stat bars do. This was a
+            // `grayscale` filter over the two *worst* moods until the art
+            // pack started shipping a drawn-sad version of every species; a
+            // real frown says it better than a desaturated smile did, and the
+            // greyed-out pet had also been read as "this animal is disabled".
+            //
+            // Only two cuts exist, so "Neutral" and "Unhappy" share the sad
+            // one — a pet is drawn happy exactly when `MOOD_COPY` calls it
+            // Happy, and drawn sad otherwise.
+            <PetArt
+              animalUrl={pet.storeItem.imageUrl}
+              accessoryUrl={accessoryUrl}
+              sad={mood !== "happy"}
               fill
               sizes="(min-width: 480px) 360px, 70vw"
-              // Greyed out for the two below-par moods, at the user's
-              // request — a visual cue that reads even before the
-              // "Hungry"/"Unhappy" label above or the stat bars below are
-              // read.
-              className={cn(
-                "object-contain",
-                mood === "hungry" || mood === "unhappy" ? "grayscale" : null,
-              )}
+              shadow="stage"
+              alt={name}
             />
           ) : (
             <div className="flex size-full items-center justify-center">
@@ -337,7 +347,7 @@ export function AnimalCard({
 
       {/* Rendered last so a `layer: "front"` heart paints over the stage/
           bars/buttons; a `layer: "behind"` heart still climbs past the
-          animal, not under it, because its `z-0` only loses to the `Image`'s
+          animal, not under it, because its `z-0` only loses to the art's
           own `z-10` — both are still above the stage's plain, unpositioned
           background. Positioned in real pixels off the card's own top-left
           (measured in `spawnHearts()`), not a percentage guess at where the

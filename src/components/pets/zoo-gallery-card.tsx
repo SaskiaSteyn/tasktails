@@ -1,13 +1,14 @@
 import { Drumstick, Heart } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
-import Image from "next/image";
 import Link from "next/link";
 
+import { PetArt } from "@/components/pets/pet-art";
 import { hasRealArt } from "@/components/store/item-visual";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { cn } from "@/lib/cn";
 import {
   backgroundImageStyle,
+  moodFor,
   petDisplayName,
   stateTone,
   worseTone,
@@ -66,13 +67,25 @@ function MoodFace({ band }: { band: StateTone }) {
   );
 }
 
+/**
+ * The art region's height. Was 126px against square 375×375 animal art; the
+ * 2026-08-23 pack is a portrait 1080×1400 canvas with the top third left
+ * clear for a hat, so the same 126px would have drawn most species at about
+ * two-thirds of their old size. Raised to keep the animal itself roughly the
+ * size it was, which is also what `min-h` on the card below tracks.
+ */
+const ART_REGION_HEIGHT = 150;
+
 export function ZooGalleryCard({
   pet,
   backgroundUrl,
+  accessoryUrl,
 }: {
   pet: PetWithItem;
   /** This pet's equipped decoration art, if any — replaces the plain white art-region background, same as `AnimalCard`. */
   backgroundUrl?: string;
+  /** This pet's equipped accessory art, if any — painted onto the animal, see `PetArt`. */
+  accessoryUrl?: string;
 }) {
   const name = petDisplayName(pet);
   const happinessTone = stateTone(pet.happiness);
@@ -94,12 +107,13 @@ export function ZooGalleryCard({
         // — this card is a whole-tile link, not a text link, so it needs its
         // own neutral default the way `NavTab` and `TaskRow`'s tier badge
         // already give themselves one.
-        // `min-h`, not a fixed `h` — the target is ~220px tall (~175px wide,
+        // `min-h`, not a fixed `h` — the target is ~244px tall (~175px wide,
         // left to the 2-column grid's own fluid width rather than pinned
         // here, so a narrow phone isn't forced into overflow), but nothing
         // below should ever be shorter than that even if a future card grows
-        // an extra line.
-        "flex min-h-[220px] flex-col overflow-hidden rounded-card-lg border bg-surface text-ink shadow-[0_6px_14px_rgba(46,42,38,0.05)] transition-colors duration-120",
+        // an extra line. It tracks `ART_REGION_HEIGHT`: the addendum's own
+        // ~220px was that region at 126px plus the header and footer strips.
+        "flex min-h-[244px] flex-col overflow-hidden rounded-card-lg border bg-surface text-ink shadow-[0_6px_14px_rgba(46,42,38,0.05)] transition-colors duration-120",
         needsAttention
           ? "border-[#F4D9C9] hover:border-[#F4D9C9]"
           : "border-border-track hover:border-checkbox",
@@ -116,21 +130,30 @@ export function ZooGalleryCard({
       </div>
 
       <div
-        className="relative flex h-[126px] flex-none items-center justify-center bg-surface"
-        style={backgroundImageStyle(backgroundUrl)}
+        className="relative flex flex-none items-center justify-center bg-surface"
+        style={{ height: ART_REGION_HEIGHT, ...backgroundImageStyle(backgroundUrl) }}
       >
         {hasRealArt(pet.storeItem.imageUrl) ? (
-          <Image
-            src={pet.storeItem.imageUrl}
+          // Sad for anything but a Happy mood (the user's call, 2026-08-23),
+          // so a pet doesn't look content here and miserable one tap away.
+          // Deliberately `moodFor()` and not this card's own `band`, even
+          // though `band` is what the header face and the border use: the two
+          // aren't the same test — `band` also demands hunger ≤ 30, where
+          // `moodFor()` allows anything under 70 — so keying the art off
+          // `band` would draw a well-fed-enough pet sad here and happy on the
+          // Sanctuary. The face may therefore read caution over happy art,
+          // which is the addendum's own rule for the face working as
+          // specified, not a disagreement about the pet.
+          //
+          // Was a `grayscale` filter over the worst band only, until the art
+          // pack shipped a drawn-sad cut of every species.
+          <PetArt
+            animalUrl={pet.storeItem.imageUrl}
+            accessoryUrl={accessoryUrl}
+            sad={moodFor(pet) !== "happy"}
+            height={ART_REGION_HEIGHT}
+            shadow="card"
             alt={name}
-            width={100}
-            height={100}
-            // Matches `AnimalCard`'s own grey-out for the critical band, so a
-            // pet doesn't look full-colour here and washed-out one tap away.
-            className={cn(
-              "block size-[100px] drop-shadow-[0_6px_10px_rgba(46,42,38,0.18)]",
-              band === "critical" ? "grayscale" : null,
-            )}
           />
         ) : (
           // PRO-18 — a species with no real artwork yet (`hasRealArt()`).

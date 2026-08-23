@@ -4,6 +4,13 @@ import Image from "next/image";
 
 import type { StoreItem, StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
+import {
+  ANIMAL_SHADOW,
+  ART_CANVAS,
+  type ArtFocus,
+  type ArtShadowSize,
+  artFocusFor,
+} from "@/lib/pet-art";
 
 /**
  * Shared per-category icon/label treatment, factored out of `StoreItemCard`
@@ -20,7 +27,7 @@ import { cn } from "@/lib/cn";
  */
 
 /**
- * Whether a `StoreItem.imageUrl` is a real art path (`/animals/koala.svg`,
+ * Whether a `StoreItem.imageUrl` is a real art path (`/animals/happy/koala.svg`,
  * `/backgrounds/river.svg`) rather than a lucide icon-name fallback for an
  * item with no artwork yet. Originally PRO-18's animal-only check
  * (`hasAnimalArt`) — the mapping's the same for every category, so this
@@ -32,6 +39,84 @@ import { cn } from "@/lib/cn";
  */
 export function hasRealArt(imageUrl: string): boolean {
   return imageUrl.startsWith("/");
+}
+
+/** The whole canvas, for art with no measured content box — see `ArtThumb`. */
+const WHOLE_CANVAS: ArtFocus = { x: 0, y: 0, width: 1, height: 1 };
+
+/**
+ * One piece of the 2026-08-23 art pack, cropped to where its ink actually is
+ * and fitted into a square.
+ *
+ * Every animal and accessory in that pack is drawn on the same 1080×1400
+ * canvas so the two layer without adjustment (`src/lib/pet-art.ts`), which
+ * leaves each file mostly empty — a hat lives in the top third, a collar in a
+ * band near the bottom, the mandarin in about 2% of the file. Drawn whole in
+ * a 44px well those are specks, so this zooms to the content box `ART_FOCUS`
+ * records for the file. Thumbnails are the only place that's safe: there's no
+ * second layer here to stay registered with, unlike `PetArt`, which must draw
+ * both layers on the identical uncropped box or the hat slides off the head.
+ *
+ * The crop is expressed in percentages rather than pixels so the same markup
+ * serves a fixed `size` and `ItemWell`'s `fill` mode, where the container's
+ * pixel size isn't known at render time. The inner box carries the content
+ * box's own aspect ratio, and the image inside it is blown up to
+ * `100 / focus.width` of that box and pulled left/up by the content box's
+ * offset — which works out to the full canvas scaled so that exactly the
+ * content box shows through. No `overflow-hidden` is needed to hide the rest:
+ * outside the content box the file is transparent by definition, and clipping
+ * would cut the drop shadow off instead.
+ *
+ * `fill` assumes a square container (today: `PetCustomizer`'s `aspect-square`
+ * tiles) — that's what makes "wide art takes the full width, tall art takes
+ * the full height" equivalent to `object-contain`.
+ */
+function ArtThumb({
+  imageUrl,
+  size,
+  shadow,
+}: {
+  imageUrl: string;
+  /** Side of the square to fit the content box into. Omit to fill the (square) parent instead. */
+  size?: number;
+  shadow: ArtShadowSize;
+}) {
+  const focus = artFocusFor(imageUrl) ?? WHOLE_CANVAS;
+  const contentWidth = ART_CANVAS.width * focus.width;
+  const contentHeight = ART_CANVAS.height * focus.height;
+  const wide = contentWidth >= contentHeight;
+
+  return (
+    <div
+      className={cn("flex items-center justify-center", size === undefined && "size-full")}
+      style={size === undefined ? undefined : { width: size, height: size }}
+    >
+      <div
+        className="relative"
+        style={{
+          aspectRatio: `${contentWidth} / ${contentHeight}`,
+          width: wide ? "100%" : "auto",
+          height: wide ? "auto" : "100%",
+          maxWidth: "100%",
+          maxHeight: "100%",
+        }}
+      >
+        <Image
+          src={imageUrl}
+          alt=""
+          width={ART_CANVAS.width}
+          height={ART_CANVAS.height}
+          className={cn("absolute block max-w-none", ANIMAL_SHADOW[shadow])}
+          style={{
+            width: `${100 / focus.width}%`,
+            height: `${100 / focus.height}%`,
+            left: `${(-focus.x / focus.width) * 100}%`,
+            top: `${(-focus.y / focus.height) * 100}%`,
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
 export const CATEGORY_LABEL: Record<StoreItemCategory, string> = {
@@ -163,9 +248,14 @@ export function ItemWell({
 }) {
   const isAnimal = item.category === "ANIMALS";
   const showArt = hasRealArt(item.imageUrl);
-  // Only a *non-animal* real-art item (today: DECORATIONS) fills the well —
-  // an animal's illustration stays centred/contained via the `<Image>` below.
-  const fillArt = showArt && !isAnimal && !locked;
+  // Only a DECORATION's art fills the well: those files are seamless repeat
+  // tiles, and one centred copy of a tile reads as a tiny swatch adrift in
+  // padding rather than as the pattern. Every other category's art is a
+  // cut-out illustration, centred and contained by `ArtThumb` below. This
+  // used to be `!isAnimal`, which was the same thing right up until the
+  // 2026-08-23 art pack gave ACCESSORIES real files too — left as-is, a
+  // fedora would have been tiled across the well like wallpaper.
+  const fillArt = showArt && item.category === "DECORATIONS" && !locked;
 
   return (
     <div
@@ -203,17 +293,16 @@ export function ItemWell({
         <Lock size={iconSize} strokeWidth={2.2} className="text-ink-disabled" aria-hidden />
       ) : fillArt ? null : showArt ? (
         // Real art always gets `animalIconSize`'s larger treatment, not just
-        // for `ANIMALS` — a decoration's background-pattern thumbnail is just
-        // as cramped at flat-icon size as an animal's would be. Only the
-        // fallback icon below stays category-scoped, since a bare lucide glyph
-        // for a goods category was never meant to fill as much of the well.
-        <Image
-          src={item.imageUrl}
-          alt=""
-          width={animalIconSize}
-          height={animalIconSize}
-          className="block"
-          style={{ width: animalIconSize, height: animalIconSize }}
+        // for `ANIMALS` — an accessory's cut-out is just as cramped at
+        // flat-icon size as an animal's would be. Only the fallback icon
+        // below stays category-scoped, since a bare lucide glyph for a goods
+        // category was never meant to fill as much of the well.
+        <ArtThumb
+          imageUrl={item.imageUrl}
+          size={fill ? undefined : animalIconSize}
+          // A well big enough to want the larger lift gets it; the 26–44px
+          // wells (purchase history, cart rows) would just smudge under it.
+          shadow={animalIconSize >= 64 ? "card" : "thumb"}
         />
       ) : (
         <DynamicIcon

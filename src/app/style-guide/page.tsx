@@ -889,33 +889,33 @@ export default function StyleGuidePage() {
       >
         <Card label="Gallery card — one needs-attention, one not">
           <div className="grid w-[300px] max-w-full grid-cols-2 gap-3">
-            <ZooGalleryCard pet={samplePet("Fox kit", "/animals/fox.svg", 82, 24)} />
-            <ZooGalleryCard pet={samplePet("Penguin kit", "/animals/penguin.svg", 58, 66)} />
+            <ZooGalleryCard pet={samplePet("Fox kit", "/animals/happy/fox.svg", 82, 24)} />
+            <ZooGalleryCard pet={samplePet("Penguin kit", "/animals/happy/penguin.svg", 58, 66)} />
           </div>
         </Card>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="w-[300px] max-w-full">
             <AnimalCard
-              pet={samplePet("Koala kit", "/animals/koala.svg", 90, 10)}
+              pet={samplePet("Koala kit", "/animals/happy/koala.svg", 90, 10)}
               foodItems={SAMPLE_FOOD_ITEMS}
             />
           </div>
           <div className="w-[300px] max-w-full">
             <AnimalCard
-              pet={samplePet("Fox kit", "/animals/fox.svg", 50, 40)}
+              pet={samplePet("Fox kit", "/animals/happy/fox.svg", 50, 40)}
               foodItems={SAMPLE_FOOD_ITEMS}
             />
           </div>
           <div className="w-[300px] max-w-full">
             <AnimalCard
-              pet={samplePet("Penguin kit", "/animals/penguin.svg", 60, 85)}
+              pet={samplePet("Penguin kit", "/animals/happy/penguin.svg", 60, 85)}
               foodItems={SAMPLE_FOOD_ITEMS}
             />
           </div>
           <div className="w-[300px] max-w-full">
             <AnimalCard
-              pet={samplePet("Koala kit", "/animals/koala.svg", 15, 20)}
+              pet={samplePet("Koala kit", "/animals/happy/koala.svg", 15, 20)}
               foodItems={[]}
             />
           </div>

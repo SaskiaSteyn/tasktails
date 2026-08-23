@@ -8,15 +8,18 @@ import { prisma } from "@/lib/prisma";
  * rows (see the AGENTS.md note on INF-20), so this is the single source for
  * them.
  *
- * `imageUrl` for FOOD/ACCESSORIES items (and `Cosy den`, the one DECORATIONS
- * exception) is a lucide-react icon name, not a file path — the mock renders
- * those as flat colour swatches, not illustrated artwork, and no such
- * artwork exists yet. Animal items point at the real SVGs in
- * `public/animals/` where they exist (Koala/Fox/Penguin), and share the
- * `"paw-print"` icon fallback otherwise. The other 16 DECORATIONS rows point
- * at real background art in `public/backgrounds/` (see that section below)
- * — `hasRealArt()` in `item-visual.tsx` tells a real path apart from an icon
- * name for every category, not just animals.
+ * `imageUrl` is a real file path wherever artwork exists and a lucide-react
+ * icon name otherwise; `hasRealArt()` in `item-visual.tsx` tells the two
+ * apart, for every category. As of the 2026-08-23 art pack that leaves FOOD
+ * (10 rows) and `Cosy den` as the only icon-name rows in the catalogue —
+ * every animal points at `public/animals/happy/`, every accessory at
+ * `public/accessories/`, and the other 16 decorations at
+ * `public/backgrounds/`.
+ *
+ * Animals and accessories are drawn on one shared 1080×1400 canvas so an
+ * accessory layers onto an animal with no adjustment; `src/lib/pet-art.ts`
+ * owns what that means for rendering (the sad cut of each species, the
+ * collar's narrow variant, and the content boxes thumbnails crop to).
  *
  * Idempotent: looks up by `name` + `category` before writing, so re-running
  * the seed updates the existing row instead of duplicating it. Neither field
@@ -39,7 +42,8 @@ import { prisma } from "@/lib/prisma";
  * level/price** — left with no `rarity` rather than guessing one; still an
  * open gap, not an oversight. **PRO-18 (2026-08-10)** added the remaining 19
  * animals (icon-fallback artwork) so "own every animal" achievements have
- * the real 22-item catalogue to target.
+ * the real catalogue to target. **2026-08-23** added Hedgehog, the one
+ * species in the art pack with no PDF row at all — 70 items, 23 animals.
  *
  * **`levelRequired` remapped 2026-08-11 (issue #160 — "too easy to gain xp
  * and level up")**, per `design_handoff/ADDENDUM-xp-curve.md`. Every item
@@ -77,7 +81,7 @@ const catalogue: Array<{
     category: StoreItemCategory.ACCESSORIES,
     levelRequired: 5,
     coinPrice: 65,
-    imageUrl: "shirt",
+    imageUrl: "/accessories/collar-wide.svg",
     rarity: StoreItemRarity.COMMON, // = PDF "Collar"
   },
   {
@@ -114,7 +118,7 @@ const catalogue: Array<{
     category: StoreItemCategory.ANIMALS,
     levelRequired: 1,
     coinPrice: 5,
-    imageUrl: "/animals/koala.svg",
+    imageUrl: "/animals/happy/koala.svg",
     rarity: StoreItemRarity.COMMON, // = PDF "Koala" ("Common*")
   },
   {
@@ -122,7 +126,7 @@ const catalogue: Array<{
     category: StoreItemCategory.ANIMALS,
     levelRequired: 12,
     coinPrice: 550,
-    imageUrl: "/animals/fox.svg",
+    imageUrl: "/animals/happy/fox.svg",
     rarity: StoreItemRarity.EPIC, // = PDF "Fox"
   },
   {
@@ -130,39 +134,62 @@ const catalogue: Array<{
     category: StoreItemCategory.ANIMALS,
     levelRequired: 15,
     coinPrice: 1200,
-    imageUrl: "/animals/penguin.svg",
+    imageUrl: "/animals/happy/penguin.svg",
     rarity: StoreItemRarity.EPIC, // = PDF "Penguin"
   },
 
   // ---- PRO-18 (2026-08-10): the remaining 19 animals from Gatcha stuffs.pdf's
   // Animals table, completing the real 22-item catalogue "own every animal"
-  // achievements target. No real SVG exists for any of these — `"paw-print"`
-  // is the shared icon-fallback `imageUrl` every one of them uses (the same
-  // "one shared icon, not literal artwork" precedent this file's hat/tie
-  // rows already set), told apart from a real asset path by `hasAnimalArt()`
-  // in `item-visual.tsx`. `levelRequired` for every animal in this file
-  // (these 19 and the 3 above) is the 2026-08-11 remap from
-  // ADDENDUM-xp-curve.md, not the PDF's own numbers — see the file doc
-  // comment.
-  { name: "Lion kit", category: StoreItemCategory.ANIMALS, levelRequired: 11, coinPrice: 480, imageUrl: "paw-print", rarity: StoreItemRarity.EPIC },
-  { name: "Bunny kit", category: StoreItemCategory.ANIMALS, levelRequired: 2, coinPrice: 35, imageUrl: "paw-print", rarity: StoreItemRarity.COMMON },
-  { name: "Jaguar kit", category: StoreItemCategory.ANIMALS, levelRequired: 13, coinPrice: 620, imageUrl: "paw-print", rarity: StoreItemRarity.EPIC },
-  { name: "Tiger kit", category: StoreItemCategory.ANIMALS, levelRequired: 14, coinPrice: 1000, imageUrl: "paw-print", rarity: StoreItemRarity.EPIC },
-  { name: "Monkey kit", category: StoreItemCategory.ANIMALS, levelRequired: 7, coinPrice: 170, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
-  { name: "Giraffe kit", category: StoreItemCategory.ANIMALS, levelRequired: 6, coinPrice: 130, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
-  { name: "Elephant kit", category: StoreItemCategory.ANIMALS, levelRequired: 15, coinPrice: 1400, imageUrl: "paw-print", rarity: StoreItemRarity.EPIC },
-  { name: "Donkey kit", category: StoreItemCategory.ANIMALS, levelRequired: 3, coinPrice: 45, imageUrl: "paw-print", rarity: StoreItemRarity.COMMON },
-  { name: "Ostrich kit", category: StoreItemCategory.ANIMALS, levelRequired: 7, coinPrice: 190, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
-  { name: "Otters kit", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 65, imageUrl: "paw-print", rarity: StoreItemRarity.COMMON },
-  { name: "Rhino kit", category: StoreItemCategory.ANIMALS, levelRequired: 18, coinPrice: 3000, imageUrl: "paw-print", rarity: StoreItemRarity.LEGENDARY },
-  { name: "Panda kit", category: StoreItemCategory.ANIMALS, levelRequired: 20, coinPrice: 3500, imageUrl: "paw-print", rarity: StoreItemRarity.LEGENDARY },
-  { name: "Zebra kit", category: StoreItemCategory.ANIMALS, levelRequired: 6, coinPrice: 150, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
-  { name: "Flamingo kit", category: StoreItemCategory.ANIMALS, levelRequired: 8, coinPrice: 230, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
-  { name: "Axolotl kit", category: StoreItemCategory.ANIMALS, levelRequired: 8, coinPrice: 260, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
-  { name: "Dassie kit", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 75, imageUrl: "paw-print", rarity: StoreItemRarity.COMMON },
-  { name: "Platypus kit", category: StoreItemCategory.ANIMALS, levelRequired: 9, coinPrice: 300, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
-  { name: "Tortoise kit", category: StoreItemCategory.ANIMALS, levelRequired: 4, coinPrice: 55, imageUrl: "paw-print", rarity: StoreItemRarity.COMMON },
-  { name: "Capybara kit", category: StoreItemCategory.ANIMALS, levelRequired: 10, coinPrice: 340, imageUrl: "paw-print", rarity: StoreItemRarity.RARE },
+  // achievements target. These seeded with a shared `"paw-print"` icon
+  // fallback for as long as no artwork existed for them; the 2026-08-23 art
+  // pack drew all 22 (plus Hedgehog, below), so every row here now points at
+  // its own file. `levelRequired` for every animal in this file is the
+  // 2026-08-11 remap from ADDENDUM-xp-curve.md, not the PDF's own numbers —
+  // see the file doc comment.
+  //
+  // Four files are spelled for the artist's own naming, not the catalogue's:
+  // `axlotl` (Axolotl), `cappybara` (Capybara), `otter` (Otters) and `hyrax`
+  // (Dassie — the same animal under its other name). Renaming the assets to
+  // match would have been the tidier half of the trade and the riskier one:
+  // `ART_FOCUS` in `src/lib/pet-art.ts` and every sad-cut filename key off
+  // these stems too.
+  { name: "Lion kit", category: StoreItemCategory.ANIMALS, levelRequired: 11, coinPrice: 480, imageUrl: "/animals/happy/lion.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Bunny kit", category: StoreItemCategory.ANIMALS, levelRequired: 2, coinPrice: 35, imageUrl: "/animals/happy/bunny.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Jaguar kit", category: StoreItemCategory.ANIMALS, levelRequired: 13, coinPrice: 620, imageUrl: "/animals/happy/jaguar.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Tiger kit", category: StoreItemCategory.ANIMALS, levelRequired: 14, coinPrice: 1000, imageUrl: "/animals/happy/tiger.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Monkey kit", category: StoreItemCategory.ANIMALS, levelRequired: 7, coinPrice: 170, imageUrl: "/animals/happy/monkey.svg", rarity: StoreItemRarity.RARE },
+  { name: "Giraffe kit", category: StoreItemCategory.ANIMALS, levelRequired: 6, coinPrice: 130, imageUrl: "/animals/happy/giraffe.svg", rarity: StoreItemRarity.RARE },
+  { name: "Elephant kit", category: StoreItemCategory.ANIMALS, levelRequired: 15, coinPrice: 1400, imageUrl: "/animals/happy/elephant.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Donkey kit", category: StoreItemCategory.ANIMALS, levelRequired: 3, coinPrice: 45, imageUrl: "/animals/happy/donkey.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Ostrich kit", category: StoreItemCategory.ANIMALS, levelRequired: 7, coinPrice: 190, imageUrl: "/animals/happy/ostrich.svg", rarity: StoreItemRarity.RARE },
+  { name: "Otters kit", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 65, imageUrl: "/animals/happy/otter.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Rhino kit", category: StoreItemCategory.ANIMALS, levelRequired: 18, coinPrice: 3000, imageUrl: "/animals/happy/rhino.svg", rarity: StoreItemRarity.LEGENDARY },
+  { name: "Panda kit", category: StoreItemCategory.ANIMALS, levelRequired: 20, coinPrice: 3500, imageUrl: "/animals/happy/panda.svg", rarity: StoreItemRarity.LEGENDARY },
+  { name: "Zebra kit", category: StoreItemCategory.ANIMALS, levelRequired: 6, coinPrice: 150, imageUrl: "/animals/happy/zebra.svg", rarity: StoreItemRarity.RARE },
+  { name: "Flamingo kit", category: StoreItemCategory.ANIMALS, levelRequired: 8, coinPrice: 230, imageUrl: "/animals/happy/flamingo.svg", rarity: StoreItemRarity.RARE },
+  { name: "Axolotl kit", category: StoreItemCategory.ANIMALS, levelRequired: 8, coinPrice: 260, imageUrl: "/animals/happy/axlotl.svg", rarity: StoreItemRarity.RARE },
+  { name: "Dassie kit", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 75, imageUrl: "/animals/happy/hyrax.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Platypus kit", category: StoreItemCategory.ANIMALS, levelRequired: 9, coinPrice: 300, imageUrl: "/animals/happy/platypus.svg", rarity: StoreItemRarity.RARE },
+  { name: "Tortoise kit", category: StoreItemCategory.ANIMALS, levelRequired: 4, coinPrice: 55, imageUrl: "/animals/happy/tortoise.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Capybara kit", category: StoreItemCategory.ANIMALS, levelRequired: 10, coinPrice: 340, imageUrl: "/animals/happy/cappybara.svg", rarity: StoreItemRarity.RARE },
+
+  // ---- 2026-08-23: the 23rd species. Hedgehog is the one animal in the art
+  // pack with no row in Gatcha stuffs.pdf, so it has no PDF level or price to
+  // inherit and none was specified — rolled at random within the existing
+  // scheme rather than invented free-hand, which is what keeps it from
+  // distorting the curve: Rare band, so `levelRequired` had to land in 6–10
+  // (ADDENDUM-xp-curve.md's Rare window) and `coinPrice` between the band's
+  // cheapest and dearest animals (Monkey 170, Capybara 340). Landing on
+  // level 9 alongside Platypus is fine — Otters/Dassie and Monkey/Ostrich
+  // already share their levels too.
+  //
+  // Every "own every animal" achievement targets the live catalogue count
+  // (`catalogueItemCounts()` in `src/lib/store.ts`) rather than a baked-in
+  // 22, so adding this row raises the bar for `unlock_all_animals` and
+  // `zoo_adopt_all` on its own, with no achievement edit needed. Any account
+  // that had already earned either keeps it: PRO-18's evaluation only ever
+  // grants.
+  { name: "Hedgehog kit", category: StoreItemCategory.ANIMALS, levelRequired: 9, coinPrice: 280, imageUrl: "/animals/happy/hedgehog.svg", rarity: StoreItemRarity.RARE },
 
   // ---- GACHA-03: the rest of Gatcha stuffs.pdf's Food table. levelRequired
   // is the 2026-08-11 remap (ADDENDUM-xp-curve.md), not the PDF's own numbers.
@@ -176,29 +203,44 @@ const catalogue: Array<{
   { name: "Bananas", category: StoreItemCategory.FOOD, levelRequired: 11, coinPrice: 420, imageUrl: "banana", rarity: StoreItemRarity.EPIC },
 
   // ---- GACHA-03: the rest of Gatcha stuffs.pdf's Accessories table.
-  // Hats and ties each share one loose-fit icon (lucide has no per-style hat
-  // or tie glyphs) — same "reasonable stand-in, not literal artwork"
-  // precedent INF-20 already set with "wheat"/"shirt"/"package"/"home" above.
-  // levelRequired is the 2026-08-11 remap (ADDENDUM-xp-curve.md).
-  { name: "Fedora hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 6, coinPrice: 130, imageUrl: "hard-hat", rarity: StoreItemRarity.RARE },
-  { name: "Baller hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 9, coinPrice: 240, imageUrl: "hard-hat", rarity: StoreItemRarity.RARE },
-  { name: "Cowboy hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 10, coinPrice: 280, imageUrl: "hard-hat", rarity: StoreItemRarity.RARE },
-  { name: "Top hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 11, coinPrice: 480, imageUrl: "hard-hat", rarity: StoreItemRarity.EPIC },
-  { name: "Pirate hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 12, coinPrice: 550, imageUrl: "hard-hat", rarity: StoreItemRarity.EPIC },
-  { name: "Jester hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 10, coinPrice: 320, imageUrl: "hard-hat", rarity: StoreItemRarity.RARE },
-  { name: "Plain tie (red)", category: StoreItemCategory.ACCESSORIES, levelRequired: 1, coinPrice: 35, imageUrl: "shirt", rarity: StoreItemRarity.COMMON },
-  { name: "Stripe tie", category: StoreItemCategory.ACCESSORIES, levelRequired: 2, coinPrice: 40, imageUrl: "shirt", rarity: StoreItemRarity.COMMON },
-  { name: "Bow tie", category: StoreItemCategory.ACCESSORIES, levelRequired: 2, coinPrice: 45, imageUrl: "shirt", rarity: StoreItemRarity.COMMON },
-  { name: "Heart tie", category: StoreItemCategory.ACCESSORIES, levelRequired: 3, coinPrice: 50, imageUrl: "shirt", rarity: StoreItemRarity.COMMON },
-  { name: "Stars tie", category: StoreItemCategory.ACCESSORIES, levelRequired: 4, coinPrice: 55, imageUrl: "shirt", rarity: StoreItemRarity.COMMON },
-  { name: "Gingham tie", category: StoreItemCategory.ACCESSORIES, levelRequired: 5, coinPrice: 60, imageUrl: "shirt", rarity: StoreItemRarity.COMMON },
-  { name: "Running sunglasses", category: StoreItemCategory.ACCESSORIES, levelRequired: 7, coinPrice: 170, imageUrl: "glasses", rarity: StoreItemRarity.RARE },
-  { name: "Reading glasses", category: StoreItemCategory.ACCESSORIES, levelRequired: 6, coinPrice: 150, imageUrl: "glasses", rarity: StoreItemRarity.RARE },
-  { name: "Aviators", category: StoreItemCategory.ACCESSORIES, levelRequired: 14, coinPrice: 1000, imageUrl: "glasses", rarity: StoreItemRarity.EPIC },
-  { name: "Harry Potter glasses", category: StoreItemCategory.ACCESSORIES, levelRequired: 16, coinPrice: 2800, imageUrl: "glasses", rarity: StoreItemRarity.LEGENDARY },
-  { name: "Oversized sunglasses", category: StoreItemCategory.ACCESSORIES, levelRequired: 8, coinPrice: 190, imageUrl: "glasses", rarity: StoreItemRarity.RARE },
-  { name: "Flower crown", category: StoreItemCategory.ACCESSORIES, levelRequired: 15, coinPrice: 1300, imageUrl: "flower-2", rarity: StoreItemRarity.EPIC },
-  { name: "Crown", category: StoreItemCategory.ACCESSORIES, levelRequired: 20, coinPrice: 3800, imageUrl: "crown", rarity: StoreItemRarity.LEGENDARY },
+  // Hats and ties used to share one loose-fit lucide glyph each; the
+  // 2026-08-23 art pack drew all 20, so every row points at its own file and
+  // an accessory now paints onto the animal itself rather than standing in as
+  // a badge beside it. levelRequired is the 2026-08-11 remap
+  // (ADDENDUM-xp-curve.md).
+  //
+  // Two of these are *different items* from what they were, not re-drawings:
+  // "Harry Potter glasses" became "Moustache" and "Oversized sunglasses"
+  // became "Mandarin", at the user's request. Both keep their predecessor's
+  // level, price and rarity — nothing about the curve changed, only the
+  // thing being sold — and `renames` below moves the existing DB row over so
+  // an account that already bought one keeps it (under its new identity)
+  // instead of the seed stranding it as a duplicate.
+  //
+  // "Red collar" is one item with two files: `collar-wide` (seeded here, the
+  // default) and `collar-small`, which `accessoryArtUrl()` in
+  // `src/lib/pet-art.ts` swaps in when it's worn on a giraffe or an ostrich.
+  // That's a property of the animal, not of the purchase, so it stays out of
+  // the catalogue.
+  { name: "Fedora hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 6, coinPrice: 130, imageUrl: "/accessories/fedora.svg", rarity: StoreItemRarity.RARE },
+  { name: "Baller hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 9, coinPrice: 240, imageUrl: "/accessories/bawler.svg", rarity: StoreItemRarity.RARE },
+  { name: "Cowboy hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 10, coinPrice: 280, imageUrl: "/accessories/cowboy.svg", rarity: StoreItemRarity.RARE },
+  { name: "Top hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 11, coinPrice: 480, imageUrl: "/accessories/top-hat.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Pirate hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 12, coinPrice: 550, imageUrl: "/accessories/pirate.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Jester hat", category: StoreItemCategory.ACCESSORIES, levelRequired: 10, coinPrice: 320, imageUrl: "/accessories/jester.svg", rarity: StoreItemRarity.RARE },
+  { name: "Plain tie (red)", category: StoreItemCategory.ACCESSORIES, levelRequired: 1, coinPrice: 35, imageUrl: "/accessories/tie-red.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Stripe tie", category: StoreItemCategory.ACCESSORIES, levelRequired: 2, coinPrice: 40, imageUrl: "/accessories/tie-blue.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Bow tie", category: StoreItemCategory.ACCESSORIES, levelRequired: 2, coinPrice: 45, imageUrl: "/accessories/tie-bow.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Heart tie", category: StoreItemCategory.ACCESSORIES, levelRequired: 3, coinPrice: 50, imageUrl: "/accessories/tie-hearts.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Stars tie", category: StoreItemCategory.ACCESSORIES, levelRequired: 4, coinPrice: 55, imageUrl: "/accessories/tie-stars.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Gingham tie", category: StoreItemCategory.ACCESSORIES, levelRequired: 5, coinPrice: 60, imageUrl: "/accessories/tie-gingham.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Running sunglasses", category: StoreItemCategory.ACCESSORIES, levelRequired: 7, coinPrice: 170, imageUrl: "/accessories/glasses-running.svg", rarity: StoreItemRarity.RARE },
+  { name: "Reading glasses", category: StoreItemCategory.ACCESSORIES, levelRequired: 6, coinPrice: 150, imageUrl: "/accessories/glasses-reading.svg", rarity: StoreItemRarity.RARE },
+  { name: "Aviators", category: StoreItemCategory.ACCESSORIES, levelRequired: 14, coinPrice: 1000, imageUrl: "/accessories/glasses-aviators.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Moustache", category: StoreItemCategory.ACCESSORIES, levelRequired: 16, coinPrice: 2800, imageUrl: "/accessories/moustache.svg", rarity: StoreItemRarity.LEGENDARY },
+  { name: "Mandarin", category: StoreItemCategory.ACCESSORIES, levelRequired: 8, coinPrice: 190, imageUrl: "/accessories/mandarin.svg", rarity: StoreItemRarity.RARE },
+  { name: "Flower crown", category: StoreItemCategory.ACCESSORIES, levelRequired: 15, coinPrice: 1300, imageUrl: "/accessories/flower-crown.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Crown", category: StoreItemCategory.ACCESSORIES, levelRequired: 20, coinPrice: 3800, imageUrl: "/accessories/crown.svg", rarity: StoreItemRarity.LEGENDARY },
 
   // ---- GACHA-03: the rest of Gatcha stuffs.pdf's Decor table. levelRequired
   // is the 2026-08-11 remap (ADDENDUM-xp-curve.md), not the PDF's own numbers.
@@ -316,7 +358,46 @@ const achievements: Array<{
   { key: "zoo_adopt_all", name: "Full House", description: "Adopt every type of animal.", criteria: { type: "ANIMAL_VARIETY_OWNED" }, xpReward: 250 },
 ];
 
+/**
+ * Catalogue rows whose `name` changed, so an existing database follows the
+ * rename instead of growing a duplicate.
+ *
+ * This file's lookup is `name` + `category` (see the doc comment), which
+ * means a renamed row reads as a row that doesn't exist yet: the seed would
+ * `create` the new name and leave the old one behind, still owned, still
+ * equipped, still counting toward "own every accessory". The 2026-08-16
+ * decorations rename hit exactly that and was fixed by renaming the rows in
+ * Postgres by hand before re-seeding — this does the same thing in the seed,
+ * where it can't be forgotten.
+ *
+ * Deliberately not a `deleteMany` of unknown names, the way the achievements
+ * below are pruned: a `StoreItem` is referenced by `InventoryItem`,
+ * `CartItem`, `Transaction` and `Pet`, so dropping one would take a
+ * participant's purchase history with it.
+ */
+const renames: Array<{ from: string; to: string; category: StoreItemCategory }> = [
+  // 2026-08-23, with the art pack — the two swapped accessories.
+  { from: "Harry Potter glasses", to: "Moustache", category: StoreItemCategory.ACCESSORIES },
+  { from: "Oversized sunglasses", to: "Mandarin", category: StoreItemCategory.ACCESSORIES },
+];
+
 async function main() {
+  // Before the catalogue loop, so the renamed rows are found by their new
+  // name below and updated in place rather than duplicated.
+  for (const { from, to, category } of renames) {
+    const [old, current] = await Promise.all([
+      prisma.storeItem.findFirst({ where: { name: from, category }, select: { id: true } }),
+      prisma.storeItem.findFirst({ where: { name: to, category }, select: { id: true } }),
+    ]);
+    // Only when the new name isn't taken: on a re-run the old row is already
+    // gone, and on a database where someone created the new name by hand,
+    // merging two rows is not something a seed should decide.
+    if (old && !current) {
+      await prisma.storeItem.update({ where: { id: old.id }, data: { name: to } });
+      console.log(`Renamed StoreItem "${from}" -> "${to}".`);
+    }
+  }
+
   for (const item of catalogue) {
     // Matched on name + category (GACHA-03) — name alone would collapse the
     // catalogue's two "Fish" and two "Carrots" rows (one Food, one

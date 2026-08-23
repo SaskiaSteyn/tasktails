@@ -6,6 +6,7 @@ import { InstallButton } from "@/components/marketing/install-button";
 import { buttonClasses } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { cn } from "@/lib/cn";
+import { ANIMAL_SHADOW } from "@/lib/pet-art";
 import { MOOD_COPY, moodFor, STATE_TEXT_CLASS, type StateTone, stateTone } from "@/lib/pet-mood";
 
 /**
@@ -151,12 +152,19 @@ function HeroPhone() {
           </p>
 
           <div className="relative mt-1.5 min-h-0 w-full flex-1">
+            {/* Same drop shadow the real stage gives the animal
+                (`ANIMAL_SHADOW.stage`, via `PetArt`) — this is a picture of
+                the Sanctuary, and the same "a mock that differs from the
+                screen is worse than duplicating a value" reasoning the
+                gradient stops above are kept in sync for. Not `PetArt`
+                itself: nothing here is a real pet, and the hero has no
+                accessory or mood to resolve. */}
             <Image
-              src="/animals/fox.svg"
+              src="/animals/happy/fox.svg"
               alt=""
               fill
               sizes="224px"
-              className="object-contain"
+              className={cn("object-contain", ANIMAL_SHADOW.stage)}
             />
           </div>
 

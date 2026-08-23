@@ -168,7 +168,7 @@ describe("sellableItemsForUser", () => {
         storeItem: {
           name: "Fox kit",
           category: "ANIMALS",
-          imageUrl: "/animals/fox.svg",
+          imageUrl: "/animals/happy/fox.svg",
           coinPrice: 550,
           levelRequired: 7,
         },
@@ -195,7 +195,7 @@ describe("sellableItemsForUser", () => {
         storeItemId: "fox",
         name: "Fox kit",
         category: "ANIMALS",
-        imageUrl: "/animals/fox.svg",
+        imageUrl: "/animals/happy/fox.svg",
         quantity: 1,
         coinPrice: 550,
         sellValue: 385,
