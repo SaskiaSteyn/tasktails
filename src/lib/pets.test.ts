@@ -46,7 +46,7 @@ function petRow(overrides: Partial<PetWithItem> = {}): PetWithItem {
       category: "ANIMALS",
       levelRequired: 1,
       coinPrice: 5,
-      imageUrl: "/animals/koala.svg",
+      imageUrl: "/animals/happy/koala.svg",
     },
     ...overrides,
   } as PetWithItem;
@@ -487,7 +487,7 @@ describe("createPetForTransaction", () => {
     category: "ANIMALS",
     levelRequired: 1,
     coinPrice: 5,
-    imageUrl: "/animals/koala.svg",
+    imageUrl: "/animals/happy/koala.svg",
   } as StoreItem;
 
   it("creates a Pet at full happiness and zero hunger for an ANIMALS item", async () => {

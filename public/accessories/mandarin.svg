@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="madarin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1400">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #eb7c1e;
+      }
+
+      .cls-2 {
+        fill: #f7931e;
+      }
+
+      .cls-3 {
+        fill: #fccc7d;
+      }
+    </style>
+  </defs>
+  <rect class="cls-3" x="536.11" y="299.92" width="7.79" height="3.46" rx="1.73" ry="1.73"/>
+  <rect class="cls-2" x="456.64" y="301.57" width="166.73" height="93.78" rx="46.89" ry="46.89"/>
+  <circle class="cls-1" cx="587.58" cy="321.97" r="5.4"/>
+  <ellipse class="cls-1" cx="596.45" cy="325.06" rx="1.14" ry="1.11"/>
+  <ellipse class="cls-1" cx="606.69" cy="325.61" rx="1.14" ry="1.11"/>
+  <ellipse class="cls-1" cx="608.98" cy="334.33" rx="1.14" ry="1.11"/>
+  <ellipse class="cls-1" cx="588.94" cy="310.05" rx="1.14" ry="1.11"/>
+  <ellipse class="cls-1" cx="597.01" cy="313.72" rx="1.14" ry="1.11"/>
+  <ellipse class="cls-1" cx="600.46" cy="320" rx="2.87" ry="2.92"/>
+  <ellipse class="cls-1" cx="612.91" cy="329.65" rx="2.87" ry="2.92"/>
+  <ellipse class="cls-1" cx="602.58" cy="329.65" rx="2.87" ry="2.92"/>
+  <path class="cls-1" d="M592.19,315.15c.46-.43,1.18-.41,1.62.03s.42,1.15-.03,1.58-1.18.41-1.62-.03-.42-1.15.03-1.58Z"/>
+  <path class="cls-1" d="M583.06,310.3c1.14-1.12,2.96-1.08,4.06.08s1.06,3.02-.08,4.13-2.96,1.08-4.06-.08-1.06-3.02.08-4.13Z"/>
+</svg>
