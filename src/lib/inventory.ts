@@ -268,6 +268,50 @@ export async function equippedBackgroundsForUser(
 }
 
 /**
+ * The accessory art each pet is currently wearing, keyed by pet id — the
+ * `ACCESSORIES` twin of `equippedBackgroundsForUser()`, one query for the
+ * whole gallery rather than one per card.
+ *
+ * Needed from 2026-08-23: an accessory used to be a lucide glyph in a badge
+ * beside the pet on the customize screen only, so no other screen had any
+ * reason to know what a pet was wearing. Now it's real art drawn *on* the
+ * animal (`PetArt`), which every screen that draws the animal has to
+ * include, or a pet would appear to take its hat off on the way back to the
+ * gallery.
+ *
+ * Same `startsWith("/")` guard as the backgrounds: an accessory still on the
+ * old icon-name `imageUrl` has nothing to paint onto the animal.
+ */
+export async function equippedAccessoriesForUser(
+  userId: string,
+): Promise<Record<string, string>> {
+  const equipped = await prisma.inventoryItem.findMany({
+    where: { userId, equippedToPetId: { not: null }, storeItem: { category: "ACCESSORIES" } },
+    include: { storeItem: true },
+  });
+
+  const accessories: Record<string, string> = {};
+  for (const item of equipped) {
+    if (item.equippedToPetId && item.storeItem.imageUrl.startsWith("/")) {
+      accessories[item.equippedToPetId] = item.storeItem.imageUrl;
+    }
+  }
+  return accessories;
+}
+
+/** Same as `equippedAccessoriesForUser()` but scoped to one pet — the Sanctuary drill-in. */
+export async function equippedAccessoryForPet(
+  userId: string,
+  petId: string,
+): Promise<string | undefined> {
+  const item = await prisma.inventoryItem.findFirst({
+    where: { userId, equippedToPetId: petId, storeItem: { category: "ACCESSORIES" } },
+    include: { storeItem: true },
+  });
+  return item && item.storeItem.imageUrl.startsWith("/") ? item.storeItem.imageUrl : undefined;
+}
+
+/**
  * Same as `equippedBackgroundsForUser()` but scoped to one pet — the
  * Sanctuary drill-in (`/zoo/[id]`) only ever needs its own pet's background,
  * not every pet the user owns.

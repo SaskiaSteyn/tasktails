@@ -9,7 +9,10 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { ZooGalleryCard } from "@/components/pets/zoo-gallery-card";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
-import { equippedBackgroundsForUser } from "@/lib/inventory";
+import {
+  equippedAccessoriesForUser,
+  equippedBackgroundsForUser,
+} from "@/lib/inventory";
 import { petsForUser } from "@/lib/pets";
 
 export const metadata: Metadata = {
@@ -41,9 +44,10 @@ export default async function ZooPage() {
   if (!userId) redirect("/login");
   await redirectAdminsAway(userId);
 
-  const [pets, backgrounds] = await Promise.all([
+  const [pets, backgrounds, accessories] = await Promise.all([
     petsForUser(userId),
     equippedBackgroundsForUser(userId),
+    equippedAccessoriesForUser(userId),
   ]);
 
   return (
@@ -68,7 +72,12 @@ export default async function ZooPage() {
           grid entirely. */}
       <div className="grid grid-cols-2 gap-3">
         {pets.map((pet) => (
-          <ZooGalleryCard key={pet.id} pet={pet} backgroundUrl={backgrounds[pet.id]} />
+          <ZooGalleryCard
+            key={pet.id}
+            pet={pet}
+            backgroundUrl={backgrounds[pet.id]}
+            accessoryUrl={accessories[pet.id]}
+          />
         ))}
         <Link
           href="/store"

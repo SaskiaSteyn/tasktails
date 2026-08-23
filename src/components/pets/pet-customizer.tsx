@@ -2,7 +2,6 @@
 
 import { Check, ChevronLeft, Pencil, Plus } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
@@ -14,6 +13,7 @@ import {
 import type { LevelUpEventLike } from "@/components/economy/level-up-provider";
 import { LevelUpScreen } from "@/components/economy/level-up-screen";
 import { AppShell } from "@/components/layout/app-shell";
+import { PetArt } from "@/components/pets/pet-art";
 import { hasRealArt, ItemWell } from "@/components/store/item-visual";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -24,6 +24,13 @@ import { cn } from "@/lib/cn";
 import type { InventoryItemWithStoreItem } from "@/lib/inventory";
 import { backgroundImageStyle, petDisplayName } from "@/lib/pet-mood";
 import type { PetWithItem } from "@/lib/pets";
+
+/**
+ * The pet stage's art height — see the note at its call site. Paired with
+ * `ART_ASPECT`'s width by `PetArt`, so the box stays the art pack's own
+ * proportions rather than a square that would letterbox it.
+ */
+const STAGE_ART_HEIGHT = 172;
 
 /** The customize screen's two equippable categories, and the tab that shows each. */
 type CustomizeTab = "accessories" | "decorations";
@@ -59,11 +66,12 @@ const TAB_COPY: Record<
  *
  * Tapping an owned accessory equips it immediately — no separate "Equip"
  * button, unlike the old sheet — so the pet visibly "wears" it as its own
- * preview. Since accessory art is an icon name rather than a positioned
- * overlay image (`imageUrl` is a `lucide-react/dynamic` icon name, same cast
- * `CustomizeSheet` used), the preview is a badge over the pet's own image
- * rather than a literal composited garment — the clearest "here's what's
- * equipped" treatment the real data supports.
+ * preview. That preview was a lucide badge pinned to the corner of the pet's
+ * image for as long as an accessory was only an icon name; since the
+ * 2026-08-23 art pack it's the literal garment, painted onto the animal
+ * (`PetArt`) at the size and position the artist drew it, so what the stage
+ * shows while you shop is what the gallery and Sanctuary will show
+ * afterwards.
  *
  * A second tab, Decorations, was added later for the `DECORATIONS`
  * category once those items grew real background art (`public/backgrounds/`)
@@ -153,6 +161,10 @@ export function PetCustomizer({
   const backgroundUrl =
     equippedDecoration && hasRealArt(equippedDecoration.storeItem.imageUrl)
       ? equippedDecoration.storeItem.imageUrl
+      : undefined;
+  const accessoryUrl =
+    equippedAccessory && hasRealArt(equippedAccessory.storeItem.imageUrl)
+      ? equippedAccessory.storeItem.imageUrl
       : undefined;
 
   const items = tab === "accessories" ? accessories : decorations;
@@ -278,41 +290,35 @@ export function PetCustomizer({
         )}
         style={backgroundImageStyle(backgroundUrl)}
       >
-        <div className="relative size-[118px]">
-          {hasRealArt(pet.storeItem.imageUrl) ? (
-            <Image
-              src={pet.storeItem.imageUrl}
-              alt={name}
-              width={118}
-              height={118}
-              className="block size-[118px]"
-            />
-          ) : (
-            // PRO-18 — a species with no real artwork yet, same
-            // icon-fallback treatment `ItemWell`/`AnimalCard` use.
-            <div className="flex size-[118px] items-center justify-center rounded-full bg-input">
-              <DynamicIcon
-                name={pet.storeItem.imageUrl as IconName}
-                size={56}
-                strokeWidth={1.6}
-                className="text-ink-soft"
-                aria-hidden
-              />
-            </div>
-          )}
-          {equippedAccessory ? (
-            <span
+        {/* Was a 118px square against the old square animal art. The
+            2026-08-23 pack's canvas is portrait and leaves its top third
+            clear for a hat, so this is the height that draws the animal
+            itself at roughly the size it was — and the accessory now lands
+            inside the same box rather than as a badge hung off its corner. */}
+        {hasRealArt(pet.storeItem.imageUrl) ? (
+          <PetArt
+            animalUrl={pet.storeItem.imageUrl}
+            accessoryUrl={accessoryUrl}
+            height={STAGE_ART_HEIGHT}
+            shadow="stage"
+            alt={name}
+          />
+        ) : (
+          // PRO-18 — a species with no real artwork yet, same icon-fallback
+          // treatment `ItemWell`/`AnimalCard` use. Nothing in the catalogue
+          // reaches this any more (every species has art), but an accessory
+          // can't be previewed on a pet that has no art to preview it on, so
+          // the branch stays rather than becoming a broken layer.
+          <div className="flex size-[118px] items-center justify-center rounded-full bg-input">
+            <DynamicIcon
+              name={pet.storeItem.imageUrl as IconName}
+              size={56}
+              strokeWidth={1.6}
+              className="text-ink-soft"
               aria-hidden
-              className="absolute right-0 bottom-0 flex size-9 items-center justify-center rounded-full bg-violet-tint text-violet-text ring-2 ring-surface shadow-card"
-            >
-              <DynamicIcon
-                name={equippedAccessory.storeItem.imageUrl as IconName}
-                size={18}
-                strokeWidth={2.2}
-              />
-            </span>
-          ) : null}
-        </div>
+            />
+          </div>
+        )}
 
         <div className="mt-3 flex min-h-8 items-center">
           {editingName ? (
