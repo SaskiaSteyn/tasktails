@@ -45,34 +45,37 @@ import type { StoreItemWithLock } from "@/lib/store";
  * the exact same treatment, so there's one definition instead of two that
  * could drift.
  *
- * `badge` (URG-02/URG-03) is an inert slot, not a stock/cart number:
- * `StorePage` decides server-side which one of `<StockBadge />`/
- * `<CartActivityBadge />` an item gets — mutually exclusive, per the user
- * (2026-08-04, after both tickets had already shipped allowing both at
- * once) — and only ever unlocked items get one (advertising urgency on
- * something you can't yet buy reads as nonsensical, same call STOR-05's
- * add-to-cart button already made for its own unlocked-only rendering) —
- * this component just renders whatever it's handed, same as `StoreBrowser`'s
- * own `flashSaleBanner` prop. The wrapper around `{badge}` is the card's
- * *only* `position: absolute` element in this corner; `StockBadge`/
- * `CartActivityBadge` are plain, unpositioned pills, so the wrapper still
- * lays out a single child correctly without any special-casing.
+ * `badge` (URG-02/URG-03) is an inert slot, not a fixed component:
+ * `StorePage` decides server-side which of `<StockBadge />`/
+ * `<CartActivityBadge />` an item gets — at most one, per
+ * `urgencyDataForItems()`'s `badgeSelection` — plus two curated exceptions
+ * from `design_handoff/ADDENDUM-store-zoo-art.md`'s own art (`<BuyOneGetOneBadge
+ * />` for Red collar, `<CurrencyUrgencyBadge overlay />` for Hearts), and
+ * only ever unlocked items get one (advertising urgency on something you
+ * can't yet buy reads as nonsensical, same call STOR-05's add-to-cart button
+ * already made for its own unlocked-only rendering) — this component just
+ * renders whatever it's handed, same as `StoreBrowser`'s own
+ * `flashSaleBanner` prop. The wrapper around `{badge}` is the card's *only*
+ * `position: absolute` element in this corner; every badge component is a
+ * plain, unpositioned pill, so the wrapper's `flex flex-col items-end gap-1`
+ * still stacks two correctly (Sunflower seeds' curated stock+cart pair)
+ * without any special-casing.
  *
- * `note` (URG-04) is a second, independent inert slot for
- * `<RecentPurchasesBadge />` — a different card position from `badge`
- * (inline in the header below the category label, not overlaid on the art
- * region), so it renders directly in the card's normal flow rather than
- * through the `badge` wrapper. Same "unlocked only" rule as `badge`.
- *
- * `design_handoff/ADDENDUM-store-zoo-art.md` adds two more inert slots on
- * top of those, all still decided server-side by `StorePage`, same
- * "study-group-aware markup never reaches client code as a boolean" rule:
- * `footerNote` sits
- * above the price row rather than below the category label, for the
- * addendum's "footer becomes a stacked column" cards; `pricing` swaps the
- * plain price for a struck-through list price beside a bold sale price
- * (`fakeDiscountPricing()` in `urgency.ts`) — display only, the "+" button
- * still adds `item.coinPrice` itself to the cart.
+ * `design_handoff/ADDENDUM-store-zoo-art.md` adds two more inert slots, both
+ * still decided server-side by `StorePage`, same "study-group-aware markup
+ * never reaches client code as a boolean" rule: `footerNote` sits above the
+ * price row — the addendum's "social-proof line above the price" — for
+ * whichever of `<RecentPurchasesBadge />` (URG-04)/`<UrgencyLanguageNote
+ * />` (URG-05)/`<BundleTimerBadge />` (URG-06)/`<CurrencyUrgencyBadge />`
+ * (URG-07, its default non-`overlay` form) an item's `noteSelection` picked
+ * — **fixed 2026-08-25 (#202, "labels are all over the place")**: the
+ * latter three used to render through a *third* card slot instead (below
+ * the category label), a position `design_handoff` never actually draws;
+ * removed entirely rather than left unused, since the addendum's own
+ * placement is only ever these two spots per card, never three. `pricing`
+ * swaps the plain price for a struck-through list price beside a bold sale
+ * price (`fakeDiscountPricing()` in `urgency.ts`) — display only, the "+"
+ * button still adds `item.coinPrice` itself to the cart.
  *
  * A locked card is now a real `<button>` (SHR-06): tapping it calls
  * `onLockedClick`, which `StoreBrowser` uses to show the full-screen
@@ -87,7 +90,6 @@ const FEEDBACK_MS = 1200;
 export function StoreItemCard({
   item,
   badge,
-  note,
   footerNote,
   pricing,
   onLockedClick,
@@ -95,8 +97,7 @@ export function StoreItemCard({
   item: StoreItemWithLock;
   /** Overlaid on the art region, top-right — one badge, or several stacked. */
   badge?: ReactNode;
-  note?: ReactNode;
-  /** Stacked above the price row in the footer, e.g. a "sold in the last hour" social-proof line — a different position from `note`'s spot below the category label. */
+  /** Stacked above the price row in the footer, e.g. a "sold in the last hour" social-proof line. */
   footerNote?: ReactNode;
   /** Group-B fake discount (`fakeDiscountPricing()`) — struck list price beside a bold sale price, replacing the plain `item.coinPrice` display. Display only; the "+" button still charges `item.coinPrice`. */
   pricing?: { list: number; sale: number };
@@ -159,8 +160,6 @@ export function StoreItemCard({
         <p className={cn("text-[10px]", locked ? "text-ink-disabled" : "text-ink-faint")}>
           {itemSubtitle(item)}
         </p>
-
-        {note}
       </div>
 
       {/* Art region — full-bleed (no card padding around it, no corner
@@ -168,8 +167,20 @@ export function StoreItemCard({
           header and the footer, so its own fill is what separates the two
           rather than a drawn border. `overflow-hidden` on the card clips it
           against the card's rounded corners; it never touches them anyway
-          with a header above and a footer below. */}
-      <div className="relative mt-auto">
+          with a header above and a footer below.
+
+          No `mt-auto` here (removed — it used to push this region down to
+          meet the footer at the bottom of the card). `StoreBrowser`'s grid
+          stretches every card in a row to match its tallest neighbour
+          (Grid's default `align-items: stretch`), and a card whose footer
+          has a `footerNote` line (URG-04/05/06/07) is taller than a
+          row-mate without one; `mt-auto` absorbed exactly that difference as
+          blank margin *above* this region — a visible gap between the title
+          and the art with no drawn cause, reported live. `StoreBrowser`'s
+          `items-start` on the grid is the real fix (each card now sizes to
+          its own content instead of stretching at all); this class was the
+          other half of the same hack and is dead weight without it. */}
+      <div className="relative">
         {badge && (
           <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1">
             {badge}

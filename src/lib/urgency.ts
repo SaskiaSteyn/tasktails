@@ -25,19 +25,23 @@ import { createHash } from "node:crypto";
  * never both, never neither (2026-08-04, after all 7 frontend URG tickets
  * had shipped).
  *
- * `noteSelection` (URG-05, extended by URG-06 and URG-07) is the equivalent
- * for the card's second slot — the inline line below the category label.
- * URG-04 shipped `showRecentPurchases` as an independent coin flip; URG-05's
- * own text ("Last chance — don't miss out!") lives in that exact same slot,
- * and the user chose *mutual exclusivity* here (unlike the corner badges'
- * "both allowed" — several full sentences/pills stacked read as too crowded
- * for a 172px card). URG-06's bundle-timer pill and URG-07's currency-urgency
- * pill both landed in the same slot too (the design mock draws all four in
- * the identical position), so `noteSelection` grew again rather than adding
- * a separate rule each time: 0 = neither note, 1 = recent-purchases,
- * 2 = urgency-language, 3 = bundle-timer, 4 = currency-urgency. "Neither"
- * stays a possible outcome, preserving URG-04's own already-confirmed "can
- * be absent entirely" behaviour — only "more than one at once" is ruled out.
+ * `noteSelection` (URG-05, extended by URG-06 and URG-07) picks among four
+ * mutually-exclusive extra stimuli, independent of `badgeSelection`. All four
+ * render below the image and above the price (`StorePage`'s
+ * `urgencyFooterNotes` map, `StoreItemCard`'s `footerNote` slot) — briefly,
+ * between 2026-08-25's two attempts at issue #202, three of them (urgency-
+ * language, bundle-timer, currency-urgency) lived in the top-right corner
+ * stack alongside `badgeSelection`'s pick instead, which turned out to be
+ * exactly the wrong fix once screenshotted: a corner-badge-shaped pill with
+ * this much text reads as a banner smeared across the art. Placement is a
+ * rendering concern for `StorePage`/`StoreItemCard`; this module only
+ * decides which stimulus, if any, an item gets. Mutual exclusivity across
+ * all four (unlike the corner badges' own stock/cart-activity pick) is
+ * unchanged by any of that — several full sentences/pills at once reads as
+ * too crowded for a 172px card either way: 0 = none, 1 = recent-purchases,
+ * 2 = urgency-language, 3 = bundle-timer, 4 = currency-urgency. "None" stays
+ * a possible outcome, preserving URG-04's own already-confirmed "can be
+ * absent entirely" behaviour — only "more than one at once" is ruled out.
  */
 
 type UrgencyKind =
