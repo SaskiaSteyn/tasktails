@@ -7,19 +7,31 @@
  * design_handoff is the authoritative visual source per AGENTS.md, same
  * precedent URG-05/URG-06 already established for fixed-copy urgency notes.
  *
- * Static text, no ticking state and no props — unlike `BundleTimerBadge`
- * (URG-06), the mock draws no MM:SS countdown alongside this one, so there's
- * nothing to compute. Not a client component, rendered fully server-side.
+ * Static text, no ticking state — unlike `BundleTimerBadge` (URG-06), the
+ * mock draws no MM:SS countdown alongside this one, so there's nothing to
+ * compute. Not a client component, rendered fully server-side.
  *
  * Purely decorative, like every other Group B urgency stimulus (§4: "there
  * is no real stock, real social activity, or real deadline") — no checkout
  * or economy logic actually doubles XP for a purchase made while this shows.
  *
- * Shares `StoreItemCard`'s `note` slot with `RecentPurchasesBadge`
- * (URG-04), `UrgencyLanguageNote` (URG-05) and `BundleTimerBadge` (URG-06) —
- * `urgencyDataForItems()`'s `noteSelection` seed (URG-08) grew to a 5-way
- * pick to keep all four mutually exclusive, same pattern as URG-06's own
- * extension.
+ * Two positions, both real — this is the one urgency component that
+ * genuinely earns an `overlay` prop rather than needing a fix to remove it:
+ * `overlay` (`ADDENDUM-store-zoo-art.md`'s curated Hearts card only, wired by
+ * `StorePage`) is the small `rounded-pill` treatment aligned with the other
+ * corner badges, per the addendum's art (drawn top-centred there; the user
+ * asked for it aligned with the other cards' corner badges instead,
+ * 2026-08-18). The default (every other Group-B item, via `noteSelection`)
+ * renders through `StoreItemCard`'s `footerNote` slot instead, below the
+ * image and above the price — **relocated there 2026-08-25 (#202, "labels
+ * are all over the place")** from a second header slot `design_handoff`
+ * never actually drew; a first attempt at that fix put the default variant
+ * in the corner too, which read as a banner smeared across the art once the
+ * pill had this much text in it (confirmed live via screenshot) rather than
+ * a small "Only 3 left!"-style tag. Still mutually exclusive with
+ * `UrgencyLanguageNote` (URG-05) and `BundleTimerBadge` (URG-06) —
+ * `urgencyDataForItems()`'s `noteSelection` seed (URG-08) guarantees at most
+ * one of the three is ever passed down.
  */
 export function CurrencyUrgencyBadge({ overlay = false }: { overlay?: boolean }) {
   return (

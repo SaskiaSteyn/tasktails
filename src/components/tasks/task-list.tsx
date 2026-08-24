@@ -366,8 +366,10 @@ export function TaskList({
           </ul>
         ) : doneTasks.length > 0 ? (
           // Nothing open, but there's history below — still "all clear" for
-          // what the participant actually has to do right now.
-          <EmptyTasksState />
+          // what the participant actually has to do right now, with copy
+          // that reflects the completed history instead of implying they've
+          // never added a task (issue #199).
+          <EmptyTasksState hasCompletedTasks />
         ) : null}
 
         {doneTasks.length > 0 ? (

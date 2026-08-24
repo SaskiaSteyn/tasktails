@@ -11,10 +11,9 @@ import { prisma } from "@/lib/prisma";
  * `imageUrl` is a real file path wherever artwork exists and a lucide-react
  * icon name otherwise; `hasRealArt()` in `item-visual.tsx` tells the two
  * apart, for every category. As of the 2026-08-23 art pack that leaves FOOD
- * (10 rows) and `Cosy den` as the only icon-name rows in the catalogue —
- * every animal points at `public/animals/happy/`, every accessory at
- * `public/accessories/`, and the other 16 decorations at
- * `public/backgrounds/`.
+ * (10 rows) as the only icon-name rows in the catalogue — every animal
+ * points at `public/animals/happy/`, every accessory at
+ * `public/accessories/`, and every decoration at `public/backgrounds/`.
  *
  * Animals and accessories are drawn on one shared 1080×1400 canvas so an
  * accessory layers onto an animal with no adjustment; `src/lib/pet-art.ts`
@@ -38,9 +37,10 @@ import { prisma } from "@/lib/prisma";
  * renamed to match the PDF exactly: "Sunflower seeds" = PDF "Seed" (Food),
  * "Red collar" = "Collar" (Accessories), "Treat box" = "Carrots" (Food),
  * "Koala kit"/"Fox kit"/"Penguin kit" = PDF "Koala"/"Fox"/"Penguin"
- * (Animals). **"Cosy den" (Decorations, 280 coins) has no PDF match at any
- * level/price** — left with no `rarity` rather than guessing one; still an
- * open gap, not an oversight. **PRO-18 (2026-08-10)** added the remaining 19
+ * (Animals). The seventh, "Cosy den" (Decorations, 280 coins), had no PDF
+ * match at any level/price and was dropped entirely on 2026-08-24 (#207)
+ * rather than kept as a fabricated, art-less catalogue row — see the
+ * `removals` array below. **PRO-18 (2026-08-10)** added the remaining 19
  * animals (icon-fallback artwork) so "own every animal" achievements have
  * the real catalogue to target. **2026-08-23** added Hedgehog, the one
  * species in the art pack with no PDF row at all — 70 items, 23 animals.
@@ -55,9 +55,7 @@ import { prisma } from "@/lib/prisma";
  * (Lvl 10) specifically were pinned to the study's old "second/third animal
  * type" exposure timing — all 22 animals are now spread through the curve
  * like every other category (Johan, 2026-08-11), and nothing here is
- * special-cased by name any more. `Cosy den` is the one exception: it has no
- * `rarity` and isn't part of the PDF catalogue the remap covers, so its
- * `levelRequired` (5) is untouched.
+ * special-cased by name any more.
  */
 const catalogue: Array<{
   name: string;
@@ -91,15 +89,6 @@ const catalogue: Array<{
     coinPrice: 120,
     imageUrl: "package",
     rarity: StoreItemRarity.RARE, // = PDF "Carrots" (Food)
-  },
-  {
-    // No PDF row matches Decorations/Lvl5/280 — left without a rarity
-    // rather than guessing one. See the file doc comment.
-    name: "Cosy den",
-    category: StoreItemCategory.DECORATIONS,
-    levelRequired: 5,
-    coinPrice: 280,
-    imageUrl: "home",
   },
   {
     // The starter animal, and deliberately almost free. Onboarding (ONB-01)
@@ -263,12 +252,11 @@ const catalogue: Array<{
   // row instead of updating the old one, stranding the old-named row as a
   // duplicate. The six pre-existing rows were renamed in place directly in
   // Postgres before re-running this seed, specifically to avoid that; a
-  // fresh database has no such duplicate to worry about. `Chicken legs` (->
-  // chicken.svg) still keeps its own name despite the same name/asset
-  // mismatch, since it wasn't part of either rename request. `Cosy den`
-  // (this catalogue's other DECORATIONS row, above) is deliberately
-  // untouched — no matching background art exists for it, same "no real
-  // artwork yet" icon-fallback treatment the art-less animal species use.
+  // fresh database has no such duplicate to worry about (2026-08-24, #207:
+  // that fix never reached the `renames` array below, so it only covered the
+  // one database it was done on by hand — added retroactively). `Chicken
+  // legs` (-> chicken.svg) still keeps its own name despite the same
+  // name/asset mismatch, since it wasn't part of either rename request.
   { name: "Hearts", category: StoreItemCategory.DECORATIONS, levelRequired: 1, coinPrice: 30, imageUrl: "/backgrounds/hearts.svg", rarity: StoreItemRarity.COMMON },
   { name: "Stars", category: StoreItemCategory.DECORATIONS, levelRequired: 2, coinPrice: 35, imageUrl: "/backgrounds/stars.svg", rarity: StoreItemRarity.COMMON },
   { name: "Triangle", category: StoreItemCategory.DECORATIONS, levelRequired: 3, coinPrice: 40, imageUrl: "/backgrounds/triangles.svg", rarity: StoreItemRarity.COMMON },
@@ -365,10 +353,7 @@ const achievements: Array<{
  * This file's lookup is `name` + `category` (see the doc comment), which
  * means a renamed row reads as a row that doesn't exist yet: the seed would
  * `create` the new name and leave the old one behind, still owned, still
- * equipped, still counting toward "own every accessory". The 2026-08-16
- * decorations rename hit exactly that and was fixed by renaming the rows in
- * Postgres by hand before re-seeding — this does the same thing in the seed,
- * where it can't be forgotten.
+ * equipped, still counting toward "own every accessory".
  *
  * Deliberately not a `deleteMany` of unknown names, the way the achievements
  * below are pruned: a `StoreItem` is referenced by `InventoryItem`,
@@ -376,9 +361,42 @@ const achievements: Array<{
  * participant's purchase history with it.
  */
 const renames: Array<{ from: string; to: string; category: StoreItemCategory }> = [
+  // 2026-08-16, with the reworked pattern-tile asset pack — the seven
+  // renamed decorations (issue #207, "old background names"). This array
+  // didn't exist yet when that rename shipped, so it only reached the
+  // database it was made on (fixed there by hand); every other database
+  // seeded before 2026-08-16 and reseeded since has both names live side by
+  // side, e.g. "Pillow" and "Sprinkles" both showing as Level 6 Rare
+  // decorations. Added here now so re-seeding heals it instead of requiring
+  // the same by-hand fix on every affected database.
+  { from: "Pillow", to: "Sprinkles", category: StoreItemCategory.DECORATIONS },
+  { from: "Straw", to: "Bows", category: StoreItemCategory.DECORATIONS },
+  { from: "Savannah", to: "Rainbow", category: StoreItemCategory.DECORATIONS },
+  { from: "Mona Lisa (fox logo)", to: "Gingham", category: StoreItemCategory.DECORATIONS },
+  { from: "Starry night", to: "Retro", category: StoreItemCategory.DECORATIONS },
+  { from: "Gradient", to: "Maze", category: StoreItemCategory.DECORATIONS },
+  { from: "Trees", to: "Squiggles", category: StoreItemCategory.DECORATIONS },
   // 2026-08-23, with the art pack — the two swapped accessories.
   { from: "Harry Potter glasses", to: "Moustache", category: StoreItemCategory.ACCESSORIES },
   { from: "Oversized sunglasses", to: "Mandarin", category: StoreItemCategory.ACCESSORIES },
+];
+
+/**
+ * Catalogue rows dropped entirely rather than renamed — deliberately
+ * explicit and one at a time, never a blanket "delete anything not in
+ * `catalogue`" pass the way stale achievements are pruned below: a
+ * `StoreItem` is referenced by `InventoryItem`, `CartItem`, `Transaction` and
+ * `Pet` (all `onDelete: Cascade`), so an automatic sweep could take a
+ * participant's purchase history with it for a name that simply hasn't been
+ * added to `catalogue` yet, not one the project owner actually asked gone.
+ */
+const removals: Array<{ name: string; category: StoreItemCategory }> = [
+  // 2026-08-24 (#207) — "Cosy den" never had a PDF match at any level/price
+  // (see the file doc comment) and, unlike every other DECORATIONS row, was
+  // never drawn as real background art either. Dropped at the project
+  // owner's direction rather than kept as the one fabricated, art-less row
+  // in an otherwise-real catalogue.
+  { name: "Cosy den", category: StoreItemCategory.DECORATIONS },
 ];
 
 async function main() {
@@ -396,6 +414,11 @@ async function main() {
       await prisma.storeItem.update({ where: { id: old.id }, data: { name: to } });
       console.log(`Renamed StoreItem "${from}" -> "${to}".`);
     }
+  }
+
+  for (const { name, category } of removals) {
+    const { count } = await prisma.storeItem.deleteMany({ where: { name, category } });
+    if (count > 0) console.log(`Removed StoreItem "${name}".`);
   }
 
   for (const item of catalogue) {

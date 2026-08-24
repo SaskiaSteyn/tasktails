@@ -146,7 +146,7 @@ export function UsernameField({
           autoCapitalize="none"
           spellCheck={false}
           autoFocus={autoFocus}
-          placeholder="your-username"
+          placeholder="your_username"
           value={value}
           disabled={disabled}
           aria-invalid={invalid || undefined}

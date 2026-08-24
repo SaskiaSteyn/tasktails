@@ -238,18 +238,45 @@ export async function deleteTask(
  * throwing, so the caller can't double-grant a reward for a task that was
  * already done — completing it forward-only, with no un-complete, keeps
  * that guarantee simple to reason about.
+ *
+ * **Also closes out any open subtasks (issue #198, "not all sub tasks get
+ * ticked").** This is called from two places: SUB-05's route, where every
+ * subtask is already complete by the time it calls this (a no-op write
+ * here), and TASK-11's route, completing the task directly regardless of
+ * subtask state. That second path used to leave open subtasks stranded —
+ * `completedAt` on the parent, but the subtasks themselves untouched — which
+ * broke the invariant SUB-05's own route depends on (it refuses to touch a
+ * subtask once `task.completedAt` is set), so an already-open subtask could
+ * never be ticked afterward either. Whole-task completion already prices
+ * the task's full reward (TASK-11/SUB-5), so no separate grant is due for
+ * subtasks closed out this way — same "no reward" reasoning SUB-4's own
+ * auto-complete direction already uses, just applied to the other one.
+ * Both writes share one transaction so a task can never end up marked done
+ * with a subtask still open, not even from a request that fails partway
+ * through.
  */
 export async function markTaskComplete(
   userId: string,
   taskId: string,
   completedAt: Date,
 ): Promise<Task | null> {
-  const { count } = await prisma.task.updateMany({
-    where: { id: taskId, userId, completedAt: null },
-    data: { completedAt },
-  });
+  return prisma.$transaction(async (tx) => {
+    const { count } = await tx.task.updateMany({
+      where: { id: taskId, userId, completedAt: null },
+      data: { completedAt },
+    });
+    if (count === 0) return null;
 
-  return count === 0 ? null : taskForUser(userId, taskId);
+    await tx.subtask.updateMany({
+      where: { taskId, completedAt: null },
+      data: { completedAt },
+    });
+
+    return tx.task.findFirst({
+      where: { id: taskId, userId },
+      include: { subtasks: { orderBy: { id: "asc" } } },
+    });
+  });
 }
 
 /**
