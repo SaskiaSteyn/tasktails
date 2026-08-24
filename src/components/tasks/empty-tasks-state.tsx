@@ -10,8 +10,22 @@ import { CreateTaskSheet } from "@/components/tasks/create-task-sheet";
  * rather than sharing `BottomNav`'s: the sheet is a controlled, stateless-
  * between-opens component, so two independent triggers for it are simpler
  * than wiring cross-component state for a screen with no other shared data.
+ *
+ * `hasCompletedTasks` (**added 2026-08-25, issue #199**) swaps the subtitle:
+ * `TaskList` renders this component at two different moments — genuinely no
+ * tasks ever, and no *active* tasks with completed history sitting right
+ * below in the collapsed section — and the design mock only ever drew the
+ * first. "No tasks yet" read as wrong for the second (a participant who has
+ * already completed several tasks has not, in fact, added none yet), so it
+ * gets its own congratulatory copy instead. Defaults to `false` — the
+ * `tasks.length === 0` call site never has history to reflect, so it doesn't
+ * need to pass anything.
  */
-export function EmptyTasksState() {
+export function EmptyTasksState({
+  hasCompletedTasks = false,
+}: {
+  hasCompletedTasks?: boolean;
+}) {
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
@@ -24,7 +38,9 @@ export function EmptyTasksState() {
       </div>
       <p className="font-display text-[17px] font-semibold">All clear!</p>
       <p className="mt-[6px] mb-[18px] text-[12.5px] text-ink-soft">
-        No tasks yet. Add your first to start earning coins.
+        {hasCompletedTasks
+          ? "Nice work — you're all caught up! Add another task whenever you're ready."
+          : "No tasks yet. Add your first to start earning coins."}
       </p>
       <button
         type="button"
