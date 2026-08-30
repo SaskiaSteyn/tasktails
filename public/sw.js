@@ -25,7 +25,13 @@
 // mean refresh, rather than a button that does nothing until the page is
 // closed and reopened regardless.
 
-const CACHE_VERSION = "v2"; // PWA-03 — bumped for the new /offline precache entry.
+// Bumped whenever a cache-first asset changes *without* its URL changing.
+// `/brand/` and `/animals/` are cache-first (see `isStaticAsset`) and
+// `/brand/icon.svg` is precached outright, so an installed PWA keeps serving
+// the previous app icon and fox art forever otherwise — the SW file itself is
+// what the browser diffs to decide a new worker is worth installing.
+// v3 — 2026-08-30, the new app icon and fox artwork.
+const CACHE_VERSION = "v3";
 const CACHE_NAME = `tasktails-shell-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = ["/manifest.webmanifest", "/brand/icon.svg", "/offline"];
