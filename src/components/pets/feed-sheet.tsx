@@ -1,12 +1,12 @@
 "use client";
 
 import { Utensils } from "lucide-react";
-import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
+import { ItemWell } from "@/components/store/item-visual";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -193,19 +193,19 @@ export function FeedSheet({
                           : "border-border-track bg-warm hover:border-checkbox",
                       )}
                     >
-                      <span className="flex size-11 flex-none items-center justify-center rounded-[10px] bg-amber-tint text-amber-text">
-                        <DynamicIcon
-                          // `imageUrl` is a free-form DB string (SVG paths for
-                          // animals, icon names for everything else per
-                          // `seed.ts`) — cast rather than widen `IconName`,
-                          // since the seed data is the only source of truth for
-                          // what's actually in it.
-                          name={item.storeItem.imageUrl as IconName}
-                          size={20}
-                          strokeWidth={2.2}
-                          aria-hidden
-                        />
-                      </span>
+                      {/* The store's own well, not a hand-rolled copy of it —
+                          the 2026-08-30 food pack means these rows draw real
+                          artwork (cropped to its content box, drop-shadowed)
+                          exactly as the cart row does, and an art-less row
+                          still falls back to the amber-tinted lucide glyph
+                          this used to hard-code. */}
+                      <ItemWell
+                        item={item.storeItem}
+                        size={44}
+                        iconSize={20}
+                        animalIconSize={32}
+                        rounded="rounded-[10px]"
+                      />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-extrabold">
                           {item.storeItem.name}

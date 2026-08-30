@@ -6,9 +6,9 @@ import type { StoreItem, StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
 import {
   ANIMAL_SHADOW,
-  ART_CANVAS,
   type ArtFocus,
   type ArtShadowSize,
+  artCanvasFor,
   artFocusFor,
 } from "@/lib/pet-art";
 
@@ -82,8 +82,11 @@ function ArtThumb({
   shadow: ArtShadowSize;
 }) {
   const focus = artFocusFor(imageUrl) ?? WHOLE_CANVAS;
-  const contentWidth = ART_CANVAS.width * focus.width;
-  const contentHeight = ART_CANVAS.height * focus.height;
+  // Per-file, not the one animal canvas: the food pack is square, and reading
+  // its focus box against the portrait canvas would letterbox every thumbnail.
+  const canvas = artCanvasFor(imageUrl);
+  const contentWidth = canvas.width * focus.width;
+  const contentHeight = canvas.height * focus.height;
   const wide = contentWidth >= contentHeight;
 
   return (
@@ -104,8 +107,8 @@ function ArtThumb({
         <Image
           src={imageUrl}
           alt=""
-          width={ART_CANVAS.width}
-          height={ART_CANVAS.height}
+          width={canvas.width}
+          height={canvas.height}
           className={cn("absolute block max-w-none", ANIMAL_SHADOW[shadow])}
           style={{
             width: `${100 / focus.width}%`,

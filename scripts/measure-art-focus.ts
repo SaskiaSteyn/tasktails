@@ -22,14 +22,23 @@ import { basename, join } from "node:path";
 
 import sharp from "sharp";
 
-/** 1080×1400 ÷ 5 — enough resolution for a fraction rounded to 3 decimals, fast enough to sweep 67 files. */
-const W = 216;
-const H = 280;
+/**
+ * Each pack's canvas ÷ 5 — enough resolution for a fraction rounded to 3
+ * decimals, fast enough to sweep 77 files. The food pack (2026-08-30) is
+ * drawn square rather than on the animals' 1080×1400 canvas, so it measures
+ * against its own; a fraction is only meaningful against the canvas it was
+ * measured on (`artCanvasFor()` in `src/lib/pet-art.ts`).
+ */
+const DIRS: { dir: string; w: number; h: number }[] = [
+  { dir: "public/animals/happy", w: 216, h: 280 },
+  { dir: "public/accessories", w: 216, h: 280 },
+  { dir: "public/food", w: 216, h: 216 },
+];
 
 /** Breathing room around the measured box, in canvas fractions, so a crop never shaves the outermost antialiased pixel. */
 const MARGIN = 0.015;
 
-async function contentBox(file: string) {
+async function contentBox(file: string, W: number, H: number) {
   const { data, info } = await sharp(file, { density: 200 })
     .resize(W, H, { fit: "fill" })
     .ensureAlpha()
@@ -65,10 +74,10 @@ async function contentBox(file: string) {
 }
 
 async function main() {
-  for (const dir of ["public/animals/happy", "public/accessories"]) {
+  for (const { dir, w, h } of DIRS) {
     console.log(`\n  // ${dir.replace("public", "")}`);
     for (const file of readdirSync(dir).filter((n) => n.endsWith(".svg")).sort()) {
-      const box = await contentBox(join(dir, file));
+      const box = await contentBox(join(dir, file), w, h);
       const key = basename(file, ".svg");
       console.log(
         `  "${key}": { x: ${box.x}, y: ${box.y}, width: ${box.width}, height: ${box.height} },`,

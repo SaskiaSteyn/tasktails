@@ -10,10 +10,11 @@ import { prisma } from "@/lib/prisma";
  *
  * `imageUrl` is a real file path wherever artwork exists and a lucide-react
  * icon name otherwise; `hasRealArt()` in `item-visual.tsx` tells the two
- * apart, for every category. As of the 2026-08-23 art pack that leaves FOOD
- * (10 rows) as the only icon-name rows in the catalogue — every animal
- * points at `public/animals/happy/`, every accessory at
- * `public/accessories/`, and every decoration at `public/backgrounds/`.
+ * apart, for every category. As of the 2026-08-30 food pack every row in the
+ * catalogue carries real artwork: animals in `public/animals/happy/`,
+ * accessories in `public/accessories/`, decorations in
+ * `public/backgrounds/`, food in `public/food/`. (The icon-name branch stays
+ * — it's what a new row with no art yet falls back to.)
  *
  * Animals and accessories are drawn on one shared 1080×1400 canvas so an
  * accessory layers onto an animal with no adjustment; `src/lib/pet-art.ts`
@@ -71,7 +72,7 @@ const catalogue: Array<{
     category: StoreItemCategory.FOOD,
     levelRequired: 2,
     coinPrice: 40,
-    imageUrl: "wheat",
+    imageUrl: "/food/sunflower-seeds.svg",
     rarity: StoreItemRarity.COMMON, // = PDF "Seed"
   },
   {
@@ -87,7 +88,7 @@ const catalogue: Array<{
     category: StoreItemCategory.FOOD,
     levelRequired: 6,
     coinPrice: 120,
-    imageUrl: "package",
+    imageUrl: "/food/treats.svg",
     rarity: StoreItemRarity.RARE, // = PDF "Carrots" (Food)
   },
   {
@@ -182,14 +183,14 @@ const catalogue: Array<{
 
   // ---- GACHA-03: the rest of Gatcha stuffs.pdf's Food table. levelRequired
   // is the 2026-08-11 remap (ADDENDUM-xp-curve.md), not the PDF's own numbers.
-  { name: "Steak", category: StoreItemCategory.FOOD, levelRequired: 13, coinPrice: 480, imageUrl: "beef", rarity: StoreItemRarity.EPIC },
-  { name: "Chicken", category: StoreItemCategory.FOOD, levelRequired: 8, coinPrice: 150, imageUrl: "drumstick", rarity: StoreItemRarity.RARE },
-  { name: "Hay", category: StoreItemCategory.FOOD, levelRequired: 1, coinPrice: 30, imageUrl: "wheat", rarity: StoreItemRarity.COMMON },
-  { name: "Fish", category: StoreItemCategory.FOOD, levelRequired: 10, coinPrice: 220, imageUrl: "fish", rarity: StoreItemRarity.RARE },
-  { name: "Lettuce", category: StoreItemCategory.FOOD, levelRequired: 3, coinPrice: 45, imageUrl: "leafy-green", rarity: StoreItemRarity.COMMON },
-  { name: "Branch", category: StoreItemCategory.FOOD, levelRequired: 4, coinPrice: 50, imageUrl: "sprout", rarity: StoreItemRarity.COMMON },
-  { name: "Shrimp", category: StoreItemCategory.FOOD, levelRequired: 15, coinPrice: 950, imageUrl: "shrimp", rarity: StoreItemRarity.EPIC },
-  { name: "Bananas", category: StoreItemCategory.FOOD, levelRequired: 11, coinPrice: 420, imageUrl: "banana", rarity: StoreItemRarity.EPIC },
+  { name: "Steak", category: StoreItemCategory.FOOD, levelRequired: 13, coinPrice: 480, imageUrl: "/food/steak.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Chicken", category: StoreItemCategory.FOOD, levelRequired: 8, coinPrice: 150, imageUrl: "/food/chicken.svg", rarity: StoreItemRarity.RARE },
+  { name: "Hay", category: StoreItemCategory.FOOD, levelRequired: 1, coinPrice: 30, imageUrl: "/food/hay.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Fish", category: StoreItemCategory.FOOD, levelRequired: 10, coinPrice: 220, imageUrl: "/food/fish.svg", rarity: StoreItemRarity.RARE },
+  { name: "Lettuce", category: StoreItemCategory.FOOD, levelRequired: 3, coinPrice: 45, imageUrl: "/food/lettuce.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Branch", category: StoreItemCategory.FOOD, levelRequired: 4, coinPrice: 50, imageUrl: "/food/branch.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Shrimp", category: StoreItemCategory.FOOD, levelRequired: 15, coinPrice: 950, imageUrl: "/food/shrimp.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Bananas", category: StoreItemCategory.FOOD, levelRequired: 11, coinPrice: 420, imageUrl: "/food/bananas.svg", rarity: StoreItemRarity.EPIC },
 
   // ---- GACHA-03: the rest of Gatcha stuffs.pdf's Accessories table.
   // Hats and ties used to share one loose-fit lucide glyph each; the
