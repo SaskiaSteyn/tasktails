@@ -229,6 +229,11 @@ export type LuckyBoxUrgencyData = {
  * pattern `FlashSaleBanner` (URG-01) already established ("resets on page
  * load", confirmed with the user rather than server-fabricated) — there is
  * nothing for the backend to compute for it.
+ *
+ * `recentPulls` rotates once per UTC day, inherited from `seededInt()`'s
+ * day-bucketed seed (#187) — the same daily reshuffle catalogue urgency
+ * gets, so the Lucky Box's "N opened in the last hour" isn't left as the one
+ * frozen stimulus.
  */
 export function luckyBoxUrgencyForUser(userId: string): LuckyBoxUrgencyData {
   return {

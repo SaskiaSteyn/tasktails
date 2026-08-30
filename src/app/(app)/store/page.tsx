@@ -125,7 +125,13 @@ export const metadata: Metadata = {
  * builds above, alongside `pricing` — the addendum's fake discount
  * (`fakeDiscountPricing()`), computed for *every* unlocked Group-B item, not
  * just the three curated ones, per its own "applied to every purchasable
- * Group-B item" wording.
+ * Group-B item" wording. Issue #185 revised what that discount *is*: `sale`
+ * is now exactly the Group A price with `list` inflated 20% above it (no real
+ * markdown), and a `BundleTimerBadge` "Buy 2 get 1" item gets the two-unit
+ * figure — `fakeDiscountPricing(coinPrice, 2)` — plus a `bundleQuantities`
+ * entry of `2` so `StoreItemCard`'s "+" adds two units at once. The curated
+ * trio never take the bundle path (their footer note is deleted below), so
+ * they stay single-unit.
  *
  * `level` (SHR-06) is read via `levelOf()` — the same gate check
  * `storeItemsForUser()` already runs internally to resolve each item's own
@@ -218,16 +224,29 @@ export default async function StorePage({
   }
 
   const pricing: Record<string, { list: number; sale: number }> = {};
+  const bundleQuantities: Record<string, number> = {};
   if (showFlashSale) {
+    // Curated Group-B cards from `ADDENDUM-store-zoo-art.md` — fixed copy, and
+    // never the #185 bundle treatment: their `BundleTimerBadge` footer note is
+    // deleted below, so "Buy 2 get 1" pricing would have no badge to match.
+    const curatedNames = ["Sunflower seeds", "Red collar", "Hearts"];
     for (const item of items) {
       if (item.locked) continue;
-      pricing[item.id] = fakeDiscountPricing(item.coinPrice);
+
+      // #185 — a `BundleTimerBadge` "Buy 2 get 1" item prices and adds two
+      // units at once. `urgencyRows` is the same seed that decided the footer
+      // note; re-read it here rather than tracking a second flag.
+      const bundle =
+        !!urgencyRows?.find((row) => row.itemId === item.id)?.showBundleTimer &&
+        !curatedNames.includes(item.name);
+      pricing[item.id] = fakeDiscountPricing(item.coinPrice, bundle ? 2 : 1);
+      if (bundle) bundleQuantities[item.id] = 2;
 
       // The addendum's three curated cards — fixed copy, overriding
       // whatever `urgencyDataForItems()` seeded above for these three names
       // (both the corner badge and the footer note, so no random pick leaks
       // in alongside the curated one).
-      if (["Sunflower seeds", "Red collar", "Hearts"].includes(item.name)) {
+      if (curatedNames.includes(item.name)) {
         delete urgencyBadges[item.id];
         delete urgencyFooterNotes[item.id];
       }
@@ -299,6 +318,7 @@ export default async function StorePage({
             urgencyBadges={urgencyBadges}
             urgencyFooterNotes={urgencyFooterNotes}
             pricing={pricing}
+            bundleQuantities={bundleQuantities}
             level={level}
             initialCategory={initialCategory}
             luckyBoxPrice={LUCKY_BOX_COST_COINS}
