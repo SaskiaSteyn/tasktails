@@ -399,6 +399,76 @@ const removals: Array<{ name: string; category: StoreItemCategory }> = [
   { name: "Cosy den", category: StoreItemCategory.DECORATIONS },
 ];
 
+/**
+ * Moves everything pointing at the old catalogue row onto the surviving one,
+ * then deletes it — how a rename is applied to a database that already has
+ * both names (see the `renames` loop below).
+ *
+ * Never a bare `delete`: `InventoryItem`, `CartItem`, `Transaction` and `Pet`
+ * all reference `StoreItem` with `onDelete: Cascade`, so dropping the old row
+ * outright would take a participant's purchase history and any pet bought
+ * under the old name with it.
+ *
+ * `Transaction` and `Pet` simply repoint — one row per purchase or per pet,
+ * nothing to collapse. `InventoryItem` and `CartItem` stack per user, so an
+ * owner of both names would be left holding two rows of the same item: their
+ * quantities are folded into the surviving row instead, and an equipped old
+ * row hands its `equippedToPetId` over so nobody's background silently
+ * unequips itself.
+ */
+async function mergeStoreItem(fromId: string, toId: string) {
+  await prisma.transaction.updateMany({
+    where: { storeItemId: fromId },
+    data: { storeItemId: toId },
+  });
+  await prisma.pet.updateMany({
+    where: { storeItemId: fromId },
+    data: { storeItemId: toId },
+  });
+
+  for (const row of await prisma.inventoryItem.findMany({ where: { storeItemId: fromId } })) {
+    const kept = await prisma.inventoryItem.findFirst({
+      where: { userId: row.userId, storeItemId: toId },
+    });
+
+    if (!kept) {
+      await prisma.inventoryItem.update({
+        where: { id: row.id },
+        data: { storeItemId: toId },
+      });
+      continue;
+    }
+
+    await prisma.inventoryItem.update({
+      where: { id: kept.id },
+      data: {
+        quantity: kept.quantity + row.quantity,
+        equippedToPetId: kept.equippedToPetId ?? row.equippedToPetId,
+      },
+    });
+    await prisma.inventoryItem.delete({ where: { id: row.id } });
+  }
+
+  for (const row of await prisma.cartItem.findMany({ where: { storeItemId: fromId } })) {
+    const kept = await prisma.cartItem.findFirst({
+      where: { userId: row.userId, storeItemId: toId },
+    });
+
+    if (!kept) {
+      await prisma.cartItem.update({ where: { id: row.id }, data: { storeItemId: toId } });
+      continue;
+    }
+
+    await prisma.cartItem.update({
+      where: { id: kept.id },
+      data: { quantity: kept.quantity + row.quantity },
+    });
+    await prisma.cartItem.delete({ where: { id: row.id } });
+  }
+
+  await prisma.storeItem.delete({ where: { id: fromId } });
+}
+
 async function main() {
   // Before the catalogue loop, so the renamed rows are found by their new
   // name below and updated in place rather than duplicated.
@@ -407,13 +477,24 @@ async function main() {
       prisma.storeItem.findFirst({ where: { name: from, category }, select: { id: true } }),
       prisma.storeItem.findFirst({ where: { name: to, category }, select: { id: true } }),
     ]);
-    // Only when the new name isn't taken: on a re-run the old row is already
-    // gone, and on a database where someone created the new name by hand,
-    // merging two rows is not something a seed should decide.
-    if (old && !current) {
+
+    if (!old) continue;
+
+    if (!current) {
       await prisma.storeItem.update({ where: { id: old.id }, data: { name: to } });
       console.log(`Renamed StoreItem "${from}" -> "${to}".`);
+      continue;
     }
+
+    // Both names live at once — what every database seeded *before* the
+    // rename shipped looks like, the deployed one included: the catalogue
+    // loop created the new row while the old one stayed behind, so the store
+    // shows "Straw" and "Bows" as two separate Rare decorations. The plain
+    // rename above can't fix that (the new name is taken), which is why
+    // re-seeding alone left the old backgrounds on tasktails.co.za for weeks.
+    // Fold the old row into the new one and drop it.
+    await mergeStoreItem(old.id, current.id);
+    console.log(`Merged duplicate StoreItem "${from}" into "${to}".`);
   }
 
   for (const { name, category } of removals) {
