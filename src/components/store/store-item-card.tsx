@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { type ReactNode, useRef, useState } from "react";
 
 import { useCartCount } from "@/components/store/cart-count-context";
@@ -36,9 +37,16 @@ import type { StoreItemWithLock } from "@/lib/store";
  * On success, also calls `useCartCount()`'s `increment()` — found live after
  * STOR-06 shipped that the header's cart badge only reflected the count as
  * of the last page load, since it and this button are siblings in the tree
- * with no prop path between them. See `cart-count-context.tsx`. Still no
- * `router.refresh()`: nothing else on `/store` needs a full re-fetch for a
- * cart add, so the context update is the only thing that has to happen.
+ * with no prop path between them. See `cart-count-context.tsx`.
+ *
+ * It also calls `router.refresh()` now, which it deliberately did not before:
+ * from `xl:` up, `/store` renders the real cart beside the grid (INF-22), and
+ * that panel is server-rendered from `cartForUser()` — so a cart add *does*
+ * need the page re-fetched, or the rail sits there showing the cart as it was
+ * on load. The refresh is a Server-Component re-render, not a navigation:
+ * client state elsewhere on the page (the search box, the selected category)
+ * survives it, and on a phone, where no rail is drawn, the cost is one
+ * cheap request that changes nothing on screen.
  *
  * The category→colour/icon mapping (`CATEGORY_LABEL`, the well itself) lives
  * in `item-visual.tsx` now — factored out when STOR-06's cart rows needed
@@ -112,6 +120,7 @@ export function StoreItemCard({
   // the second click's still-fresh "added"/"error" state back to idle early.
   const revertTimer = useRef<ReturnType<typeof setTimeout>>(null);
   const cart = useCartCount();
+  const router = useRouter();
 
   async function handleAddToCart() {
     if (status === "pending") return;
@@ -124,7 +133,10 @@ export function StoreItemCard({
         body: JSON.stringify({ storeItemId: item.id }),
       });
       setStatus(response.ok ? "added" : "error");
-      if (response.ok) cart?.increment();
+      if (response.ok) {
+        cart?.increment();
+        router.refresh();
+      }
     } catch {
       setStatus("error");
     } finally {

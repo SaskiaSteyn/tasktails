@@ -39,6 +39,9 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
     <li
       className={cn(
         "flex flex-none items-center gap-[11px] rounded-[12px] px-3 py-2",
+        // INF-22 — the handoff's dense ranked table: taller rows, hairline
+        // separators instead of card borders, no gaps between them.
+        "desk:gap-4 desk:rounded-none desk:border-x-0 desk:border-t-0 desk:px-6 desk:py-[13px]",
         you
           ? // Terracotta, not urgency — see the note in globals.css. Group A
             // participants must never be shown the Group B accent.
@@ -52,7 +55,7 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
     >
       <span
         className={cn(
-          "w-5 flex-none font-display text-[14px] font-semibold",
+          "w-5 flex-none font-display text-[14px] font-semibold desk:w-[60px] desk:text-[16px]",
           you ? "text-terracotta-press" : "text-ink-soft",
         )}
       >
@@ -69,7 +72,7 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
 
       <span
         className={cn(
-          "min-w-0 flex-1 truncate text-[12.5px] font-extrabold",
+          "min-w-0 flex-1 truncate text-[12.5px] font-extrabold desk:text-[14px]",
           you ? "text-terracotta-press" : "text-ink",
         )}
       >
@@ -79,7 +82,7 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
 
       <span
         className={cn(
-          "flex-none text-[12px] font-extrabold",
+          "flex-none text-[12px] font-extrabold desk:w-[150px] desk:text-right desk:text-[14px]",
           you ? "text-terracotta-press" : "text-ink-soft",
         )}
       >
@@ -95,8 +98,22 @@ export function RankedList({ entries }: { entries: LeaderboardEntry[] }) {
   const below = entries.slice(3);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-list-well px-[14px] pt-1 pb-2">
-      <ol className="flex min-h-0 flex-1 flex-col gap-[5px] overflow-y-auto">
+    <div className="flex min-h-0 flex-1 flex-col bg-list-well px-[14px] pt-1 pb-2 desk:bg-surface desk:px-[34px] desk:pt-0">
+      {/* Column headings, desktop only.
+
+          **Three columns the handoff draws are absent** — Level, Streak and
+          Tasks. `allTimeLeaderboard()` returns rank, name, avatar and score
+          (lifetime coins earned) and nothing else; showing the other three
+          would mean new per-participant queries and a decision about exposing
+          another participant's streak, neither of which this layout pass gets
+          to make on its own. Raised, not invented. */}
+      <div className="mb-1 hidden flex-none items-center gap-4 border-b border-border-track px-6 pb-3 text-overline desk:flex">
+        <span className="w-[60px] flex-none">Rank</span>
+        <span className="w-[30px] flex-none" />
+        <span className="min-w-0 flex-1">Participant</span>
+        <span className="w-[150px] flex-none text-right">Coins earned</span>
+      </div>
+      <ol className="flex min-h-0 flex-1 flex-col gap-[5px] overflow-y-auto desk:gap-0">
         {below.map((entry) => (
           <Row key={entry.userId} entry={entry} />
         ))}

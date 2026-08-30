@@ -4,6 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 
 import { useCartCount } from "@/components/store/cart-count-context";
+import { cn } from "@/lib/cn";
 
 /**
  * The store header's cart icon + count badge (STOR-06). Reads from
@@ -11,7 +12,7 @@ import { useCartCount } from "@/components/store/cart-count-context";
  * add-to-cart button can bump it live — see that context's own doc comment
  * for why this and the grid can't just pass the count directly.
  */
-export function CartLink() {
+export function CartLink({ className }: { className?: string }) {
   const cart = useCartCount();
   const count = cart?.count ?? 0;
 
@@ -19,7 +20,10 @@ export function CartLink() {
     <Link
       href="/store/cart"
       aria-label={count > 0 ? `Cart, ${count} items` : "Cart"}
-      className="relative flex size-[34px] items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft transition-colors duration-120 hover:border-checkbox"
+      className={cn(
+        "relative flex size-[34px] flex-none items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft transition-colors duration-120 hover:border-checkbox",
+        className,
+      )}
     >
       <ShoppingCart size={17} strokeWidth={2} aria-hidden />
       {count > 0 ? (

@@ -68,7 +68,10 @@ export function AchievementsList({
         })}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+      {/* INF-22 — the handoff's achievement grid. `auto-fill` rather than a
+          fixed column count, so one rule gives 2-up at the tablet width and
+          6-up at 1920 without a second breakpoint. */}
+      <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-1 gap-2 overflow-y-auto desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
         {visible.map((achievement) => (
           <AchievementRow key={achievement.id} achievement={achievement} />
         ))}

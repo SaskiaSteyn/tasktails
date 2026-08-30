@@ -35,7 +35,7 @@ export default async function UsernamePage() {
   ]);
 
   return (
-    <AuthScreen>
+    <AuthScreen brand={false}>
       <UsernameStep suggestions={suggestions} skipUsername={skipUsername} />
     </AuthScreen>
   );
