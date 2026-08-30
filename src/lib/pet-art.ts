@@ -22,6 +22,20 @@
 /** The art pack's shared canvas. Every animal and accessory SVG is this size. */
 export const ART_CANVAS = { width: 1080, height: 1400 } as const;
 
+/**
+ * The food pack (2026-08-30, `public/food/`) is drawn square instead — it has
+ * no animal to stay registered with, so it never needed the portrait canvas
+ * the layering trick above is for. `ART_FOCUS`'s fractions are only
+ * meaningful against the canvas they were measured on, so anything that turns
+ * a focus box back into pixels has to ask which canvas this file is on.
+ */
+export const FOOD_CANVAS = { width: 1080, height: 1080 } as const;
+
+/** The canvas `imageUrl` is drawn on. */
+export function artCanvasFor(imageUrl: string): { width: number; height: number } {
+  return imageUrl.startsWith("/food/") ? FOOD_CANVAS : ART_CANVAS;
+}
+
 /** Portrait, ~0.771. Anywhere that used to draw an animal as a square needs this instead. */
 export const ART_ASPECT = ART_CANVAS.width / ART_CANVAS.height;
 
@@ -136,6 +150,18 @@ export const ART_FOCUS: Record<string, ArtFocus> = {
   "tie-red": { x: 0.416, y: 0.721, width: 0.169, height: 0.279 },
   "tie-stars": { x: 0.416, y: 0.724, width: 0.169, height: 0.276 },
   "top-hat": { x: 0.212, y: 0.017, width: 0.576, height: 0.448 },
+
+  // /food — fractions of `FOOD_CANVAS`, not `ART_CANVAS`.
+  bananas: { x: 0.133, y: 0.179, width: 0.734, height: 0.65 },
+  branch: { x: 0.203, y: 0.138, width: 0.613, height: 0.724 },
+  chicken: { x: 0.189, y: 0.175, width: 0.623, height: 0.65 },
+  fish: { x: 0.11, y: 0.254, width: 0.78, height: 0.493 },
+  hay: { x: 0.142, y: 0.142, width: 0.715, height: 0.715 },
+  lettuce: { x: 0.133, y: 0.156, width: 0.734, height: 0.687 },
+  shrimp: { x: 0.082, y: 0.249, width: 0.836, height: 0.502 },
+  steak: { x: 0.152, y: 0.24, width: 0.697, height: 0.521 },
+  "sunflower-seeds": { x: 0.119, y: 0.226, width: 0.761, height: 0.549 },
+  treats: { x: 0.142, y: 0.193, width: 0.715, height: 0.618 },
 };
 
 /** The crop for one art path, or `undefined` for "draw the whole canvas". */
