@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
@@ -159,7 +160,16 @@ export default async function StorePage({
     : "ALL";
 
   const items = await storeItemsForUser(userId);
-  await logTelemetryEvent(userId, "STORE_VISIT", {});
+
+  // STOR-18's visit record, deliberately not awaited inline. Nothing this page
+  // renders depends on the insert, so awaiting it here put a database write in
+  // the critical path and delayed first byte for every store visit. `after()`
+  // runs it once the response is finished — the row still lands (it also runs
+  // when the request errors or redirects), it just stops holding up the page.
+  // The `/api/telemetry/*` routes keep awaiting theirs: writing the row *is*
+  // their response, and `session-end`'s `sendBeacon` would lose the event if
+  // the handler returned first.
+  after(() => logTelemetryEvent(userId, "STORE_VISIT", {}));
 
   const [cart, showFlashSale, urgencyRows, level, luckyBoxUrgencyRow] = await Promise.all([
     cartForUser(userId),

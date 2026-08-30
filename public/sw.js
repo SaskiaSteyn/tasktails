@@ -26,10 +26,11 @@
 // closed and reopened regardless.
 
 // Bumped whenever a cache-first asset changes *without* its URL changing.
-// `/brand/` and `/animals/` are cache-first (see `isStaticAsset`) and
-// `/brand/icon.svg` is precached outright, so an installed PWA keeps serving
-// the previous app icon and fox art forever otherwise — the SW file itself is
-// what the browser diffs to decide a new worker is worth installing.
+// `/brand/`, `/animals/`, `/backgrounds/` and `/accessories/` are all
+// cache-first (see `isStaticAsset`) and `/brand/icon.svg` is precached
+// outright, so an installed PWA keeps serving the previous app icon, fox art
+// or background tile forever otherwise — the SW file itself is what the
+// browser diffs to decide a new worker is worth installing.
 // v3 — 2026-08-30, the new app icon and fox artwork.
 const CACHE_VERSION = "v3";
 const CACHE_NAME = `tasktails-shell-${CACHE_VERSION}`;
@@ -61,6 +62,14 @@ function isStaticAsset(url) {
   if (url.pathname.startsWith("/_next/static/")) return true;
   if (url.pathname.startsWith("/brand/")) return true;
   if (url.pathname.startsWith("/animals/")) return true;
+  // The art packs behind the store, customize and zoo views. Every one of
+  // these is content-stable at its URL and gets pulled repeatedly across those
+  // screens, so a repeat visit should never re-fetch them. Safe to add now
+  // that `scripts/optimize-backgrounds.ts` took `/backgrounds/` from 5.6 MB to
+  // ~316 KB — cache-first on the old 3.8 MB fish.svg would have been a poor
+  // trade for the cache budget.
+  if (url.pathname.startsWith("/backgrounds/")) return true;
+  if (url.pathname.startsWith("/accessories/")) return true;
   if (url.pathname === "/manifest.webmanifest") return true;
   return /\.(?:woff2?|ttf|otf)$/.test(url.pathname);
 }
