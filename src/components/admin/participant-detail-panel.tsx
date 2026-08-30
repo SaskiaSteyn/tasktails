@@ -132,6 +132,11 @@ export function ParticipantDetailPanel({ participantId }: { participantId: strin
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[14px] font-bold text-ink">{detail.displayName}</p>
+          {/* #189 — the code this participant is named by in the write-up; the
+              real name above it stays, this is additional, not a replacement. */}
+          <p className="truncate font-mono text-[11px] text-ink-soft">
+            <span className="font-bold">ID:</span> {detail.studyId}
+          </p>
           <p className="text-[11px] text-ink-faint">
             joined {formatShortDate(detail.joinedAt)} · {detail.daysReturning} active days
           </p>

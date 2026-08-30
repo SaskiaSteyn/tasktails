@@ -55,7 +55,14 @@ export async function findUserById(id: string): Promise<User | null> {
 /** What ADM-02/03/04/06's tables render one row of. */
 export type ParticipantSummary = Pick<
   User,
-  "id" | "username" | "email" | "displayName" | "abGroup" | "createdAt" | "avatarUrl"
+  | "id"
+  | "studyId"
+  | "username"
+  | "email"
+  | "displayName"
+  | "abGroup"
+  | "createdAt"
+  | "avatarUrl"
 >;
 
 /**
@@ -72,6 +79,7 @@ export async function listParticipants(): Promise<ParticipantSummary[]> {
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
+      studyId: true,
       username: true,
       email: true,
       displayName: true,
