@@ -340,7 +340,11 @@ export function TaskList({
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden px-4 pt-4 pb-[14px]">
+    // From `desk:` up the page itself scrolls (`main`), not the list: the
+    // activity panel sits below the list at the tablet width and beside it at
+    // `xl:`, and a list with its own inner scrollbar would strand the panel
+    // below a viewport-height column you could never scroll past.
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-4 pb-[14px] desk:min-h-fit desk:overflow-visible desk:p-0">
       {/* ONB-02. `role="status"` (not `role="alert"`) — good news, not an
           error, so it should announce without interrupting whatever the
           participant is doing. `aria-live="polite"` is `role="status"`'s
@@ -355,7 +359,7 @@ export function TaskList({
         </div>
       ) : null}
 
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto desk:overflow-visible">
         {/* The mock labels this section "TODAY", but TASK-01 is "all user
             tasks" (Requirements.md TASK-7) with no due-date filtering — a task
             due next week under a "TODAY" heading would be actively

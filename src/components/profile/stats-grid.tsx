@@ -19,7 +19,7 @@ export function StatsGrid({ stats }: { stats: LifetimeStats }) {
   return (
     <section>
       <p className="text-overline mb-[10px]">Lifetime</p>
-      <div className="grid grid-cols-2 gap-[10px]">
+      <div className="grid grid-cols-2 gap-[10px] desk:grid-cols-4 desk:gap-4">
         <StatTile
           value={stats.tasksDone}
           label="tasks done"

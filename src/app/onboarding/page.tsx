@@ -36,9 +36,14 @@ export default async function OnboardingPage() {
   if (!record) redirect("/login");
 
   return (
-    <AppShell className="px-[22px] pt-[22px] pb-6">
+    // INF-22 — the handoff draws this screen with no rail and no header (it is
+    // outside the `(app)` route group for exactly that reason): one centred
+    // card on the warm ground, at the 920px it specifies.
+    <AppShell className="px-[22px] pt-[22px] pb-6 desk:items-center desk:justify-center desk:bg-warm desk:p-16">
       <SessionTracker />
-      <QuestChecklist name={displayNameFor(record)} status={status} />
+      <div className="flex w-full flex-col desk:max-w-[920px] desk:rounded-[26px] desk:border desk:border-border-track desk:bg-surface desk:px-14 desk:py-12 desk:shadow-card">
+        <QuestChecklist name={displayNameFor(record)} status={status} />
+      </div>
     </AppShell>
   );
 }

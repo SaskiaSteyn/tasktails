@@ -47,6 +47,16 @@ export async function taskCount(userId: string): Promise<number> {
 }
 
 /**
+ * How many tasks are still open — the count badge on the desktop rail's Tasks
+ * row (INF-22). Counted here rather than by measuring `tasksForUser()` in the
+ * rail, both because nothing outside this module touches `prisma.task` and
+ * because the rail has no other use for the rows themselves.
+ */
+export async function openTaskCount(userId: string): Promise<number> {
+  return prisma.task.count({ where: { userId, completedAt: null } });
+}
+
+/**
  * How many tasks this user has ever completed.
  *
  * Lives here rather than in the caller because nothing outside this module

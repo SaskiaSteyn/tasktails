@@ -185,6 +185,9 @@ export function CreateTaskSheet({
         // a `<dialog>`. Unspecified in the handoff (every frame is a phone);
         // this follows `AppShell`'s own rule for the 480px breakpoint.
         "frame:inset-0 frame:m-auto frame:h-fit frame:w-[calc(100%-2.5rem)] frame:max-w-app frame:rounded-[26px]",
+        // INF-22 draws this as the desktop "command modal" — same centred
+        // dialog, at the width the handoff gives it.
+        "desk:max-w-[760px]",
       )}
     >
       <div className="flex max-h-[85vh] flex-col overflow-hidden rounded-t-[26px] bg-surface pb-[env(safe-area-inset-bottom)] shadow-modal frame:rounded-[26px]">
