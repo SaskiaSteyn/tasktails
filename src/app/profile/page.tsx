@@ -80,6 +80,7 @@ export default async function ProfilePage() {
             name={displayNameFor(record)}
             email={record.email}
             level={economy?.level ?? 1}
+            studyId={record.studyId}
             avatarUrl={record.avatarUrl}
           />
 

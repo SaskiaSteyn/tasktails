@@ -5,14 +5,20 @@ import { useEffect, useState } from "react";
 /**
  * URG-06 — the Group B bundle-timer note, per
  * `design_handoff/TaskTails Screens.dc.html`'s "Store — Group B" frame (pin
- * 6): "Buy 2 get 1 · MM:SS" on a violet pill. Shares `StoreItemCard`'s `note`
- * slot with `RecentPurchasesBadge` (URG-04) and `UrgencyLanguageNote`
- * (URG-05) — the user confirmed this lands in the same place as URG-05's
- * "Last chance" text, so `urgencyDataForItems()`'s `noteSelection` seed
- * (URG-08) grew a fourth outcome rather than a new mutual-exclusivity rule:
- * still at most one of the three note types per item, same reasoning as
- * URG-05's own mutual-exclusivity decision (full sentences/pills stacked
- * read as too crowded for a 172px card).
+ * 6): "Buy 2 get 1 · MM:SS" on a violet pill.
+ *
+ * **Relocated 2026-08-25 (#202, "labels are all over the place")**:
+ * originally rendered in a second card slot below the category label — not
+ * a position `design_handoff` draws anywhere. Renders through
+ * `StoreItemCard`'s `footerNote` slot now — below the image, above the
+ * price row, same spot `RecentPurchasesBadge`/`UrgencyLanguageNote` use —
+ * rather than the top-right corner a first attempt at this fix tried: a
+ * pill this wide absolutely positioned over the art region read as a banner
+ * smeared across the image (confirmed live via screenshot), not the small
+ * "Only 3 left!"-style tag that slot is for. Still mutually exclusive with
+ * `UrgencyLanguageNote` (URG-05) and `CurrencyUrgencyBadge` (URG-07) —
+ * `urgencyDataForItems()`'s `noteSelection` seed (URG-08) guarantees at
+ * most one of the three is ever passed down.
  *
  * A client component — unlike the other two note types, this one ticks, same
  * reasoning as `FlashSaleBanner` (URG-01). Randomises within 3–8 minutes on

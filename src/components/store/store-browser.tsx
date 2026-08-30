@@ -45,20 +45,31 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * isolation rule, NFR-TASK-3).
  *
  * `urgencyBadges` (URG-02/URG-03) is the same slot pattern, keyed per item:
- * `StorePage` builds whichever badge(s) an unlocked item should have —
- * `<StockBadge />`, `<CartActivityBadge />`, or both — and hands the whole
- * map down, so a lookup by id is all this component (or `StoreItemCard`)
- * ever does with it.
+ * `StorePage` builds at most one of `<StockBadge />`/`<CartActivityBadge />`
+ * per unlocked item (plus two curated exceptions — `<BuyOneGetOneBadge />`
+ * for Red collar, `<CurrencyUrgencyBadge overlay />` for Hearts, per
+ * `ADDENDUM-store-zoo-art.md`'s own art), and hands the whole map down, so a
+ * lookup by id is all this component (or `StoreItemCard`) ever does with it.
  *
- * `urgencyNotes` (URG-04) is the same pattern again for `<RecentPurchasesBadge
- * />`, kept as a separate map from `urgencyBadges` since it renders through
- * `StoreItemCard`'s different `note` slot, not the corner-badge one.
+ * `urgencyFooterNotes` (URG-04/URG-05/URG-06/URG-07) is the same pattern
+ * again, for whichever of `<RecentPurchasesBadge />`/`<UrgencyLanguageNote
+ * />`/`<BundleTimerBadge />`/`<CurrencyUrgencyBadge />` an item's
+ * `noteSelection` picked — a different `StoreItemCard` slot from
+ * `urgencyBadges` (below the image, above the price, not the corner).
+ * **Fixed 2026-08-25 (#202, "labels are all over the place")**: three of
+ * those four used to render through a *third* slot instead (below the
+ * category label), a position `design_handoff` never actually draws; a
+ * first attempt at this fix moved them into the corner alongside
+ * `urgencyBadges` instead, which read as a banner smeared across the art
+ * once a pill had that much text in it (confirmed live via screenshot) — the
+ * addendum's own two real positions are corner badges and this footer line,
+ * never three per card.
  *
- * `footerNotes` and `pricing` (`ADDENDUM-store-zoo-art.md`) are two more
- * per-item maps, same lookup-by-id pattern — `StorePage`
- * builds the curated Group-B overrides (Sunflower seeds/Red collar/Hearts)
- * and the general fake-discount pricing, this component just forwards
- * whichever of them an item has straight to `StoreItemCard`'s matching slot.
+ * `pricing` (`ADDENDUM-store-zoo-art.md`) is one more per-item map, same
+ * lookup-by-id pattern — `StorePage` builds the curated Group-B overrides
+ * (Sunflower seeds/Red collar/Hearts) and the general fake-discount pricing,
+ * this component just forwards whichever of them an item has straight to
+ * `StoreItemCard`'s matching slot.
  *
  * `level` (SHR-06) is the signed-in user's current level, read once here so
  * tapping a locked card can show the full-screen "locked by level" state
@@ -81,7 +92,6 @@ export function StoreBrowser({
   items,
   flashSaleBanner,
   urgencyBadges,
-  urgencyNotes,
   urgencyFooterNotes,
   pricing,
   level,
@@ -92,7 +102,6 @@ export function StoreBrowser({
   items: StoreItemWithLock[];
   flashSaleBanner?: ReactNode;
   urgencyBadges?: Record<string, ReactNode>;
-  urgencyNotes?: Record<string, ReactNode>;
   urgencyFooterNotes?: Record<string, ReactNode>;
   pricing?: Record<string, { list: number; sale: number }>;
   level: number;
@@ -191,13 +200,19 @@ export function StoreBrowser({
           )}
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-[11px]">
+        // `items-start`, not Grid's default `stretch` — a card whose footer
+        // carries a `footerNote` line (URG-04/05/06/07) is naturally taller
+        // than a row-mate without one, and letting Grid stretch the shorter
+        // card to match used to leave a visible gap between its title and
+        // its art (see `StoreItemCard`'s own comment on the `mt-auto` this
+        // replaced) rather than just... not being exactly as tall. Reported
+        // live from a real Group B account.
+        <div className="grid grid-cols-2 items-start gap-[11px]">
           {visible.map((item) => (
             <StoreItemCard
               key={item.id}
               item={item}
               badge={urgencyBadges?.[item.id]}
-              note={urgencyNotes?.[item.id]}
               footerNote={urgencyFooterNotes?.[item.id]}
               pricing={pricing?.[item.id]}
               onLockedClick={() => setSelectedLocked(item)}

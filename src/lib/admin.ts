@@ -72,6 +72,8 @@ export async function redirectAdminsAway(userId: string): Promise<void> {
  */
 export type ParticipantTelemetrySummary = {
   id: string;
+  /** #189 — the anonymous code this participant is referred to by in the paper. */
+  studyId: string;
   displayName: string;
   email: string;
   abGroup: AbGroup;
@@ -99,6 +101,7 @@ async function summaryFor(
 
   return {
     id: participant.id,
+    studyId: participant.studyId,
     displayName: displayNameFor(participant),
     email: participant.email,
     abGroup: participant.abGroup,
