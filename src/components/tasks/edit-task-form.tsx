@@ -110,110 +110,127 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
   }
 
   return (
-    <>
-      <form
-        id={formId}
-        onSubmit={handleSubmit}
-        className="flex flex-1 flex-col overflow-y-auto px-[18px] pt-[18px] pb-2"
-      >
-        <div className="mb-4">
-          <label
-            htmlFor={titleFieldId}
-            className="text-[11px] font-extrabold tracking-[0.4px] text-ink-soft"
-          >
-            TITLE
-          </label>
-          <input
-            id={titleFieldId}
-            value={title}
-            onChange={(event) => {
-              setTitle(event.target.value);
-              setTitleError(undefined);
-            }}
-            aria-invalid={titleError ? true : undefined}
-            aria-describedby={titleError ? titleErrorId : undefined}
-            className={cn(
-              // 16px, not the design's 14px — below that, iOS Safari/Chrome
-              // zooms the whole page in on focus. Same fix as
-              // `CreateTaskSheet`'s title field.
-              "mt-[6px] h-[46px] w-full rounded-input border px-[13px] text-[16px] font-bold text-ink outline-none",
-              "transition-[background-color,border-color,box-shadow] duration-120",
-              titleError
-                ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"
-                : cn(
-                    "border-border-input bg-input",
-                    "focus:border-terracotta focus:bg-surface",
-                    "focus:shadow-[0_0_0_1px_var(--color-terracotta),0_0_0_5px_rgb(226_122_84/0.16)]",
-                  ),
-            )}
-          />
-          {titleError ? (
-            <p id={titleErrorId} role="alert" className="mt-1 text-[11px] font-bold text-urgency-text">
-              {titleError}
+    // INF-22 — two panes from `desk:` up: the fields and the pinned save/delete
+    // row on the left, the due-date picker in the handoff's 376px column on the
+    // right. The picker is one component mounted twice, each hidden at the other
+    // width, driven by the same `dueDate` state — the phone frame puts it
+    // between the title and the complexity ramp, the desktop frame puts it in
+    // the side column, and no single DOM position is both.
+    <div className="flex min-h-0 flex-1 flex-col desk:flex-row desk:gap-7 desk:px-[34px] desk:py-[30px]">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <form
+          id={formId}
+          onSubmit={handleSubmit}
+          // `desk:px-1`, not `desk:px-0`: this column scrolls, and a scroll box
+          // clips on every axis, so a field flush against its left edge loses
+          // the 4px its focus ring needs (`outline` + `outline-offset: 2px`,
+          // globals.css). Reported live on the "Add a subtask" field. 4px is
+          // invisible against the page's own 34px gutter.
+          className="flex flex-1 flex-col overflow-y-auto px-[18px] pt-[18px] pb-2 desk:px-1 desk:pt-0"
+        >
+          <div className="mb-4">
+            <label
+              htmlFor={titleFieldId}
+              className="text-[11px] font-extrabold tracking-[0.4px] text-ink-soft"
+            >
+              TITLE
+            </label>
+            <input
+              id={titleFieldId}
+              value={title}
+              onChange={(event) => {
+                setTitle(event.target.value);
+                setTitleError(undefined);
+              }}
+              aria-invalid={titleError ? true : undefined}
+              aria-describedby={titleError ? titleErrorId : undefined}
+              className={cn(
+                // 16px, not the design's 14px — below that, iOS Safari/Chrome
+                // zooms the whole page in on focus. Same fix as
+                // `CreateTaskSheet`'s title field.
+                "mt-[6px] h-[46px] w-full rounded-input border px-[13px] text-[16px] font-bold text-ink outline-none",
+                "transition-[background-color,border-color,box-shadow] duration-120",
+                titleError
+                  ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"
+                  : cn(
+                      "border-border-input bg-input",
+                      "focus:border-terracotta focus:bg-surface",
+                      "focus:shadow-[0_0_0_1px_var(--color-terracotta),0_0_0_5px_rgb(226_122_84/0.16)]",
+                    ),
+              )}
+            />
+            {titleError ? (
+              <p id={titleErrorId} role="alert" className="mt-1 text-[11px] font-bold text-urgency-text">
+                {titleError}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="mb-4 desk:hidden">
+            <DatePicker value={dueDate} onChange={setDueDate} label="DUE DATE" />
+          </div>
+
+          <div className="mb-4">
+            <div
+              id={tierLabelId}
+              className="mb-2 text-[11px] font-extrabold tracking-[0.4px] text-ink-soft"
+            >
+              COMPLEXITY
+            </div>
+            <TierSelect value={tier} onChange={setTier} labelledBy={tierLabelId} />
+          </div>
+
+          <div className="mb-4">
+            <SubtaskList taskId={task.id} subtasks={task.subtasks} parentCoins={reward.coins} />
+          </div>
+        </form>
+
+        <div className="flex-none border-t border-border-track bg-warm px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] desk:mt-auto desk:bg-transparent desk:px-0 desk:pt-[18px] desk:pb-0">
+          {/* The frame draws a "Reward on completion · N coins · N XP" line here.
+              Dropped on the user's call (2026-07-29) — it looked wrong in place,
+              and the figure is already on the task row and under each subtask, so
+              nothing is lost by not repeating it a third time. */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(true)}
+              aria-label="Delete task"
+              className="flex h-[46px] w-[48px] flex-none items-center justify-center rounded-input border border-urgency-border bg-surface text-urgency-text transition-colors duration-120 hover:border-urgency-border-hover hover:bg-urgency-tint"
+            >
+              <Trash2 size={18} strokeWidth={2.2} aria-hidden />
+            </button>
+            {/* `Button` is stretched by this wrapper rather than by passing it
+                `flex-1`: `fullWidth={false}` emits `flex-none`, and `cn` is a
+                plain join with no conflict resolution, so the two would race on
+                stylesheet order instead of one clearly winning. */}
+            <div className="flex-1">
+              <Button
+                type="submit"
+                form={formId}
+                size="dialog"
+                disabled={submitting}
+              >
+                {submitting ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
+          </div>
+
+          {submitError ? (
+            <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
+              {submitError}
+            </p>
+          ) : null}
+          {deleteError ? (
+            <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
+              {deleteError}
             </p>
           ) : null}
         </div>
-
-        <div className="mb-4">
-          <DatePicker value={dueDate} onChange={setDueDate} label="DUE DATE" />
-        </div>
-
-        <div className="mb-4">
-          <div
-            id={tierLabelId}
-            className="mb-2 text-[11px] font-extrabold tracking-[0.4px] text-ink-soft"
-          >
-            COMPLEXITY
-          </div>
-          <TierSelect value={tier} onChange={setTier} labelledBy={tierLabelId} />
-        </div>
-
-        <div className="mb-4">
-          <SubtaskList taskId={task.id} subtasks={task.subtasks} parentCoins={reward.coins} />
-        </div>
-      </form>
-
-      <div className="flex-none border-t border-border-track bg-warm px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
-        {/* The frame draws a "Reward on completion · N coins · N XP" line here.
-            Dropped on the user's call (2026-07-29) — it looked wrong in place,
-            and the figure is already on the task row and under each subtask, so
-            nothing is lost by not repeating it a third time. */}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setDeleteOpen(true)}
-            aria-label="Delete task"
-            className="flex h-[46px] w-[48px] flex-none items-center justify-center rounded-input border border-urgency-border bg-surface text-urgency-text transition-colors duration-120 hover:border-urgency-border-hover hover:bg-urgency-tint"
-          >
-            <Trash2 size={18} strokeWidth={2.2} aria-hidden />
-          </button>
-          {/* `Button` is stretched by this wrapper rather than by passing it
-              `flex-1`: `fullWidth={false}` emits `flex-none`, and `cn` is a
-              plain join with no conflict resolution, so the two would race on
-              stylesheet order instead of one clearly winning. */}
-          <div className="flex-1">
-            <Button
-              type="submit"
-              form={formId}
-              size="dialog"
-              disabled={submitting}
-            >
-              {submitting ? "Saving…" : "Save changes"}
-            </Button>
-          </div>
-        </div>
-
-        {submitError ? (
-          <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
-            {submitError}
-          </p>
-        ) : null}
-        {deleteError ? (
-          <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
-            {deleteError}
-          </p>
-        ) : null}
       </div>
+
+      <aside className="hidden flex-none desk:block desk:w-[376px]">
+        <DatePicker value={dueDate} onChange={setDueDate} label="DUE DATE" />
+      </aside>
 
       <Modal
         open={deleteOpen}
@@ -227,6 +244,6 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
       />
-    </>
+    </div>
   );
 }

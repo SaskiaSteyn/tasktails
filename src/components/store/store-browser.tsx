@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
+import { CartLink } from "@/components/store/cart-link";
 import { LockedByLevelState } from "@/components/store/locked-by-level-state";
 import { LuckyBoxCard } from "@/components/store/lucky-box-card";
 import { StoreItemCard } from "@/components/store/store-item-card";
@@ -125,6 +126,18 @@ export function StoreBrowser({
 
   const activeLabel = CATEGORY_CHIPS.find((chip) => chip.value === category)?.label;
 
+  // The counts beside each category in the desktop column. Derived from the
+  // same `items` array the grid filters, so they always agree with what
+  // selecting the category actually shows — including the level-locked cards,
+  // which are drawn (locked) rather than hidden.
+  const counts = useMemo(() => {
+    const byCategory = new Map<string, number>([["ALL", items.length]]);
+    for (const item of items) {
+      byCategory.set(item.category, (byCategory.get(item.category) ?? 0) + 1);
+    }
+    return byCategory;
+  }, [items]);
+
   if (selectedLocked) {
     return (
       <LockedByLevelState
@@ -136,20 +149,27 @@ export function StoreBrowser({
   }
 
   return (
-    <>
-      <label className="mb-[9px] flex h-[38px] items-center gap-2 rounded-input border border-border-input bg-surface px-4">
-        <Search size={16} strokeWidth={2} className="flex-none text-ink-faint" />
-        <span className="sr-only">Search items</span>
-        <input
-          type="text"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search items…"
-          // 16px, not the design's 13px — below 16px, iOS Safari/Chrome
-          // zooms the whole page in on focus.
-          className="w-full bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-disabled py-[5px]"
-        />
-      </label>
+    <div className="flex min-h-0 flex-col desk:min-w-0 desk:flex-1">
+      <div className="mb-[9px] flex flex-none items-center gap-2">
+        <label className="flex h-[38px] min-w-0 flex-1 items-center gap-2 rounded-input border border-border-input bg-surface px-4">
+          <Search size={16} strokeWidth={2} className="flex-none text-ink-faint" />
+          <span className="sr-only">Search items</span>
+          <input
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search items…"
+            // 16px, not the design's 13px — below 16px, iOS Safari/Chrome
+            // zooms the whole page in on focus.
+            className="w-full bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-disabled py-[5px]"
+          />
+        </label>
+        {/* The phone header's cart button, which `AppShell` hides from
+            `desk:` up — and the cart rail that replaces it only appears at
+            `xl:`. Without this, the 900–1279px band would have no way to
+            reach the cart at all. */}
+        <CartLink className="hidden desk:flex xl:hidden" />
+      </div>
 
       {flashSaleBanner}
 
@@ -165,7 +185,14 @@ export function StoreBrowser({
         // `main` is short on vertical space, which is exactly the 0-height
         // collapse reported live. Nothing else on the page has this overflow
         // + flex-child combination, which is why only this row broke.
-        className="no-scrollbar mb-[11px] flex flex-none gap-[6px] overflow-x-auto"
+        // `p-1` with matching negative margins: `overflow-x-auto` makes this
+        // a scroll box on both axes, and the tabs exactly fill its height, so
+        // a focused tab's ring (`outline-offset: 2px`) was clipped on every
+        // side. The padding gives it 4px to live in and the negative margins
+        // put the row back where it was, to the pixel. Pre-dates INF-22 — the
+        // phone chip row had it too — but this is now a tab bar people will
+        // arrow through, so it matters more.
+        className="no-scrollbar -mx-1 -mt-1 mb-[7px] flex flex-none gap-[6px] overflow-x-auto p-1 desk:gap-2"
       >
         {CATEGORY_CHIPS.map((chip) => {
           const active = chip.value === category;
@@ -177,49 +204,74 @@ export function StoreBrowser({
               aria-checked={active}
               onClick={() => setCategory(chip.value)}
               className={cn(
-                "flex-none rounded-pill px-3 py-[5px] text-[11px] transition-colors duration-120",
+                "flex flex-none items-center gap-[6px] rounded-pill px-3 py-[5px] text-[11px] transition-colors duration-120",
+                "desk:px-[15px] desk:py-[7px] desk:text-[13px]",
                 active
                   ? "bg-terracotta font-extrabold text-white"
                   : "border border-border-input bg-surface font-bold text-ink-soft hover:border-checkbox",
               )}
             >
               {chip.label}
+              {/* Desktop only: there is no room for it beside the label in the
+                  phone frame's chip row, and `aria-hidden` because the count
+                  is not part of what the radio is called. */}
+              <span
+                aria-hidden
+                className={cn(
+                  "hidden font-extrabold desk:inline",
+                  active ? "text-white/70" : "text-ink-faint",
+                )}
+              >
+                {counts.get(chip.value) ?? 0}
+              </span>
             </button>
           );
         })}
       </div>
 
-      <LuckyBoxCard price={luckyBoxPrice} extra={luckyBoxUrgency} />
+      {/* `desk:px-1`: from `desk:` up this column is the scroll box, and a
+          scroll box clips on every axis — a card flush against its edge loses
+          the 4px its focus ring needs (`outline-offset: 2px`, globals.css).
+          Level-locked cards are buttons, so the outermost column of them is
+          exactly where that shows. */}
+      <div className="flex min-w-0 flex-col desk:min-h-0 desk:flex-1 desk:overflow-y-auto desk:px-1">
+        <LuckyBoxCard price={luckyBoxPrice} extra={luckyBoxUrgency} />
 
-      {visible.length === 0 ? (
-        <p className="py-10 text-center text-[13px] text-ink-soft">
-          {query.trim() ? (
-            <>No items match &ldquo;{query.trim()}&rdquo;{category === "ALL" ? "" : ` in ${activeLabel}`}.</>
-          ) : (
-            <>No items in {activeLabel}.</>
-          )}
-        </p>
-      ) : (
-        // `items-start`, not Grid's default `stretch` — a card whose footer
-        // carries a `footerNote` line (URG-04/05/06/07) is naturally taller
-        // than a row-mate without one, and letting Grid stretch the shorter
-        // card to match used to leave a visible gap between its title and
-        // its art (see `StoreItemCard`'s own comment on the `mt-auto` this
-        // replaced) rather than just... not being exactly as tall. Reported
-        // live from a real Group B account.
-        <div className="grid grid-cols-2 items-start gap-[11px]">
-          {visible.map((item) => (
-            <StoreItemCard
-              key={item.id}
-              item={item}
-              badge={urgencyBadges?.[item.id]}
-              footerNote={urgencyFooterNotes?.[item.id]}
-              pricing={pricing?.[item.id]}
-              onLockedClick={() => setSelectedLocked(item)}
-            />
-          ))}
-        </div>
-      )}
-    </>
+        {visible.length === 0 ? (
+          <p className="py-10 text-center text-[13px] text-ink-soft">
+            {query.trim() ? (
+              <>No items match &ldquo;{query.trim()}&rdquo;{category === "ALL" ? "" : ` in ${activeLabel}`}.</>
+            ) : (
+              <>No items in {activeLabel}.</>
+            )}
+          </p>
+        ) : (
+          // `items-start`, not Grid's default `stretch` — a card whose footer
+          // carries a `footerNote` line (URG-04/05/06/07) is naturally taller
+          // than a row-mate without one, and letting Grid stretch the shorter
+          // card to match used to leave a visible gap between its title and
+          // its art (see `StoreItemCard`'s own comment on the `mt-auto` this
+          // replaced) rather than just... not being exactly as tall. Reported
+          // live from a real Group B account.
+          //
+          // `auto-fill` rather than a fixed column count from `desk:` up, per
+          // the handoff's own grid spec — which is also what makes the 900px
+          // "2-up" behaviour fall out of the same rule rather than needing a
+          // second breakpoint.
+          <div className="grid grid-cols-2 items-start gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
+            {visible.map((item) => (
+              <StoreItemCard
+                key={item.id}
+                item={item}
+                badge={urgencyBadges?.[item.id]}
+                footerNote={urgencyFooterNotes?.[item.id]}
+                pricing={pricing?.[item.id]}
+                onLockedClick={() => setSelectedLocked(item)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

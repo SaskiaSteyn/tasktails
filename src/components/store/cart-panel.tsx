@@ -51,13 +51,37 @@ type Confirmation = {
  * A checkout is one of PRO-09's three achievement-unlock trigger points; any
  * newly unlocked badge goes to `useAchievementUnlock().celebrate()`, same
  * pattern `TaskList`/`SubtaskList` use for theirs.
+ *
+ * `variant` (INF-22) is the one thing that differs between its two mounts.
+ * On `/store/cart` (`"page"`) it becomes the handoff's two-pane checkout from
+ * `xl:` up: priced rows on the left, the summary and the checkout button
+ * pinned in a 380px panel on the right. In `/store`'s persistent cart rail
+ * (`"rail"`) it keeps the phone frame's single narrow column at every width,
+ * because a two-pane layout inside a 330px rail is not a layout. Nothing else
+ * changes — same state, same requests, same steppers, so a quantity edit or a
+ * checkout behaves identically wherever it is mounted.
+ *
+ * `xl:`, not `desk:`, for the table: the handoff's four columns are 1fr plus
+ * 400px of fixed widths, and once the 380px summary panel is beside them the
+ * 900px tablet has nothing left for the item names — measured live, the name
+ * column collapsed to nothing. The page keeps the phone's single column,
+ * centred, in that band instead.
+ *
+ * The summary block is one `<Summary>` rendered in two places, each hidden at
+ * the other width, rather than two copies of the markup: on a phone it scrolls
+ * with the list exactly as the mobile frame draws it, and on desktop it is
+ * pinned in the side panel exactly as the desktop frame draws it. There is no
+ * single DOM position that is both.
  */
 export function CartPanel({
   initialCart,
   coins,
+  variant = "page",
 }: {
   initialCart: CartItemWithStoreItem[];
   coins: number;
+  /** `"rail"` keeps the narrow single-column layout at every width. */
+  variant?: "page" | "rail";
 }) {
   const { celebrate: celebrateAchievements } = useAchievementUnlock();
   const { celebrate: celebrateLevelUp } = useLevelUp();
@@ -74,6 +98,8 @@ export function CartPanel({
     0,
   );
   const balanceAfter = coins - subtotal;
+  // Only the full-page mount widens; see the `variant` note above.
+  const wide = variant === "page";
 
   async function handleCheckout() {
     if (checkingOut) return;
@@ -198,22 +224,61 @@ export function CartPanel({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto px-4 pt-4">
-        <div className="flex flex-col gap-[10px]">
+    <div
+      className={cn(
+        "flex min-h-0 flex-1 flex-col",
+        wide && "xl:flex-row xl:gap-7 xl:px-[34px] xl:py-[30px]",
+      )}
+    >
+      <div
+        className={cn(
+          "flex-1 overflow-y-auto px-4 pt-4",
+          wide && "xl:min-w-0 xl:px-0 xl:pt-0",
+        )}
+      >
+        {/* Column headings, desktop only — the phone rows carry no price at
+            all, so there is nothing for a header to label there. */}
+        {wide ? (
+          <div className="mb-2 hidden grid-cols-[1fr_130px_150px_120px] gap-4 border-b border-border-track px-5 pb-3 text-overline xl:grid">
+            <span>Item</span>
+            <span className="text-right">Unit</span>
+            <span className="text-center">Qty</span>
+            <span className="text-right">Total</span>
+          </div>
+        ) : null}
+
+        <div className={cn("flex flex-col gap-[10px]", wide && "xl:gap-0")}>
           {cart.map((line) => (
             <div
               key={line.id}
-              className="flex items-center gap-[11px] rounded-[14px] border border-border-track bg-warm p-[10px]"
+              className={cn(
+                "flex items-center gap-[11px] rounded-[14px] border border-border-track bg-warm p-[10px]",
+                wide &&
+                  "xl:grid xl:grid-cols-[1fr_130px_150px_120px] xl:gap-4 xl:rounded-none xl:border-x-0 xl:border-t-0 xl:bg-transparent xl:px-5 xl:py-4",
+              )}
             >
-              <ItemWell item={line.storeItem} size={44} iconSize={20} animalIconSize={32} rounded="rounded-[10px]" />
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-extrabold">{line.storeItem.name}</p>
-                <p className="text-[11px] text-ink-faint">{CATEGORY_LABEL[line.storeItem.category]}</p>
+              <div className="flex min-w-0 flex-1 items-center gap-[11px] xl:flex-none">
+                <ItemWell
+                  item={line.storeItem}
+                  size={44}
+                  iconSize={20}
+                  animalIconSize={32}
+                  rounded="rounded-[10px]"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-extrabold">{line.storeItem.name}</p>
+                  <p className="text-[11px] text-ink-faint">{CATEGORY_LABEL[line.storeItem.category]}</p>
+                </div>
               </div>
 
-              <div className="flex flex-none items-center gap-[6px]">
+              {wide ? (
+                <span className="hidden items-center justify-end gap-1 text-[13px] font-bold text-amber-text xl:flex">
+                  <Coin size={12} />
+                  {line.storeItem.coinPrice.toLocaleString("en-US")}
+                </span>
+              ) : null}
+
+              <div className="flex flex-none items-center gap-[6px] xl:justify-center">
                 <button
                   type="button"
                   onClick={() => setQuantity(line, line.quantity - 1)}
@@ -240,44 +305,50 @@ export function CartPanel({
                   <Plus size={14} strokeWidth={2.4} aria-hidden />
                 </button>
               </div>
+
+              {wide ? (
+                <span className="hidden items-center justify-end gap-1 font-display text-[15px] font-semibold text-amber-text xl:flex">
+                  <Coin size={13} />
+                  {(line.storeItem.coinPrice * line.quantity).toLocaleString("en-US")}
+                </span>
+              ) : null}
             </div>
           ))}
         </div>
 
-        <div className="mt-[18px] rounded-[14px] border border-border-track bg-warm p-[14px]">
-          <div className="mb-2 flex justify-between text-[13px]">
-            <span className="text-ink-soft">Subtotal</span>
-            <span className="flex items-center gap-1 font-extrabold text-amber-text">
-              <Coin size={12} />
-              {subtotal.toLocaleString("en-US")}
-            </span>
-          </div>
-          <div className="mb-2 flex justify-between text-[13px]">
-            <span className="text-ink-soft">Balance now</span>
-            <span className="font-bold">{coins.toLocaleString("en-US")}</span>
-          </div>
-          <div className="my-2 h-px bg-border-input" />
-          <div className="flex justify-between text-[13px]">
-            <span className="font-extrabold">Balance after</span>
-            <span
-              className={cn(
-                "font-extrabold",
-                balanceAfter >= 0 ? "text-sage" : "text-urgency",
-              )}
-            >
-              {balanceAfter.toLocaleString("en-US")}
-            </span>
-          </div>
-        </div>
+        <Summary
+          subtotal={subtotal}
+          coins={coins}
+          balanceAfter={balanceAfter}
+          className={cn("mt-[18px]", wide && "xl:hidden")}
+        />
       </div>
 
-      <div className="flex-none border-t border-border-track p-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
+      <div
+        className={cn(
+          "flex-none border-t border-border-track p-4 pb-[calc(16px+env(safe-area-inset-bottom))]",
+          wide &&
+            "xl:flex xl:w-[380px] xl:flex-col xl:gap-4 xl:rounded-card-lg xl:border xl:bg-warm xl:p-5 xl:pb-5",
+        )}
+      >
+        {wide ? (
+          <Summary
+            subtotal={subtotal}
+            coins={coins}
+            balanceAfter={balanceAfter}
+            className="hidden border-none bg-transparent p-0 xl:block"
+          />
+        ) : null}
         {checkoutError ? (
           <p role="alert" className="mb-2 text-center text-[12px] font-bold text-urgency-text">
             {checkoutError}
           </p>
         ) : null}
-        <Button onClick={handleCheckout} disabled={checkingOut} className="gap-[7px]">
+        <Button
+          onClick={handleCheckout}
+          disabled={checkingOut}
+          className={cn("gap-[7px]", wide && "xl:mt-auto")}
+        >
           {checkingOut ? (
             "Checking out…"
           ) : (
@@ -288,6 +359,56 @@ export function CartPanel({
             </>
           )}
         </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Subtotal / balance now / balance after — one definition, mounted twice (in
+ * the scrolling list on a phone, in the pinned side panel on desktop), which
+ * is why it takes its numbers as props rather than closing over them.
+ */
+function Summary({
+  subtotal,
+  coins,
+  balanceAfter,
+  className,
+}: {
+  subtotal: number;
+  coins: number;
+  balanceAfter: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-[14px] border border-border-track bg-warm p-[14px]",
+        className,
+      )}
+    >
+      <div className="mb-2 flex justify-between text-[13px]">
+        <span className="text-ink-soft">Subtotal</span>
+        <span className="flex items-center gap-1 font-extrabold text-amber-text">
+          <Coin size={12} />
+          {subtotal.toLocaleString("en-US")}
+        </span>
+      </div>
+      <div className="mb-2 flex justify-between text-[13px]">
+        <span className="text-ink-soft">Balance now</span>
+        <span className="font-bold">{coins.toLocaleString("en-US")}</span>
+      </div>
+      <div className="my-2 h-px bg-border-input" />
+      <div className="flex justify-between text-[13px]">
+        <span className="font-extrabold">Balance after</span>
+        <span
+          className={cn(
+            "font-extrabold",
+            balanceAfter >= 0 ? "text-sage" : "text-urgency",
+          )}
+        >
+          {balanceAfter.toLocaleString("en-US")}
+        </span>
       </div>
     </div>
   );

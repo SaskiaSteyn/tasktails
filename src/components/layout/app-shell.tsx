@@ -27,6 +27,13 @@ import { cn } from "@/lib/cn";
  * own padding and the insets resolve to zero, so the same markup is correct
  * at both ends.
  *
+ * From `desk:` (900px) up the frame gives way to the desktop shell: the card
+ * becomes the full viewport, and `header`/`nav` are hidden because the `(app)`
+ * route-group layout is already drawing the universal header and the
+ * persistent left rail around this (INF-22). Both slots stay in the DOM rather
+ * than being conditionally rendered — the switch is a media query, and nothing
+ * here knows the viewport width on the server.
+ *
  * `nav` stays pinned to the bottom by height, not `position: sticky` — every
  * div from `body` down to `main` is bounded (`h-full`/`min-h-0`/`frame:h-*`
  * rather than `min-h-full`/`min-h-[640px]`), so a screen with more content than
@@ -35,6 +42,13 @@ import { cn } from "@/lib/cn";
  * content size unless something says otherwise, so without it every level down
  * the chain would grow to fit whatever the screen renders and drag `nav` down
  * with it — which is exactly the bug this replaced.
+ *
+ * WCAG 2.4.1's skip link is **not** here: it lives in the `(app)` route-group
+ * layout, which is the only ancestor that sits above the desktop rail as well
+ * as above this. Every screen that has a block worth bypassing is inside that
+ * group; the ones that render this shell without one — the auth screens, the
+ * onboarding card, the 404 — pass neither `header` nor `nav`, so their first
+ * tab stop is already the content.
  *
  * `ConnectivityGate` (SHR-07) wraps `children` only, inside `main` — every
  * screen that renders `AppShell` gets the offline takeover for free, header
@@ -62,23 +76,11 @@ export function AppShell({
     // until one fires.
     <LevelUpProvider>
       <AchievementUnlockProvider>
-        <div className="flex min-h-0 flex-1 justify-center bg-board frame:items-center frame:p-6">
-          <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface frame:h-[640px] frame:max-w-app frame:rounded-frame frame:border frame:border-[rgb(46_42_38/0.06)] frame:shadow-card">
-            {/* WCAG 2.4.1 Bypass Blocks. Only rendered when there is actually a block
-              to bypass — on the auth screens the first thing in the tab order is
-              already the content, and a skip link there would be one more stop for
-              no gain. It earns its keep once SHR-01's nav is on every screen.
-              Visually hidden until focused, then it lands on the board above the
-              card. */}
-            {header || nav ? (
-              <a
-                href="#main"
-                className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-1/2 focus:z-50 focus:-translate-x-1/2 focus:rounded-input focus:bg-surface focus:px-4 focus:py-2 focus:text-[13px] focus:font-bold focus:text-ink focus:shadow-card"
-              >
-                Skip to content
-              </a>
-            ) : null}
-            {header}
+        <div className="flex min-h-0 flex-1 justify-center bg-board frame:items-center frame:p-6 desk:items-stretch desk:bg-surface desk:p-0">
+          <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface frame:h-[640px] frame:max-w-app frame:rounded-frame frame:border frame:border-[rgb(46_42_38/0.06)] frame:shadow-card desk:h-full desk:max-w-none desk:rounded-none desk:border-none desk:shadow-none">
+            {/* Hidden, not dropped, at desktop widths: the `(app)` layout's
+                universal header replaces it there. */}
+            <div className="flex-none desk:hidden">{header}</div>
             <main
               id="main"
               tabIndex={-1}
@@ -86,13 +88,16 @@ export function AppShell({
             >
               <ConnectivityGate>{children}</ConnectivityGate>
             </main>
-            {nav ?? (
-              // No nav to absorb it, so the content area clears the home indicator.
-              <div
-                aria-hidden
-                className="h-[env(safe-area-inset-bottom)] flex-none"
-              />
-            )}
+            {/* Same as the header above: the left rail is the desktop nav. */}
+            <div className="flex-none desk:hidden">
+              {nav ?? (
+                // No nav to absorb it, so the content area clears the home indicator.
+                <div
+                  aria-hidden
+                  className="h-[env(safe-area-inset-bottom)]"
+                />
+              )}
+            </div>
           </div>
         </div>
       </AchievementUnlockProvider>

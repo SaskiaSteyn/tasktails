@@ -20,7 +20,7 @@ INF-18,Prisma schema — UserSettings model (id userId dailyReminder streakAlert
 INF-19,Prisma schema — Achievement and UserAchievement models (id key name description criteria unlockedAt),Infrastructure & Database,Database,Done
 INF-20,StoreItem catalogue seed script — populate the store with the design handoff catalogue and animal artwork,Infrastructure & Database,Database,Done
 INF-21,Level threshold table — shared XP-per-level constant consumed by the level-up service and the XP bar,Infrastructure & Database,Backend,Done
-INF-22,Desktop adaptation pass — adapt the mobile-first app screens to wide viewports (max-width centred column bottom nav to side rail two-column dashboard and store grid). Low priority — the study runs on mobile,Infrastructure & Database,Frontend,To Do
+INF-22,Desktop adaptation pass — adapt the mobile-first app screens to wide viewports (max-width centred column bottom nav to side rail two-column dashboard and store grid). Low priority — the study runs on mobile,Infrastructure & Database,Frontend,Done
 INF-23,CI/CD — automated testing via GitHub Actions on every push to dev/main and every pull request,Infrastructure & Database,Infrastructure,Done
 AUTH-01,Register page — form with email and password fields,Authentication,Frontend,Done
 AUTH-02,Login page — form with email and password fields,Authentication,Frontend,Done

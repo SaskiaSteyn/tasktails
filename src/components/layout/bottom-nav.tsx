@@ -1,37 +1,30 @@
 "use client";
 
-import { CheckSquare, type LucideIcon, PawPrint, Plus, ShoppingBag, User } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
-import { CreateTaskSheet } from "@/components/tasks/create-task-sheet";
+import { activeNavHref, NAV_ITEMS, type NavItem } from "@/components/layout/nav-items";
+import { useNewTask } from "@/components/tasks/new-task-provider";
 import { cn } from "@/lib/cn";
 
-const TABS_BEFORE_PLUS = [
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/store", label: "Store", icon: ShoppingBag },
-] as const;
-
-const TABS_AFTER_PLUS = [
-  { href: "/zoo", label: "Zoo", icon: PawPrint },
-  { href: "/profile", label: "Profile", icon: User },
-] as const;
-
 /**
- * SHR-01 — floating bottom nav, on every logged-in screen. Four tabs plus a
- * raised "+" in the middle that opens TASK-02's create-task sheet. The
- * sheet's open state lives here, since this is the one thing mounted on
- * every authenticated page — there's no shared layout to hang it on instead.
+ * SHR-01 — floating bottom nav, on every logged-in phone screen. Four tabs
+ * plus a raised "+" in the middle that opens TASK-02's create-task sheet.
  *
- * Store (STOR-01) doesn't have a real page yet — that tab links to its
- * eventual route anyway, the same forward-declared-route pattern TASK-01's
- * `/tasks` redirect used before that page existed. Zoo got its real pages in
- * PET-01 (`/zoo` the gallery, `/zoo/[id]` the per-animal drill-in) — a tab
- * counts as active on its own route or anything nested under it, which is
- * what actually keeps the Zoo tab lit up while looking at one animal.
+ * The tabs come from `NAV_ITEMS` (INF-22) rather than from two literal arrays
+ * here — this and the desktop rail are two presentations of one nav model, and
+ * a list in one place is what stops a route being added to one and forgotten
+ * in the other. `bottom: true` marks the four that fit around the "+"; the
+ * split into before/after is just the middle of that list.
  *
- * The root `<nav>` itself carries a 68px fade above its own icon row
+ * The sheet itself used to be mounted here, since this was the one thing on
+ * every authenticated page. It now lives in `NewTaskProvider` in the `(app)`
+ * layout, which is above both this and the rail — mounting it here would put
+ * a second copy inside a `display:none` subtree at desktop widths, where ⌘N
+ * would open it invisibly.
+ *
+ * The root `<nav>` carries a 68px fade above its own icon row
  * (`pt-[68px]`, `bg-linear-to-b from-surface/0 to-surface`) rather than
  * `AppShell` wrapping this in an extra div for it — `AppShell`'s `nav` slot
  * is always this component (nothing else is ever passed there), so the fade
@@ -43,85 +36,41 @@ const TABS_AFTER_PLUS = [
  * same flex column as this `<nav>`, so this element's real, non-absolute
  * height (fade included) is space `main` can't claim in the first place —
  * content can't scroll into a zone that was never part of `main`'s own box.
- *
- * PWA-09's "Add task" shortcut (`manifest.ts`) lands on `/tasks?new=task` —
- * the effect below opens this same sheet on arrival, since the shortcut
- * wouldn't be much of a shortcut if it only got you to the tab you'd have
- * landed on anyway. Reads `window.location.search` directly rather than
- * `useSearchParams()`, which needs a `Suspense` boundary for no benefit
- * here — nothing in this component needs to be reactive to the query string
- * after mount, so a plain read in the effect is simpler than a second
- * component and boundary just to satisfy that hook's own requirement.
  */
-/** A tab is active on its own route and any route nested under it (PET-01's `/zoo/[id]` drill-in). */
-function isActiveTab(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+const BOTTOM_TABS = NAV_ITEMS.filter((item) => item.bottom);
+const TABS_BEFORE_PLUS = BOTTOM_TABS.slice(0, 2);
+const TABS_AFTER_PLUS = BOTTOM_TABS.slice(2);
 
 export function BottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [createOpen, setCreateOpen] = useState(false);
-
-  // PWA-09's "Add task" shortcut. `openedFromShortcutRef` guards against
-  // React Strict Mode's dev-only double-invoke re-triggering this — it
-  // persists across that double mount/cleanup/mount cycle since it's the
-  // same fiber, so the second pass sees it already set and does nothing.
-  // Deferred a tick (`setTimeout(..., 0)`) rather than called directly in
-  // the effect body — `eslint react-hooks/set-state-in-effect` flags a
-  // synchronous `setState` there, the same fix `FlashSaleBanner` (URG-01)
-  // already uses for the same rule, for an unrelated reason. `router.replace`
-  // strips the query param so a refresh or a later back-navigation doesn't
-  // reopen the sheet.
-  const openedFromShortcutRef = useRef(false);
-  useEffect(() => {
-    if (openedFromShortcutRef.current) return;
-    if (pathname !== "/tasks") return;
-    if (new URLSearchParams(window.location.search).get("new") !== "task") return;
-    openedFromShortcutRef.current = true;
-    setTimeout(() => {
-      setCreateOpen(true);
-      router.replace("/tasks");
-    }, 0);
-  }, [pathname, router]);
+  const active = activeNavHref(pathname);
+  const { open } = useNewTask();
 
   return (
-    <>
-      <nav className="nav-bar flex flex-none items-center justify-center gap-4 bg-linear-to-b from-surface/0 to-surface p-4">
-        {TABS_BEFORE_PLUS.map((tab) => (
-          <NavTab key={tab.href} {...tab} active={isActiveTab(pathname, tab.href)} />
-        ))}
+    <nav className="nav-bar flex flex-none items-center justify-center gap-4 bg-linear-to-b from-surface/0 to-surface p-4">
+      {TABS_BEFORE_PLUS.map((tab) => (
+        <NavTab key={tab.href} tab={tab} active={tab.href === active} />
+      ))}
 
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          aria-label="New task"
-          className="flex size-[46px] flex-none items-center justify-center rounded-full bg-terracotta text-white shadow-fab"
-        >
-          <Plus size={23} strokeWidth={2.2} aria-hidden />
-        </button>
+      <button
+        type="button"
+        onClick={open}
+        aria-label="New task"
+        className="flex size-[46px] flex-none items-center justify-center rounded-full bg-terracotta text-white shadow-fab"
+      >
+        <Plus size={23} strokeWidth={2.2} aria-hidden />
+      </button>
 
-        {TABS_AFTER_PLUS.map((tab) => (
-          <NavTab key={tab.href} {...tab} active={isActiveTab(pathname, tab.href)} />
-        ))}
-      </nav>
-
-      <CreateTaskSheet open={createOpen} onOpenChange={setCreateOpen} />
-    </>
+      {TABS_AFTER_PLUS.map((tab) => (
+        <NavTab key={tab.href} tab={tab} active={tab.href === active} />
+      ))}
+    </nav>
   );
 }
 
-function NavTab({
-  href,
-  label,
-  icon: Icon,
-  active,
-}: {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  active: boolean;
-}) {
+function NavTab({ tab, active }: { tab: NavItem; active: boolean }) {
+  const { href, label, icon: Icon } = tab;
+
   return (
     <Link
       href={href}

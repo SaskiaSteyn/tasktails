@@ -102,8 +102,24 @@
      which are desktop-first and are not phone frames.
 
      Per-screen desktop adaptation — side rail, two-column dashboard — is INF-22,
-     which consumes this scale rather than adding to it. */
+     which consumes this scale rather than adding to it, plus the one breakpoint
+     below that it genuinely needs. */
   --breakpoint-frame: 30rem; /* 480px — phone frame becomes a centred card */
+
+  /* INF-22 — where the phone frame gives way to the desktop shell: the
+     persistent left rail replaces the bottom nav, the universal header
+     replaces each screen's own, and the app fills the viewport instead of
+     sitting in a 400px card. 900px is the narrowest layout
+     `design_handoff/design_handoff_desktop/` draws (its "tablet / narrow
+     desktop" pair), so it is the width at which the rail-based composition is
+     first known to work rather than a guessed round number.
+
+     Between `desk` and `xl` the handoff's tablet treatment applies — the rail
+     collapses to 76px of icons, the header shrinks to 66px, right-hand panels
+     drop below the primary column and grids go 2-up. Tailwind's own `xl`
+     (1280px) is the full-width desktop step; no new token for it, since the
+     default scale already had one in the right place. */
+  --breakpoint-desk: 56.25rem; /* 900px — bottom nav becomes the side rail */
 
   /* The frame's own width, matching the design's proportions at 400px. */
   --container-app: 25rem; /* 400px — `max-w-app` */
