@@ -16,11 +16,13 @@ export function ProfileHeader({
   name,
   email,
   level,
+  studyId,
   avatarUrl,
 }: {
   name: string;
   email: string;
   level: number;
+  studyId: string;
   avatarUrl: string | null;
 }) {
   return (
@@ -35,6 +37,12 @@ export function ProfileHeader({
         <div className="mt-[6px] flex gap-[5px]">
           <span className="rounded-pill bg-violet-tint px-2 py-[2px] text-[9.5px] font-extrabold text-violet-text">
             LEVEL {level}
+          </span>
+          {/* #189 — the participant's own anonymous study code, in the slot the
+              design drew the (deliberately omitted) study-group chip in. Neutral
+              tones on purpose: it must not read as a group marker. */}
+          <span className="rounded-pill border border-border-track px-2 py-[2px] font-mono text-[9.5px] font-medium text-ink-soft">
+            <span className="font-extrabold">ID:</span> {studyId}
           </span>
         </div>
       </div>

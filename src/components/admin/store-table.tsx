@@ -37,6 +37,7 @@ export function StoreTable({
           <thead>
             <tr className="border-b border-border-track text-[11px] font-bold text-ink-faint">
               <th className="px-5 py-2 font-bold">Participant</th>
+              <th className="px-3 py-2 font-bold">Study ID</th>
               <th className="px-3 py-2 font-bold">Group</th>
               <th className="px-3 py-2 font-bold">Store visits</th>
               <th className="px-3 py-2 font-bold">Items purchased</th>
@@ -60,6 +61,9 @@ export function StoreTable({
                     {participant.displayName}
                   </button>
                 </td>
+                <td className="px-3 py-2.5 font-mono text-[11.5px] text-ink-soft">
+                  {participant.studyId}
+                </td>
                 <td className="px-3 py-2.5">
                   <GroupPill group={participant.abGroup} />
                 </td>
@@ -74,7 +78,7 @@ export function StoreTable({
             ))}
             {participants.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-5 py-6 text-center text-ink-faint">
+                <td colSpan={6} className="px-5 py-6 text-center text-ink-faint">
                   No participants yet.
                 </td>
               </tr>

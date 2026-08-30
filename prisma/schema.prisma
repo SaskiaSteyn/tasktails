@@ -32,6 +32,13 @@ model User {
   id    String @id @default(cuid())
   email String @unique
 
+  /// Anonymous participant code (#189). Random, unique, assigned once at
+  /// account creation and never rewritten — it is what identifies a
+  /// participant in the write-up, so names and emails stay out of the paper.
+  /// Shown to the participant on their own profile and to the researcher in
+  /// the admin dashboard, alongside (not instead of) the real identity.
+  studyId String @unique @default(nanoid(8))
+
   /// The handle chosen on the onboarding username step (AUTH-07). Lowercase, no
   /// leading "@". Null until that step is answered or skipped.
   username String? @unique
