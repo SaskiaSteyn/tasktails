@@ -1,4 +1,4 @@
-import { randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 import { AbGroup, type User, UserRole } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -21,11 +21,34 @@ const normaliseEmail = (email: string) => email.trim().toLowerCase();
 const normaliseUsername = (username: string) => username.trim().toLowerCase();
 
 /**
- * Random, unbiased A/B assignment. NFR-TASK-3 requires this to be
- * server-enforced — it is only ever called from server-side code.
+ * Alternating A/B assignment — whichever arm currently has fewer participants,
+ * A on a tie (#222). Random assignment left the two arms uneven, and with ~20
+ * participants an uneven split costs the comparison real power.
+ *
+ * Derived from the participant rows themselves rather than a stored counter, so
+ * it self-corrects: delete a participant, or flip someone's arm by hand in the
+ * database, and the next signup fills the gap. The researcher's own ADMIN row is
+ * excluded, same as `listParticipants()`.
+ *
+ * NFR-TASK-3 requires this to be server-enforced — it is only ever called from
+ * server-side code.
+ *
+ * ponytail: two concurrent signups can both read the same counts and land in the
+ * same arm. Harmless at this study's scale (~20 participants signing up by hand)
+ * and the next signup corrects it; if that ever stops being true, take a row
+ * lock or move the parity onto a Postgres sequence.
  */
-function assignStudyGroup(): AbGroup {
-  return randomInt(2) === 0 ? AbGroup.A : AbGroup.B;
+async function assignStudyGroup(): Promise<AbGroup> {
+  const [inA, inB] = await Promise.all([
+    prisma.user.count({
+      where: { role: UserRole.PARTICIPANT, abGroup: AbGroup.A },
+    }),
+    prisma.user.count({
+      where: { role: UserRole.PARTICIPANT, abGroup: AbGroup.B },
+    }),
+  ]);
+
+  return inA <= inB ? AbGroup.A : AbGroup.B;
 }
 
 function hashPassword(password: string): string {
@@ -266,7 +289,7 @@ export async function createUser(
       data: {
         email: normaliseEmail(email),
         passwordHash: hashPassword(password),
-        abGroup: assignStudyGroup(),
+        abGroup: await assignStudyGroup(),
         economy: { create: {} },
         // Empty on purpose — every default lives in the schema (INF-18), so the
         // row matches the Settings frame without repeating the values here.
@@ -298,7 +321,7 @@ export async function upsertOAuthUser(
     create: {
       email: key,
       displayName: name ?? null,
-      abGroup: assignStudyGroup(),
+      abGroup: await assignStudyGroup(),
       economy: { create: {} },
       settings: { create: {} },
     },
