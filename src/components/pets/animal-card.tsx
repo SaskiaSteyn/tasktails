@@ -90,6 +90,14 @@ const HEART_STAGGER_MS = 170;
 /** Must match `pet-heart-float`'s own duration in globals.css. */
 const HEART_ANIMATION_MS = 1200;
 
+/**
+ * How far a pointer has to travel across the animal before the stroke counts
+ * as one pet. Roughly one deliberate swipe over the art — low enough that a
+ * stroke feels responsive, high enough that a tap or a stray drag while
+ * scrolling doesn't fire one.
+ */
+const STROKE_THRESHOLD_PX = 140;
+
 export function AnimalCard({
   pet,
   foodItems,
@@ -119,6 +127,17 @@ export function AnimalCard({
   const nextHeartId = useRef(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const petImageRef = useRef<HTMLImageElement>(null);
+  /** Live stroke gesture — last pointer position and distance travelled since the last boost. */
+  const stroke = useRef<{ x: number; y: number; distance: number }>(undefined);
+  // Mirrors `petting` for `handlePet()`'s own re-entrancy guard. A ref, not
+  // the state, because the state is only readable as of the last render:
+  // several pointer moves (or a double-click on the button) can land in a
+  // single tick, and every one of them would still see `petting === false`.
+  // Two overlapping POSTs is not merely wasted work — both read the same
+  // decayed baseline and write `baseline + 7`, so the second is a lost
+  // update: one visible boost, but two interactions recorded against the
+  // petting achievements. Measured live, not theorised.
+  const pettingRef = useRef(false);
   const router = useRouter();
   const { celebrate: celebrateAchievements } = useAchievementUnlock();
   const { celebrate: celebrateLevelUp } = useLevelUp();
@@ -175,6 +194,36 @@ export function AnimalCard({
     );
   }
 
+  // Stroking the animal is the same interaction as the "Pet" button — same
+  // request, same hearts — just reachable by dragging across the art. Raw
+  // pointer events rather than a gesture library: one accumulated distance is
+  // the whole gesture. Pointer capture keeps the stroke alive when the finger
+  // wanders off the image mid-swipe, and tracking our own last position
+  // instead of `movementX/Y` is deliberate — Safari reports 0 for those on
+  // touch pointers, which would make the gesture mouse-only.
+  function handleStrokeStart(event: React.PointerEvent<HTMLDivElement>) {
+    stroke.current = { x: event.clientX, y: event.clientY, distance: 0 };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleStrokeMove(event: React.PointerEvent<HTMLDivElement>) {
+    const previous = stroke.current;
+    if (!previous) return;
+    previous.distance += Math.hypot(event.clientX - previous.x, event.clientY - previous.y);
+    previous.x = event.clientX;
+    previous.y = event.clientY;
+    if (previous.distance < STROKE_THRESHOLD_PX) return;
+    // Reset rather than end the gesture: a long, continuous stroke keeps
+    // petting, one boost per threshold crossed. `handlePet()`'s own guard is
+    // what stops a fast swipe stacking POSTs, so there's no second check here.
+    previous.distance = 0;
+    void handlePet();
+  }
+
+  function handleStrokeEnd() {
+    stroke.current = undefined;
+  }
+
   async function handlePet() {
     // Wired to PET-07's `POST /api/pets/[id]/pet` the same day that ticket
     // shipped — same "wired the same day" convention `SubtaskList`'s
@@ -183,6 +232,11 @@ export function AnimalCard({
     // so the button stays enabled and can be clicked again — `petting` only
     // guards against a second submit landing mid-flight, it never disables
     // the button afterward.
+    // The one re-entrancy guard for both callers — the "Pet" button and the
+    // stroke gesture — rather than one per caller, which is what let the
+    // stroke double-fire.
+    if (pettingRef.current) return;
+    pettingRef.current = true;
     setPetting(true);
     setNotice(undefined);
     try {
@@ -201,6 +255,7 @@ export function AnimalCard({
     } catch {
       setNotice("Couldn't reach TaskTails. Check your connection and try again.");
     } finally {
+      pettingRef.current = false;
       setPetting(false);
     }
   }
@@ -234,7 +289,14 @@ export function AnimalCard({
             this is not a behaviour change for animals that do have art. */}
         <div
           ref={petImageRef}
-          className="relative z-10 mt-1.5 min-h-0 w-full max-w-[360px] flex-1"
+          onPointerDown={handleStrokeStart}
+          onPointerMove={handleStrokeMove}
+          onPointerUp={handleStrokeEnd}
+          onPointerCancel={handleStrokeEnd}
+          // `touch-none` so a stroke on the animal isn't eaten by the page's
+          // own scrolling. The "Pet" button below stays the keyboard and
+          // screen-reader path — this is a shortcut, not the only way in.
+          className="relative z-10 mt-1.5 min-h-0 w-full max-w-[360px] flex-1 cursor-grab touch-none active:cursor-grabbing"
         >
           {hasRealArt(pet.storeItem.imageUrl) ? (
             // The pack's own sad cut for every mood that isn't "Happy" (the
