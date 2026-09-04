@@ -1,23 +1,26 @@
 /**
  * The reward pipeline (ECO-01).
  *
- * One completed task becomes one coin/XP grant by running five stages in the
- * order Requirements §3.3–3.4 and NFR-TASK-1/2 describe:
+ * One completed task becomes one coin/XP grant by running four stages in the
+ * order Requirements §3.3–3.4 and NFR-TASK-1 describe:
  *
- *   base tier → efficiency → streak bonus → anti-spam → daily cap
+ *   base tier → efficiency → streak bonus → anti-spam
  *
  * The order is not cosmetic. Streak is a percentage bonus on *coins earned that
  * day*, so it has to see the efficiency-adjusted figure, not the base one. The
  * anti-spam reduction is a punishment for farming and must come after every
  * bonus, or a 14-day streak would hand back most of what the reduction took.
- * The cap is last because it is a ceiling on what is actually banked, not an
- * input to any of the arithmetic above it.
  *
- * Everything here is pure arithmetic — no Prisma, no clock. The two facts that
- * need a database (how far the anti-spam guardrail reduced this completion,
- * what has already been earned today) arrive as inputs, decided by ECO-02 and
- * ECO-03. That keeps the rules testable against fixed numbers and keeps the
- * study's economy auditable from one file.
+ * There used to be a fifth stage, `NFR-TASK-2`'s 300/500 daily cap. #224
+ * retired it in favour of the earning cooldown (`cooldownMinutesFor()` here,
+ * `grantEarnings()` in `economy.ts`, `design_handoff/ADDENDUM-earning-cooldown.md`)
+ * — the cooldown is a gate on *banking*, applied against locked DB state, not a
+ * pricing stage, so it lives outside this pure module.
+ *
+ * Everything here is pure arithmetic — no Prisma, no clock. The one fact that
+ * needs a database (how far the anti-spam guardrail reduced this completion)
+ * arrives as an input, decided by ECO-02. That keeps the rules testable against
+ * fixed numbers and keeps the study's economy auditable from one file.
  */
 
 import { calendarDaysBetween } from "@/lib/day";
@@ -97,9 +100,40 @@ export const ANTI_SPAM_WINDOW_HOURS = Math.max(
  */
 export const FULL_REWARD_REPEATS_PER_DAY = 3;
 
-/** NFR-TASK-2 — the most anyone can bank in one calendar day. */
-export const DAILY_COIN_CAP = 300;
-export const DAILY_XP_CAP = 500;
+/**
+ * #224 — the earning cooldown that replaces `NFR-TASK-2`'s daily cap.
+ *
+ * After `EARNING_WINDOW_TASKS` rewarded *whole-task* completions (subtasks
+ * don't count toward the window), task completions stop earning coins and XP
+ * for a cooldown. The cooldown's length is tier-weighted: a window of three
+ * Epic tasks earns the full `COOLDOWN_MAX_MINUTES`, three Trivial ones only
+ * `COOLDOWN_MIN_MINUTES`. Streak and achievements are unaffected during a
+ * cooldown; the task still completes. See
+ * `design_handoff/ADDENDUM-earning-cooldown.md`.
+ */
+export const EARNING_WINDOW_TASKS = 3;
+export const COOLDOWN_MIN_MINUTES = 20;
+export const COOLDOWN_MAX_MINUTES = 60;
+
+/**
+ * `round5(20 + (avgTier − 1) / 4 · 40)` minutes, clamped to
+ * `[COOLDOWN_MIN_MINUTES, COOLDOWN_MAX_MINUTES]` — a linear map from the mean
+ * `complexityTier` (1…5) of the window's tasks onto the 20–60 minute spread,
+ * rounded to the nearest 5 so the number shown to the participant is tidy.
+ * Pure; the window's tiers arrive from `economy.ts`'s `grantEarnings`.
+ */
+export function cooldownMinutesFor(tiers: number[]): number {
+  const avgTier =
+    tiers.length > 0 ? tiers.reduce((sum, t) => sum + t, 0) / tiers.length : 1;
+  const raw =
+    COOLDOWN_MIN_MINUTES +
+    ((avgTier - 1) / 4) * (COOLDOWN_MAX_MINUTES - COOLDOWN_MIN_MINUTES);
+  const clamped = Math.min(
+    COOLDOWN_MAX_MINUTES,
+    Math.max(COOLDOWN_MIN_MINUTES, raw),
+  );
+  return Math.round(clamped / 5) * 5;
+}
 
 /**
  * The coin → XP conversion (§3.1, ECO-06).
@@ -235,53 +269,6 @@ export function applyAntiSpam(reward: Reward, keep: number): Reward {
   };
 }
 
-/** What today's earnings look like before this grant lands. */
-export type DailyEarnings = {
-  coins: number;
-  xp: number;
-};
-
-export type CappedReward = {
-  /** What is actually banked. */
-  granted: Reward;
-  /** What the cap withheld — 0/0 when nothing was trimmed. */
-  withheld: Reward;
-  /** True when either currency was trimmed by the cap. */
-  capReached: boolean;
-};
-
-/**
- * NFR-TASK-2 — trims a grant to whatever headroom is left today.
- *
- * A partial grant rather than an outright rejection: someone who has earned 290
- * of their 300 coins still banks the last 10, and the withheld remainder is
- * reported so the UI can say why the number was smaller than expected. The two
- * currencies are capped independently — hitting the coin cap does not stop XP.
- */
-export function applyDailyCap(
-  reward: Reward,
-  earnedToday: DailyEarnings = { coins: 0, xp: 0 },
-): CappedReward {
-  const headroom = (earned: number, cap: number) =>
-    Math.max(0, cap - Math.max(0, earned));
-
-  const granted: Reward = {
-    coins: Math.min(reward.coins, headroom(earnedToday.coins, DAILY_COIN_CAP)),
-    xp: Math.min(reward.xp, headroom(earnedToday.xp, DAILY_XP_CAP)),
-  };
-
-  const withheld: Reward = {
-    coins: reward.coins - granted.coins,
-    xp: reward.xp - granted.xp,
-  };
-
-  return {
-    granted,
-    withheld,
-    capReached: withheld.coins > 0 || withheld.xp > 0,
-  };
-}
-
 /** Everything the pipeline needs to price one completion. */
 export type RewardInput = {
   /** Task.complexityTier. */
@@ -302,8 +289,6 @@ export type RewardInput = {
    * that fraction comes from — ECO-02 decides *whether* to consult it.
    */
   antiSpamKeep?: number;
-  /** What ECO-03 says has already been banked today. */
-  earnedToday?: DailyEarnings;
   /**
    * Fraction of the parent task's reward this grant is worth (SUB-3). 1 for a
    * whole task; a subtask passes 1/subtaskCount.
@@ -317,21 +302,25 @@ export type RewardBreakdown = {
   afterEfficiency: Reward;
   afterStreak: Reward;
   afterAntiSpam: Reward;
-  /** What to write to the economy row. */
+  /** What to write to the economy row — the end of the pricing pipeline. The
+   * #224 cooldown gate (`grantEarnings`) may still zero this out before it
+   * lands, but that is banking, not pricing. */
   granted: Reward;
   efficiency: Efficiency;
   streakBonus: number;
   antiSpamKeep: number;
-  withheldByCap: Reward;
-  capReached: boolean;
 };
 
 /**
- * Prices one completion end to end.
+ * Prices one completion end to end: base tier → efficiency → streak → anti-spam.
  *
  * Rounds to whole coins/XP at every stage rather than once at the end — the
  * balance a participant sees is an integer, and compounding a hidden fraction
- * through four multipliers would make the displayed breakdown fail to add up.
+ * through three multipliers would make the displayed breakdown fail to add up.
+ *
+ * There is no cap stage any more (#224 retired `NFR-TASK-2`); whether this
+ * reward is actually banked or withheld by a cooldown is `grantEarnings`'s
+ * call, not the pricing pipeline's.
  */
 export function calculateReward(input: RewardInput): RewardBreakdown {
   const share = input.share ?? 1;
@@ -350,18 +339,14 @@ export function calculateReward(input: RewardInput): RewardBreakdown {
   const antiSpamKeep = input.antiSpamKeep ?? 1;
   const afterAntiSpam = applyAntiSpam(afterStreak, antiSpamKeep);
 
-  const capped = applyDailyCap(afterAntiSpam, input.earnedToday);
-
   return {
     base,
     afterEfficiency,
     afterStreak,
     afterAntiSpam,
-    granted: capped.granted,
+    granted: afterAntiSpam,
     efficiency,
     streakBonus,
     antiSpamKeep,
-    withheldByCap: capped.withheld,
-    capReached: capped.capReached,
   };
 }

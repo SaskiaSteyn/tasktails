@@ -6,6 +6,8 @@ import { purchaseCount } from "@/lib/checkout";
 import {
   type DailyActivity,
   dailyActivityForUser,
+  earningCooldownMetrics,
+  type EarningCooldownMetrics,
   sessionMetricsForUser,
   storeFunnelForUser,
   totalTelemetryEventCount,
@@ -182,6 +184,15 @@ export type StudyAggregate = {
   tasksCompletedCount: number;
   purchasesCount: number;
   groups: [GroupAggregate, GroupAggregate];
+  /**
+   * #224 — the earning-cooldown panel. Event-derived numbers from
+   * `earningCooldownMetrics()`, plus the per-arm completion totals it needs
+   * as the "worked through the pause?" bar's denominator (from the same
+   * `summaries` the rest of this aggregate is built from).
+   */
+  earningCooldown: EarningCooldownMetrics & {
+    totalCompletionsByGroup: { A: number; B: number };
+  };
 };
 
 export async function studyAggregate(): Promise<StudyAggregate> {
@@ -190,11 +201,24 @@ export async function studyAggregate(): Promise<StudyAggregate> {
     totalTelemetryEventCount(),
   ]);
 
+  const groupByUserId = new Map<string, "A" | "B">(
+    summaries.map((row) => [row.id, row.abGroup === AbGroup.A ? "A" : "B"]),
+  );
+  const totalCompletionsByGroup = { A: 0, B: 0 };
+  for (const row of summaries) {
+    totalCompletionsByGroup[row.abGroup === AbGroup.A ? "A" : "B"] +=
+      row.tasksCompleted;
+  }
+
   return {
     participantCount: summaries.length,
     telemetryEventCount,
     tasksCompletedCount: summaries.reduce((sum, row) => sum + row.tasksCompleted, 0),
     purchasesCount: summaries.reduce((sum, row) => sum + row.itemsPurchased, 0),
     groups: [aggregateGroup(AbGroup.A, summaries), aggregateGroup(AbGroup.B, summaries)],
+    earningCooldown: {
+      ...(await earningCooldownMetrics(groupByUserId)),
+      totalCompletionsByGroup,
+    },
   };
 }

@@ -279,10 +279,17 @@ model UserEconomy {
   streak         Int       @default(0)
   lastStreakDate DateTime?
 
-  /// Daily cap tracking — 300 coins / 500 XP max per day (NFR-TASK-2).
-  dailyCoinsEarned Int      @default(0)
-  dailyXpEarned    Int      @default(0)
-  dailyCapResetAt  DateTime @default(now())
+  /// Earning cooldown (#224) — replaces the retired 300/500 daily cap.
+  /// `earningWindowTiers` holds the `complexityTier` of each *whole-task*
+  /// completion that has earned since the last reset (subtasks don't count);
+  /// its length is the window progress. Once it reaches `EARNING_WINDOW_TASKS`
+  /// (3) a cooldown starts, its length tier-weighted off those tiers
+  /// (`cooldownMinutesFor()` in `rewards.ts`). `earningCooldownUntil` is the
+  /// absolute moment earning resumes — null or in the past means earning is
+  /// open, and the next completion lazily clears the window. No calendar-day
+  /// coupling: the window/cooldown persist across midnight untouched.
+  earningWindowTiers   Int[]     @default([])
+  earningCooldownUntil DateTime?
 
   /// Lucky Box hidden hard pity (GACHA-02, GACHA-05). Counts pulls since the
   /// last Legendary result; `GACHA-04`'s roll forces a Legendary once this

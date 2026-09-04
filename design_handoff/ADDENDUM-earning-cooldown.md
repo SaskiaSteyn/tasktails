@@ -1,22 +1,46 @@
 # TaskTails — Handoff Addendum: Earning Cooldown (replaces the daily cap)
 
-**Status: PLANNING — not implemented. Design decisions resolved 2026-08-31
-(Johan); §8 records them.** Drafted for GitHub issue
+**Status: IMPLEMENTED.** GitHub issue
 [#224](https://github.com/SaskiaSteyn/tasktails/issues/224) ("TASK: remove
-hard cap"). This is a systems/economy spec, not a visual design reference —
-it defines a mechanic to replace `NFR-TASK-2`. Nothing here is built yet.
-Two things still gate implementation, both on Saskia:
+hard cap"). Design decisions resolved 2026-08-31 (Johan; §8). Saskia sign-off
+(relayed by Johan): retiring `NFR-TASK-2` approved, XP curve left as-is for
+now (§7.2). UI mock: `ADDENDUM-earning-cooldown-mock.html`.
 
-1. Methodology sign-off on retiring `NFR-TASK-2` (see §7).
-2. A **separate** XP-curve re-derivation addendum
-   (`ADDENDUM-xp-curve-v6-cooldown.md`, not yet written) — the current
-   `ADDENDUM-xp-curve.md` is deliberately left untouched so it stays a
-   working revert point if the cooldown is abandoned (§8 O4).
+`Requirements.md` §NFR-TASK-2 has been rewritten to describe the cooldown;
+§3.6's "day two" Rare-gate note carries a `#224 superseded` addendum.
+**`claude-memory/economy_system.md` still needs the researchers' own edit** —
+its "Daily cap: 300 coins and 500 XP max per day" line is now stale
+(`CLAUDE.behavior.md` keeps `claude-memory/` out of ticket scope).
+`ADDENDUM-xp-curve.md` is untouched.
 
-Supplements `claude-memory/economy_system.md`, `Requirements.md` §3.3–3.4 /
-§NFR-TASK-2, and `design_handoff/ADDENDUM-xp-curve.md` — all three describe
-the current daily cap and will need edits if this ships (see "Research /
-methodology impact").
+### What shipped
+
+- **Schema** (`20260904120000_earning_cooldown_224`): `UserEconomy` drops
+  `dailyCoinsEarned` / `dailyXpEarned` / `dailyCapResetAt`, adds
+  `earningWindowTiers Int[]` and `earningCooldownUntil DateTime?`.
+- **`rewards.ts`**: `applyDailyCap` / `DAILY_*_CAP` / the cap stage removed;
+  `EARNING_WINDOW_TASKS` (3), `COOLDOWN_MIN/MAX_MINUTES` (20/60) and
+  `cooldownMinutesFor(tiers)` added.
+- **`economy.ts`**: `grantEarnings(userId, reward, ctx, now)` — `ctx` is
+  `{ taskId, tier, advancesWindow }` — gates banking on the cooldown, advances
+  the window on whole-task completions, starts the cooldown on the 3rd, and
+  logs the three telemetry events on its own `tx`. `DailyAllowance` &c.
+  removed; `earningStatusOf()` + `EconomySnapshot.earning` added for the
+  header.
+- **Both complete routes** pass `ctx` (`advancesWindow: true` for tasks,
+  `false` for subtasks) and return `{ granted, onCooldown, cooldownStarted,
+  cooldownUntil, windowRemaining }`.
+- **UI**: `CooldownCountdown` (shared live `M:SS`), `EarningPill` in the
+  header (amber `EARNING · n/3` when open, violet `PAUSED · M:SS` on
+  cooldown), and the violet cooldown banner in `TaskList` (ONB-02 banner
+  shape).
+- **`telemetry.ts`**: `EARNING_COOLDOWN_STARTED` / `EARNING_RESUMED` /
+  `TASK_COMPLETED_ON_COOLDOWN` added to `TelemetryEventType`.
+- **Tests**: `rewards.test.ts` (cooldown-formula suite) and `economy.test.ts`
+  (`grantEarnings` / `earningStatusOf` cooldown suites) rewritten. Full
+  suite green (203).
+- **Not built**: the admin-dashboard visualisation of the cooldown telemetry
+  (§6 says post-pilot — the events are logged now).
 
 ---
 
@@ -145,8 +169,8 @@ The old flat ceiling was 300 coins / 500 XP **per day**. Under the cooldown,
 a participant grinding Epic tasks can sustain ~400 coins/hr — i.e. clear the
 old daily figure in under an hour and keep going. The tier-weighted formula
 (O5) deliberately doesn't stop this; it stops the *rapid-fire* version of it
-(three Epics back-to-back = the full 60-minute pause). Saskia signs off on
-the higher ceiling as a methodology point (§7.3), not the formula.
+(three Epics back-to-back = the full 60-minute pause). Saskia has signed off
+on the higher ceiling as a methodology point (§7.3).
 
 ---
 
@@ -199,9 +223,12 @@ adds the three new columns and drops the three old ones.
   to `grantEarnings()`; include `reward.cooldown` and `reward.windowRemaining`
   in the response. Order of operations is otherwise unchanged (mark complete
   → streak → anti-spam → price → grant → achievements).
-- **`src/components/tasks/task-list.tsx` / `task-row.tsx`** — completion pop
-  copy (§5).
-- **New dashboard status element** — §5.
+- **`src/components/tasks/task-list.tsx`** — the violet cooldown banner (§5.1),
+  reusing the ONB-02 banner's markup. `task-row.tsx` only needs the `+0 · +0`
+  figure state — its existing swap already handles it if the response says the
+  grant was zero.
+- **New shared cooldown-countdown hook + two mount points** — the header pill
+  (§5.2) and the task-list banner (§5.1).
 - **`src/lib/telemetry.ts`** — new event types (§6).
 - **Tests** — `src/lib/rewards.test.ts` and `src/lib/economy.test.ts`: the
   `applyDailyCap` / `grantEarnings` cap suites become cooldown suites
@@ -209,33 +236,45 @@ adds the three new columns and drops the three old ones.
   currencies, lazy reset after expiry, streak still records during cooldown,
   `FOR UPDATE` race).
 - **Docs** — `Requirements.md` §NFR-TASK-2 + §3.3–3.4 and `claude-memory/
-  economy_system.md` are rewritten to describe the cooldown. A **new**
-  `design_handoff/ADDENDUM-xp-curve-v6-cooldown.md` carries the re-derived
-  curve; `ADDENDUM-xp-curve.md` itself is **not touched** (O4 — it stays the
-  revert point). Per `CLAUDE.behavior.md`, `claude-memory/` is edited by the
-  researchers, not as part of the ticket.
+  economy_system.md` are rewritten to describe the cooldown. `ADDENDUM-xp-
+  curve.md` and `LEVEL_THRESHOLDS` are **not touched** (O4). Per
+  `CLAUDE.behavior.md`, `claude-memory/` is edited by the researchers, not
+  as part of the ticket.
 
 ---
 
 ## 5. UI / UX
 
-No design mock exists for this — the "Customize Mochi"-era frames predate
-it. Build against existing `@theme` tokens and the completion-pop /
-streak-pill visual language already in the app.
+No design mock existed for the "Customize Mochi"-era frames that predate
+this; the companion `ADDENDUM-earning-cooldown-mock.html` is the mock. Build
+against existing `@theme` tokens and the visual language already in the app.
 
-### 5.1 Completion pop (the reward toast `TaskRow` shows)
+### 5.1 On the task screen — there is no floating pop
 
-- **Normal slot (1st / 2nd of the window):** unchanged — the actual granted
-  coins/XP, plus a subtle "`2 of 3 before a break`" line under it (`text-
-  overline`, `--color-ink-faint`).
-- **Slot that triggers the cooldown (3rd):** the granted amount as normal,
-  then a line: **"That's 3 — coin & XP earning pauses for ~40 min."**
-  (`--color-violet-text` on `--color-violet-tint`, matching the XP family).
-- **Completion during cooldown:** no reward number; instead
-  **"Task done · earning resumes in ~22 min"** and, if it's the first
-  completion today, the streak flame still animates. Wording must make clear
-  the task *counted* (it did — streak + achievements) but paid nothing. The
-  value is static (O3), hence `~`.
+The existing "reward pop" is **already** just an in-row swap: on completion,
+`TaskRow`'s right-hand coin figure changes from the tier preview to the real
+granted amount (`+35 · +45 XP`, `--color-sage-text`) and the checkbox scales
+to 125% for a beat, then reverts (`task-row.tsx`'s `celebrationReward`).
+That is unchanged.
+
+The cooldown adds **one** element: a **violet inline banner at the top of
+the task list** (`task-list.tsx`), reusing the exact shape and slide-in of
+the green onboarding-goal banner already rendered there (ONB-02 — `rounded-
+card`, `border`, tinted fill, `animate-medallion-pop`), swapped to the
+violet family.
+
+- **Normal completion (window slot 1 / 2):** nothing new. The row figure
+  swaps as today. The "1 of 3 / 2 of 3" progress lives only on the header
+  pill (§5.2), not on the row.
+- **The 3rd completion (cooldown starts):** the row figure still swaps and
+  the 3rd task is **paid in full**; the violet banner slides in —
+  *"Nice — that's 3. Earning's on a break."* with a live `MM:SS` on the
+  right. The banner appearing *is* the signal.
+- **Completing a task during the cooldown:** the banner is already there,
+  reading *"Earning paused — coins & XP resume in MM:SS"* (live). The
+  completed row's figure swaps to **`+0 · +0 XP`** (`--color-ink-faint`).
+  Task still completes; streak + achievements still count.
+- The banner clears itself when the countdown reaches `0:00`.
 
 ### 5.2 Dashboard status
 
@@ -243,48 +282,61 @@ A small pill near the streak pill / XP bar in the persistent header (or the
 dashboard's streak stat card):
 
 - **Earning open:** `EARNING · 2 / 3` — amber family (`--color-amber-*`),
-  same pill shape as the streak pill.
-- **On cooldown:** `EARNING PAUSED · ~18 min` — violet family. **Static, not
-  a live ticker** (O3, confirmed): render the remaining minutes at page load
-  and let the next `router.refresh()` (which every completion already fires)
-  update it. Cheapest option and consistent with how the rest of the economy
-  UI refreshes. The `~` keeps a slightly stale value honest.
+  same pill shape as the streak pill. Not a countdown; just the window
+  progress.
+- **On cooldown:** `EARNING PAUSED · 17:42` — violet family, **live MM:SS
+  countdown** (O3, revised — Saskia asked for a live timer). Client
+  component driving a `setInterval`, the same pattern `FlashSaleBanner`
+  (URG-01) and `BundleTimerBadge` (URG-06) already use for the store's
+  countdowns: `earningCooldownUntil` (an absolute timestamp) comes from the
+  server, the client renders `until − now` every second and, on reaching
+  `0:00`, swaps to the "earning open" state (a `router.refresh()` on that
+  tick reconciles the server view). Renders nothing until mounted, same
+  hydration-mismatch guard those two components document.
+
+The header pill (app-wide) and the task-list banner (§5.1, task screen only)
+render the same countdown off the same `earningCooldownUntil` — one shared
+client hook, two mount points.
 
 No existing "remaining today" UI needs removing — there is none in
 `src/components` today (the daily allowance was only ever a server concept).
 
 ---
 
-## 6. Telemetry (O7)
+## 6. Telemetry (O7 — revised 2026-08-31 with Johan)
 
-The behavioural question the study wants answered: **once the cooldown ends,
-how long does a participant wait before earning again — and does that depend
-on how hard the previous window was?** So the logging is built around the
-window → cooldown → resume cycle:
+Two plain questions, no percentiles:
+
+1. **Which 3-task difficulty mixes are producing cooldowns** — a count per
+   mix.
+2. **Once a cooldown ends, how long until the next task gets done** — the
+   **mean** (not median) minutes from `cooldownUntil` to the next
+   completion, per mix.
+
+Events:
 
 - **`EARNING_COOLDOWN_STARTED`** — fired on the 3rd rewarded completion.
-  `{ windowTiers: [t1, t2, t3], tierSum, avgTier, cooldownMinutes,
-  cooldownUntil }`. `windowTiers` is the ordered list so analysis can tell
-  "three Epics" from "Trivial, Trivial, Epic" even at the same `tierSum`.
-- **`EARNING_RESUMED`** — fired on the **next rewarded completion after
-  `cooldownUntil` has passed** (i.e. the "4th task"). Carries the previous
-  window's descriptors plus the wait:
-  `{ windowTiers, tierSum, cooldownMinutes, cooldownEndedAt,
-  waitAfterCooldownMs, nextTaskTier }`.
-  `waitAfterCooldownMs = resumedAt − cooldownUntil` — the metric of
-  interest (0 if they were completing tasks the moment it lifted; large if
-  they walked away and came back much later).
+  `{ windowTiers: [t1, t2, t3], mixKey, tierSum, cooldownMinutes,
+  cooldownUntil }`. `windowTiers` keeps completion order;
+  `mixKey` is the sorted multiset (e.g. `"1-3-3"`) — the difficulty
+  *combination*, order-independent, which is what the admin table groups on.
+- **`EARNING_RESUMED`** — fired on the **first completed task after
+  `cooldownUntil` has passed**. `{ mixKey, windowTiers, cooldownMinutes,
+  cooldownEndedAt, waitAfterCooldownMs, nextTaskTier }`, where
+  `waitAfterCooldownMs = completedAt − cooldownUntil`. (0 if they ticked a
+  task off the moment it lifted; large if they walked away.)
 - **`TASK_COMPLETED_ON_COOLDOWN`** — a completion made *during* a cooldown
   (task counted for streak/achievements, earned nothing).
-  `{ taskId, tier, cooldownRemainingMs }`. Distinguishes "kept working
-  through the pause" from "stopped completing tasks entirely until it
-  lifted".
+  `{ taskId, tier, cooldownRemainingMs }`. Separates "worked through the
+  pause" from "stopped until it lifted".
 
-Together these give, per participant: window composition → cooldown length
-→ whether they worked through it → gap before resuming. Admin-dashboard
-surfacing (median `waitAfterCooldownMs` by `avgTier`, share of completions
-made on cooldown) is a **post-pilot** ADM task, not v1 — log now, visualise
-later.
+**Admin panel** (see `ADDENDUM-earning-cooldown-mock.html` §3): four KPI
+tiles (cooldowns triggered · avg cooldown length · **avg wait to next
+task** · % tasks completed mid-cooldown), then one table — **cooldowns by
+task-difficulty mix**: `mix · resulting cooldown · count · avg wait to next
+task`, sorted by count, long tail collapsed. Plus the Group A/B "kept
+completing during the pause?" split bar. Group-level breakdowns beyond that
+bar are post-pilot.
 
 ---
 
@@ -296,19 +348,17 @@ Removing `NFR-TASK-2` is a change to a study control, not just a UX tweak.
    `claude-memory/economy_system.md` ("Daily cap: 300 coins and 500 XP max
    per day") must be rewritten to describe the cooldown.
 
-2. **`ADDENDUM-xp-curve.md`'s daily-cap anchor breaks.** That doc relies on
+2. **`ADDENDUM-xp-curve.md`'s daily-cap anchor.** That doc relies on
    "Level 5 (425 XP) is under the 500 XP daily cap and Level 6 (540) is over
    it, so a participant who maxes the cap on day one lands on Level 5 and
    cannot reach Rare-tier content until day two." With no daily XP ceiling,
-   a determined participant can cross into Rare tier on day one. The
-   Common→Rare exposure timing the study assumes needs re-deriving against
-   the cooldown's actual throughput, or a different gate.
-   **Plan (O4):** the re-derived curve goes in a **new, separate addendum**
-   (`ADDENDUM-xp-curve-v6-cooldown.md`). `ADDENDUM-xp-curve.md` and the
-   current `LEVEL_THRESHOLDS` are left exactly as they are, so if the
-   cooldown is abandoned the curve reverts by simply not applying the new
-   addendum — no diff to undo. That addendum is a prerequisite for
-   implementing this one and is not yet written.
+   a determined participant *can* cross into Rare tier on day one.
+   **Decision (Saskia, relayed by Johan): leave the curve unchanged for
+   now.** Day-one Rare access is accepted; the tier-weighted cooldown still
+   paces XP, just not to a hard daily line. Revisit only if pilot telemetry
+   (§6) shows participants reaching Rare/Epic tiers materially faster than
+   the exposure schedule assumes. `ADDENDUM-xp-curve.md` and
+   `LEVEL_THRESHOLDS` are untouched — no v6 addendum.
 
 3. **Peak earn rate goes up** for participants doing large tasks (§2.6).
    This is a known, accepted consequence of the tier-weighted formula (O5):
@@ -352,8 +402,8 @@ record of the road not taken.
 |---|---|---|
 | O1 | Does an anti-spam-reduced completion (floored to 1c/1xp) fill a window slot? | **Yes** — still a rewarded completion; keeping farmed repeats out of the window would be a cooldown bypass. (§2.1) |
 | O2 | Do subtask completions take a window slot? | **No.** Only whole-task completions advance the window; a subtask pays its `1/n` share but doesn't count. The parent's own completion (incl. SUB-4 auto-complete) is the slot. (§2.1) |
-| O3 | Live-ticking countdown or static value? | **Static**, re-rendered by the `router.refresh()` every completion already fires. Displayed with a `~`. (§5.2) |
-| O4 | How to handle `ADDENDUM-xp-curve.md`'s broken daily-cap anchor? | **Re-derive the curve in a new, separate `ADDENDUM-xp-curve-v6-cooldown.md`.** Leave `ADDENDUM-xp-curve.md` and the current thresholds untouched so the curve reverts cleanly if the cooldown is dropped. That addendum is a **prerequisite** and is not yet written. (§7.2) |
+| O3 | Live-ticking countdown or static value? | **Live MM:SS countdown** (revised — Saskia asked for a live timer). Client `setInterval` off the server's `earningCooldownUntil`, same pattern as the store's `FlashSaleBanner` / `BundleTimerBadge`. (§5.2) |
+| O4 | How to handle `ADDENDUM-xp-curve.md`'s daily-cap anchor? | **Leave the curve unchanged for now** (Saskia, relayed by Johan). Day-one Rare access is accepted; revisit only if pilot telemetry shows tier exposure running ahead of schedule. No v6 addendum. (§7.2) |
 | O5 | Tier-weighted or reward-weighted cooldown? | **Tier-weighted** (§2.2). Goal is to stop rapid-fire grinding of large tasks, not to flatten coins/hour. Higher peak earn rate for big-task users is an accepted consequence. |
 | O6 | Constants. | **Confirmed:** `EARNING_WINDOW_TASKS = 3`, spread `[20, 60]` min, `round5`, linear in average tier. |
 | O7 | Telemetry scope. | Log the **window → cooldown → resume** cycle now, incl. `waitAfterCooldownMs` on the first post-cooldown completion, tagged with the previous window's ordered tiers (§6). Admin-dashboard visualisation is post-pilot. |
@@ -361,12 +411,15 @@ record of the road not taken.
 | O9 | Old `daily*` columns. | **Drop all three in the same migration** as the new columns — no historical value to keep. (§3) |
 | O10 | Persist across calendar days? | **Yes — no midnight reset.** The window/cooldown are purely duration-based. (§2.4) |
 
-### Still gating implementation (not Johan's to decide)
+### Sign-off
 
-- **Saskia:** methodology sign-off on retiring `NFR-TASK-2` (§7), and on the
-  higher peak earn rate (§7.3).
-- **`ADDENDUM-xp-curve-v6-cooldown.md`** must be written and agreed first
-  (O4).
+- **Saskia** — approved retiring `NFR-TASK-2`, the higher peak earn rate
+  (§7.3), and leaving the XP curve unchanged (§7.2). Relayed by Johan.
+- **Johan** — all §8 decisions, plus the UI mock
+  (`ADDENDUM-earning-cooldown-mock.html`) as the final artefact before
+  implementation.
+
+Nothing else gates the build.
 
 ---
 

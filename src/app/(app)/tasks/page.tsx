@@ -11,6 +11,7 @@ import { ZooGrid } from "@/components/pets/zoo-grid";
 import { TaskList } from "@/components/tasks/task-list";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
+import { currentEconomy } from "@/lib/economy";
 import {
   equippedAccessoriesForUser,
   equippedBackgroundsForUser,
@@ -55,13 +56,15 @@ export default async function TasksPage() {
   if (!userId) redirect("/login");
   await redirectAdminsAway(userId);
 
-  const [tasks, onboarding, pets, backgrounds, accessories] = await Promise.all([
-    tasksForUser(userId),
-    onboardingStatus(userId),
-    petsForUser(userId),
-    equippedBackgroundsForUser(userId),
-    equippedAccessoriesForUser(userId),
-  ]);
+  const [tasks, onboarding, pets, backgrounds, accessories, economy] =
+    await Promise.all([
+      tasksForUser(userId),
+      onboardingStatus(userId),
+      petsForUser(userId),
+      equippedBackgroundsForUser(userId),
+      equippedAccessoriesForUser(userId),
+      currentEconomy(),
+    ]);
 
   return (
     <AppShell
@@ -75,7 +78,11 @@ export default async function TasksPage() {
             `EmptyTasksState` when there are no tasks, and that is exactly the
             moment a new participant most needs to see what the quests are. */}
         <NextQuestCard status={onboarding} />
-        <TaskList tasks={tasks} onboarding={onboarding} />
+        <TaskList
+          tasks={tasks}
+          onboarding={onboarding}
+          earningCooldownUntil={economy?.earning.cooldownUntil ?? null}
+        />
       </div>
 
       <aside className="hidden flex-none flex-col gap-4 desk:flex xl:w-[400px]">

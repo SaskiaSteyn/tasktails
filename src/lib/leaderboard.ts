@@ -37,8 +37,9 @@ import { listParticipants, type ParticipantSummary } from "@/lib/users";
  *
  * The addendum's "This week" / "This month" tabs are not implementable yet:
  * nothing records *when* coins were earned (`lifetimeCoinsEarned` only grows,
- * `dailyCoinsEarned` resets daily, `Transaction` records coins *spent*), which
- * is what LEAD-01/02's ledger is for. Period selection is deliberately absent
+ * `Transaction` records coins *spent*), which is what LEAD-01/02's ledger is
+ * for — the #224 earning telemetry (`EARNING_*` events) is a per-cooldown
+ * log, not a coin ledger. Period selection is deliberately absent
  * from this module's signature rather than stubbed — when the ledger lands,
  * `allTimeLeaderboard()` becomes one case of a period-taking read and
  * `rankParticipants()` below is unaffected.

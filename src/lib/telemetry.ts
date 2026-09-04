@@ -28,7 +28,15 @@ export type TelemetryEventType =
   | "ADD_TO_CART"
   | "SESSION_START"
   | "SESSION_END"
-  | "STORE_TIME_ON_PAGE";
+  | "STORE_TIME_ON_PAGE"
+  // #224 — the earning-cooldown cycle. `EARNING_COOLDOWN_STARTED` fires on the
+  // 3rd rewarded whole-task completion; `EARNING_RESUMED` on the first
+  // completion after the cooldown lifts (carries `waitAfterCooldownMs`);
+  // `TASK_COMPLETED_ON_COOLDOWN` on any completion made while paused (earned
+  // nothing). See `design_handoff/ADDENDUM-earning-cooldown.md` §6.
+  | "EARNING_COOLDOWN_STARTED"
+  | "EARNING_RESUMED"
+  | "TASK_COMPLETED_ON_COOLDOWN";
 
 /**
  * Logs one event. Takes a plain `PrismaClient` by default, but accepts a
@@ -173,4 +181,133 @@ export async function dailyActivityForUser(
 /** ADM-08 — every `TelemetryEvent` row that exists, across every user. */
 export async function totalTelemetryEventCount(): Promise<number> {
   return prisma.telemetryEvent.count();
+}
+
+/** #224 — one row of the admin panel's "cooldowns by task-difficulty mix" table. */
+export type EarningCooldownMixRow = {
+  /** `"1-3-3"` — the sorted tier multiset, order-independent. */
+  mixKey: string;
+  /** The cooldown length this mix produces (deterministic; taken from the events). */
+  cooldownMinutes: number;
+  /** How many cooldowns this mix has triggered. */
+  count: number;
+  /** Mean minutes from the cooldown lifting to the next completed task, or null if none has resumed yet. */
+  avgWaitMinutes: number | null;
+};
+
+/** #224 — the admin "Earning cooldown" card's data (`design_handoff/ADDENDUM-earning-cooldown.md` §6). */
+export type EarningCooldownMetrics = {
+  cooldownsTriggered: number;
+  avgCooldownMinutes: number | null;
+  avgWaitToNextTaskMinutes: number | null;
+  /** Task/subtask completions made while a cooldown was active (earned nothing). */
+  midCooldownCompletions: number;
+  /** One row per difficulty mix, most cooldowns first. */
+  byMix: EarningCooldownMixRow[];
+  /** Mid-cooldown completions split by study arm — for the "worked through the pause?" bar. */
+  midCooldownByGroup: { A: number; B: number };
+};
+
+const asNumber = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
+
+const meanOf = (values: number[]): number | null =>
+  values.length === 0
+    ? null
+    : values.reduce((sum, value) => sum + value, 0) / values.length;
+
+/**
+ * #224 — aggregates the `EARNING_*` telemetry into the admin card's shape.
+ *
+ * Group-agnostic in its own logic: `groupByUserId` is a lookup passed in by
+ * `admin.ts` (which owns the participant/arm data), so this stays consistent
+ * with every other function here reading `TelemetryEvent` without knowing
+ * about study arms.
+ */
+export async function earningCooldownMetrics(
+  groupByUserId: Map<string, "A" | "B">,
+): Promise<EarningCooldownMetrics> {
+  const events = await prisma.telemetryEvent.findMany({
+    where: {
+      eventType: {
+        in: [
+          "EARNING_COOLDOWN_STARTED",
+          "EARNING_RESUMED",
+          "TASK_COMPLETED_ON_COOLDOWN",
+        ],
+      },
+    },
+    select: { userId: true, eventType: true, payload: true },
+  });
+
+  const started = events.filter((e) => e.eventType === "EARNING_COOLDOWN_STARTED");
+  const resumed = events.filter((e) => e.eventType === "EARNING_RESUMED");
+  const midCooldown = events.filter(
+    (e) => e.eventType === "TASK_COMPLETED_ON_COOLDOWN",
+  );
+
+  const cooldownMinutesList = started
+    .map((e) => asNumber((e.payload as { cooldownMinutes?: unknown }).cooldownMinutes))
+    .filter((v): v is number => v !== null);
+
+  const waitMinutesList = resumed
+    .map((e) =>
+      asNumber((e.payload as { waitAfterCooldownMs?: unknown }).waitAfterCooldownMs),
+    )
+    .filter((v): v is number => v !== null)
+    .map((ms) => ms / 60_000);
+
+  const mixes = new Map<
+    string,
+    { cooldownMinutes: number; count: number; waitMinutes: number[] }
+  >();
+  for (const event of started) {
+    const payload = event.payload as {
+      mixKey?: unknown;
+      cooldownMinutes?: unknown;
+    };
+    const mixKey = typeof payload.mixKey === "string" ? payload.mixKey : "?";
+    const row = mixes.get(mixKey) ?? {
+      cooldownMinutes: asNumber(payload.cooldownMinutes) ?? 0,
+      count: 0,
+      waitMinutes: [],
+    };
+    row.count += 1;
+    mixes.set(mixKey, row);
+  }
+  for (const event of resumed) {
+    const payload = event.payload as {
+      mixKey?: unknown;
+      waitAfterCooldownMs?: unknown;
+    };
+    const mixKey = typeof payload.mixKey === "string" ? payload.mixKey : "?";
+    const wait = asNumber(payload.waitAfterCooldownMs);
+    const row = mixes.get(mixKey);
+    if (row && wait !== null) row.waitMinutes.push(wait / 60_000);
+  }
+
+  const byMix: EarningCooldownMixRow[] = [...mixes.entries()]
+    .map(([mixKey, row]) => ({
+      mixKey,
+      cooldownMinutes: row.cooldownMinutes,
+      count: row.count,
+      avgWaitMinutes: meanOf(row.waitMinutes),
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const midCooldownByGroup = { A: 0, B: 0 };
+  for (const event of midCooldown) {
+    const group = groupByUserId.get(event.userId);
+    if (group === "A") midCooldownByGroup.A += 1;
+    else if (group === "B") midCooldownByGroup.B += 1;
+  }
+
+  return {
+    cooldownsTriggered: started.length,
+    avgCooldownMinutes: meanOf(cooldownMinutesList),
+    avgWaitToNextTaskMinutes: meanOf(waitMinutesList),
+    midCooldownCompletions: midCooldown.length,
+    byMix,
+    midCooldownByGroup,
+  };
 }
