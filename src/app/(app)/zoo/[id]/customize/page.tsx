@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { PetCustomizer } from "@/components/pets/pet-customizer";
 import { accessoryInventoryForUser, decorationInventoryForUser } from "@/lib/inventory";
 import { petDisplayName } from "@/lib/pet-mood";
-import { petForUser } from "@/lib/pets";
+import { petForUser, petsForUser } from "@/lib/pets";
 
 export async function generateMetadata({
   params,
@@ -38,12 +38,32 @@ export default async function CustomizePetPage({
   if (!userId) redirect("/login");
 
   const { id } = await params;
-  const [pet, accessories, decorations] = await Promise.all([
+  const [pet, accessories, decorations, pets] = await Promise.all([
     petForUser(userId, id),
     accessoryInventoryForUser(userId),
     decorationInventoryForUser(userId),
+    petsForUser(userId),
   ]);
   if (!pet) redirect("/zoo");
 
-  return <PetCustomizer pet={pet} accessories={accessories} decorations={decorations} />;
+  // #215 — one pet at a time. Any equippable copy already on a *different*
+  // pet is locked in the grid, captioned with that pet's name; the customize
+  // route enforces the same rule server-side. Keyed by inventory-item id so
+  // `PetCustomizer` can look each tile up directly.
+  const petNameById = new Map(pets.map((p) => [p.id, petDisplayName(p)]));
+  const lockedByPet: Record<string, string> = {};
+  for (const item of [...accessories, ...decorations]) {
+    if (item.equippedToPetId && item.equippedToPetId !== pet.id) {
+      lockedByPet[item.id] = petNameById.get(item.equippedToPetId) ?? "another pet";
+    }
+  }
+
+  return (
+    <PetCustomizer
+      pet={pet}
+      accessories={accessories}
+      decorations={decorations}
+      lockedByPet={lockedByPet}
+    />
+  );
 }

@@ -1,11 +1,6 @@
 import { auth } from "@/auth";
 import type { Prisma, UserEconomy } from "@/generated/prisma/client";
-import {
-  calendarDaysBetween,
-  isSameDay,
-  startOfDay,
-  startOfNextDay,
-} from "@/lib/day";
+import { calendarDaysBetween, startOfDay } from "@/lib/day";
 import {
   levelForXp,
   levelProgress,
@@ -16,17 +11,16 @@ import { prisma } from "@/lib/prisma";
 import {
   antiSpamKeepFor,
   applyAntiSpam,
-  applyDailyCap,
   BUY_XP_COST_COINS,
   BUY_XP_GAIN_XP,
-  DAILY_COIN_CAP,
-  DAILY_XP_CAP,
+  cooldownMinutesFor,
+  EARNING_WINDOW_TASKS,
   FULL_REWARD_REPEATS_PER_DAY,
   streakBonusFor,
-  type CappedReward,
   type Reward,
 } from "@/lib/rewards";
 import { completionsOfTitleToday, lastCompletionOfTitle } from "@/lib/tasks";
+import { logTelemetryEvent } from "@/lib/telemetry";
 
 /**
  * Every read of a participant's coins / XP / streak (INF-10, INF-12).
@@ -40,10 +34,44 @@ import { completionsOfTitleToday, lastCompletionOfTitle } from "@/lib/tasks";
 
 export type { UserEconomy };
 
+/**
+ * #224 — the earning window / cooldown state the header pill and the task
+ * screen's banner render. Derived from the row, not stored in this shape.
+ */
+export type EarningStatus = {
+  /** Rewarded whole-task completions used in the current window (0…`windowSize`). */
+  windowUsed: number;
+  windowSize: number;
+  /** ISO timestamp earning resumes, or `null` when earning is open. */
+  cooldownUntil: string | null;
+};
+
+/** The `UserEconomy` columns `earningStatusOf` needs. */
+type EarningColumns = Pick<
+  UserEconomy,
+  "earningWindowTiers" | "earningCooldownUntil"
+>;
+
+/** Reads `EarningStatus` off a row, resolving an expired cooldown to "open". */
+export function earningStatusOf(
+  row: EarningColumns,
+  now: Date = new Date(),
+): EarningStatus {
+  const until = row.earningCooldownUntil;
+  const onCooldown = until !== null && until.getTime() > now.getTime();
+  return {
+    windowUsed: onCooldown ? EARNING_WINDOW_TASKS : row.earningWindowTiers.length,
+    windowSize: EARNING_WINDOW_TASKS,
+    cooldownUntil: onCooldown ? until.toISOString() : null,
+  };
+}
+
 /** What the persistent header draws. */
 export type EconomySnapshot = LevelProgress & {
   coins: number;
   streak: number;
+  /** #224 — window progress + cooldown, for the header's earning pill. */
+  earning: EarningStatus;
 };
 
 /**
@@ -95,12 +123,16 @@ export async function lifetimeEarningsFor(
  * actually notice. If the two ever diverge, `xp` is the truth.
  */
 export function snapshotOf(
-  economy: Pick<UserEconomy, "coins" | "xp" | "streak">,
+  economy: Pick<
+    UserEconomy,
+    "coins" | "xp" | "streak" | "earningWindowTiers" | "earningCooldownUntil"
+  >,
 ): EconomySnapshot {
   return {
     ...levelProgress(economy.xp),
     coins: Math.max(0, economy.coins),
     streak: Math.max(0, economy.streak),
+    earning: earningStatusOf(economy),
   };
 }
 
@@ -109,6 +141,8 @@ export const EMPTY_ECONOMY: EconomySnapshot = snapshotOf({
   coins: 0,
   xp: 0,
   streak: 0,
+  earningWindowTiers: [],
+  earningCooldownUntil: null,
 });
 
 /**
@@ -343,163 +377,200 @@ export async function syncLevel(
   return { level, corrected: true };
 }
 
-/** What NFR-TASK-2 allows in a day. */
-export const DAILY_CAPS: Reward = { coins: DAILY_COIN_CAP, xp: DAILY_XP_CAP };
-
-/** How much of today's cap is left (ECO-03). */
-export type DailyAllowance = {
-  /** Banked today. Zero once the stored counters are a day stale. */
-  earned: Reward;
-  /** Cap minus earned, floored at 0 — what a grant can still bank. */
-  remaining: Reward;
-  coinCapReached: boolean;
-  xpCapReached: boolean;
-  /** Local midnight when these counters next reset. */
-  resetsAt: Date;
+/** A running cooldown, as `grantEarnings` reports it back. */
+export type EarningCooldown = {
+  /** Absolute moment earning resumes. */
+  until: Date;
+  /** ms from `now` to `until` — the client's first countdown value. */
+  remainingMs: number;
 };
 
-/** The three columns ECO-03 reads and writes. */
-type DailyCounters = Pick<
-  UserEconomy,
-  "dailyCoinsEarned" | "dailyXpEarned" | "dailyCapResetAt"
->;
-
-/**
- * Reads the stored counters as of `now` (ECO-03).
- *
- * The reset is **lazy**: nothing sweeps the table at midnight, so counters from
- * a previous day are simply read as zero and overwritten by the next grant.
- * `dailyCapResetAt` is the day the stored numbers describe, not the moment a
- * reset is due — an account that goes quiet for a week still reads as a clean
- * slate on its return, with no scheduled job to keep alive on a $0 budget
- * (NFR-GEN-3).
- *
- * Pure, so the dashboard can render remaining allowance from a row it already
- * holds without a second query.
- */
-export function dailyAllowanceOf(
-  counters: DailyCounters,
-  now: Date = new Date(),
-): DailyAllowance {
-  const stale = !isSameDay(counters.dailyCapResetAt, now);
-
-  const earned: Reward = stale
-    ? { coins: 0, xp: 0 }
-    : {
-        coins: Math.max(0, counters.dailyCoinsEarned),
-        xp: Math.max(0, counters.dailyXpEarned),
-      };
-
-  const remaining: Reward = {
-    coins: Math.max(0, DAILY_COIN_CAP - earned.coins),
-    xp: Math.max(0, DAILY_XP_CAP - earned.xp),
-  };
-
-  return {
-    earned,
-    remaining,
-    coinCapReached: remaining.coins === 0,
-    xpCapReached: remaining.xp === 0,
-    resetsAt: startOfNextDay(now),
-  };
-}
-
-/** Today's allowance for a user, or null if the account has no economy row. */
-export async function dailyAllowanceFor(
-  userId: string,
-  now: Date = new Date(),
-): Promise<DailyAllowance | null> {
-  const economy = await prisma.userEconomy.findUnique({
-    where: { userId },
-    select: {
-      dailyCoinsEarned: true,
-      dailyXpEarned: true,
-      dailyCapResetAt: true,
-    },
-  });
-
-  return economy ? dailyAllowanceOf(economy, now) : null;
-}
-
-/** The outcome of banking a reward. */
-export type EarningsGrant = CappedReward & {
-  /** What is left of the cap *after* this grant. */
-  allowance: DailyAllowance;
+/** The outcome of banking a reward through the #224 cooldown gate. */
+export type EarningsGrant = {
+  /** What was actually banked. `{0,0}` when a cooldown was active. */
+  granted: Reward;
+  /** What the cooldown withheld — `{0,0}` when earning was open. */
+  withheld: Reward;
+  /** True when this completion earned nothing because a cooldown is running. */
+  onCooldown: boolean;
+  /** Non-null while a cooldown is in force — set the moment the window fills, and returned by every completion until it lifts. */
+  cooldown: EarningCooldown | null;
+  /** True only on the completion that *started* the cooldown (the 3rd in the window). */
+  cooldownStarted: boolean;
+  /** Whole-task completions still earning before the next cooldown (0…`EARNING_WINDOW_TASKS`). */
+  windowRemaining: number;
   /** Set when the granted XP crossed a threshold (ECO-05). Null otherwise. */
   levelUp: LevelUpEvent | null;
   /** The row as it now stands. */
   economy: UserEconomy;
 };
 
+/** The completion this grant is for — `grantEarnings` needs it for the window and the telemetry. */
+export type EarningContext = {
+  taskId: string;
+  /** The completing task's `complexityTier`. */
+  tier: number;
+  /** `true` for a whole-task completion (advances the window), `false` for a subtask. */
+  advancesWindow: boolean;
+};
+
+/** `[1,5,3]` → `"1-3-5"` — the order-independent difficulty *mix* the admin table groups on (#224 §6). */
+function mixKeyOf(tiers: number[]): string {
+  return [...tiers].sort((a, b) => a - b).join("-");
+}
+
 /**
- * Banks a reward against the daily cap (NFR-TASK-2), returning what actually
- * landed.
+ * Banks a reward through the #224 earning cooldown (replacing `NFR-TASK-2`).
  *
- * A partial grant rather than an outright rejection, as ECO-01's `applyDailyCap`
- * defines it: someone 290 coins into their 300 still banks the last 10, and the
- * withheld remainder comes back so the completion toast can say why the number
- * was smaller than the task promised.
+ * If a cooldown is running, the completion earns **nothing** — coins and XP
+ * both withheld — but still returns a result so the caller can mark the task
+ * done and record the streak. Otherwise the full priced reward is banked
+ * (there is no cap), and a whole-task completion appends its tier to
+ * `earningWindowTiers`; the 3rd one starts a cooldown whose length is
+ * `cooldownMinutesFor()` of those three tiers.
  *
- * The read is `SELECT … FOR UPDATE` inside a transaction rather than a plain
- * find. Two completions submitted at once would otherwise both read the same
- * "earned today" figure and both bank in full, putting a participant over the
- * cap — and the cap is a study control, not a nicety, so it cannot depend on
- * participants not double-tapping. The row lock makes the second grant wait and
- * see the first one's effect.
+ * The read is `SELECT … FOR UPDATE` inside a transaction, same as before: two
+ * completions submitted together must not both slip past a full window, and
+ * the cooldown is a study control. An expired `earningCooldownUntil` is
+ * cleared lazily by the next completion (no midnight job — the window and
+ * cooldown are duration-based, never calendar-based).
  *
- * Returns null when the account has no economy row, which in practice means the
- * account is gone (AUTH-04 creates the row with the user).
+ * Logs the three #224 telemetry events (`design_handoff/
+ * ADDENDUM-earning-cooldown.md` §6) on the same `tx`, so they commit with the
+ * economy write they describe.
+ *
+ * Returns null when the account has no economy row (AUTH-04 creates one with
+ * the user, so in practice the account is gone).
  */
 export async function grantEarnings(
   userId: string,
   reward: Reward,
+  ctx: EarningContext,
   now: Date = new Date(),
 ): Promise<EarningsGrant | null> {
   return prisma.$transaction(async (tx) => {
-    const locked = await tx.$queryRaw<(DailyCounters & { xp: number })[]>`
-      SELECT "xp", "dailyCoinsEarned", "dailyXpEarned", "dailyCapResetAt"
+    const locked = await tx.$queryRaw<
+      { xp: number; earningWindowTiers: number[]; earningCooldownUntil: Date | null }[]
+    >`
+      SELECT "xp", "earningWindowTiers", "earningCooldownUntil"
       FROM "UserEconomy"
       WHERE "userId" = ${userId}
       FOR UPDATE`;
 
-    const counters = locked[0];
-    if (!counters) return null;
+    const row = locked[0];
+    if (!row) return null;
 
-    const stale = !isSameDay(counters.dailyCapResetAt, now);
-    const before = dailyAllowanceOf(counters, now);
-    const capped = applyDailyCap(reward, before.earned);
+    const cooldownUntil = row.earningCooldownUntil;
+    const onCooldown =
+      cooldownUntil !== null && cooldownUntil.getTime() > now.getTime();
 
-    // ECO-05 inside the same statement rather than a second write: the level
-    // column is derived from the XP being written in this very update, so a
-    // separate follow-up write would leave a window where the two disagree —
-    // and would need its own lock to be safe.
-    const xp = xpWrite(counters.xp, capped.granted.xp);
+    // --- Cooldown active: withhold everything, touch no economy fields.
+    if (onCooldown) {
+      await logTelemetryEvent(
+        userId,
+        "TASK_COMPLETED_ON_COOLDOWN",
+        {
+          taskId: ctx.taskId,
+          tier: ctx.tier,
+          cooldownRemainingMs: cooldownUntil.getTime() - now.getTime(),
+        },
+        tx,
+      );
 
-    // A stale row is rewritten rather than incremented — the stored numbers
-    // belong to a day that has ended, so adding to them would carry yesterday's
-    // earnings into today's cap.
+      const economy = await tx.userEconomy.findUniqueOrThrow({ where: { userId } });
+      return {
+        granted: { coins: 0, xp: 0 },
+        withheld: { ...reward },
+        onCooldown: true,
+        cooldown: {
+          until: cooldownUntil,
+          remainingMs: cooldownUntil.getTime() - now.getTime(),
+        },
+        cooldownStarted: false,
+        windowRemaining: 0,
+        levelUp: null,
+        economy,
+      };
+    }
+
+    // --- Earning open. An expired cooldown means the window resets now, and
+    //     this is the "resumed" completion (#224 §6's `EARNING_RESUMED`).
+    const justExpired = cooldownUntil !== null;
+    if (justExpired) {
+      const previousTiers = row.earningWindowTiers;
+      await logTelemetryEvent(
+        userId,
+        "EARNING_RESUMED",
+        {
+          mixKey: mixKeyOf(previousTiers),
+          windowTiers: previousTiers,
+          cooldownMinutes: cooldownMinutesFor(previousTiers),
+          cooldownEndedAt: cooldownUntil.toISOString(),
+          waitAfterCooldownMs: now.getTime() - cooldownUntil.getTime(),
+          nextTaskTier: ctx.tier,
+        },
+        tx,
+      );
+    }
+
+    const tiersBefore = justExpired ? [] : row.earningWindowTiers;
+    const newTiers = ctx.advancesWindow ? [...tiersBefore, ctx.tier] : tiersBefore;
+    const triggersCooldown =
+      ctx.advancesWindow && newTiers.length >= EARNING_WINDOW_TASKS;
+
+    const minutes = triggersCooldown ? cooldownMinutesFor(newTiers) : 0;
+    const newCooldownUntil = triggersCooldown
+      ? new Date(now.getTime() + minutes * 60_000)
+      : null;
+
+    // ECO-05 in the same statement — the level column is derived from the XP
+    // written here, so a separate follow-up write would leave a window where
+    // the two disagree.
+    const xp = xpWrite(row.xp, reward.xp);
+
     const economy = await tx.userEconomy.update({
       where: { userId },
       data: {
         ...xp.data,
-        coins: { increment: capped.granted.coins },
-        // Grows even when a partial (daily-cap-trimmed) grant lands — this
-        // tracks what was actually banked, same as `coins` itself, not the
-        // reward's pre-cap face value.
-        lifetimeCoinsEarned: { increment: capped.granted.coins },
-        dailyCoinsEarned: stale
-          ? capped.granted.coins
-          : { increment: capped.granted.coins },
-        dailyXpEarned: stale
-          ? capped.granted.xp
-          : { increment: capped.granted.xp },
-        ...(stale ? { dailyCapResetAt: startOfDay(now) } : {}),
+        coins: { increment: reward.coins },
+        lifetimeCoinsEarned: { increment: reward.coins },
+        // Reset on cooldown start; otherwise carry the (possibly just-cleared)
+        // window forward with this completion's tier appended.
+        earningWindowTiers: triggersCooldown ? [] : newTiers,
+        earningCooldownUntil: triggersCooldown
+          ? newCooldownUntil
+          : justExpired
+            ? null
+            : row.earningCooldownUntil,
       },
     });
 
+    if (triggersCooldown && newCooldownUntil) {
+      await logTelemetryEvent(
+        userId,
+        "EARNING_COOLDOWN_STARTED",
+        {
+          mixKey: mixKeyOf(newTiers),
+          windowTiers: newTiers,
+          tierSum: newTiers.reduce((sum, t) => sum + t, 0),
+          cooldownMinutes: minutes,
+          cooldownUntil: newCooldownUntil.toISOString(),
+        },
+        tx,
+      );
+    }
+
     return {
-      ...capped,
-      allowance: dailyAllowanceOf(economy, now),
+      granted: { ...reward },
+      withheld: { coins: 0, xp: 0 },
+      onCooldown: false,
+      cooldown: newCooldownUntil
+        ? { until: newCooldownUntil, remainingMs: minutes * 60_000 }
+        : null,
+      cooldownStarted: triggersCooldown,
+      windowRemaining: triggersCooldown
+        ? 0
+        : Math.max(0, EARNING_WINDOW_TASKS - newTiers.length),
       levelUp: xp.levelUp,
       economy,
     };
@@ -642,13 +713,12 @@ export type BuyXpResult =
 /**
  * Buys XP with coins — 100 → 40 (§3.1).
  *
- * The daily XP cap is deliberately **not** applied here. NFR-TASK-2 caps what a
- * participant can *earn* "across all tasks", and these coins were already
- * earned under that cap on the day they were banked; charging the ceiling twice
- * for the same effort would make a conversion after a busy day silently do
- * nothing. What limits this is the coin price — 300 coins a day buys at most
- * 120 XP, and every coin spent here is a coin not spent in the store, which is
- * the trade-off the study is actually interested in.
+ * The #224 earning cooldown is deliberately **not** applied here. The cooldown
+ * paces what a participant can *earn from tasks*; these coins were already
+ * earned (under the cooldown) before they could be spent, and gating the
+ * conversion too would just be charging for the same effort twice. What limits
+ * this is the coin price, and every coin spent here is a coin not spent in the
+ * store — the trade-off the study is actually interested in.
  *
  * Locked and level-updated exactly like `grantEarnings`: the balance check and
  * the deduction have to see the same row, or two conversions submitted together
@@ -696,10 +766,10 @@ export async function buyXp(
 
 /**
  * PRO-18 — pays out an achievement's seeded XP reward. Same lock-then-
- * `xpWrite()` shape as `buyXp()`, and for the same reason it deliberately
- * skips `applyDailyCap()`: a one-time milestone bonus (up to 1000 XP for the
- * "unlock everything" badge alone) shouldn't be silently trimmed by a cap
- * that exists to pace daily task-grinding, not one-off achievements.
+ * `xpWrite()` shape as `buyXp()`, and for the same reason it is not subject to
+ * the #224 earning cooldown: a one-time milestone bonus (up to 1000 XP for the
+ * "unlock everything" badge alone) shouldn't be withheld by a mechanic that
+ * exists to pace task-grinding, not one-off achievements.
  *
  * No coins — `Achievements.pdf` only seeds an XP figure per badge. Returns
  * null both when there's nothing to grant (`xp <= 0`) and when the account

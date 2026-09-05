@@ -141,6 +141,17 @@ export async function consumeFoodItem(
 const EQUIPPABLE_CATEGORIES: StoreItemCategory[] = ["ACCESSORIES", "DECORATIONS"];
 
 /**
+ * What `equipCustomization()` reports back. `"not-found"` covers all three of
+ * "doesn't exist / isn't the caller's / isn't equippable" (same "can't tell
+ * the difference" reasoning as elsewhere); `"equipped-elsewhere"` is #215's
+ * one-pet-at-a-time rule — the exact copy is already on another pet and has
+ * to be unequipped there first.
+ */
+export type EquipCustomizationResult =
+  | { ok: true; item: InventoryItemWithStoreItem }
+  | { ok: false; reason: "not-found" | "equipped-elsewhere" };
+
+/**
  * PET-09 — equips an accessory *or decoration* (background) to a pet, or
  * does nothing if the caller doesn't own it. Same "caller owns the
  * transaction" shape `consumeFoodItem()` uses, though the ordering matters
@@ -156,15 +167,23 @@ const EQUIPPABLE_CATEGORIES: StoreItemCategory[] = ["ACCESSORIES", "DECORATIONS"
  * `PetCustomizer`'s accessory/background grids each only ever highlight
  * "whichever item of *that* category is already equipped" (singular, per
  * PET-05's own note), so equipping a new one always displaces whatever this
- * pet had on in the *same* category, including an item that was equipped on
- * a *different* pet (moving a physical item between pets is exactly that) —
- * but never the other category's item. The unequip `updateMany` below is
- * scoped to `owned.storeItem.category` for exactly this reason: an earlier
- * version of this function (`equipAccessory`, ACCESSORIES-only) wiped
- * *every* equipped item regardless of category, which was harmless while
- * ACCESSORIES was the only equippable category but would have silently
- * unequipped a pet's background the moment it also equipped an accessory,
- * once DECORATIONS became equippable too.
+ * pet had on in the *same* category — but never the other category's item.
+ * The unequip `updateMany` below is scoped to `owned.storeItem.category` for
+ * exactly this reason: an earlier version of this function (`equipAccessory`,
+ * ACCESSORIES-only) wiped *every* equipped item regardless of category, which
+ * was harmless while ACCESSORIES was the only equippable category but would
+ * have silently unequipped a pet's background the moment it also equipped an
+ * accessory, once DECORATIONS became equippable too.
+ *
+ * **#215 — one pet at a time.** An accessory or background already equipped
+ * to a *different* pet can't be grabbed from here; the request is refused
+ * (`reason: "equipped-elsewhere"`) rather than silently stripping the other
+ * pet. To move an item you unequip it from its current pet first
+ * (`unequipCustomization()` — tapping its equipped tile on that pet's
+ * customize screen). `PetCustomizer` already draws such copies locked with
+ * the owner's name, so this guard is the backstop for a stale client or a
+ * hand-made request, not the primary UX. Re-equipping the item this pet
+ * *already* has on is still fine (`equippedToPetId === petId`).
  *
  * Unlike `consumeFoodItem()`'s scarce, racy `quantity` decrement, equipping
  * isn't consumed or capped — a race between two clients equipping two
@@ -172,21 +191,29 @@ const EQUIPPABLE_CATEGORIES: StoreItemCategory[] = ["ACCESSORIES", "DECORATIONS"
  * an acceptable "last click wins" outcome for a reversible cosmetic action,
  * so this doesn't need `consumeFoodItem()`'s atomic-guard treatment.
  *
- * Returns the newly-equipped item's state, or `null` if it doesn't exist,
- * isn't the caller's, or isn't an accessory/decoration — one `null` for all
- * three, same "can't tell the difference" reasoning `petForUser()` documents.
+ * Returns the newly-equipped item's state, `{ ok: false, reason: "not-found" }`
+ * if it doesn't exist / isn't the caller's / isn't an accessory or
+ * decoration (one reason for all three, same "can't tell the difference"
+ * reasoning `petForUser()` documents), or `"equipped-elsewhere"` per #215.
  */
 export async function equipCustomization(
   tx: Prisma.TransactionClient,
   userId: string,
   petId: string,
   inventoryItemId: string,
-): Promise<InventoryItemWithStoreItem | null> {
+): Promise<EquipCustomizationResult> {
   const owned = await tx.inventoryItem.findFirst({
     where: { id: inventoryItemId, userId, storeItem: { category: { in: EQUIPPABLE_CATEGORIES } } },
     include: { storeItem: true },
   });
-  if (!owned) return null;
+  if (!owned) return { ok: false, reason: "not-found" };
+
+  // #215 — refuse a copy that's on another pet; it must be unequipped there
+  // first. Applies to both equippable categories (accessories and
+  // backgrounds alike). Equipping what this pet already has on is unaffected.
+  if (owned.equippedToPetId !== null && owned.equippedToPetId !== petId) {
+    return { ok: false, reason: "equipped-elsewhere" };
+  }
 
   await tx.inventoryItem.updateMany({
     where: {
@@ -197,11 +224,12 @@ export async function equipCustomization(
     data: { equippedToPetId: null },
   });
 
-  return tx.inventoryItem.update({
+  const item = await tx.inventoryItem.update({
     where: { id: inventoryItemId },
     data: { equippedToPetId: petId },
     include: { storeItem: true },
   });
+  return { ok: true, item };
 }
 
 /**

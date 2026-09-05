@@ -427,6 +427,52 @@ describe("recordCustomizeInteraction", () => {
 
     expect(result).toEqual({ ok: false, reason: "item-not-found" });
   });
+
+  // #215 — one pet at a time. A copy already on another pet is refused here
+  // (and drawn locked in `PetCustomizer`), rather than moved off that pet.
+  it("refuses a decoration that's equipped to another pet, writing nothing", async () => {
+    prismaMock.pet.findFirst.mockResolvedValue(petRow());
+    prismaMock.inventoryItem.findFirst.mockResolvedValue(
+      decorationRow({ equippedToPetId: "pet-2" }),
+    );
+
+    const result = await recordCustomizeInteraction("user-1", "pet-1", "decor-1");
+
+    expect(result).toEqual({ ok: false, reason: "equipped-elsewhere" });
+    expect(prismaMock.inventoryItem.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses an accessory that's equipped to another pet too — same rule, both categories", async () => {
+    prismaMock.pet.findFirst.mockResolvedValue(petRow());
+    prismaMock.inventoryItem.findFirst.mockResolvedValue(
+      accessoryRow({ equippedToPetId: "pet-2" }),
+    );
+
+    const result = await recordCustomizeInteraction("user-1", "pet-1", "acc-1");
+
+    expect(result).toEqual({ ok: false, reason: "equipped-elsewhere" });
+    expect(prismaMock.inventoryItem.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
+  });
+
+  it("still equips a copy that this pet already has on (equippedToPetId === petId is not 'elsewhere')", async () => {
+    prismaMock.pet.findFirst.mockResolvedValue(petRow());
+    prismaMock.inventoryItem.findFirst.mockResolvedValue(
+      accessoryRow({ equippedToPetId: "pet-1" }),
+    );
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.inventoryItem.update.mockResolvedValue(
+      accessoryRow({ equippedToPetId: "pet-1" }) as never,
+    );
+
+    const result = await recordCustomizeInteraction("user-1", "pet-1", "acc-1");
+
+    expect(result).toEqual({
+      ok: true,
+      item: expect.objectContaining({ equippedToPetId: "pet-1" }),
+    });
+  });
 });
 
 describe("recordUnequipInteraction", () => {

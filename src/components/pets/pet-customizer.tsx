@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, Pencil, Plus } from "lucide-react";
+import { Check, ChevronLeft, Lock, Pencil, Plus } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -96,6 +96,15 @@ const TAB_COPY: Record<
  * the trailing "Add …" tile carry their text as `aria-label` instead, so
  * nothing is lost to a screen reader.
  *
+ * #215 — an accessory or background can only be on one pet at a time. A copy
+ * already equipped to a *different* pet renders locked in the grid (`lockedByPet`,
+ * keyed by inventory-item id → that pet's name): dimmed art, a lock badge,
+ * and the owner's name in a band across the bottom, and it can't be tapped.
+ * To move it you unequip it from its current pet first. `equipCustomization()`
+ * enforces the same rule server-side (`reason: "equipped-elsewhere"` → 409),
+ * which the tap handler surfaces on the error line if a stale grid slips one
+ * through.
+ *
  * Each grid ends with a dashed "Add accessory"/"Add decoration" tile linking
  * to `/store?category=...` (`StoreBrowser`'s `initialCategory`, `StorePage`'s
  * own `?category=` deep link) — same "grid always renders, even with nothing
@@ -122,11 +131,14 @@ export function PetCustomizer({
   pet,
   accessories,
   decorations,
+  lockedByPet = {},
 }: {
   pet: PetWithItem;
   accessories: InventoryItemWithStoreItem[];
   /** Owned DECORATIONS inventory — the Decorations tab's grid. */
   decorations: InventoryItemWithStoreItem[];
+  /** #215 — inventory-item id → the name of the *other* pet that copy is equipped to. Those tiles render locked. */
+  lockedByPet?: Record<string, string>;
 }) {
   const router = useRouter();
   const nameInputId = useId();
@@ -220,6 +232,9 @@ export function PetCustomizer({
     const currentId = isDecoration ? equippedDecorationId : equippedAccessoryId;
     const setCurrentId = isDecoration ? setEquippedDecorationId : setEquippedAccessoryId;
     if (equipping) return;
+    // #215 — this copy is on another pet; the tile is already `disabled`, this
+    // is the belt-and-braces guard.
+    if (lockedByPet[item.id]) return;
 
     const alreadyEquipped = item.id === currentId;
     setCurrentId(alreadyEquipped ? undefined : item.id);
@@ -233,10 +248,14 @@ export function PetCustomizer({
       });
       if (!response.ok) {
         setCurrentId(currentId);
+        // Prefer the server's own message — #215's 409 ("on another pet")
+        // is worth showing verbatim rather than the generic fallback.
+        const body = await response.json().catch(() => null);
         setEquipError(
-          alreadyEquipped
-            ? `Couldn't unequip ${item.storeItem.name}. Try again.`
-            : `Couldn't equip ${item.storeItem.name}. Try again.`,
+          body?.error ??
+            (alreadyEquipped
+              ? `Couldn't unequip ${item.storeItem.name}. Try again.`
+              : `Couldn't equip ${item.storeItem.name}. Try again.`),
         );
         return;
       }
@@ -422,6 +441,10 @@ export function PetCustomizer({
           <div role="radiogroup" aria-label={copy.label} className="grid grid-cols-3 gap-[9px] pb-2">
             {items.map((item) => {
               const isEquipped = item.id === equippedId;
+              // #215 — the name of the *other* pet this copy is equipped to,
+              // if any. Mutually exclusive with `isEquipped` (a copy on
+              // another pet is never this pet's equipped id).
+              const lockedOwner = lockedByPet[item.id];
               return (
                 <button
                   key={item.id}
@@ -431,9 +454,14 @@ export function PetCustomizer({
                   // The tile's visible name is gone (below), so the item's
                   // own name has to reach a screen reader some other way —
                   // without this the radio's only content is `aria-hidden`
-                  // art and it would announce as an unnamed option.
-                  aria-label={item.storeItem.name}
-                  disabled={equipping}
+                  // art and it would announce as an unnamed option. When
+                  // locked, the owner pet is part of what the tile is.
+                  aria-label={
+                    lockedOwner
+                      ? `${item.storeItem.name}, on ${lockedOwner}`
+                      : item.storeItem.name
+                  }
+                  disabled={equipping || Boolean(lockedOwner)}
                   onClick={() => handleTap(item)}
                   className={cn(
                     // `aspect-square` + `overflow-hidden` and no padding: the
@@ -447,8 +475,10 @@ export function PetCustomizer({
                     "relative aspect-square overflow-hidden rounded-[13px] border transition-colors duration-120",
                     isEquipped
                       ? "border-sage ring-1 ring-sage ring-inset"
-                      : "border-border-track hover:border-checkbox",
-                    equipping && "cursor-wait",
+                      : "border-border-track",
+                    !isEquipped && !lockedOwner && "hover:border-checkbox",
+                    lockedOwner && "cursor-not-allowed",
+                    equipping && !lockedOwner && "cursor-wait",
                   )}
                 >
                   <ItemWell
@@ -467,6 +497,26 @@ export function PetCustomizer({
                     <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-sage text-white">
                       <Check size={10} strokeWidth={3} aria-hidden />
                     </span>
+                  ) : null}
+                  {lockedOwner ? (
+                    <>
+                      {/* Dim the art so the lock + name read clearly over it. */}
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 bg-ink/45"
+                      />
+                      <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-ink-soft text-white">
+                        <Lock size={9} strokeWidth={2.8} aria-hidden />
+                      </span>
+                      {/* Owner name across the bottom — `aria-hidden` since
+                          it's already in the tile's `aria-label`. */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-x-0 bottom-0 truncate bg-ink/75 px-1 py-[3px] text-center text-[10px] font-bold text-white"
+                      >
+                        {lockedOwner}
+                      </span>
+                    </>
                   ) : null}
                 </button>
               );

@@ -233,16 +233,17 @@ export async function recordFeedInteraction(
 }
 
 /**
- * What `recordCustomizeInteraction()` reports back — same two-reason shape
- * `FeedResult` uses, for the same reason: a bad pet id and a bad accessory
- * id both need their own 404 message. No `pet` on success, unlike
- * `FeedResult` — customizing never touches the `Pet` row itself (PET-09's
- * own scope is "set `equippedToPetId` on `InventoryItem`", nothing about
- * happiness/hunger), so there's nothing pet-shaped to hand back.
+ * What `recordCustomizeInteraction()` reports back — `pet-not-found` and
+ * `item-not-found` each map to their own 404 message (same shape/reason as
+ * `FeedResult`), and `equipped-elsewhere` (#215 — the accessory or
+ * background is already on another pet) maps to a 409 in the route. No `pet`
+ * on success, unlike `FeedResult` — customizing never touches the `Pet` row
+ * itself (PET-09's own scope is "set `equippedToPetId` on `InventoryItem`",
+ * nothing about happiness/hunger), so there's nothing pet-shaped to hand back.
  */
 export type CustomizeResult =
   | { ok: true; item: InventoryItemWithStoreItem }
-  | { ok: false; reason: "pet-not-found" | "item-not-found" };
+  | { ok: false; reason: "pet-not-found" | "item-not-found" | "equipped-elsewhere" };
 
 /**
  * PET-09 — records a "Customize" interaction (PET-05's sheet): equips an
@@ -276,10 +277,15 @@ export async function recordCustomizeInteraction(
   if (!pet) return { ok: false, reason: "pet-not-found" };
 
   return prisma.$transaction(async (tx) => {
-    const item = await equipCustomization(tx, userId, petId, inventoryItemId);
-    if (!item) return { ok: false, reason: "item-not-found" };
+    const result = await equipCustomization(tx, userId, petId, inventoryItemId);
+    if (!result.ok) {
+      return {
+        ok: false,
+        reason: result.reason === "not-found" ? "item-not-found" : "equipped-elsewhere",
+      };
+    }
 
-    return { ok: true, item };
+    return { ok: true, item: result.item };
   });
 }
 

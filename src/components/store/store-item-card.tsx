@@ -82,8 +82,14 @@ import type { StoreItemWithLock } from "@/lib/store";
  * removed entirely rather than left unused, since the addendum's own
  * placement is only ever these two spots per card, never three. `pricing`
  * swaps the plain price for a struck-through list price beside a bold sale
- * price (`fakeDiscountPricing()` in `urgency.ts`) — display only, the "+"
- * button still adds `item.coinPrice` itself to the cart.
+ * price (`fakeDiscountPricing()` in `urgency.ts`) — display only for the
+ * per-unit cost, the "+" button still charges `item.coinPrice` per unit.
+ *
+ * `addQuantity` (#185) is the one thing that isn't display-only: a
+ * `BundleTimerBadge` "Buy 2 get 1" item passes `2`, so the "+" posts
+ * `quantity: 2` and the card's `pricing` shows the two-unit figure. Defaults
+ * to 1 for every other card. Checkout still charges `item.coinPrice` per
+ * unit (2 × price for two items); no third item is granted.
  *
  * A locked card is now a real `<button>` (SHR-06): tapping it calls
  * `onLockedClick`, which `StoreBrowser` uses to show the full-screen
@@ -100,6 +106,7 @@ export function StoreItemCard({
   badge,
   footerNote,
   pricing,
+  addQuantity = 1,
   onLockedClick,
 }: {
   item: StoreItemWithLock;
@@ -107,8 +114,10 @@ export function StoreItemCard({
   badge?: ReactNode;
   /** Stacked above the price row in the footer, e.g. a "sold in the last hour" social-proof line. */
   footerNote?: ReactNode;
-  /** Group-B fake discount (`fakeDiscountPricing()`) — struck list price beside a bold sale price, replacing the plain `item.coinPrice` display. Display only; the "+" button still charges `item.coinPrice`. */
+  /** Group-B fake discount (`fakeDiscountPricing()`) — struck list price beside a bold sale price, replacing the plain `item.coinPrice` display. Display only for the per-unit cost; the "+" button still charges `item.coinPrice` per unit. */
   pricing?: { list: number; sale: number };
+  /** #185 — how many units the "+" adds at once. `2` for a "Buy 2 get 1" `BundleTimerBadge` item (its `pricing` shows the two-unit figure to match); `1` everywhere else. */
+  addQuantity?: number;
   /** SHR-06 — only ever called for a locked card; unlocked cards have no use for it. */
   onLockedClick?: () => void;
 }) {
@@ -122,6 +131,10 @@ export function StoreItemCard({
   const cart = useCartCount();
   const router = useRouter();
 
+  // "2 Sunflower seeds" for a "Buy 2 get 1" bundle item, plain name otherwise —
+  // used in the add-to-cart button's label and the sr-only outcome line.
+  const addLabel = addQuantity > 1 ? `${addQuantity} ${item.name}` : item.name;
+
   async function handleAddToCart() {
     if (status === "pending") return;
     if (revertTimer.current) clearTimeout(revertTimer.current);
@@ -130,7 +143,7 @@ export function StoreItemCard({
       const response = await fetch("/api/store/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeItemId: item.id }),
+        body: JSON.stringify({ storeItemId: item.id, quantity: addQuantity }),
       });
       setStatus(response.ok ? "added" : "error");
       if (response.ok) {
@@ -245,7 +258,7 @@ export function StoreItemCard({
               type="button"
               onClick={handleAddToCart}
               disabled={status === "pending"}
-              aria-label={`Add ${item.name} to cart`}
+              aria-label={`Add ${addLabel} to cart`}
               className={cn(
                 "flex size-[28px] flex-none items-center justify-center rounded-[9px] text-[16px] leading-none text-white transition-colors duration-120",
                 status === "error"
@@ -269,9 +282,9 @@ export function StoreItemCard({
                 matters (added or failed) gets announced here instead. */}
             <span role="status" aria-live="polite" className="sr-only">
               {status === "added"
-                ? `Added ${item.name} to cart`
+                ? `Added ${addLabel} to cart`
                 : status === "error"
-                  ? `Couldn't add ${item.name} to cart`
+                  ? `Couldn't add ${addLabel} to cart`
                   : ""}
             </span>
           </div>

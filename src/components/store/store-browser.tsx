@@ -72,6 +72,12 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * this component just forwards whichever of them an item has straight to
  * `StoreItemCard`'s matching slot.
  *
+ * `bundleQuantities` (#185) is the same forward-only map, for the handful of
+ * "Buy 2 get 1" `BundleTimerBadge` items: `StorePage` records `2` for each,
+ * which becomes `StoreItemCard`'s `addQuantity` so the "+" adds two units at
+ * once (its `pricing` entry already shows the two-unit figure). Absent for
+ * every other card, where `addQuantity` falls back to 1.
+ *
  * `level` (SHR-06) is the signed-in user's current level, read once here so
  * tapping a locked card can show the full-screen "locked by level" state
  * (`LockedByLevelState`) without a second round trip — `selectedLocked`
@@ -95,6 +101,7 @@ export function StoreBrowser({
   urgencyBadges,
   urgencyFooterNotes,
   pricing,
+  bundleQuantities,
   level,
   luckyBoxPrice,
   luckyBoxUrgency,
@@ -105,6 +112,8 @@ export function StoreBrowser({
   urgencyBadges?: Record<string, ReactNode>;
   urgencyFooterNotes?: Record<string, ReactNode>;
   pricing?: Record<string, { list: number; sale: number }>;
+  /** #185 — per-item add-to-cart quantity for "Buy 2 get 1" bundle items (`2`); absent elsewhere. */
+  bundleQuantities?: Record<string, number>;
   level: number;
   luckyBoxPrice: number;
   luckyBoxUrgency?: ReactNode;
@@ -266,6 +275,7 @@ export function StoreBrowser({
                 badge={urgencyBadges?.[item.id]}
                 footerNote={urgencyFooterNotes?.[item.id]}
                 pricing={pricing?.[item.id]}
+                addQuantity={bundleQuantities?.[item.id]}
                 onLockedClick={() => setSelectedLocked(item)}
               />
             ))}

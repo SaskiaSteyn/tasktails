@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { EarningPill } from "@/components/economy/earning-pill";
 import { CoinPill } from "@/components/ui/coin";
 import { LevelBadge } from "@/components/ui/level-badge";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -114,6 +115,9 @@ export function AppHeader({
 
         <div className="flex flex-none items-center gap-2">
           {action}
+          {/* #224 — earning window / cooldown status. Self-hides when there's
+              nothing to show (fresh window, earning open). */}
+          <EarningPill earning={economy.earning} />
           <CoinPill coins={economy.coins} />
           {title ? null : <LevelBadge level={economy.level} />}
         </div>

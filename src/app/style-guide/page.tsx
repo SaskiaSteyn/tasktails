@@ -158,7 +158,14 @@ function sampleEconomy(
   coins: number,
   streak: number,
 ): EconomySnapshot {
-  return { ...levelProgress(xp), coins, streak };
+  return {
+    ...levelProgress(xp),
+    coins,
+    streak,
+    // #224 — mid-window, earning open. `EarningPill` hides itself here anyway
+    // unless `windowUsed` is raised.
+    earning: { windowUsed: 0, windowSize: 3, cooldownUntil: null },
+  };
 }
 
 /**
