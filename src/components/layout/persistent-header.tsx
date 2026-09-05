@@ -3,12 +3,13 @@ import type { ReactNode } from "react";
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/layout/app-header";
 import { currentEconomy } from "@/lib/economy";
+import { allTimeLeaderboard } from "@/lib/leaderboard";
 import { displayNameFor, findUserByEmail } from "@/lib/users";
 
 /**
  * The persistent header, wired to the database (INF-12).
  *
- * A server component so coins, level and streak are rendered from the row rather
+ * A server component so coins, rank and streak are rendered from the row rather
  * than fetched by the browser — the balance is correct on first paint, and a
  * participant never sees it count up from zero.
  *
@@ -32,9 +33,12 @@ export async function PersistentHeader({
   const email = session?.user?.email;
   if (!email) return null;
 
-  const [record, economy] = await Promise.all([
+  // The rank is only drawn by the greeting variant (`AppHeader`), so a titled
+  // screen doesn't pay for the board read.
+  const [record, economy, board] = await Promise.all([
     findUserByEmail(email),
     currentEconomy(),
+    title ? null : allTimeLeaderboard(session.user?.id ?? null),
   ]);
   if (!economy) return null;
 
@@ -43,6 +47,7 @@ export async function PersistentHeader({
       title={title}
       name={record ? displayNameFor(record) : undefined}
       economy={economy}
+      rank={board?.you?.rank}
       showProgress={showProgress}
       action={action}
     />

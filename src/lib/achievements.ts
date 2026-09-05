@@ -298,6 +298,8 @@ function evaluateCriterion(
  * achievements — once earned, the badge shows a check, not a bar, and stays
  * earned even if live ownership would later drop below the original
  * threshold (e.g. an item counted toward "own every accessory" gets sold).
+ *
+ * Sorted earned-first, then closest-to-earning — see `rank()` below.
  */
 export async function achievementsForUser(
   userId: string,
@@ -312,7 +314,7 @@ export async function achievementsForUser(
     unlocked.map((row) => [row.achievementId, row.unlockedAt]),
   );
 
-  return achievements.map((achievement) => {
+  const rows = achievements.map((achievement) => {
     const criterion = achievement.criteria as AchievementCriterion;
     const earnedAt = unlockedAt.get(achievement.id) ?? null;
     const evaluated = snapshot
@@ -326,6 +328,22 @@ export async function achievementsForUser(
       progress: earnedAt ? null : evaluated.progress,
     };
   });
+
+  // Earned first (most recent unlock at the top), then locked rows closest
+  // to done, then the rest. Binary criteria have no `progress` at all, so
+  // they rank last among locked — a `RARITY_OWNED` row is never "80% there".
+  return rows.sort(
+    (a, b) =>
+      rank(b) - rank(a) ||
+      (b.unlockedAt?.getTime() ?? 0) - (a.unlockedAt?.getTime() ?? 0),
+  );
+}
+
+/** Sort key: 2+ = earned, 1..2 = locked scaled by how close it is, 0 = locked with no measurable progress. */
+function rank(a: AchievementWithState): number {
+  if (a.unlockedAt) return 2;
+  if (!a.progress || a.progress.target <= 0) return 0;
+  return 1 + Math.min(a.progress.current / a.progress.target, 1);
 }
 
 /** What a trigger event (task completion, purchase, pet interaction) unlocked, and the level-up its XP reward caused, if any. */

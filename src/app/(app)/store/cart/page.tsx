@@ -1,4 +1,4 @@
-import { ChevronLeft, History } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -21,11 +21,15 @@ export const metadata: Metadata = {
  *
  * Bespoke header (back chevron + "Your cart"), built the same way
  * `SanctuaryPage`'s is: neither is `PersistentHeader`'s title variant, which
- * always carries a coin pill the mock doesn't draw here. The history icon on
- * the right is **not in the mock** — added at the user's explicit direction
- * as the other half of swapping `/store`'s own history icon for a cart icon,
- * so history is still one tap away, just relocated. Now links to STOR-09's
- * `/store/history`.
+ * always carries a coin pill the mock doesn't draw here.
+ *
+ * The way to STOR-09's `/store/history` used to be an icon-only button in
+ * that header (plus a labelled copy of it above the list, for desktop, where
+ * the phone header is hidden). Both are gone as of 2026-09-05, at the user's
+ * request — "make the purchase history button more clear": `CartPanel` now
+ * draws one labelled link instead, under the empty state's "Go to store"
+ * button and under the checkout button when the cart has something in it, at
+ * every width.
  *
  * Only the listing/qty-edit/removal (`CartPanel`) is this ticket's job. The
  * "Check out" footer button renders matching the mock but is inert — STOR-07
@@ -52,30 +56,10 @@ export default async function CartPage() {
           <h1 className="min-w-0 flex-1 truncate font-display text-[17px] leading-[1.15] font-semibold">
             Your cart
           </h1>
-          <Link
-            href="/store/history"
-            aria-label="Purchase history"
-            className="flex size-[34px] flex-none items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft transition-colors duration-120 hover:border-checkbox"
-          >
-            <History size={17} strokeWidth={2} aria-hidden />
-          </Link>
         </header>
       }
       className="bg-warm desk:mx-auto desk:w-full desk:max-w-[720px] desk:bg-surface xl:max-w-none"
     >
-      {/* The history link from the phone header, which `AppShell` hides from
-          `desk:` up — the universal header is title-and-status only, and
-          `/store/history` is not one of the rail's six destinations, so
-          without this it would be unreachable on a desktop. */}
-      <div className="hidden flex-none justify-end px-4 pt-6 desk:flex xl:px-[34px]">
-        <Link
-          href="/store/history"
-          className="flex items-center gap-[6px] text-[12.5px] font-bold text-terracotta hover:text-terracotta-hover"
-        >
-          <History size={15} strokeWidth={2} aria-hidden />
-          Purchase history
-        </Link>
-      </div>
       <CartPanel initialCart={cart} coins={economy?.coins ?? 0} />
     </AppShell>
   );

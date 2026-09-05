@@ -1,9 +1,12 @@
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
+import { OwnedItemActions } from "@/components/economy/owned-item-actions";
 import { ZooGalleryCard } from "@/components/pets/zoo-gallery-card";
 import { cn } from "@/lib/cn";
+import { petDisplayName } from "@/lib/pet-mood";
 import type { PetWithItem } from "@/lib/pets";
+import { sellValueOf } from "@/lib/sell-value";
 
 /**
  * PET-01's gallery grid — the owned animals plus the "Adopt another" slot.
@@ -12,6 +15,10 @@ import type { PetWithItem } from "@/lib/pets";
  * panel drawing the same grid at a different column count: one copy, two
  * placements, rather than the gallery's markup living in a page that another
  * page then has to imitate.
+ *
+ * Each card is wrapped in `OwnedItemActions` — a long press (or right-click)
+ * offers to sell that animal, per the user's request. The card itself stays
+ * a server component; only the wrapper is client-side.
  *
  * The grid always renders, even at zero pets — the zoo addendum's own
  * behaviour note ("Empty state (no pets) should surface the adopt slot
@@ -32,12 +39,18 @@ export function ZooGrid({
   return (
     <div className={cn("grid grid-cols-2 gap-3", className)}>
       {pets.map((pet) => (
-        <ZooGalleryCard
+        <OwnedItemActions
           key={pet.id}
-          pet={pet}
-          backgroundUrl={backgrounds[pet.id]}
-          accessoryUrl={accessories[pet.id]}
-        />
+          id={pet.id}
+          name={petDisplayName(pet)}
+          sellValue={sellValueOf(pet.storeItem.coinPrice)}
+        >
+          <ZooGalleryCard
+            pet={pet}
+            backgroundUrl={backgrounds[pet.id]}
+            accessoryUrl={accessories[pet.id]}
+          />
+        </OwnedItemActions>
       ))}
       <Link
         href="/store"
