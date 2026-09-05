@@ -1,7 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { CartLink } from "@/components/store/cart-link";
 import { LockedByLevelState } from "@/components/store/locked-by-level-state";
@@ -18,6 +18,16 @@ import type { StoreItemWithLock } from "@/lib/store";
  * `@/generated/prisma/client` breaks the browser build (see `StoreItemCard`'s
  * own doc comment for the exact error STOR-02 hit and fixed).
  */
+/**
+ * #232 — how many cards the grid renders before the scroll sentinel asks for
+ * more. The catalogue is ~70 items and every card is a client component with
+ * its own `next/image`, so drawing the whole thing on load cost 70 hydrations
+ * and 70 IntersectionObservers before the first screen was usable. 24 fills
+ * more than one screenful at every breakpoint (2 columns on the phone frame,
+ * `auto-fill` from `desk:` up), so the reveal is never visible.
+ */
+const PAGE_SIZE = 24;
+
 const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
   { label: "All", value: "ALL" },
   { label: "Food", value: "FOOD" },
@@ -132,6 +142,37 @@ export function StoreBrowser({
       return true;
     });
   }, [items, query, category]);
+
+  // #232 — the grid renders `visible.slice(0, shown)`; the sentinel below it
+  // bumps `shown` as it scrolls into range. Filtering still runs over the full
+  // `items` array above, so a search hit outside the current window is found
+  // normally — only how many of the *results* are drawn is deferred.
+  // The window is scoped to the filter it was grown under, so changing the
+  // search or the category resets it back to one page without a reset effect
+  // (`react-hooks/set-state-in-effect` — the state is derived during render
+  // instead, per React's own "adjusting state when a prop changes").
+  const filterKey = `${category}\u0000${query.trim().toLowerCase()}`;
+  const [pager, setPager] = useState({ filterKey, shown: PAGE_SIZE });
+  const shown = pager.filterKey === filterKey ? pager.shown : PAGE_SIZE;
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node) return;
+    // Default root, deliberately: from `desk:` up the scroller is the column
+    // below, not the viewport, and an observer against the viewport already
+    // accounts for clipping by any ancestor scroll box — so one observer
+    // covers both layouts. `rootMargin` loads the next page before the
+    // sentinel is actually on screen.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setPager({ filterKey, shown: shown + PAGE_SIZE });
+      },
+      { rootMargin: "400px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [filterKey, shown, visible.length]);
 
   const activeLabel = CATEGORY_CHIPS.find((chip) => chip.value === category)?.label;
 
@@ -268,7 +309,7 @@ export function StoreBrowser({
           // "2-up" behaviour fall out of the same rule rather than needing a
           // second breakpoint.
           <div className="grid grid-cols-2 items-start gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
-            {visible.map((item) => (
+            {visible.slice(0, shown).map((item) => (
               <StoreItemCard
                 key={item.id}
                 item={item}
@@ -281,6 +322,10 @@ export function StoreBrowser({
             ))}
           </div>
         )}
+
+        {/* The scroll sentinel — only rendered while there is a next page, so
+            the observer above can't loop once the grid is fully drawn. */}
+        {shown < visible.length ? <div ref={sentinelRef} aria-hidden className="h-px flex-none" /> : null}
       </div>
     </div>
   );
