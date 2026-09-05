@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import { EarningPill } from "@/components/economy/earning-pill";
 import { CoinPill } from "@/components/ui/coin";
 import { LevelBadge } from "@/components/ui/level-badge";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -114,11 +113,20 @@ export function AppHeader({
         )}
 
         <div className="flex flex-none items-center gap-2">
-          {action}
-          {/* #224 — earning window / cooldown status. Self-hides when there's
-              nothing to show (fresh window, earning open). */}
-          <EarningPill earning={economy.earning} />
           <CoinPill coins={economy.coins} />
+          {/* Sits *after* the coin pill, not before it where the handoff draws
+              the store's history icon — user-directed (2026-09-05). `/store` is
+              the only screen that passes an `action` at all, so this orders
+              exactly that one header; the style-guide's own sample follows it
+              by construction.
+
+              #224's `EarningPill` used to sit between the title and the coin
+              pill here; dropped 2026-09-05 at the user's request ("the earning
+              tag can completely fall away"). The cooldown itself is unchanged
+              and still surfaced — `TaskList` renders its own
+              `CooldownCountdown` on the tasks screen, which is where a
+              participant actually hits the pause. */}
+          {action}
           {title ? null : <LevelBadge level={economy.level} />}
         </div>
       </div>

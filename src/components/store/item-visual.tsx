@@ -1,5 +1,6 @@
 import { Lock } from "lucide-react";
-import { DynamicIcon, type IconName } from "lucide-react/dynamic";
+import type { IconName } from "lucide-react/dynamic";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 
 import type { StoreItem, StoreItemCategory } from "@/generated/prisma/client";
@@ -11,6 +12,25 @@ import {
   artCanvasFor,
   artFocusFor,
 } from "@/lib/pet-art";
+
+/**
+ * #232 — lazily loaded, because `lucide-react/dynamic` carries a ~118KB
+ * name→import map of every icon in the set, and a static import puts that
+ * whole map in the initial client bundle of every route that renders a well
+ * (the store grid, cart rows, the pet customizer, the zoo). It is only ever
+ * *rendered* for an item whose `imageUrl` is a bare icon name rather than a
+ * real art path — which the seeded catalogue no longer contains at all — so
+ * on the store it was 60KB of chunk fetched to render nothing. Kept rather
+ * than deleted: `imageUrl` is a free-form column, so an art-less row is still
+ * a state this well has to draw. The type import above is erased at compile
+ * time and pulls nothing in.
+ *
+ * `ssr` is left on: the fallback still has to server-render for the rows that
+ * do use it, and only the chunk fetch is deferred.
+ */
+const DynamicIcon = dynamic(() =>
+  import("lucide-react/dynamic").then((mod) => mod.DynamicIcon),
+);
 
 /**
  * Shared per-category icon/label treatment, factored out of `StoreItemCard`

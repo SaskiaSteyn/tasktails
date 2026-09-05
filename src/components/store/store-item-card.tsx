@@ -228,8 +228,16 @@ export function StoreItemCard({
         {locked ? (
           /* Plain centred line, not the pre-addendum lock-icon pill — the
              addendum's locked card puts the padlock in the art region above
-             and leaves the footer as bare text ("Unlocks at level 7"). */
-          <p className="text-center text-[11px] font-extrabold text-ink-soft">
+             and leaves the footer as bare text ("Unlocks at level 7").
+
+             `min-h-[28px]`: the unlocked footer's height is set by its 28px
+             "+" button, and a bare text line left the locked card ~14px
+             shorter than its row-mates (the grid is `items-start`, so nothing
+             was stretching it back). Matching the button's height here makes
+             the two cards the same height by construction rather than by
+             pinning a card height that the title or a `footerNote` could
+             later change. */
+          <p className="flex min-h-[28px] items-center justify-center text-center text-[11px] font-extrabold text-ink-soft">
             Unlocks at level {item.levelRequired}
           </p>
         ) : (
