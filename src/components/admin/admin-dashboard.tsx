@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import type { ParticipantTelemetrySummary, StudyAggregate } from "@/lib/admin";
 
+import { EarningCooldownCard } from "./earning-cooldown-card";
 import { EngagementTable } from "./engagement-table";
 import { ParticipantDetailPanel } from "./participant-detail-panel";
 import { StoreTable } from "./store-table";
@@ -52,6 +53,7 @@ export function AdminDashboard({
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_420px] xl:items-start">
         <div className="flex flex-col gap-6">
           <StudyOverviewCard aggregate={aggregate} />
+          <EarningCooldownCard metrics={aggregate.earningCooldown} />
           <EngagementTable
             participants={participants}
             selectedId={selectedId}

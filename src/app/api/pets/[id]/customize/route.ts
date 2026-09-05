@@ -60,6 +60,17 @@ export async function POST(
   const result = await recordCustomizeInteraction(parsed.userId, id, parsed.inventoryItemId);
 
   if (!result.ok) {
+    // #215 — one pet at a time. The client already draws such items locked
+    // with the owner's name; this covers a stale grid or a hand-made
+    // request. 409, not 404: the request is well-formed and the item is
+    // real, it's just spoken for — same "well-formed, not entitled right
+    // now" reasoning `buy-xp`'s 409 documents.
+    if (result.reason === "equipped-elsewhere") {
+      return NextResponse.json(
+        { error: "That item is on another pet — unequip it there first." },
+        { status: 409 },
+      );
+    }
     const error = result.reason === "pet-not-found" ? "Pet not found." : "Item not found.";
     return NextResponse.json({ error }, { status: 404 });
   }

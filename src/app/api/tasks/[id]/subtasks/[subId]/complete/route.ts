@@ -24,12 +24,14 @@ import { markSubtaskComplete, markTaskComplete, taskForUser } from "@/lib/tasks"
  * nor its own completion history to grade against. Deliberately out of
  * scope for this ticket rather than invented.
  *
- * **Streak and the daily cap both apply**, same pipeline as TASK-11 —
- * `recordStreakDay()` runs before pricing (so the completion that reaches
- * day 3 earns that day's bonus) and `grantEarnings()` banks against the
- * real daily allowance. A subtask completion is real progress on real
- * effort; there's no requirements basis for treating it as economically
- * inert just because it isn't `Task.completedAt` itself.
+ * **Streak and the #224 earning cooldown both apply**, same pipeline as
+ * TASK-11 — `recordStreakDay()` runs before pricing, and `grantEarnings()`
+ * banks through the cooldown gate. But a subtask completion passes
+ * `advancesWindow: false`: it earns its share when earning is open (and
+ * earns nothing while a cooldown is active, like any completion), but it
+ * does **not** count toward the 3-task window or trigger a cooldown — only
+ * whole-task completions do (ADDENDUM-earning-cooldown.md O2). A subtask is
+ * real progress, just not a window slot of its own.
  *
  * Order of operations:
  *  1. Look up the task (ownership + 404) and the subtask within it, and
@@ -98,7 +100,12 @@ export async function POST(
     share: 1 / task.subtasks.length,
   });
 
-  const grant = await grantEarnings(userId, priced.granted, completedAt);
+  const grant = await grantEarnings(
+    userId,
+    priced.granted,
+    { taskId, tier: task.complexityTier, advancesWindow: false },
+    completedAt,
+  );
 
   // SUB-4 — every subtask done means the parent is done too, with no
   // reward of its own (already fully distributed across the subtasks).
@@ -130,8 +137,10 @@ export async function POST(
     task: parentTask,
     reward: {
       granted: grant.granted,
-      withheld: grant.withheld,
-      capReached: grant.capReached,
+      onCooldown: grant.onCooldown,
+      cooldownStarted: grant.cooldownStarted,
+      cooldownUntil: grant.cooldown?.until.toISOString() ?? null,
+      windowRemaining: grant.windowRemaining,
     },
     streak: { value: streakUpdate.streak, event: streakUpdate.event },
     // Merged, not two events — see the task-complete route's identical note.

@@ -2,7 +2,7 @@
  * PET-06/PET-10 — recomputes an animal's `happiness`/`hunger` from
  * `lastInteractedAt` and the time elapsed since, instead of trusting the
  * stored ints directly. Pure, no Prisma import, same "pure calc" split
- * `pet-mood.ts`/`task-tiers.ts` use — `dailyAllowanceOf()` in `economy.ts` is
+ * `pet-mood.ts`/`task-tiers.ts` use — `earningStatusOf()` in `economy.ts` is
  * the closest existing pattern (a stored snapshot plus an injectable `now`,
  * no write, no background job).
  *
@@ -11,7 +11,8 @@
  * exactly as PET-07/08 (pet/feed) last left it, and every read recomputes
  * the decay from there. A pet nobody has looked at in a week costs nothing
  * to "catch up" — there's no sweep to keep alive on NFR-GEN-3's $0 budget,
- * the same reasoning `dailyAllowanceOf()` gives for its own lazy reset.
+ * the same reasoning `grantEarnings()`'s cooldown reset uses (lazy, on the
+ * next completion, never a scheduled job).
  */
 
 /** Points of hunger gained per hour untouched (PET-8). */

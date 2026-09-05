@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, ChevronDown, PartyPopper } from "lucide-react";
+import { Check, ChevronDown, PartyPopper, TimerReset } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { CooldownCountdown } from "@/components/economy/cooldown-countdown";
 import {
   useAchievementUnlock,
   type AchievementUnlockLike,
@@ -20,10 +21,22 @@ import type { OnboardingStatus } from "@/lib/onboarding";
 import { taskTier } from "@/lib/task-tiers";
 import type { TaskWithSubtasks } from "@/lib/tasks";
 
+/** #224 — the earning-cooldown fields both completion responses now carry. */
+type RewardResponse = {
+  granted: { coins: number; xp: number };
+  /** This completion earned nothing — a cooldown is active. */
+  onCooldown: boolean;
+  /** This completion is the one that *started* the cooldown. */
+  cooldownStarted: boolean;
+  /** ISO time earning resumes, whenever a cooldown is running; null otherwise. */
+  cooldownUntil: string | null;
+  windowRemaining: number;
+};
+
 /** The pieces of TASK-11's response this component actually reads. */
 type CompleteResponse = {
   task: { completedAt: string };
-  reward: { granted: { coins: number; xp: number } } | null;
+  reward: RewardResponse | null;
   levelUp: LevelUpEventLike | null;
   achievementsUnlocked: AchievementUnlockLike[];
   error?: string;
@@ -33,7 +46,7 @@ type CompleteResponse = {
 type CompleteSubtaskResponse = {
   subtask: { completedAt: string };
   task: { completedAt: string } | null;
-  reward: { granted: { coins: number; xp: number } } | null;
+  reward: RewardResponse | null;
   levelUp: LevelUpEventLike | null;
   achievementsUnlocked: AchievementUnlockLike[];
   error?: string;
@@ -62,9 +75,10 @@ type CompleteSubtaskResponse = {
  *
  * The reward pop shows the *actual* granted amount from the response, not
  * the tier's base figure `TaskRow` shows on the row itself — efficiency,
- * streak, anti-spam and the daily cap can all move it, and showing the base
- * number would be a small lie at the exact moment a participant is meant to
- * trust the number most.
+ * streak and anti-spam can all move it, and the #224 cooldown can zero it
+ * out entirely; showing the base number would be a small lie at the exact
+ * moment a participant is meant to trust it most. When a cooldown is running
+ * the violet banner above the list carries the live "resumes in M:SS".
  *
  * A level-up crossing goes straight to ECO-07's `useLevelUp().celebrate()`
  * — the provider is a no-op queue if the event is null, so this is safe to
@@ -111,9 +125,12 @@ type CompleteSubtaskResponse = {
 export function TaskList({
   tasks: initialTasks,
   onboarding,
+  earningCooldownUntil = null,
 }: {
   tasks: TaskWithSubtasks[];
   onboarding: OnboardingStatus;
+  /** #224 — ISO time the earning cooldown lifts, or null when earning is open. */
+  earningCooldownUntil?: string | null;
 }) {
   const router = useRouter();
   const { celebrate } = useLevelUp();
@@ -125,6 +142,18 @@ export function TaskList({
     setSyncedFrom(initialTasks);
     setTasks(initialTasks);
   }
+
+  // #224 — the cooldown banner. Seeded from the server on load, then moved by
+  // each completion's response (a completion can start one, or land during
+  // one), and cleared when the countdown reaches 0:00.
+  const [cooldownUntil, setCooldownUntil] = useState(earningCooldownUntil);
+  const [syncedCooldown, setSyncedCooldown] = useState(earningCooldownUntil);
+  if (earningCooldownUntil !== syncedCooldown) {
+    setSyncedCooldown(earningCooldownUntil);
+    setCooldownUntil(earningCooldownUntil);
+  }
+  // Distinguishes the "just hit 3" moment (warmer copy) from an ongoing pause.
+  const [cooldownJustStarted, setCooldownJustStarted] = useState(false);
 
   const [priorOnboarding, setPriorOnboarding] = useState(onboarding);
   const [questCelebration, setQuestCelebration] = useState<string[] | null>(
@@ -206,6 +235,8 @@ export function TaskList({
           coins: body.reward.granted.coins,
           xp: body.reward.granted.xp,
         });
+        setCooldownUntil(body.reward.cooldownUntil);
+        setCooldownJustStarted(body.reward.cooldownStarted);
       }
       celebrate(body.levelUp);
       celebrateAchievements(body.achievementsUnlocked);
@@ -260,6 +291,8 @@ export function TaskList({
           coins: body.reward.granted.coins,
           xp: body.reward.granted.xp,
         });
+        setCooldownUntil(body.reward.cooldownUntil);
+        setCooldownJustStarted(body.reward.cooldownStarted);
       }
       celebrate(body.levelUp);
       celebrateAchievements(body.achievementsUnlocked);
@@ -356,6 +389,33 @@ export function TaskList({
         >
           <PartyPopper size={16} className="flex-none" aria-hidden />
           <span>Quest complete: {questCelebration.join(", ")}!</span>
+        </div>
+      ) : null}
+
+      {/* #224 — the earning cooldown banner. Same shape/animation as the
+          quest banner above, violet family. Persists while a cooldown runs
+          (seeded from the server, moved by each completion), with a live
+          M:SS countdown; clears itself on 0:00. */}
+      {cooldownUntil ? (
+        <div
+          role="status"
+          className="mb-3 flex flex-none items-center gap-2 rounded-card border border-violet/30 bg-violet-tint px-3 py-[10px] text-[12.5px] font-bold text-violet-text motion-safe:animate-medallion-pop"
+        >
+          <TimerReset size={16} className="flex-none" aria-hidden />
+          <span className="flex-1">
+            {cooldownJustStarted
+              ? "Nice — that’s 3. Coin & XP earning is on a break."
+              : "Earning paused — coins & XP resume soon."}
+          </span>
+          <CooldownCountdown
+            until={cooldownUntil}
+            onExpire={() => {
+              setCooldownUntil(null);
+              setCooldownJustStarted(false);
+              router.refresh();
+            }}
+            className="flex-none font-display text-[14px] font-semibold tabular-nums"
+          />
         </div>
       ) : null}
 

@@ -2,21 +2,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyAntiSpam,
-  applyDailyCap,
   applyEfficiency,
   applyStreakBonus,
   antiSpamKeepFor,
   baseReward,
   calculateReward,
+  cooldownMinutesFor,
+  COOLDOWN_MAX_MINUTES,
+  COOLDOWN_MIN_MINUTES,
   efficiencyOf,
   streakBonusFor,
 } from "@/lib/rewards";
 
 /**
- * ECO-01 — the numbers in Requirements §3.2–3.4 and NFR-TASK-1/2, asserted
- * directly. Dates are built with the local-time constructor because the
- * efficiency and anti-spam rules are specified in calendar days and elapsed
- * hours respectively, both of which a participant reads off a local clock.
+ * ECO-01 — the numbers in Requirements §3.2–3.4 and NFR-TASK-1, plus #224's
+ * cooldown-length formula, asserted directly. Dates are built with the
+ * local-time constructor because the efficiency and anti-spam rules are
+ * specified in calendar days and elapsed hours respectively, both of which a
+ * participant reads off a local clock.
  */
 
 const at = (
@@ -146,50 +149,54 @@ describe("anti-spam reduction", () => {
   });
 });
 
-describe("daily cap", () => {
-  it("grants only the remaining headroom and reports the rest", () => {
-    const capped = applyDailyCap(
-      { coins: 50, xp: 60 },
-      { coins: 290, xp: 480 },
-    );
-
-    expect(capped.granted).toEqual({ coins: 10, xp: 20 });
-    expect(capped.withheld).toEqual({ coins: 40, xp: 40 });
-    expect(capped.capReached).toBe(true);
+describe("cooldownMinutesFor", () => {
+  it("maps the uniform mixes onto the 20–60 minute spread", () => {
+    expect(cooldownMinutesFor([1, 1, 1])).toBe(20); // all Trivial
+    expect(cooldownMinutesFor([2, 2, 2])).toBe(30); // all Small
+    expect(cooldownMinutesFor([3, 3, 3])).toBe(40); // all Medium
+    expect(cooldownMinutesFor([4, 4, 4])).toBe(50); // all Large
+    expect(cooldownMinutesFor([5, 5, 5])).toBe(60); // all Epic
   });
 
-  it("caps the two currencies independently", () => {
-    const capped = applyDailyCap({ coins: 50, xp: 60 }, { coins: 300, xp: 0 });
-
-    expect(capped.granted).toEqual({ coins: 0, xp: 60 });
-    expect(capped.capReached).toBe(true);
+  it("uses the mean tier, so order and spread don't matter — only the average", () => {
+    expect(cooldownMinutesFor([1, 3, 5])).toBe(40); // avg 3 → same as [3,3,3]
+    expect(cooldownMinutesFor([5, 3, 1])).toBe(40);
+    expect(cooldownMinutesFor([2, 3, 4])).toBe(40);
   });
 
-  it("passes a grant through untouched when there is room", () => {
-    const capped = applyDailyCap({ coins: 35, xp: 45 }, { coins: 0, xp: 0 });
+  it("rounds to the nearest 5 minutes", () => {
+    // avg 1.67 → 20 + (0.67/4)*40 = 26.7 → 25
+    expect(cooldownMinutesFor([1, 2, 2])).toBe(25);
+    // avg 2.33 → 33.3 → 35
+    expect(cooldownMinutesFor([2, 2, 3])).toBe(35);
+  });
 
-    expect(capped.granted).toEqual({ coins: 35, xp: 45 });
-    expect(capped.capReached).toBe(false);
+  it("stays inside the clamp for any tier input", () => {
+    for (const tiers of [[1, 1, 1], [3, 1, 2], [5, 5, 4], [5, 5, 5], [2, 4, 3]]) {
+      const minutes = cooldownMinutesFor(tiers);
+      expect(minutes).toBeGreaterThanOrEqual(COOLDOWN_MIN_MINUTES);
+      expect(minutes).toBeLessThanOrEqual(COOLDOWN_MAX_MINUTES);
+    }
   });
 });
 
 describe("calculateReward", () => {
-  it("runs base → efficiency → streak → anti-spam → cap in order", () => {
+  it("runs base → efficiency → streak → anti-spam in order (no cap stage)", () => {
     const result = calculateReward({
       tier: 3, // 35 coins, 45 XP
       dueDate: at(2026, 7, 21),
       completedAt: at(2026, 7, 20, 12), // early: 44 coins
       streak: 7, // +20%: 53 coins
       antiSpamKeep: 0.5, // ECO-02 graded it a repeat
-      earnedToday: { coins: 0, xp: 0 },
     });
 
     expect(result.base).toEqual({ coins: 35, xp: 45 });
     expect(result.afterEfficiency).toEqual({ coins: 44, xp: 45 });
     expect(result.afterStreak).toEqual({ coins: 53, xp: 45 });
     expect(result.afterAntiSpam).toEqual({ coins: 27, xp: 23 });
+    // `granted` is now just the end of the pipeline — the #224 cooldown gate
+    // in `grantEarnings` is what may still zero it out.
     expect(result.granted).toEqual({ coins: 27, xp: 23 });
-    expect(result.capReached).toBe(false);
   });
 
   it("pays the plain tier reward for a first, undated, streakless completion", () => {
@@ -212,18 +219,5 @@ describe("calculateReward", () => {
 
     // Requirements §3.5's worked example: ~12 coins, ~15 XP per subtask.
     expect(result.granted).toEqual({ coins: 12, xp: 15 });
-  });
-
-  it("trims the grant when the day's cap is nearly spent", () => {
-    const result = calculateReward({
-      tier: 5,
-      completedAt: at(2026, 7, 20),
-      earnedToday: { coins: 295, xp: 495 },
-    });
-
-    expect(result.afterAntiSpam).toEqual({ coins: 150, xp: 200 });
-    expect(result.granted).toEqual({ coins: 5, xp: 5 });
-    expect(result.withheldByCap).toEqual({ coins: 145, xp: 195 });
-    expect(result.capReached).toBe(true);
   });
 });

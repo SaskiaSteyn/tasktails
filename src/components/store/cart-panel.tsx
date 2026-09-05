@@ -236,8 +236,10 @@ export function CartPanel({
           wide && "xl:min-w-0 xl:px-0 xl:pt-0",
         )}
       >
-        {/* Column headings, desktop only — the phone rows carry no price at
-            all, so there is nothing for a header to label there. */}
+        {/* Column headings, desktop only. The narrow rows (phone cart + the
+            `/store` rail) carry a single line-total to the right of the
+            stepper instead (#209) — one value, not a labelled Unit/Total
+            pair, so it needs no header. */}
         {wide ? (
           <div className="mb-2 hidden grid-cols-[1fr_130px_150px_120px] gap-4 border-b border-border-track px-5 pb-3 text-overline xl:grid">
             <span>Item</span>
@@ -305,6 +307,21 @@ export function CartPanel({
                   <Plus size={14} strokeWidth={2.4} aria-hidden />
                 </button>
               </div>
+
+              {/* #209 — line total (unit × qty) at the right edge of the narrow
+                  row, where the mock left the row priceless. Hidden at `xl`,
+                  where the wide grid's own Unit/Total columns take over.
+                  `pr-[4px]` lines its right edge up with the summary card's
+                  Subtotal value below: the row is `p-[10px]`, the summary card
+                  `p-[14px]`, and both span the same width, so this closes the
+                  4px gap. */}
+              <span
+                aria-label={`${(line.storeItem.coinPrice * line.quantity).toLocaleString("en-US")} coins`}
+                className="flex flex-none items-center gap-1 pr-[4px] text-[13px] font-extrabold text-amber-text xl:hidden"
+              >
+                <Coin size={12} />
+                {(line.storeItem.coinPrice * line.quantity).toLocaleString("en-US")}
+              </span>
 
               {wide ? (
                 <span className="hidden items-center justify-end gap-1 font-display text-[15px] font-semibold text-amber-text xl:flex">

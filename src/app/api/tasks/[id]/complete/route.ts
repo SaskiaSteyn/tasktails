@@ -28,15 +28,17 @@ import { markTaskComplete, taskForUser } from "@/lib/tasks";
  *  1. Mark the task complete first — the atomic gate. If this fails,
  *     nothing else runs and nothing is granted.
  *  2. `recordStreakDay()` *before* pricing — the completion that reaches
- *     day 3 must itself see the bumped streak to earn that day's bonus.
+ *     day 3 must itself see the bumped streak to earn that day's bonus. The
+ *     streak is recorded even while the #224 earning cooldown is active.
  *  3. `antiSpamCheck()` against the *original* task (title/createdAt from
  *     before this completion) — its own history, not this write.
- *  4. `calculateReward()` prices the completion but is deliberately not
- *     given `earnedToday` — the real daily-cap application, with its own
- *     locked read, is `grantEarnings()`'s job below. Pricing without a cap
- *     figure just means nothing is capped at this stage.
- *  5. `grantEarnings()` banks the priced reward against the *real*,
- *     lock-read daily allowance and returns the level-up event, if any.
+ *  4. `calculateReward()` prices the completion. There is no cap stage any
+ *     more (#224 retired `NFR-TASK-2`); whether the priced reward is banked
+ *     or withheld by a cooldown is `grantEarnings()`'s call below.
+ *  5. `grantEarnings()` banks the priced reward through the #224 cooldown
+ *     gate — a whole-task completion (`advancesWindow: true`), so its tier
+ *     joins the earning window; the 3rd one starts a cooldown. Returns the
+ *     level-up event and the cooldown state, if any.
  *  6. `evaluateAchievements()` (PRO-09) re-checks the whole badge catalogue
  *     against the account's now-updated progress — this is one of the
  *     three trigger points the ticket names, the others being a purchase
@@ -97,7 +99,12 @@ export async function POST(
     antiSpamKeep: antiSpam.keep,
   });
 
-  const grant = await grantEarnings(userId, priced.granted, completedAt);
+  const grant = await grantEarnings(
+    userId,
+    priced.granted,
+    { taskId: id, tier: task.complexityTier, advancesWindow: true },
+    completedAt,
+  );
   const { unlocked: achievementsUnlocked, levelUp: achievementLevelUp } =
     await evaluateAchievements(userId);
 
@@ -115,8 +122,14 @@ export async function POST(
     task: completed,
     reward: {
       granted: grant.granted,
-      withheld: grant.withheld,
-      capReached: grant.capReached,
+      // #224 — the earning cooldown. `onCooldown` means this completion
+      // earned nothing; `cooldownUntil` (ISO) is when earning resumes, set
+      // whenever a cooldown is running (just-started or ongoing);
+      // `cooldownStarted` is true only on the completion that began it.
+      onCooldown: grant.onCooldown,
+      cooldownStarted: grant.cooldownStarted,
+      cooldownUntil: grant.cooldown?.until.toISOString() ?? null,
+      windowRemaining: grant.windowRemaining,
     },
     streak: { value: streakUpdate.streak, event: streakUpdate.event },
     // Merged, not two separate events — the task's own XP grant and an

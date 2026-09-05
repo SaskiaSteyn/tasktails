@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   antiSpamCheck,
   buyXp,
-  dailyAllowanceOf,
+  earningStatusOf,
   grantEarnings,
   levelUpBetween,
   nextStreak,
@@ -213,75 +213,68 @@ describe("reduceForRepeats", () => {
 });
 
 /**
- * ECO-03 — the daily cap (NFR-TASK-2).
- *
- * `grantEarnings` runs inside an interactive transaction and reads the row with
- * `SELECT … FOR UPDATE`, so the mock has to stand in for both: the transaction
- * callback is handed the same deep mock, and `$queryRaw` returns the locked row.
+ * #224 — the earning window / cooldown status derived from a row.
  */
-describe("dailyAllowanceOf", () => {
-  const today = new Date(2026, 6, 20, 14, 0);
+describe("earningStatusOf", () => {
+  const now = new Date(2026, 6, 20, 14, 0);
 
-  it("reports what is left of the cap", () => {
-    const allowance = dailyAllowanceOf(
-      {
-        dailyCoinsEarned: 120,
-        dailyXpEarned: 200,
-        dailyCapResetAt: new Date(2026, 6, 20, 8, 0),
-      },
-      today,
+  it("reports the window progress while earning is open", () => {
+    const status = earningStatusOf(
+      { earningWindowTiers: [3, 2], earningCooldownUntil: null },
+      now,
     );
-
-    expect(allowance.earned).toEqual({ coins: 120, xp: 200 });
-    expect(allowance.remaining).toEqual({ coins: 180, xp: 300 });
-    expect(allowance.coinCapReached).toBe(false);
-    expect(allowance.resetsAt).toEqual(new Date(2026, 6, 21, 0, 0));
+    expect(status).toEqual({ windowUsed: 2, windowSize: 3, cooldownUntil: null });
   });
 
-  it("reads counters from a previous day as a clean slate", () => {
-    const allowance = dailyAllowanceOf(
-      {
-        dailyCoinsEarned: 300,
-        dailyXpEarned: 500,
-        dailyCapResetAt: new Date(2026, 6, 19, 23, 59),
-      },
-      today,
+  it("reads a future cooldown as full window + a resume time", () => {
+    const until = new Date(now.getTime() + 15 * 60_000);
+    const status = earningStatusOf(
+      { earningWindowTiers: [], earningCooldownUntil: until },
+      now,
     );
-
-    expect(allowance.earned).toEqual({ coins: 0, xp: 0 });
-    expect(allowance.remaining).toEqual({ coins: 300, xp: 500 });
+    expect(status.windowUsed).toBe(3);
+    expect(status.cooldownUntil).toBe(until.toISOString());
   });
 
-  it("flags each cap independently once it is spent", () => {
-    const allowance = dailyAllowanceOf(
+  it("reads an expired cooldown as earning open", () => {
+    const status = earningStatusOf(
       {
-        dailyCoinsEarned: 300,
-        dailyXpEarned: 10,
-        dailyCapResetAt: today,
+        earningWindowTiers: [5, 5, 5],
+        earningCooldownUntil: new Date(now.getTime() - 60_000),
       },
-      today,
+      now,
     );
-
-    expect(allowance.coinCapReached).toBe(true);
-    expect(allowance.xpCapReached).toBe(false);
+    // Expired — treated as open; the stale window count is not surfaced.
+    expect(status.cooldownUntil).toBeNull();
+    expect(status.windowUsed).toBe(3);
   });
 });
 
+/**
+ * #224 — `grantEarnings` banks through the cooldown gate. It runs inside an
+ * interactive transaction and reads the row with `SELECT … FOR UPDATE`, so the
+ * mock stands in for both: the callback is handed the same deep mock, and
+ * `$queryRaw` returns the locked row.
+ */
 describe("grantEarnings", () => {
   const now = new Date(2026, 6, 20, 14, 0);
+  const taskCtx = { taskId: "task-1", tier: 3, advancesWindow: true } as const;
 
-  /** Stands the locked row up and hands the transaction the same mock. */
-  function economyRow(counters: {
-    dailyCoinsEarned: number;
-    dailyXpEarned: number;
-    dailyCapResetAt: Date;
+  /** Stands the locked row up and the writes the transaction makes. */
+  function lockedRow(row: {
+    xp?: number;
+    earningWindowTiers?: number[];
+    earningCooldownUntil?: Date | null;
   }) {
-    prismaMock.$queryRaw.mockResolvedValue([counters]);
-    prismaMock.userEconomy.update.mockResolvedValue({
-      ...counters,
+    const full = {
+      xp: row.xp ?? 0,
       coins: 0,
-      xp: 0,
-    } as never);
+      earningWindowTiers: row.earningWindowTiers ?? [],
+      earningCooldownUntil: row.earningCooldownUntil ?? null,
+    };
+    prismaMock.$queryRaw.mockResolvedValue([full]);
+    prismaMock.userEconomy.update.mockResolvedValue(full as never);
+    prismaMock.userEconomy.findUniqueOrThrow.mockResolvedValue(full as never);
   }
 
   beforeEach(() => {
@@ -290,88 +283,120 @@ describe("grantEarnings", () => {
     );
   });
 
-  it("banks the whole reward when there is room", async () => {
-    economyRow({
-      dailyCoinsEarned: 0,
-      dailyXpEarned: 0,
-      dailyCapResetAt: now,
-    });
+  it("banks the whole reward when earning is open — there is no cap", async () => {
+    lockedRow({ earningWindowTiers: [] });
 
-    const grant = await grantEarnings("user-1", { coins: 35, xp: 45 }, now);
+    const grant = await grantEarnings(
+      "user-1",
+      { coins: 150, xp: 200 },
+      taskCtx,
+      now,
+    );
 
-    expect(grant?.granted).toEqual({ coins: 35, xp: 45 });
-    expect(grant?.capReached).toBe(false);
+    expect(grant?.granted).toEqual({ coins: 150, xp: 200 });
+    expect(grant?.onCooldown).toBe(false);
+    expect(grant?.cooldown).toBeNull();
+    expect(grant?.windowRemaining).toBe(2);
 
     const data = prismaMock.userEconomy.update.mock.calls[0][0].data as never as {
       coins: { increment: number };
       lifetimeCoinsEarned: { increment: number };
-      dailyCoinsEarned: { increment: number };
+      earningWindowTiers: number[];
     };
-    expect(data.coins).toEqual({ increment: 35 });
-    expect(data.lifetimeCoinsEarned).toEqual({ increment: 35 });
-    expect(data.dailyCoinsEarned).toEqual({ increment: 35 });
+    expect(data.coins).toEqual({ increment: 150 });
+    expect(data.lifetimeCoinsEarned).toEqual({ increment: 150 });
+    expect(data.earningWindowTiers).toEqual([3]);
   });
 
-  it("trims a grant to the remaining headroom", async () => {
-    economyRow({
-      dailyCoinsEarned: 290,
-      dailyXpEarned: 480,
-      dailyCapResetAt: now,
-    });
+  it("appends the tier for a whole-task completion but not for a subtask", async () => {
+    lockedRow({ earningWindowTiers: [2] });
 
-    const grant = await grantEarnings("user-1", { coins: 150, xp: 200 }, now);
+    await grantEarnings(
+      "user-1",
+      { coins: 5, xp: 8 },
+      { taskId: "t", tier: 4, advancesWindow: false },
+      now,
+    );
 
-    expect(grant?.granted).toEqual({ coins: 10, xp: 20 });
-    expect(grant?.withheld).toEqual({ coins: 140, xp: 180 });
-    expect(grant?.capReached).toBe(true);
-
-    // Lifetime earned tracks the capped, actually-banked amount — not the
-    // task's pre-cap face value.
     const data = prismaMock.userEconomy.update.mock.calls[0][0].data as never as {
-      lifetimeCoinsEarned: { increment: number };
+      earningWindowTiers: number[];
     };
-    expect(data.lifetimeCoinsEarned).toEqual({ increment: 10 });
+    expect(data.earningWindowTiers).toEqual([2]); // unchanged — subtasks don't count
   });
 
-  it("banks nothing once the cap is spent, and still returns a result", async () => {
-    economyRow({
-      dailyCoinsEarned: 300,
-      dailyXpEarned: 500,
-      dailyCapResetAt: now,
-    });
+  it("starts a cooldown on the 3rd whole-task completion, tier-weighted", async () => {
+    lockedRow({ earningWindowTiers: [3, 3] });
 
-    const grant = await grantEarnings("user-1", { coins: 35, xp: 45 }, now);
+    const grant = await grantEarnings(
+      "user-1",
+      { coins: 35, xp: 45 },
+      { taskId: "t", tier: 3, advancesWindow: true },
+      now,
+    );
 
-    expect(grant?.granted).toEqual({ coins: 0, xp: 0 });
-    expect(grant?.withheld).toEqual({ coins: 35, xp: 45 });
-  });
-
-  it("overwrites stale counters instead of adding to them", async () => {
-    economyRow({
-      dailyCoinsEarned: 300,
-      dailyXpEarned: 500,
-      dailyCapResetAt: new Date(2026, 6, 19, 20, 0),
-    });
-
-    const grant = await grantEarnings("user-1", { coins: 35, xp: 45 }, now);
-
-    // Yesterday's spent cap must not block today's first task.
+    // [3,3,3] → cooldownMinutesFor → 40 minutes.
+    expect(grant?.cooldownStarted).toBe(true);
+    expect(grant?.cooldown?.until).toEqual(new Date(now.getTime() + 40 * 60_000));
+    expect(grant?.windowRemaining).toBe(0);
+    // The completion that triggers it is still paid in full.
     expect(grant?.granted).toEqual({ coins: 35, xp: 45 });
 
     const data = prismaMock.userEconomy.update.mock.calls[0][0].data as never as {
-      dailyCoinsEarned: number;
-      dailyXpEarned: number;
-      dailyCapResetAt: Date;
+      earningWindowTiers: number[];
+      earningCooldownUntil: Date;
     };
-    expect(data.dailyCoinsEarned).toBe(35);
-    expect(data.dailyXpEarned).toBe(45);
-    expect(data.dailyCapResetAt).toEqual(new Date(2026, 6, 20, 0, 0));
+    expect(data.earningWindowTiers).toEqual([]); // reset when the cooldown starts
+    expect(data.earningCooldownUntil).toEqual(
+      new Date(now.getTime() + 40 * 60_000),
+    );
+  });
+
+  it("withholds both currencies during an active cooldown, writing nothing", async () => {
+    const until = new Date(now.getTime() + 10 * 60_000);
+    lockedRow({ earningCooldownUntil: until });
+
+    const grant = await grantEarnings(
+      "user-1",
+      { coins: 35, xp: 45 },
+      taskCtx,
+      now,
+    );
+
+    expect(grant?.onCooldown).toBe(true);
+    expect(grant?.granted).toEqual({ coins: 0, xp: 0 });
+    expect(grant?.withheld).toEqual({ coins: 35, xp: 45 });
+    expect(grant?.cooldown?.until).toEqual(until);
+    expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
+  });
+
+  it("clears an expired cooldown and earns as a fresh window slot 1", async () => {
+    lockedRow({
+      earningWindowTiers: [5, 5, 5],
+      earningCooldownUntil: new Date(now.getTime() - 60_000),
+    });
+
+    const grant = await grantEarnings(
+      "user-1",
+      { coins: 35, xp: 45 },
+      { taskId: "t", tier: 2, advancesWindow: true },
+      now,
+    );
+
+    expect(grant?.onCooldown).toBe(false);
+    expect(grant?.granted).toEqual({ coins: 35, xp: 45 });
+
+    const data = prismaMock.userEconomy.update.mock.calls[0][0].data as never as {
+      earningWindowTiers: number[];
+      earningCooldownUntil: Date | null;
+    };
+    expect(data.earningWindowTiers).toEqual([2]); // previous window discarded
+    expect(data.earningCooldownUntil).toBeNull();
   });
 
   it("locks the row it is about to update", async () => {
-    economyRow({ dailyCoinsEarned: 0, dailyXpEarned: 0, dailyCapResetAt: now });
+    lockedRow({});
 
-    await grantEarnings("user-1", { coins: 5, xp: 8 }, now);
+    await grantEarnings("user-1", { coins: 5, xp: 8 }, taskCtx, now);
 
     const sql = (prismaMock.$queryRaw.mock.calls[0][0] as unknown as string[])
       .join("")
@@ -382,7 +407,9 @@ describe("grantEarnings", () => {
   it("returns null when the account has no economy row", async () => {
     prismaMock.$queryRaw.mockResolvedValue([]);
 
-    expect(await grantEarnings("ghost", { coins: 5, xp: 8 }, now)).toBeNull();
+    expect(
+      await grantEarnings("ghost", { coins: 5, xp: 8 }, taskCtx, now),
+    ).toBeNull();
     expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
   });
 });
@@ -574,25 +601,32 @@ describe("levelUpBetween", () => {
 
 describe("grantEarnings level-up", () => {
   const now = new Date(2026, 6, 20, 14, 0);
+  const taskCtx = { taskId: "t", tier: 5, advancesWindow: true } as const;
 
   beforeEach(() => {
     prismaMock.$transaction.mockImplementation(
       (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
     );
     prismaMock.userEconomy.update.mockResolvedValue({
-      dailyCoinsEarned: 0,
-      dailyXpEarned: 0,
-      dailyCapResetAt: now,
+      xp: 0,
+      coins: 0,
+      earningWindowTiers: [],
+      earningCooldownUntil: null,
     } as never);
   });
 
   it("reports the crossing and writes the derived level in the same update", async () => {
     prismaMock.$queryRaw.mockResolvedValue([
-      { xp: 0, dailyCoinsEarned: 0, dailyXpEarned: 0, dailyCapResetAt: now },
+      { xp: 0, earningWindowTiers: [], earningCooldownUntil: null },
     ]);
 
     // Epic — no single tier crosses more than one threshold anymore.
-    const grant = await grantEarnings("user-1", { coins: 150, xp: 200 }, now);
+    const grant = await grantEarnings(
+      "user-1",
+      { coins: 150, xp: 200 },
+      taskCtx,
+      now,
+    );
 
     expect(grant?.levelUp?.from).toBe(1);
     expect(grant?.levelUp?.to).toBe(2);
@@ -605,25 +639,44 @@ describe("grantEarnings level-up", () => {
 
   it("reports no level-up when the grant does not reach a threshold", async () => {
     prismaMock.$queryRaw.mockResolvedValue([
-      { xp: 60, dailyCoinsEarned: 0, dailyXpEarned: 0, dailyCapResetAt: now },
+      { xp: 60, earningWindowTiers: [], earningCooldownUntil: null },
     ]);
 
-    const grant = await grantEarnings("user-1", { coins: 5, xp: 8 }, now);
+    const grant = await grantEarnings(
+      "user-1",
+      { coins: 5, xp: 8 },
+      taskCtx,
+      now,
+    );
 
     expect(grant?.levelUp).toBeNull();
   });
 
-  it("levels off the capped XP, not the XP the task was worth", async () => {
-    // 495 XP already banked: the cap lets 5 through, which is not enough to
-    // reach level 2 from 0. A level-up computed off the uncapped 200 would be
-    // a threshold the participant never actually crossed.
+  it("does not level up when a cooldown withholds the XP", async () => {
+    // Enough XP to reach level 2 from 0 — but a cooldown is active, so the
+    // grant is zeroed and no threshold is crossed.
     prismaMock.$queryRaw.mockResolvedValue([
-      { xp: 0, dailyCoinsEarned: 0, dailyXpEarned: 495, dailyCapResetAt: now },
+      {
+        xp: 0,
+        earningWindowTiers: [],
+        earningCooldownUntil: new Date(now.getTime() + 5 * 60_000),
+      },
     ]);
+    prismaMock.userEconomy.findUniqueOrThrow.mockResolvedValue({
+      xp: 0,
+      coins: 0,
+      earningWindowTiers: [],
+      earningCooldownUntil: new Date(now.getTime() + 5 * 60_000),
+    } as never);
 
-    const grant = await grantEarnings("user-1", { coins: 150, xp: 200 }, now);
+    const grant = await grantEarnings(
+      "user-1",
+      { coins: 150, xp: 200 },
+      taskCtx,
+      now,
+    );
 
-    expect(grant?.granted.xp).toBe(5);
+    expect(grant?.granted.xp).toBe(0);
     expect(grant?.levelUp).toBeNull();
   });
 });
@@ -767,7 +820,7 @@ describe("buyXp", () => {
     expect((await buyXp("user-1")).ok).toBe(true);
   });
 
-  it("ignores the daily XP cap — these coins were already capped when earned", async () => {
+  it("is not subject to the #224 earning cooldown — it spends, it does not earn from tasks", async () => {
     prismaMock.$queryRaw.mockResolvedValue([{ coins: 100, xp: 0 }]);
 
     const result = await buyXp("user-1");
@@ -775,7 +828,9 @@ describe("buyXp", () => {
     expect(result.ok && result.gained).toBe(40);
     const data = prismaMock.userEconomy.update.mock.calls[0][0]
       .data as never as Record<string, unknown>;
-    expect(data.dailyXpEarned).toBeUndefined();
+    // Touches only coins + xp/level — nothing about the earning window.
+    expect(data.earningWindowTiers).toBeUndefined();
+    expect(data.earningCooldownUntil).toBeUndefined();
   });
 
   it("locks the row before checking the balance", async () => {
