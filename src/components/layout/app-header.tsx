@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { CoinPill } from "@/components/ui/coin";
-import { LevelBadge } from "@/components/ui/level-badge";
+import { RankBadge } from "@/components/ui/rank-badge";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { StreakCard } from "@/components/ui/streak";
 import { cn } from "@/lib/cn";
@@ -14,8 +14,10 @@ import type { EconomySnapshot } from "@/lib/economy";
  * The designs draw it in two densities and both ship:
  *
  *  - **greeting** (dashboard) — "Good morning / Nico" on the left, coin pill and
- *    level disc on the right, then a second row with the XP bar and the streak
- *    card. Omit `title` to get this.
+ *    rank badge on the right, then a second row with the XP bar and the streak
+ *    card. Omit `title` to get this. The rank badge replaced the level disc at
+ *    the user's request (2026-09-05) — it links to the leaderboard, and the
+ *    level itself is still on screen, in the XP card directly below.
  *  - **title** (store, sanctuary) — a screen title, an optional trailing control
  *    such as the store's history icon, and the coin pill. Pass `title`.
  *
@@ -31,6 +33,8 @@ export type AppHeaderProps = {
   /** Who to greet — the handle from `displayNameFor()`. Greeting variant only. */
   name?: string;
   economy: EconomySnapshot;
+  /** The signed-in user's leaderboard position — the greeting variant's badge. Absent (admin, or nobody ranked) draws no badge. */
+  rank?: number;
   /**
    * The XP bar + streak row. On by default for the greeting variant, off for a
    * titled screen, matching where the designs draw it.
@@ -78,6 +82,7 @@ export function AppHeader({
   title,
   name,
   economy,
+  rank,
   showProgress = !title,
   action,
   titleAs: Heading = "h1",
@@ -127,7 +132,7 @@ export function AppHeader({
               `CooldownCountdown` on the tasks screen, which is where a
               participant actually hits the pause. */}
           {action}
-          {title ? null : <LevelBadge level={economy.level} />}
+          {title || rank === undefined ? null : <RankBadge rank={rank} />}
         </div>
       </div>
 

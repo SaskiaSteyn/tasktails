@@ -3,6 +3,7 @@ import { UNLOCK_LEVEL_BUFFER } from "@/lib/gacha";
 import { allInventoryForUser } from "@/lib/inventory";
 import { petsForUser } from "@/lib/pets";
 import { prisma } from "@/lib/prisma";
+import { sellValueOf } from "@/lib/sell-value";
 import { levelOf } from "@/lib/store";
 
 /**
@@ -44,8 +45,7 @@ import { levelOf } from "@/lib/store";
  * SERVER ONLY — imports Prisma.
  */
 
-/** Confirmed, not a draft — "everything sold at 70% of its bought value." */
-export const SELL_RATE = 0.7;
+export { SELL_RATE, sellValueOf } from "@/lib/sell-value";
 
 export type SoldItem = {
   storeItemId: string;
@@ -77,7 +77,7 @@ export async function sellOwnedItem(
     });
 
     if (inventoryItem) {
-      const refund = Math.floor(inventoryItem.storeItem.coinPrice * SELL_RATE);
+      const refund = sellValueOf(inventoryItem.storeItem.coinPrice);
 
       if (inventoryItem.quantity > 1) {
         await tx.inventoryItem.update({
@@ -108,7 +108,7 @@ export async function sellOwnedItem(
 
     if (!pet) return { ok: false, reason: "not-found" } as const;
 
-    const refund = Math.floor(pet.storeItem.coinPrice * SELL_RATE);
+    const refund = sellValueOf(pet.storeItem.coinPrice);
 
     await tx.pet.delete({ where: { id: pet.id } });
 
@@ -174,7 +174,7 @@ export async function sellableItemsForUser(userId: string): Promise<SellableItem
     imageUrl: item.storeItem.imageUrl,
     quantity: item.quantity,
     coinPrice: item.storeItem.coinPrice,
-    sellValue: Math.floor(item.storeItem.coinPrice * SELL_RATE),
+    sellValue: sellValueOf(item.storeItem.coinPrice),
     levelRequired: item.storeItem.levelRequired,
     locked: item.storeItem.levelRequired > level + UNLOCK_LEVEL_BUFFER,
   }));
@@ -187,7 +187,7 @@ export async function sellableItemsForUser(userId: string): Promise<SellableItem
     imageUrl: pet.storeItem.imageUrl,
     quantity: 1,
     coinPrice: pet.storeItem.coinPrice,
-    sellValue: Math.floor(pet.storeItem.coinPrice * SELL_RATE),
+    sellValue: sellValueOf(pet.storeItem.coinPrice),
     levelRequired: pet.storeItem.levelRequired,
     locked: pet.storeItem.levelRequired > level + UNLOCK_LEVEL_BUFFER,
   }));

@@ -1,9 +1,11 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useLevelUp } from "@/components/economy/level-up-provider";
+import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 
 /**
@@ -23,6 +25,14 @@ import { cn } from "@/lib/cn";
  *
  * A level-up crossing goes straight to ECO-07's `useLevelUp().celebrate()`,
  * same as every other XP-granting action (TASK-05, SUB-05).
+ *
+ * **Updated at the user's request**: Convert now opens the shared `Modal`
+ * first — same confirm-before-spending shape `SellItemsList` uses, minus the
+ * destructive tint, since this trade is a purchase rather than a one-way
+ * loss. A conversion that doesn't cross a level boundary used to be entirely
+ * silent (the coin/XP figures elsewhere on the page just quietly changed on
+ * `router.refresh()`), so success now says so in the card's existing message
+ * slot, as a `role="status"` line — polite, not an alert: good news.
  */
 export function BuyXpCard({
   costCoins,
@@ -37,6 +47,8 @@ export function BuyXpCard({
   const { celebrate } = useLevelUp();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [converted, setConverted] = useState(false);
 
   const canAfford = coins >= costCoins;
 
@@ -44,6 +56,7 @@ export function BuyXpCard({
     if (pending) return;
     setPending(true);
     setError(null);
+    setConverted(false);
 
     try {
       const response = await fetch("/api/economy/buy-xp", { method: "POST" });
@@ -54,12 +67,14 @@ export function BuyXpCard({
         return;
       }
 
+      setConverted(true);
       celebrate(body.levelUp);
       router.refresh();
     } catch {
       setError("Can't reach TaskTails. Check your connection and try again.");
     } finally {
       setPending(false);
+      setConfirming(false);
     }
   }
 
@@ -76,6 +91,10 @@ export function BuyXpCard({
           <p role="alert" className="mt-1 text-[10px] leading-[1.3] text-urgency-text">
             {error}
           </p>
+        ) : converted ? (
+          <p role="status" className="mt-1 text-[10px] leading-[1.3] font-bold text-violet-text">
+            Converted — {gainXp} XP added
+          </p>
         ) : !canAfford ? (
           <p className="mt-1 text-[10px] leading-[1.3] text-ink-faint">
             Not enough coins yet
@@ -85,7 +104,7 @@ export function BuyXpCard({
 
       <button
         type="button"
-        onClick={handleConvert}
+        onClick={() => setConfirming(true)}
         disabled={pending || !canAfford}
         className={cn(
           "flex h-[34px] flex-none items-center justify-center rounded-[10px] bg-violet px-[15px]",
@@ -95,6 +114,18 @@ export function BuyXpCard({
       >
         {pending ? "Converting…" : "Convert"}
       </button>
+
+      <Modal
+        open={confirming}
+        icon={Sparkles}
+        iconTint="violet"
+        title="Convert coins to XP?"
+        body={`This spends ${costCoins.toLocaleString("en-US")} coins and adds ${gainXp.toLocaleString("en-US")} XP.`}
+        confirmLabel={pending ? "Converting…" : "Convert"}
+        cancelLabel="Cancel"
+        onConfirm={handleConvert}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
   );
 }

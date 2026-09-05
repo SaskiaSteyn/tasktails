@@ -413,6 +413,23 @@ describe("achievementsForUser", () => {
     expect(result[0].progress).toBeNull();
   });
 
+  it("orders earned first, then locked by how close they are, then binary criteria", async () => {
+    setupSnapshot({ streak: 4, lifetimePetInteractions: 1 });
+    prismaMock.userAchievement.findMany.mockResolvedValue([
+      { achievementId: "earned", unlockedAt: new Date(2026, 6, 1) },
+    ] as never);
+    prismaMock.achievement.findMany.mockResolvedValue([
+      { id: "binary", key: "k0", name: "N", description: "D", criteria: { type: "RARITY_OWNED", category: "FOOD", rarity: "COMMON" }, xpReward: 15 },
+      { id: "far", key: "k1", name: "N", description: "D", criteria: { type: "PET_INTERACTIONS", threshold: 50 }, xpReward: 60 },
+      { id: "earned", key: "k2", name: "N", description: "D", criteria: { type: "STREAK_DAYS", threshold: 1 }, xpReward: 50 },
+      { id: "close", key: "k3", name: "N", description: "D", criteria: { type: "STREAK_DAYS", threshold: 5 }, xpReward: 50 },
+    ] as never);
+
+    const result = await achievementsForUser("user-1");
+
+    expect(result.map((a) => a.id)).toEqual(["earned", "close", "far", "binary"]);
+  });
+
   it("treats a row with an unrecognised criterion type as locked rather than crashing the list", async () => {
     // `criteria` is a Prisma `Json` column trusted via a type assertion, not
     // a runtime guarantee — a row left over from an older seed (a stale

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Minus, Plus, ShoppingBag } from "lucide-react";
+import { Check, History, Minus, Plus, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -219,6 +219,12 @@ export function CartPanel({
         >
           Go to store
         </Link>
+
+        {/* The only way into STOR-09's purchase history, at every width. It
+            used to be an icon-only button in the cart header, which read as
+            decoration rather than a destination (user, 2026-09-05) — one
+            labelled link, in both cart states, replaced it. */}
+        <PurchaseHistoryLink className="mt-[14px]" />
       </div>
     );
   }
@@ -376,8 +382,28 @@ export function CartPanel({
             </>
           )}
         </Button>
+
+        {/* Same link as the empty state's — a full cart must not be the thing
+            that hides purchase history. */}
+        <PurchaseHistoryLink className="mt-[12px] xl:mt-0" />
       </div>
     </div>
+  );
+}
+
+/** "View purchase history" — the cart's one route to STOR-09's `/store/history`, drawn in both cart states. */
+function PurchaseHistoryLink({ className }: { className?: string }) {
+  return (
+    <Link
+      href="/store/history"
+      className={cn(
+        "flex items-center justify-center gap-[6px] text-[12.5px] font-bold text-terracotta transition-colors duration-120 hover:text-terracotta-hover",
+        className,
+      )}
+    >
+      <History size={15} strokeWidth={2} aria-hidden />
+      View purchase history
+    </Link>
   );
 }
 
