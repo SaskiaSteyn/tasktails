@@ -54,26 +54,15 @@ export default async function ProfilePage() {
   // PRO-18 — the Profile strip is a preview of the full 38-entry catalogue
   // now that PRO-09's original 4-achievement set no longer matches 1:1 with
   // what's rendered here; only the full list moved to its own screen.
-  // Most-recently-unlocked first (real progress reads as more interesting
-  // than the catalogue's fixed order), then locked entries in catalogue
-  // order — `Array.prototype.sort` is stable, so ties among locked rows keep
-  // the order `achievementsForUser()` already returned.
+  // `achievementsForUser()` already returns earned-first, then closest to
+  // earning, so this only has to take the front of that list.
   //
   // Twelve, not the addendum's four: the strip fills the width from `desk:`
   // up (user's direction, 2026-08-30) and `AchievementsGrid` hides the tiles
   // each breakpoint has no room for. Sliced here rather than per breakpoint
   // because the server cannot know the viewport — twelve is simply the most
   // any width shows.
-  const achievementsPreview = [...achievements]
-    .sort((a, b) => {
-      if (a.unlockedAt && b.unlockedAt) {
-        return b.unlockedAt.getTime() - a.unlockedAt.getTime();
-      }
-      if (a.unlockedAt) return -1;
-      if (b.unlockedAt) return 1;
-      return 0;
-    })
-    .slice(0, 12);
+  const achievementsPreview = achievements.slice(0, 12);
 
   return (
     <AppShell

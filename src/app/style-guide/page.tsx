@@ -16,6 +16,7 @@ import { GoogleMark } from "@/components/ui/google-mark";
 import { LevelBadge } from "@/components/ui/level-badge";
 import { PasswordField } from "@/components/ui/password-field";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { RankBadge } from "@/components/ui/rank-badge";
 import { StreakCard, StreakPill } from "@/components/ui/streak";
 import { TextField } from "@/components/ui/text-field";
 // Type-only, same reasoning as `EconomySnapshot`/`PetWithItem` below —
@@ -629,12 +630,12 @@ export default function StyleGuidePage() {
       <Section
         n="06"
         title="App chrome"
-        blurb="The persistent header (INF-12) at real economy values. Coins, level and streak appear on every logged-in screen; the XP bar and streak card are the dashboard's second row. The bottom nav is SHR-01."
+        blurb="The persistent header (INF-12) at real economy values. Coins, rank and streak appear on every logged-in screen — the rank badge replaced the level disc (2026-09-05) and links to the leaderboard; the XP bar and streak card are the dashboard's second row. The bottom nav is SHR-01."
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Card label="Header — greeting (dashboard)">
             <Frame>
-              <AppHeader name="Nico" economy={sampleEconomy(42, 245, 5)} />
+              <AppHeader name="Nico" rank={3} economy={sampleEconomy(42, 245, 5)} />
             </Frame>
             <p className="text-[11.5px] text-ink-soft">
               Level 4 · 42 XP. The bar reads <code>7 / 20 XP</code>{" "}
@@ -666,7 +667,7 @@ export default function StyleGuidePage() {
 
           <Card label="Header — fresh account">
             <Frame>
-              <AppHeader name="friend" economy={sampleEconomy(0, 0, 0)} />
+              <AppHeader name="friend" rank={11} economy={sampleEconomy(0, 0, 0)} />
             </Frame>
             <p className="text-[11.5px] text-ink-soft">
               Level 1, empty bar, zeroes. What every participant sees on their
@@ -676,7 +677,7 @@ export default function StyleGuidePage() {
 
           <Card label="Header — level cap">
             <Frame>
-              <AppHeader name="Nico" economy={sampleEconomy(2400, 1180, 14)} />
+              <AppHeader name="Nico" rank={1} economy={sampleEconomy(2400, 1180, 14)} />
             </Frame>
             <p className="text-[11.5px] text-ink-soft">
               At level 10 the caption becomes <code>MAX LEVEL</code>, the bar
@@ -691,6 +692,7 @@ export default function StyleGuidePage() {
               <CoinPill coins={1180} />
               <LevelBadge level={4} />
               <LevelBadge level={4} variant="pill" />
+              <RankBadge rank={3} />
               <StreakPill days={5} />
               <StreakCard days={5} />
             </div>
