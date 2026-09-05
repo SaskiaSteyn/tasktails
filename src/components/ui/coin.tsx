@@ -1,13 +1,20 @@
+import Image from "next/image";
+
 import { cn } from "@/lib/cn";
 
 /**
  * The coin (INF-12).
  *
- * Deliberately not a Lucide icon: the handoff specifies coins as "a filled amber
- * circle with a lighter ring", and it is the one mark in the app drawn from
- * tokens rather than the icon set. It appears at four sizes — 18px in the
- * dashboard header, 16px in the compact header, 13px on a task row's reward and
- * 18px on a store card — so the size is a prop rather than four near-copies.
+ * Now `public/coin.svg` — the real drawn coin, supplied 2026-09-05, replacing
+ * the CSS mark this rendered before (an amber disc with a lighter ring, built
+ * from `@theme` tokens because the handoff described the coin in words and no
+ * artwork existed yet). Every call site goes through this component, so the
+ * swap is one file; nothing passes `className`, and the sizes callers ask for
+ * (12/13/14/18px) are unchanged.
+ *
+ * `.svg` is served straight from `public/` rather than through the image
+ * optimizer — Next skips optimization for SVG automatically — so this is one
+ * cached 4KB file for every coin on the page, not a per-size variant.
  *
  * Decorative on its own. The label that gives it meaning lives on whatever
  * wraps it (see `CoinPill`), so this is always `aria-hidden`.
@@ -20,13 +27,13 @@ export function Coin({
   className?: string;
 }) {
   return (
-    <span
+    <Image
+      src="/coin.svg"
+      alt=""
       aria-hidden
-      className={cn(
-        "block flex-none rounded-full border-2 border-amber-ring bg-amber",
-        className,
-      )}
-      style={{ width: size, height: size }}
+      width={size}
+      height={size}
+      className={cn("block flex-none", className)}
     />
   );
 }
