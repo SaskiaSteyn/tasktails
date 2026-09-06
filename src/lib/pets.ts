@@ -12,6 +12,7 @@ import {
 } from "@/lib/inventory";
 import { decayedStateFor } from "@/lib/pet-decay";
 import { prisma } from "@/lib/prisma";
+import { logTelemetryEvent } from "@/lib/telemetry";
 
 /**
  * Every read of a pet (INF-08, PET-01/02). Nothing outside this module
@@ -233,6 +234,23 @@ export async function recordFeedInteraction(
 }
 
 /**
+ * The shared payload for #235's `ITEM_EQUIPPED`/`ITEM_UNEQUIPPED` events —
+ * enough to identify the pet, the exact inventory row (not just the
+ * catalogue item: a duplicate pull creates a second identical row, which is
+ * half of what made #235 unreadable) and what it was, without a join at
+ * read time.
+ */
+function equipEventPayload(petId: string, item: InventoryItemWithStoreItem) {
+  return {
+    petId,
+    inventoryItemId: item.id,
+    storeItemId: item.storeItemId,
+    name: item.storeItem.name,
+    category: item.storeItem.category,
+  };
+}
+
+/**
  * What `recordCustomizeInteraction()` reports back — `pet-not-found` and
  * `item-not-found` each map to their own 404 message (same shape/reason as
  * `FeedResult`), and `equipped-elsewhere` (#215 — the accessory or
@@ -285,6 +303,11 @@ export async function recordCustomizeInteraction(
       };
     }
 
+    // #235 — see `TelemetryEventType`. Inside the transaction, same reasoning
+    // `checkout.ts`'s `ITEM_PURCHASED` gives: the log describes this write,
+    // so it commits or rolls back with it.
+    await logTelemetryEvent(userId, "ITEM_EQUIPPED", equipEventPayload(petId, result.item), tx);
+
     return { ok: true, item: result.item };
   });
 }
@@ -312,6 +335,10 @@ export async function recordUnequipInteraction(
   return prisma.$transaction(async (tx) => {
     const item = await unequipCustomization(tx, userId, petId, inventoryItemId);
     if (!item) return { ok: false, reason: "item-not-found" };
+
+    // #235 — the tap-on-the-equipped-tile path, the one reachable way an
+    // accessory comes off a pet that leaves no other trace.
+    await logTelemetryEvent(userId, "ITEM_UNEQUIPPED", equipEventPayload(petId, item), tx);
 
     return { ok: true, item };
   });
