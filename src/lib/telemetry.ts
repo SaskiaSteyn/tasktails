@@ -36,7 +36,19 @@ export type TelemetryEventType =
   // nothing). See `design_handoff/ADDENDUM-earning-cooldown.md` §6.
   | "EARNING_COOLDOWN_STARTED"
   | "EARNING_RESUMED"
-  | "TASK_COMPLETED_ON_COOLDOWN";
+  | "TASK_COMPLETED_ON_COOLDOWN"
+  // #235 — the equip/unequip/sell timeline for one owned item. Added after a
+  // participant's accessory came off his pet with no way to tell what had
+  // taken it off: the sequence he reported provably doesn't unequip anything
+  // (verified against a real database), so the missing piece was never a
+  // missing guard, it was that nothing recorded *which* of the four writes
+  // that can clear `InventoryItem.equippedToPetId` actually ran. These three
+  // make that reconstructable from the log instead of from a repro attempt.
+  // `ITEM_EQUIPPED` is here for the same reason as the other two: a log of
+  // removals alone can't establish the item was ever on.
+  | "ITEM_EQUIPPED"
+  | "ITEM_UNEQUIPPED"
+  | "ITEM_SOLD";
 
 /**
  * Logs one event. Takes a plain `PrismaClient` by default, but accepts a

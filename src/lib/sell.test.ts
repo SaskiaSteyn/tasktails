@@ -54,7 +54,8 @@ describe("sellOwnedItem", () => {
       id: "inv-1",
       storeItemId: "collar",
       quantity: 1,
-      storeItem: { name: "Red collar", coinPrice: 65 },
+      equippedToPetId: "pet-1",
+      storeItem: { name: "Red collar", coinPrice: 65, category: "ACCESSORIES" },
     } as never);
 
     const result = await sellOwnedItem("user-1", "inv-1");
@@ -62,6 +63,15 @@ describe("sellOwnedItem", () => {
     expect(result.ok).toBe(true);
     expect(prismaMock.inventoryItem.delete).toHaveBeenCalledWith({ where: { id: "inv-1" } });
     expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
+    // #235 — the row is gone after this, so "it was being worn when it was
+    // sold" only survives if it's recorded here.
+    expect(prismaMock.telemetryEvent.create).toHaveBeenCalledWith({
+      data: {
+        userId: "user-1",
+        eventType: "ITEM_SOLD",
+        payload: expect.objectContaining({ removed: true, equippedToPetId: "pet-1" }),
+      },
+    });
   });
 
   it("rounds the refund down, not to the nearest coin", async () => {
