@@ -86,7 +86,7 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
           you ? "text-terracotta-press" : "text-ink-soft",
         )}
       >
-        {entry.score.toLocaleString()}
+        {entry.score.toLocaleString("en-US")}
         <span className="sr-only"> coins earned</span>
       </span>
     </li>

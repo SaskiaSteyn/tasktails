@@ -62,7 +62,7 @@ function StatTile({
           colorClass,
         )}
       >
-        {value.toLocaleString()}
+        {value.toLocaleString("en-US")}
       </p>
       <p className="mt-[2px] text-[10.5px] font-bold text-ink-soft">{label}</p>
     </div>
