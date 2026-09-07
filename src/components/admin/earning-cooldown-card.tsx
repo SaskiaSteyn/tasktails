@@ -71,10 +71,10 @@ export function EarningCooldownCard({
 
       <div className="p-5">
         <div className="grid grid-cols-4 gap-[11px]">
-          <StatTile label="Cooldowns triggered" value={cooldownsTriggered.toLocaleString()} />
+          <StatTile label="Cooldowns triggered" value={cooldownsTriggered.toLocaleString("en-US")} />
           <StatTile label="Avg cooldown length" value={minutes(avgCooldownMinutes)} />
           <StatTile label="Avg wait to next task" value={minutes(avgWaitToNextTaskMinutes)} />
-          <StatTile label="Done mid-cooldown" value={midCooldownCompletions.toLocaleString()} />
+          <StatTile label="Done mid-cooldown" value={midCooldownCompletions.toLocaleString("en-US")} />
         </div>
 
         {byMix.length === 0 ? (
@@ -114,7 +114,7 @@ export function EarningCooldownCard({
                       {row.cooldownMinutes} min
                     </td>
                     <td className="relative border-b border-border-track px-2 py-2 text-right font-display font-semibold tabular-nums">
-                      {row.count.toLocaleString()}
+                      {row.count.toLocaleString("en-US")}
                       <span
                         aria-hidden
                         className="absolute inset-x-2 bottom-[3px] h-[3px] rounded-[2px] bg-border-track"
