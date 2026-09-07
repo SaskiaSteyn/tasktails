@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { achievementsForUser } from "@/lib/achievements";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { XpCard } from "@/components/economy/xp-card";
 import { AchievementsGrid } from "@/components/profile/achievements-grid";
 import { BuyXpCard } from "@/components/profile/buy-xp-card";
 import { ProfileHeader } from "@/components/profile/profile-header";
@@ -72,22 +73,32 @@ export default async function ProfilePage() {
       className="px-4 pt-4 pb-[14px] desk:px-[34px] desk:py-7"
       nav={<BottomNav />}
       header={
-        <header className="flex flex-none items-center gap-[13px] border-b border-border-track bg-warm px-[18px] pt-[14px] pb-4">
-          <ProfileHeader
-            name={displayNameFor(record)}
-            email={record.email}
-            level={economy?.level ?? 1}
-            studyId={record.studyId}
-            avatarUrl={record.avatarUrl}
-          />
+        <header className="flex flex-none flex-col gap-3 border-b border-border-track bg-warm px-[18px] pt-[14px] pb-4">
+          <div className="flex items-center gap-[13px]">
+            <ProfileHeader
+              name={displayNameFor(record)}
+              email={record.email}
+              level={economy?.level ?? 1}
+              studyId={record.studyId}
+              avatarUrl={record.avatarUrl}
+            />
 
-          <Link
-            href="/settings"
-            aria-label="Settings"
-            className="flex size-9 flex-none items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft shadow-nav-idle transition-colors duration-120 ease-out hover:bg-warm hover:text-ink"
-          >
-            <Settings size={18} strokeWidth={2} aria-hidden />
-          </Link>
+            <Link
+              href="/settings"
+              aria-label="Settings"
+              className="flex size-9 flex-none items-center justify-center rounded-full border border-border-track bg-surface text-ink-soft shadow-nav-idle transition-colors duration-120 ease-out hover:bg-warm hover:text-ink"
+            >
+              <Settings size={18} strokeWidth={2} aria-hidden />
+            </Link>
+          </div>
+
+          {/* The same track the dashboard header draws (user-directed,
+              2026-09-06 — in the header, not stacked on the Buy XP card).
+              Living up here also keeps it out of the body's Suspense boundary,
+              so `router.refresh()` after a conversion updates this instance's
+              `percent` in place and `ProgressBar`'s `transition-[width]` runs,
+              rather than remounting the bar at its new width. */}
+          {economy ? <XpCard economy={economy} /> : null}
         </header>
       }
     >
@@ -98,15 +109,22 @@ export default async function ProfilePage() {
           title-and-status only, so without this the desktop Profile would be
           the one screen that never shows whose profile it is. Same component,
           second placement — exactly one of the two is ever visible. */}
-      <div className="mb-6 hidden items-center gap-[13px] desk:flex">
-        <ProfileHeader
-          as="h2"
-          name={displayNameFor(record)}
-          email={record.email}
-          level={economy?.level ?? 1}
-          studyId={record.studyId}
-          avatarUrl={record.avatarUrl}
-        />
+      <div className="mb-6 hidden flex-col gap-3 desk:flex">
+        <div className="flex items-center gap-[13px]">
+          <ProfileHeader
+            as="h2"
+            name={displayNameFor(record)}
+            email={record.email}
+            level={economy?.level ?? 1}
+            studyId={record.studyId}
+            avatarUrl={record.avatarUrl}
+          />
+        </div>
+
+        {/* The header's XP track follows the banner it belongs to — the phone
+            header this page passes is hidden from `desk:` up, so without this
+            the widest layout would be the one that lost the bar. */}
+        {economy ? <XpCard economy={economy} /> : null}
       </div>
 
       <UsernameCard username={record.username ?? displayNameFor(record)} />

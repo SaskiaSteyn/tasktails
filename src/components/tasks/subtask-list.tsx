@@ -7,6 +7,7 @@ import { useEffect, useId, useState } from "react";
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { cn } from "@/lib/cn";
+import { previewShare } from "@/lib/rewards";
 import type { Subtask } from "@/generated/prisma/client";
 
 /** The pieces of SUB-05's response this component actually reads. */
@@ -54,8 +55,11 @@ type CompleteResponse = {
  * hand via `onKeyDown` instead of relying on native form submission.
  *
  * The coin figure per row is a client-side preview of SUB-05's proportional
- * split (`parentCoins / subtasks.length`, floored) — not authoritative,
- * since efficiency/streak/cap can move the real grant. The reward pop that
+ * split — the exact `parentCoins / subtasks.length`, to two decimals, so a
+ * 15-coin Small task split two ways reads 7.5 rather than the 7 a floor used
+ * to show (#236). Not authoritative: the server banks whole coins
+ * (`splitShare()` hands out 8 then 7 so the pair still sums to 15), and
+ * efficiency/streak/cooldown move the real grant further. The reward pop that
  * briefly replaces it on completion shows the *actual* granted amount from
  * the response instead, same reasoning as `TaskRow`'s.
  */
@@ -88,8 +92,7 @@ export function SubtaskList({
   } | null>(null);
   const [completeError, setCompleteError] = useState<string>();
 
-  const shareCoins =
-    subtasks.length > 0 ? Math.floor(parentCoins / subtasks.length) : 0;
+  const shareCoins = previewShare(parentCoins, subtasks.length);
 
   useEffect(() => {
     if (!celebration) return;
