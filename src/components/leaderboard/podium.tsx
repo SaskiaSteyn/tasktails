@@ -115,7 +115,7 @@ function PodiumPlace({ place }: { place: Place }) {
           <span className="sr-only">Rank {entry.rank}</span>
         </span>
         <span className={cn("mt-[4px] text-[11px] leading-none font-extrabold", text)}>
-          {entry.score.toLocaleString()}
+          {entry.score.toLocaleString("en-US")}
           <span className="sr-only"> coins earned</span>
         </span>
       </div>

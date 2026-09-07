@@ -504,6 +504,15 @@ describe("recordUnequipInteraction", () => {
       ok: true,
       item: expect.objectContaining({ equippedToPetId: null }),
     });
+    // #235 — this is the one reachable path that takes an accessory off a
+    // pet without deleting anything, so it has to leave a trace.
+    expect(prismaMock.telemetryEvent.create).toHaveBeenCalledWith({
+      data: {
+        userId: "user-1",
+        eventType: "ITEM_UNEQUIPPED",
+        payload: expect.objectContaining({ petId: "pet-1", inventoryItemId: "acc-1" }),
+      },
+    });
   });
 
   it("returns item-not-found when the item wasn't equipped to this pet", async () => {

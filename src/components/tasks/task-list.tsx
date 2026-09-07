@@ -18,6 +18,7 @@ import { TaskRow } from "@/components/tasks/task-row";
 import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 import type { OnboardingStatus } from "@/lib/onboarding";
+import { previewShare } from "@/lib/rewards";
 import { taskTier } from "@/lib/task-tiers";
 import type { TaskWithSubtasks } from "@/lib/tasks";
 
@@ -314,10 +315,7 @@ export function TaskList({
   /** One task's row plus its (possibly empty) nested subtask list. */
   function taskGroup(task: TaskWithSubtasks) {
     const tier = taskTier(task.complexityTier);
-    const shareCoins =
-      task.subtasks.length > 0
-        ? Math.floor(tier.coins / task.subtasks.length)
-        : 0;
+    const shareCoins = previewShare(tier.coins, task.subtasks.length);
 
     return (
       <li key={task.id} className="flex flex-col gap-[9px]">

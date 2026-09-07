@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
+import { XpCard } from "@/components/economy/xp-card";
 import { CoinPill } from "@/components/ui/coin";
 import { RankBadge } from "@/components/ui/rank-badge";
-import { ProgressBar } from "@/components/ui/progress-bar";
 import { StreakCard } from "@/components/ui/streak";
 import { cn } from "@/lib/cn";
 import type { EconomySnapshot } from "@/lib/economy";
@@ -143,40 +143,5 @@ export function AppHeader({
         </div>
       ) : null}
     </header>
-  );
-}
-
-/**
- * The XP card — caption, "into level / span" numerals, and the violet bar.
- *
- * The numerals are `xpIntoLevel / xpLevelSpan` rather than the mock's running
- * total against the next threshold, because the bar resets each level (INF-21).
- * The two have to agree: a bar at 35% next to "42 / 55 XP" would look broken.
- */
-function XpCard({ economy }: { economy: EconomySnapshot }) {
-  const { isMaxLevel, nextLevel, xpIntoLevel, xpLevelSpan, percent } = economy;
-
-  const caption = isMaxLevel ? "MAX LEVEL" : `XP TO LVL ${nextLevel}`;
-  // Locale pinned explicitly, same reason `coin.tsx`'s CoinPill fixes —
-  // `toLocaleString()` with no argument can format differently on the server
-  // than in the browser and produce a hydration mismatch.
-  const value = isMaxLevel
-    ? `${economy.xp.toLocaleString("en-US")} XP`
-    : `${xpIntoLevel} / ${xpLevelSpan} XP`;
-
-  return (
-    <div className="min-w-0 flex-1 rounded-input border border-border-track bg-surface px-[11px] py-2">
-      <div className="flex justify-between gap-2 text-[10.5px] font-bold text-ink-soft">
-        <span className="truncate">{caption}</span>
-        <span className="flex-none text-violet-text">{value}</span>
-      </div>
-      <ProgressBar
-        className="mt-1.5"
-        tone="xp"
-        value={percent}
-        label={caption === "MAX LEVEL" ? "XP progress" : `XP to level ${nextLevel}`}
-        valueText={value}
-      />
-    </div>
   );
 }

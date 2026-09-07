@@ -11,6 +11,7 @@ import {
   COOLDOWN_MAX_MINUTES,
   COOLDOWN_MIN_MINUTES,
   efficiencyOf,
+  previewShare,
   streakBonusFor,
 } from "@/lib/rewards";
 
@@ -214,10 +215,43 @@ describe("calculateReward", () => {
     const result = calculateReward({
       tier: 3,
       completedAt: at(2026, 7, 20),
-      share: 1 / 3,
+      split: { index: 0, count: 3 },
     });
 
     // Requirements §3.5's worked example: ~12 coins, ~15 XP per subtask.
     expect(result.granted).toEqual({ coins: 12, xp: 15 });
+  });
+
+  // #236 — every tier, every subtask count from 1 to 8: the shares must add up
+  // to the parent's reward exactly. Rounding `total / count` per subtask
+  // instead paid 8 + 8 = 16 coins for a 15-coin Small task split two ways.
+  it("hands out shares that sum to the parent's reward, never more", () => {
+    for (const tier of [1, 2, 3, 4, 5] as const) {
+      const whole = calculateReward({ tier, completedAt: at(2026, 7, 20) });
+
+      for (let count = 1; count <= 8; count += 1) {
+        const shares = Array.from({ length: count }, (_, index) =>
+          calculateReward({
+            tier,
+            completedAt: at(2026, 7, 20),
+            split: { index, count },
+          }).granted,
+        );
+
+        const sum = (pick: (r: { coins: number; xp: number }) => number) =>
+          shares.reduce((total, share) => total + pick(share), 0);
+
+        expect(sum((r) => r.coins)).toBe(whole.granted.coins);
+        expect(sum((r) => r.xp)).toBe(whole.granted.xp);
+        expect(shares.every((s) => Number.isInteger(s.coins) && s.coins >= 0)).toBe(true);
+      }
+    }
+  });
+
+  it("previews the exact fractional share, decimals and all (#236)", () => {
+    // A Small task (15 coins) split two ways reads 7.5, not a floored 7.
+    expect(previewShare(15, 2)).toBe(7.5);
+    expect(previewShare(35, 3)).toBe(11.67);
+    expect(previewShare(35, 0)).toBe(0);
   });
 });

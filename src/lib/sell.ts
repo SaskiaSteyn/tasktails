@@ -5,6 +5,7 @@ import { petsForUser } from "@/lib/pets";
 import { prisma } from "@/lib/prisma";
 import { sellValueOf } from "@/lib/sell-value";
 import { levelOf } from "@/lib/store";
+import { logTelemetryEvent } from "@/lib/telemetry";
 
 /**
  * GACHA-07/GACHA-08 — `POST /api/inventory/[id]/sell` and
@@ -93,6 +94,27 @@ export async function sellOwnedItem(
         data: { coins: { increment: refund } },
       });
 
+      // #235 — `equippedToPetId` is the field the whole investigation turned
+      // on: selling the last unit deletes the row outright, so afterwards
+      // there is nothing left to say the item had been worn. Recorded here
+      // while it's still true. `removed` distinguishes that from a decrement,
+      // which leaves the row (and the pet still wearing it) alone.
+      await logTelemetryEvent(
+        userId,
+        "ITEM_SOLD",
+        {
+          inventoryItemId: inventoryItem.id,
+          storeItemId: inventoryItem.storeItemId,
+          name: inventoryItem.storeItem.name,
+          category: inventoryItem.storeItem.category,
+          refund,
+          quantityBefore: inventoryItem.quantity,
+          removed: inventoryItem.quantity <= 1,
+          equippedToPetId: inventoryItem.equippedToPetId,
+        },
+        tx,
+      );
+
       return {
         ok: true,
         refund,
@@ -116,6 +138,24 @@ export async function sellOwnedItem(
       where: { userId },
       data: { coins: { increment: refund } },
     });
+
+    // #235 — a sold pet takes whatever it was wearing off with it
+    // (`onDelete: SetNull`, see this file's doc comment), so this row is also
+    // the explanation for any accessory that quietly came unequipped at the
+    // same moment.
+    await logTelemetryEvent(
+      userId,
+      "ITEM_SOLD",
+      {
+        petId: pet.id,
+        storeItemId: pet.storeItemId,
+        name: pet.name ?? pet.storeItem.name,
+        category: pet.storeItem.category,
+        refund,
+        removed: true,
+      },
+      tx,
+    );
 
     return {
       ok: true,

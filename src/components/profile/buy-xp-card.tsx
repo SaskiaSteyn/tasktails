@@ -2,7 +2,7 @@
 
 import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { Modal } from "@/components/ui/modal";
@@ -26,13 +26,22 @@ import { cn } from "@/lib/cn";
  * A level-up crossing goes straight to ECO-07's `useLevelUp().celebrate()`,
  * same as every other XP-granting action (TASK-05, SUB-05).
  *
- * **Updated at the user's request**: Convert now opens the shared `Modal`
- * first — same confirm-before-spending shape `SellItemsList` uses, minus the
- * destructive tint, since this trade is a purchase rather than a one-way
- * loss. A conversion that doesn't cross a level boundary used to be entirely
- * silent (the coin/XP figures elsewhere on the page just quietly changed on
- * `router.refresh()`), so success now says so in the card's existing message
- * slot, as a `role="status"` line — polite, not an alert: good news.
+ * **Updated at the user's request**: Convert opens the shared `Modal` first —
+ * same confirm-before-spending shape `SellItemsList` uses, minus the
+ * destructive tint, since this trade is a purchase rather than a one-way loss.
+ *
+ * Success says nothing in the message slot (user-directed, 2026-09-06 — "keep
+ * it clean"). It gets the *same* transient pop a completed task or subtask
+ * does instead: `+40 XP` floating off the button on `task-reward-float`, the
+ * keyframe TASK-05 already owns. Between that and the header's `XpCard` bar
+ * refilling, a conversion now answers "did that work?" twice without leaving
+ * anything behind on the card.
+ *
+ * The message slot is still used for the two things neither of those can say —
+ * a failure, and how many coins short the account is. Convert is `disabled`
+ * whenever it can't be afforded (and while one is in flight); the disabled
+ * treatment is a real colour change rather than `opacity-50`, which on the
+ * violet tint read as "greyed out but probably still tappable".
  */
 export function BuyXpCard({
   costCoins,
@@ -48,15 +57,33 @@ export function BuyXpCard({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const [converted, setConverted] = useState(false);
+  const [celebration, setCelebration] = useState<number | null>(null);
 
   const canAfford = coins >= costCoins;
+  const shortfall = costCoins - coins;
+
+  // The pop clears itself after one run of `task-reward-float`, same 900ms
+  // and same cleanup shape `SubtaskList` uses for its own reward pop.
+  //
+  // Nothing else belongs in this timer. `router.refresh()` was briefly moved
+  // in here, on a hunch that a refresh re-rendering this card mid-pop would
+  // cut the pop short — it does not (the button's DOM node survives a
+  // refresh, so this component keeps its state), and calling `refresh()` from
+  // a timeout instead of from the event handler broke it outright: scheduled
+  // that way it does not commit until the next interaction, so the XP bar
+  // caught up a click late and, worse, a stale `coins` prop left Convert
+  // enabled on an account that could no longer afford it. Refresh belongs in
+  // `handleConvert`, where the user's click is still the thing driving it.
+  useEffect(() => {
+    if (celebration === null) return;
+    const timer = setTimeout(() => setCelebration(null), 900);
+    return () => clearTimeout(timer);
+  }, [celebration]);
 
   async function handleConvert() {
     if (pending) return;
     setPending(true);
     setError(null);
-    setConverted(false);
 
     try {
       const response = await fetch("/api/economy/buy-xp", { method: "POST" });
@@ -67,7 +94,7 @@ export function BuyXpCard({
         return;
       }
 
-      setConverted(true);
+      setCelebration(body?.gained ?? gainXp);
       celebrate(body.levelUp);
       router.refresh();
     } catch {
@@ -91,29 +118,37 @@ export function BuyXpCard({
           <p role="alert" className="mt-1 text-[10px] leading-[1.3] text-urgency-text">
             {error}
           </p>
-        ) : converted ? (
-          <p role="status" className="mt-1 text-[10px] leading-[1.3] font-bold text-violet-text">
-            Converted — {gainXp} XP added
-          </p>
         ) : !canAfford ? (
           <p className="mt-1 text-[10px] leading-[1.3] text-ink-faint">
-            Not enough coins yet
+            Not enough coins — {shortfall.toLocaleString("en-US")} more needed
           </p>
         ) : null}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setConfirming(true)}
-        disabled={pending || !canAfford}
-        className={cn(
-          "flex h-[34px] flex-none items-center justify-center rounded-[10px] bg-violet px-[15px]",
-          "font-display text-[13px] font-semibold text-white transition-colors duration-120 ease-out",
-          "hover:not-disabled:bg-violet/90 disabled:opacity-50",
-        )}
-      >
-        {pending ? "Converting…" : "Convert"}
-      </button>
+      <span className="relative flex-none">
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          disabled={pending || !canAfford}
+          className={cn(
+            "flex h-[34px] flex-none items-center justify-center rounded-[10px] bg-violet px-[15px]",
+            "font-display text-[13px] font-semibold text-white transition-colors duration-120 ease-out",
+            "hover:not-disabled:bg-violet/90",
+            "disabled:cursor-not-allowed disabled:bg-violet/40 disabled:text-white/70",
+          )}
+        >
+          {pending ? "Converting…" : "Convert"}
+        </button>
+
+        {celebration !== null ? (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute top-0 left-1/2 [animation:task-reward-float_900ms_ease-out_forwards] text-[11px] font-extrabold whitespace-nowrap text-violet-text"
+          >
+            +{celebration} XP
+          </span>
+        ) : null}
+      </span>
 
       <Modal
         open={confirming}

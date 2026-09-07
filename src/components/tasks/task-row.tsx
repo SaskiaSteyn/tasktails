@@ -32,7 +32,7 @@ import { taskTier, type TaskTier } from "@/lib/task-tiers";
  * `complexityTier` is omitted the tier badge doesn't render. `coins` is a
  * required prop rather than derived from `complexityTier` internally, since a
  * subtask's coin figure is its proportional *share* of the parent's reward
- * (`Math.floor(parentCoins / subtasks.length)`, `SubtaskList`'s existing
+ * (`previewShare(parentCoins, subtasks.length)`, `SubtaskList`'s existing
  * math), not a tier lookup of its own. `href` is likewise explicit rather
  * than assumed to be `/tasks/${id}` — a subtask has no edit screen of its
  * own, so its row links to its *parent's* id instead.

@@ -54,13 +54,13 @@ export function StudyOverviewCard({ aggregate }: { aggregate: StudyAggregate }) 
           <StatTile label="Participants" value={String(aggregate.participantCount)} />
           <StatTile
             label="Telemetry events"
-            value={aggregate.telemetryEventCount.toLocaleString()}
+            value={aggregate.telemetryEventCount.toLocaleString("en-US")}
           />
           <StatTile
             label="Tasks done"
-            value={aggregate.tasksCompletedCount.toLocaleString()}
+            value={aggregate.tasksCompletedCount.toLocaleString("en-US")}
           />
-          <StatTile label="Purchases" value={aggregate.purchasesCount.toLocaleString()} />
+          <StatTile label="Purchases" value={aggregate.purchasesCount.toLocaleString("en-US")} />
         </div>
 
         <p className="mt-6 mb-3 text-[12px] font-extrabold tracking-[0.4px] text-ink-faint">

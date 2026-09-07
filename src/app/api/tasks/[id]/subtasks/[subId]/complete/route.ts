@@ -39,9 +39,13 @@ import { markSubtaskComplete, markTaskComplete, taskForUser } from "@/lib/tasks"
  *     already paid out its full reward (directly or via its other
  *     subtasks), so a further subtask grant on top would double-pay it.
  *  2. Mark the subtask complete — the atomic gate.
- *  3. `recordStreakDay()`, then `calculateReward()` with `share` set to
- *     `1 / subtasks.length` (Requirements §3.5's worked example), then
- *     `grantEarnings()`.
+ *  3. `recordStreakDay()`, then `calculateReward()` with `split` set to this
+ *     subtask's position among its siblings (Requirements §3.5's worked
+ *     example), then `grantEarnings()`. `splitShare()` allocates on the
+ *     running total rather than rounding `total / count` per subtask, so the
+ *     shares add up to the parent's reward exactly — rounding each one
+ *     separately paid 16 coins for a 15-coin Small task split two ways
+ *     (#236).
  *  4. If every subtask is now complete, mark the parent task complete too
  *     (SUB-4) — `markTaskComplete()` directly, not through the reward
  *     pipeline, so nothing is granted for it.
@@ -97,7 +101,10 @@ export async function POST(
     dueDate: task.dueDate,
     completedAt,
     streak: streakUpdate?.streak ?? 0,
-    share: 1 / task.subtasks.length,
+    split: {
+      index: task.subtasks.findIndex((candidate) => candidate.id === subId),
+      count: task.subtasks.length,
+    },
   });
 
   const grant = await grantEarnings(
