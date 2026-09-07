@@ -169,7 +169,13 @@ export function CreateTaskSheet({
       }}
       aria-labelledby={headingId}
       className={cn(
-        "max-h-[85vh] bg-transparent p-0 text-ink backdrop:bg-scrim",
+        // `text-left` is load-bearing: `EmptyTasksState` renders its copy of
+        // this sheet inside a `text-center` block, and a dialog still inherits
+        // from its DOM parent even while it is in the top layer — which
+        // centred every subtask row and field in the sheet, but only when it
+        // was opened from the empty state. Anchoring the alignment here fixes
+        // it for every mount point rather than for the one that was noticed.
+        "max-h-[85vh] bg-transparent p-0 text-left text-ink backdrop:bg-scrim",
         // A bottom sheet on a phone. `top-auto` is load-bearing: the UA
         // stylesheet gives a modal dialog `inset-block-start: 0`, so setting
         // only `bottom-0` leaves both edges pinned and the sheet renders at the

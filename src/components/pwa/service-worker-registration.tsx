@@ -39,6 +39,23 @@ export function ServiceWorkerRegistration() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
+    // Never in `next dev`. `sw.js` caches `/_next/static/` cache-first on the
+    // reasoning that a fingerprinted filename changes whenever its content
+    // does — which is true of `next build` and *not* of the dev server, whose
+    // chunk paths are stable across edits. Registered here, the worker happily
+    // serves yesterday's JS and CSS over today's, and the failure is silent:
+    // the edit looks like it simply didn't work. That has now cost two
+    // debugging sessions (stale CSS, then a stale component), so dev tears any
+    // existing registration down instead of merely skipping the new one —
+    // skipping alone would leave a worker installed by an earlier session
+    // still controlling every page.
+    if (process.env.NODE_ENV !== "production") {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) registration.unregister();
+      });
+      return;
+    }
+
     // Only ever fires once a new worker has actually taken control — never
     // on the very first, uncontrolled load — so this can't loop.
     function handleControllerChange() {

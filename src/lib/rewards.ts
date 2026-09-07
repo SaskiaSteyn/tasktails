@@ -155,6 +155,46 @@ const isTier = (tier: number): tier is ComplexityTier =>
   Number.isInteger(tier) && tier >= 1 && tier <= 5;
 
 /**
+ * SUB-3's split of a parent reward, allocated so the pieces sum to exactly
+ * `total`.
+ *
+ * `round(total·(i+1)/n) − round(total·i/n)` — the running-total allocation,
+ * not `round(total/n)` per piece. #236: a Small task (15 coins) split two ways
+ * rounds 7.5 up twice and pays 16 coins for a 15-coin task. Here the first
+ * subtask gets 8 and the second 7, and a Medium (35) split three ways pays
+ * 12/11/12 — the "~12 coins" of Requirements §3.5's worked example.
+ *
+ * Coins stay whole numbers on purpose (`UserEconomy.coins` is an `Int`); the
+ * per-row *preview* on the task screens shows the true fraction instead, via
+ * `previewShare()`.
+ *
+ * `index` is the subtask's position in the parent's `subtasks`, which every
+ * query orders by `id: "asc"` — so the same subtask always draws the same
+ * slice no matter what order they are completed in.
+ */
+export function splitShare(
+  total: number,
+  count: number,
+  index: number,
+): number {
+  if (count <= 1) return total;
+  const at = (i: number) => Math.round((total * Math.min(Math.max(i, 0), count)) / count);
+  return Math.max(0, at(index + 1) - at(index));
+}
+
+/**
+ * The per-subtask coin/XP figure the task screens preview (#236).
+ *
+ * The exact share, to two decimals — 15 coins over 2 subtasks is 7.5, not the
+ * 7 a `Math.floor` used to show. Only ever a preview: what a subtask actually
+ * banks is `splitShare()`'s whole number, with efficiency, streak and the
+ * earning cooldown on top of it.
+ */
+export function previewShare(total: number, count: number): number {
+  return count > 0 ? Math.round((total / count) * 100) / 100 : 0;
+}
+
+/**
  * The untouched payout for a tier.
  *
  * An out-of-range tier resolves to Trivial rather than throwing: the column is
@@ -290,10 +330,11 @@ export type RewardInput = {
    */
   antiSpamKeep?: number;
   /**
-   * Fraction of the parent task's reward this grant is worth (SUB-3). 1 for a
-   * whole task; a subtask passes 1/subtaskCount.
+   * Which subtask of how many this grant is for (SUB-3), omitted for a whole
+   * task. Handed to `splitShare()` rather than being a plain fraction so the
+   * shares add up to the parent's reward exactly (#236).
    */
-  share?: number;
+  split?: { index: number; count: number };
 };
 
 /** Every stage's output, kept for the completion toast and for telemetry. */
@@ -323,12 +364,14 @@ export type RewardBreakdown = {
  * call, not the pricing pipeline's.
  */
 export function calculateReward(input: RewardInput): RewardBreakdown {
-  const share = input.share ?? 1;
+  const { split } = input;
   const full = baseReward(input.tier);
-  const base: Reward =
-    share === 1
-      ? full
-      : { coins: clampInt(full.coins * share), xp: clampInt(full.xp * share) };
+  const base: Reward = split
+    ? {
+        coins: splitShare(full.coins, split.count, split.index),
+        xp: splitShare(full.xp, split.count, split.index),
+      }
+    : full;
 
   const efficiency = efficiencyOf(input.dueDate, input.completedAt);
   const afterEfficiency = applyEfficiency(base, efficiency);
