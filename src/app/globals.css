@@ -288,6 +288,12 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    /* iOS paints a translucent box over anything tappable the moment a finger
+       lands on it — every button, link and onClick row, inside modals as well.
+       On the study phones that read as "everything is highlighted" (#252). It
+       is decoration only: the pressed states below carry the real feedback,
+       and the keyboard ring is `:focus-visible`, untouched by this. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -341,6 +347,30 @@
   :focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+  }
+
+  /* The ring is keyboard-only, so a tap or a click must leave nothing behind —
+     including the UA's own ring, which older Safari draws on plain `:focus`
+     and which is what put outlines on tapped controls and on the button a
+     modal autofocuses (#252). Ours is the rule above; this silences the
+     browser's. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Safari only learned `:focus-visible` in 15.4, and an iPhone that stopped
+     updating before that drops both rules above as invalid — the UA ring then
+     shows on every tapped control, which is the other half of #252's "they show
+     up everywhere". Touch-primary devices only, so a laptop on an old browser
+     keeps its ring; on a phone with no `:focus-visible` a keyboard ring is the
+     lesser loss, and inputs keep their own terracotta focus styling either
+     way. */
+  @supports not selector(:focus-visible) {
+    @media (pointer: coarse) {
+      :focus {
+        outline: none;
+      }
+    }
   }
 
   input::placeholder,
