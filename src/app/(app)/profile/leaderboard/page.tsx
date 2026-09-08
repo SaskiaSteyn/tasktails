@@ -31,14 +31,25 @@ export const metadata: Metadata = {
  * stated as a label until the ledger lands and LEAD-10 makes it a real control.
  *
  * Score is lifetime coins earned; see `leaderboard.ts` for why that and not XP.
+ *
+ * **Back goes where you came from (#255)**, via `?from=`: the header's
+ * `RankBadge` is on the home screen too, and a fixed `/profile` back arrow
+ * dropped a participant on a screen they had never been to. Profile stays the
+ * fallback — it is where `RankButton` links from, and it is where a bare
+ * `/profile/leaderboard` belongs.
  */
-export default async function LeaderboardPage() {
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>;
+}) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
   await redirectAdminsAway(userId);
 
   const board = await allTimeLeaderboard(userId);
+  const backHref = localPath((await searchParams).from) ?? "/profile";
 
   // LEAD-14 — a board where nobody has earned anything is the state every
   // deployment starts in, and a podium of three zeroes reads as a bug. The
@@ -55,8 +66,8 @@ export default async function LeaderboardPage() {
           className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] py-[14px]"
         >
           <Link
-            href="/profile"
-            aria-label="Back to profile"
+            href={backHref}
+            aria-label="Back"
             className="-m-1 flex items-center p-1 text-ink-soft hover:text-ink"
           >
             <ChevronLeft size={22} strokeWidth={2} aria-hidden />
@@ -92,4 +103,17 @@ export default async function LeaderboardPage() {
       )}
     </AppShell>
   );
+}
+
+/**
+ * The `from` param, if it is a path on this site.
+ *
+ * An unchecked `from` in a `<Link href>` is an open redirect one tap wide: a
+ * crafted `?from=https://elsewhere` would render a link off the study
+ * instrument that looks like its own back arrow. Only a single leading slash
+ * passes — `//host` is protocol-relative and leaves the site too.
+ */
+function localPath(from: string | undefined): string | null {
+  if (!from || !from.startsWith("/") || from.startsWith("//")) return null;
+  return from;
 }
