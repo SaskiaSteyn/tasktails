@@ -42,9 +42,9 @@ type CompleteResponse = {
  * same day" convention. **Forward-only**, same rule as TASK-05/11 — a done
  * row's checkbox is disabled rather than toggling back. `router.refresh()`
  * on success updates the row's own `completedAt`/strikethrough *and* the
- * header's coins/XP/streak from the server (SUB-05's response may also
- * auto-complete the parent task, SUB-4, which the refreshed page reflects
- * too). A level-up crossing goes straight to ECO-07's
+ * header's coins/XP/streak from the server. Ticking the last row leaves the
+ * parent task open (#253) — closing it is the participant's own tap, on the
+ * task itself. A level-up crossing goes straight to ECO-07's
  * `useLevelUp().celebrate()`, same as TASK-05.
  *
  * The add control is a plain `div`, not a nested `<form>` — this whole list

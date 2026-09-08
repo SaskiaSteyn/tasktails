@@ -46,7 +46,6 @@ type CompleteResponse = {
 /** The pieces of SUB-05's response this component actually reads. */
 type CompleteSubtaskResponse = {
   subtask: { completedAt: string };
-  task: { completedAt: string } | null;
   reward: RewardResponse | null;
   levelUp: LevelUpEventLike | null;
   achievementsUnlocked: AchievementUnlockLike[];
@@ -89,11 +88,9 @@ type CompleteSubtaskResponse = {
  * **Subtasks (2026-07-30)** render nested under their parent via the same
  * `TaskRow`, indented, and complete for real through SUB-05's
  * `/api/tasks/[id]/subtasks/[subId]/complete` — previously only reachable
- * from the edit screen's `SubtaskList`. `router.refresh()` after a subtask
- * completion picks up SUB-4's auto-complete of the parent the same way it
- * already picks up a level-up or a coin change: by re-running `tasksForUser()`
- * (now including subtasks) rather than this component reconciling the two
- * completion states itself.
+ * from the edit screen's `SubtaskList`. Finishing the last one leaves the
+ * parent open (#253) — the participant closes it themselves — so its own
+ * checkbox is the only thing that ever completes a task.
  *
  * **Completed section (2026-07-30)**, collapsed by default, added because
  * finished tasks never left the flat list and the dashboard read as more and
@@ -191,7 +188,13 @@ export function TaskList({
   const [error, setError] = useState<string>();
   const [showCompleted, setShowCompleted] = useState(false);
   const [pendingComplete, setPendingComplete] = useState<
-    | { kind: "task"; id: string; title: string }
+    | {
+        kind: "task";
+        id: string;
+        title: string;
+        /** Its subtasks, for wording the dialog — see `completePrompt()`. */
+        subtasks: { total: number; open: number };
+      }
     | { kind: "subtask"; taskId: string; id: string; title: string }
     | null
   >(null);
@@ -273,10 +276,6 @@ export function TaskList({
           if (task.id !== taskId) return task;
           return {
             ...task,
-            // SUB-4 may have auto-completed the parent in the same request.
-            completedAt: body.task
-              ? new Date(body.task.completedAt)
-              : task.completedAt,
             subtasks: task.subtasks.map((subtask) =>
               subtask.id === subtaskId
                 ? { ...subtask, completedAt: new Date(body.subtask.completedAt) }
@@ -333,7 +332,16 @@ export function TaskList({
               : null
           }
           onComplete={() =>
-            setPendingComplete({ kind: "task", id: task.id, title: task.title })
+            setPendingComplete({
+              kind: "task",
+              id: task.id,
+              title: task.title,
+              subtasks: {
+                total: task.subtasks.length,
+                open: task.subtasks.filter((sub) => sub.completedAt === null)
+                  .length,
+              },
+            })
           }
         />
 
@@ -476,7 +484,7 @@ export function TaskList({
         icon={Check}
         iconTint="terracotta"
         title={pendingComplete ? `Complete "${pendingComplete.title}"?` : ""}
-        body="You'll earn the coins and XP right away. There's no way to undo it afterward, so make sure this one's really done."
+        body={completePrompt(pendingComplete)}
         confirmLabel="Complete"
         confirmVariant="primary"
         cancelLabel="Not yet"
@@ -493,4 +501,36 @@ export function TaskList({
       />
     </div>
   );
+}
+
+/**
+ * The confirm dialog's body (#253 follow-up).
+ *
+ * "You'll earn the coins and XP right away" was a lie for a task whose
+ * subtasks are all ticked: they split the parent's whole reward between them,
+ * so completing it now banks nothing — it just closes the task. Since the
+ * parent stopped auto-completing, that is the most common way this dialog is
+ * ever seen, so it can't be the one case the copy gets wrong.
+ *
+ * The middle case earns too, but says what else the tap does: closing a task
+ * closes its unfinished subtasks with it, and they pay out as part of this
+ * grant rather than being abandoned.
+ */
+function completePrompt(
+  pending:
+    | { kind: "task"; subtasks: { total: number; open: number } }
+    | { kind: "subtask" }
+    | null,
+): string {
+  const undo = "There's no way to undo it afterward, so make sure this one's really done.";
+
+  if (!pending || pending.kind === "subtask" || pending.subtasks.total === 0) {
+    return `You'll earn the coins and XP right away. ${undo}`;
+  }
+
+  if (pending.subtasks.open === 0) {
+    return `Its subtasks have already earned this task's coins and XP, so completing it just closes it off. ${undo}`;
+  }
+
+  return `You'll earn what its unfinished subtasks are still worth, and they close along with it. ${undo}`;
 }

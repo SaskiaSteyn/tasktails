@@ -4,14 +4,20 @@ import { auth } from "@/auth";
 import { evaluateAchievements } from "@/lib/achievements";
 import { grantEarnings, mergeLevelUps, recordStreakDay } from "@/lib/economy";
 import { calculateReward } from "@/lib/rewards";
-import { markSubtaskComplete, markTaskComplete, taskForUser } from "@/lib/tasks";
+import { markSubtaskComplete, taskForUser } from "@/lib/tasks";
 
 /**
  * SUB-05 — `POST /api/tasks/[id]/subtasks/[subId]/complete`. Marks a
- * subtask done, grants its proportional share of the parent's reward
- * (Requirements §3.5), and auto-completes the parent once every subtask is
- * done (SUB-4) — with no reward of its own, since the subtasks have already
- * split it between them.
+ * subtask done and grants its proportional share of the parent's reward
+ * (Requirements §3.5).
+ *
+ * **The parent is not auto-completed** (#253), which is a departure from
+ * SUB-4 as written. Finishing the last subtask used to close the task in the
+ * same request, so the row a participant had just been working on vanished
+ * under their finger; they now tick the parent themselves when they mean to.
+ * SUB-4's other half still holds — the parent pays no *additional* reward,
+ * because `/complete` prices it on the shares still open, and by then there
+ * are none (see that route).
  *
  * **Forward-only**, same rule as TASK-11: no un-complete, for the same
  * reason (unwinding a streak day/cap/level correctly is real scope neither
@@ -46,9 +52,6 @@ import { markSubtaskComplete, markTaskComplete, taskForUser } from "@/lib/tasks"
  *     shares add up to the parent's reward exactly — rounding each one
  *     separately paid 16 coins for a 15-coin Small task split two ways
  *     (#236).
- *  4. If every subtask is now complete, mark the parent task complete too
- *     (SUB-4) — `markTaskComplete()` directly, not through the reward
- *     pipeline, so nothing is granted for it.
  */
 export async function POST(
   _request: Request,
@@ -102,7 +105,7 @@ export async function POST(
     completedAt,
     streak: streakUpdate?.streak ?? 0,
     split: {
-      index: task.subtasks.findIndex((candidate) => candidate.id === subId),
+      indices: [task.subtasks.findIndex((candidate) => candidate.id === subId)],
       count: task.subtasks.length,
     },
   });
@@ -114,15 +117,6 @@ export async function POST(
     completedAt,
   );
 
-  // SUB-4 — every subtask done means the parent is done too, with no
-  // reward of its own (already fully distributed across the subtasks).
-  const allSubtasksDone = task.subtasks.every(
-    (candidate) => candidate.id === subId || candidate.completedAt !== null,
-  );
-  const parentTask = allSubtasksDone
-    ? await markTaskComplete(userId, taskId, completedAt)
-    : null;
-
   // PRO-09 — one of the three trigger points (task/subtask completion,
   // purchase, pet interaction); see `evaluateAchievements()`'s doc comment.
   const { unlocked: achievementsUnlocked, levelUp: achievementLevelUp } =
@@ -131,7 +125,6 @@ export async function POST(
   if (!streakUpdate || !grant) {
     return NextResponse.json({
       subtask: completed,
-      task: parentTask,
       reward: null,
       streak: null,
       levelUp: achievementLevelUp,
@@ -141,7 +134,6 @@ export async function POST(
 
   return NextResponse.json({
     subtask: completed,
-    task: parentTask,
     reward: {
       granted: grant.granted,
       onCooldown: grant.onCooldown,
