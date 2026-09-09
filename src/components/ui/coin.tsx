@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/cn";
 
@@ -44,7 +47,56 @@ export function Coin({
  *
  * Padding is asymmetric in the designs (more on the value side than the coin
  * side) because the coin is already visually inset by its ring.
+ *
+ * #256 — the number rolls to a new balance rather than snapping to it. The
+ * ticket asks for it on `/profile/sell` ("let the coins count up, like rolling
+ * numbers to show it went up"), but the complaint behind it is general: every
+ * screen that sells, buys or earns already re-renders this pill through a
+ * `router.refresh()` and the balance silently changed under the participant.
+ * Animating here rather than at one call site means the zoo's long-press sell,
+ * the store's checkout and the sell screen all get the same feedback from one
+ * place — and it is why this file is now `"use client"`: a server-rendered
+ * number cannot notice it changed.
  */
+/** How long a roll takes. Long enough to read as movement, short enough that the number is settled before a participant looks away. */
+const ROLL_MS = 700;
+
+function useRollingNumber(value: number): number {
+  const [shown, setShown] = useState(value);
+  // The value the last roll ended on, not `shown` — reading `shown` inside the
+  // effect would restart the roll on every frame it sets.
+  const from = useRef(value);
+
+  useEffect(() => {
+    const start = from.current;
+    from.current = value;
+    if (start === value) return;
+
+    // Accessibility basic, not a nicety: a number counting itself up is motion,
+    // and `prefers-reduced-motion` means don't. A zero-length roll still goes
+    // through the loop below — its first frame lands on the final value — so
+    // the update stays inside the animation callback rather than firing
+    // synchronously from the effect body (`react-hooks/set-state-in-effect`).
+    const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? 0
+      : ROLL_MS;
+
+    let frame = 0;
+    const began = performance.now();
+    const tick = (now: number) => {
+      const t = duration === 0 ? 1 : Math.min((now - began) / duration, 1);
+      // Ease-out cubic — most of the distance early, so the last few coins
+      // land visibly rather than the whole thing being over before it reads.
+      setShown(Math.round(start + (value - start) * (1 - (1 - t) ** 3)));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+
+  return shown;
+}
+
 export function CoinPill({
   coins,
   className,
@@ -52,6 +104,8 @@ export function CoinPill({
   coins: number;
   className?: string;
 }) {
+  const shown = useRollingNumber(coins);
+
   return (
     <span
       // Screen readers get "245 coins"; sighted users get the amber mark. The
@@ -75,8 +129,11 @@ export function CoinPill({
       )}
     >
       <Coin size={18} />
+      {/* The label reads the settled balance, the digits roll — a screen
+          reader announcing every intermediate frame would be noise, and this
+          is not a live region so it is only ever read once, on demand. */}
       <span className="text-[13px] font-extrabold text-amber-text">
-        {coins.toLocaleString("en-US")}
+        {shown.toLocaleString("en-US")}
       </span>
     </span>
   );

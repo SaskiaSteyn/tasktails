@@ -12,7 +12,6 @@ import { AchievementsGrid } from "@/components/profile/achievements-grid";
 import { BuyXpCard } from "@/components/profile/buy-xp-card";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { RankButton } from "@/components/profile/rank-button";
-import { SellItemsCard } from "@/components/profile/sell-items-card";
 import { StatsGrid } from "@/components/profile/stats-grid";
 import { UsernameCard } from "@/components/profile/username-card";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
@@ -148,13 +147,15 @@ export default async function ProfilePage() {
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-col gap-[10px]">
+      {/* #256 moved the "Sell items" card out of here and into the store,
+          beside the Lucky Box — participants were looking for selling where
+          they buy. `/profile/sell` itself is unchanged. */}
+      <div className="mt-4">
         <BuyXpCard
           costCoins={BUY_XP_COST_COINS}
           gainXp={BUY_XP_GAIN_XP}
           coins={economy?.coins ?? 0}
         />
-        <SellItemsCard />
       </div>
 
       <div className="mt-4">

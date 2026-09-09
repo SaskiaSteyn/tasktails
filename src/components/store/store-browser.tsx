@@ -6,6 +6,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { CartLink } from "@/components/store/cart-link";
 import { LockedByLevelState } from "@/components/store/locked-by-level-state";
 import { LuckyBoxCard } from "@/components/store/lucky-box-card";
+import { SellItemsCard } from "@/components/store/sell-items-card";
 import { StoreItemCard } from "@/components/store/store-item-card";
 import type { StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
@@ -95,15 +96,18 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * content, keep the chrome" pattern `CartPanel`'s empty/confirmation states
  * use, rather than a modal stacked on top.
  *
- * `luckyBoxPrice` (`GACHA-10`) renders `<LuckyBoxCard />` full-width above
- * the grid, per the approved gacha design board — a plain number since it
- * isn't study-group-gated.
+ * `luckyBoxPrice` (`GACHA-10`) renders `<LuckyBoxCard />` above the grid,
+ * per the approved gacha design board — a plain number since it isn't
+ * study-group-gated. #256 put `<SellItemsCard />` beside it as the row's
+ * second half; that one takes no props at all, so it is rendered here
+ * rather than threaded down from `StorePage`.
  *
- * `luckyBoxUrgency` (`GACHA-11`) is, though — the Group B odds-boost banner
- * plus recent-pulls line, passed straight through to `LuckyBoxCard`'s own
- * `extra` slot unexamined, same `ReactNode`-slot reasoning `flashSaleBanner`
- * already established: this component never branches on it, just forwards
- * whatever `StorePage` decided.
+ * `luckyBoxUrgency` (`GACHA-11`) is study-group-gated, though — the Group B
+ * odds-boost banner plus recent-pulls line, rendered unexamined below that
+ * row (it used to go inside `LuckyBoxCard`'s own `extra` slot; see that
+ * component for why halving the card evicted it), same `ReactNode`-slot
+ * reasoning `flashSaleBanner` already established: this component never
+ * branches on it, just draws whatever `StorePage` decided.
  */
 export function StoreBrowser({
   items,
@@ -285,7 +289,17 @@ export function StoreBrowser({
           Level-locked cards are buttons, so the outermost column of them is
           exactly where that shows. */}
       <div className="flex min-w-0 flex-col desk:min-h-0 desk:flex-1 desk:overflow-y-auto desk:px-1">
-        <LuckyBoxCard price={luckyBoxPrice} extra={luckyBoxUrgency} />
+        {/* The store's top row: spend on the left, get paid on the right
+            (#256). Same two-column phone grid and same `auto-fill` desktop
+            track as the item grid below, so the pair line up with the
+            catalogue rather than sitting in their own private layout. */}
+        <div className="mb-[11px] desk:mb-4">
+          <div className="grid grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
+            <LuckyBoxCard price={luckyBoxPrice} />
+            <SellItemsCard />
+          </div>
+          {luckyBoxUrgency ? <div className="mt-[9px]">{luckyBoxUrgency}</div> : null}
+        </div>
 
         {visible.length === 0 ? (
           <p className="py-10 text-center text-[13px] text-ink-soft">

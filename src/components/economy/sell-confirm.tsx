@@ -21,6 +21,20 @@ import { Modal } from "@/components/ui/modal";
  * The error lands inside the dialog rather than behind it: the dialog is
  * modal, so a message on the page underneath would be both unreachable and
  * unannounced until it closed.
+ *
+ * **#256 — the sell now confirms itself.** A successful sell used to close
+ * the dialog and `router.refresh()` immediately, which on `/zoo` meant the
+ * animal simply vanished and nothing said the coins had arrived (the
+ * ticket's own complaint). The dialog stays open on a second,
+ * acknowledgement-only step naming the payout and the new balance, and the
+ * refresh is held until that is dismissed. Holding it is load-bearing, not
+ * politeness: `OwnedItemActions` renders this *inside* the card for the item
+ * being sold, so refreshing first unmounts the dialog mid-sentence. It also
+ * spares the participant the same disappearing act #253 fixed for subtasks.
+ *
+ * The zoo's header carries no coin pill (its addendum deliberately omits
+ * one), so `CoinPill`'s rolling count-up can't be the feedback there —
+ * hence naming the new balance in the copy.
  */
 export function SellConfirm({
   open,
@@ -35,13 +49,14 @@ export function SellConfirm({
   id: string;
   name: string;
   sellValue: number;
-  /** Fired after a successful sell, before `router.refresh()` — for callers holding local state about the item that just vanished. */
+  /** Fired once the sale is acknowledged, before `router.refresh()` — for callers holding local state about the item that just vanished. */
   onSold?: () => void;
   onClose: () => void;
 }) {
   const router = useRouter();
   const [selling, setSelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sold, setSold] = useState<{ refund: number; coins: number } | null>(null);
 
   async function handleSell() {
     if (selling) return;
@@ -53,14 +68,40 @@ export function SellConfirm({
         setError(`Couldn't sell ${name}. Try again.`);
         return;
       }
-      onSold?.();
-      onClose();
-      router.refresh();
+      const result = (await response.json()) as {
+        refund: number;
+        economy: { coins: number };
+      };
+      setSold({ refund: result.refund, coins: result.economy.coins });
     } catch {
       setError("Can't reach TaskTails. Check your connection and try again.");
     } finally {
       setSelling(false);
     }
+  }
+
+  /** Dismissing the receipt is what commits the sale to the screen behind it. */
+  function acknowledge() {
+    setSold(null);
+    onSold?.();
+    onClose();
+    router.refresh();
+  }
+
+  if (sold) {
+    return (
+      <Modal
+        open={open}
+        icon={Coins}
+        title="Sold!"
+        body={`+${sold.refund.toLocaleString("en-US")} coins for ${name}. You now have ${sold.coins.toLocaleString("en-US")}.`}
+        confirmLabel="Nice"
+        onConfirm={acknowledge}
+        // Escape and a scrim tap have to land here too, or the sale never
+        // reaches the page underneath.
+        onCancel={acknowledge}
+      />
+    );
   }
 
   return (

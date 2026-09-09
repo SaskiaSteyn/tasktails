@@ -1,6 +1,7 @@
 "use client";
 
 import { Coins, PackageOpen } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
@@ -36,12 +37,25 @@ import type { SellableItem } from "@/lib/sell";
  * so — "for good"), and unlike those two callers this list can have the
  * confirm target change per row, so `pendingSell` holds the whole item
  * (name/sellValue for the copy) rather than a bare boolean.
+ *
+ * **#256** — a successful sell now also `router.refresh()`es, which is the
+ * whole of this screen's "did the money actually arrive?" feedback: the page
+ * re-reads `currentEconomy()` and the header's `CoinPill` rolls up to the
+ * new balance. The list itself is untouched by that refresh (`items` is
+ * local state seeded once from `initialItems`), so the row this component
+ * already dropped doesn't come back and no scroll position is lost.
+ *
+ * No "Sold!" receipt step here, unlike `SellConfirm` — this screen shows the
+ * balance itself, and the row vanishing from a list of things-to-sell is the
+ * expected outcome rather than the disappearing act that made selling from
+ * `/zoo` confusing.
  */
 export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }) {
   const [items, setItems] = useState(initialItems);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
   const [pendingSell, setPendingSell] = useState<SellableItem | null>(null);
+  const router = useRouter();
 
   async function handleSell(id: string) {
     if (pendingId) return;
@@ -55,6 +69,7 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
         return;
       }
       setItems((current) => current.filter((item) => item.id !== id));
+      router.refresh();
     } catch {
       setErrorId(id);
     } finally {
