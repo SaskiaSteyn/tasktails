@@ -96,6 +96,28 @@ import type { StoreItemWithLock } from "@/lib/store";
  * "locked by level" state in place of the grid. Unlocked cards stay a plain
  * `<div>` — their own interactive part is the "+" button, and a card cannot
  * itself be a `<button>` while nesting one.
+ *
+ * **#260 — the card itself is a `<div>` either way now.** It used to *be*
+ * the `<button>` when locked, and that made the card's flex column a
+ * button's child list: older iOS Safari lays a button's contents out in an
+ * anonymous shrink-to-fit box rather than stretching them, so on the
+ * reporter's iPhone 12 the padlock well drew at exactly its 40px icon
+ * width, hard against the card's left edge, and the footer's top border
+ * stopped at the end of "Unlocks at level 4". The unlocked `<div>` cards
+ * beside it were perfect on the same screen, which is the whole diagnosis:
+ * one element type lays out correctly there and the other does not.
+ *
+ * So the tap target is now an `inset-0` overlay button inside the same
+ * `<div>` every card uses, rather than the card being a button. Wrapping
+ * the contents in a `width: 100%` child *inside* the button was the smaller
+ * diff, but a percentage width resolved against a shrink-to-fit box is the
+ * same uncertainty that caused this — matching the element that is known to
+ * work on the failing device is not. It also drops the `<p>`/`<div>`-inside-
+ * `<button>` nesting the content model never allowed. Locked cards never
+ * carry an urgency badge (only unlocked items get one), so the overlay has
+ * nothing to sit above but the card's own art. Not reproducible in current
+ * desktop WebKit (checked with a QuickLook render), so the iPhone 12 is
+ * where this has to be confirmed.
  */
 
 /** How long the post-click checkmark/error state stays up before reverting to "+". */
@@ -301,16 +323,20 @@ export function StoreItemCard({
     </>
   );
 
-  return locked ? (
-    <button
-      type="button"
-      onClick={onLockedClick}
-      aria-label={`${item.name}, locked until level ${item.levelRequired}`}
-      className={cardClassName}
-    >
+  return (
+    <div className={cardClassName}>
       {content}
-    </button>
-  ) : (
-    <div className={cardClassName}>{content}</div>
+      {locked ? (
+        // The whole card is still the tap target (SHR-06) — it just isn't the
+        // element wrapping the layout any more (#260). `rounded-card` so the
+        // focus ring follows the card's corners rather than a square.
+        <button
+          type="button"
+          onClick={onLockedClick}
+          aria-label={`${item.name}, locked until level ${item.levelRequired}`}
+          className="absolute inset-0 rounded-card"
+        />
+      ) : null}
+    </div>
   );
 }
