@@ -20,7 +20,7 @@ import { currentEconomy } from "@/lib/economy";
 import { allTimeLeaderboard } from "@/lib/leaderboard";
 import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
 import { lifetimeStatsFor } from "@/lib/stats";
-import { displayNameFor, findUserByEmail } from "@/lib/users";
+import { displayNameFor, displayNameFromEmail, findUserByEmail } from "@/lib/users";
 
 export const metadata: Metadata = {
   title: "Profile · TaskTails",
@@ -126,7 +126,7 @@ export default async function ProfilePage() {
         {economy ? <XpCard economy={economy} /> : null}
       </div>
 
-      <UsernameCard username={record.username ?? displayNameFor(record)} />
+      <UsernameCard username={record.username} suggestion={displayNameFromEmail(record.email)} />
 
       <div className="mt-4">
         <StatsGrid stats={stats} />
