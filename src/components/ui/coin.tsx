@@ -53,9 +53,8 @@ export function Coin({
  * numbers to show it went up"), but the complaint behind it is general: every
  * screen that sells, buys or earns already re-renders this pill through a
  * `router.refresh()` and the balance silently changed under the participant.
- * Animating here rather than at one call site means the zoo's long-press sell,
- * the store's checkout and the sell screen all get the same feedback from one
- * place — and it is why this file is now `"use client"`: a server-rendered
+ * Animating here rather than at one call site means the store's checkout and
+ * the sell screen both get the same feedback from one place — and it is why this file is now `"use client"`: a server-rendered
  * number cannot notice it changed.
  */
 /** How long a roll takes. Long enough to read as movement, short enough that the number is settled before a participant looks away. */
