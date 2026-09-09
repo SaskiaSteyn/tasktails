@@ -16,8 +16,7 @@ export const metadata: Metadata = {
 
 /**
  * GACHA-17 — `/profile/sell`, per the approved design board's "Sell items"
- * frame. Reached from `GACHA-16`'s "Manage" button on Profile, now wired
- * there instead of the inert `<span>` it shipped as.
+ * frame. Reached from `GACHA-16`'s "Sell" button on the Store.
  *
  * Bespoke header (back chevron + title, no `BottomNav`) — same shape as
  * `PurchaseHistoryPage` (STOR-09), the closest existing precedent for a
