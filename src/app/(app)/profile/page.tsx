@@ -132,8 +132,18 @@ export default async function ProfilePage() {
         <StatsGrid stats={stats} />
       </div>
 
-      {/* LEAD-08 — between the stats grid and Buy XP, as the addendum draws it.
-          Hidden rather than shown empty when this account somehow isn't ranked:
+      {/* #257 — directly under the stats cards, not below Buy XP where the
+          handoff draws it: a participant had to scroll past three cards to
+          reach what they were working toward. The strip itself is unchanged.
+          Deliberate departure from `ADDENDUM-achievements.md`'s ordering,
+          user-directed 2026-09-09. */}
+      <div className="mt-4">
+        <AchievementsGrid achievements={achievementsPreview} />
+      </div>
+
+      {/* LEAD-08 — above Buy XP, as the addendum draws it. It used to follow
+          the stats grid directly; #257 put the achievements strip between the
+          two. Hidden rather than shown empty when this account somehow isn't ranked:
           a card that says "Your rank" with nothing in it is worse than no card,
           and `you` is only ever null for a non-participant, who is redirected
           away above. */}
@@ -156,10 +166,6 @@ export default async function ProfilePage() {
           gainXp={BUY_XP_GAIN_XP}
           coins={economy?.coins ?? 0}
         />
-      </div>
-
-      <div className="mt-4">
-        <AchievementsGrid achievements={achievementsPreview} />
       </div>
 
       <div className="min-h-2 flex-1" />
