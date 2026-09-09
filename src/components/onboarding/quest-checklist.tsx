@@ -1,8 +1,7 @@
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import Link from "next/link";
 
 import { buttonClasses } from "@/components/ui/button";
-import { cn } from "@/lib/cn";
 import type { OnboardingGoal, OnboardingStatus } from "@/lib/onboarding";
 
 /**
@@ -20,11 +19,13 @@ import type { OnboardingGoal, OnboardingStatus } from "@/lib/onboarding";
  *
  * Departures from the frame, recorded rather than silent. The ring's figure is
  * computed (see `summarise()`) instead of the mock's unexplained 17%. And the
- * goal cards carry a check circle rather than the drawn count-plus-bar: the
- * frame's quests were multi-step ("1/3"), and since all three became one-shot
- * a bar that can only ever read 0% or 100% is a worse answer than a checkbox to
- * the same question. The circle is `TaskRow`'s, at the same 22px, so a done
- * quest and a done task look alike.
+ * goal cards carry a marker rather than the drawn count-plus-bar: the frame's
+ * quests were multi-step ("1/3"), and since all three became one-shot a bar
+ * that can only ever read 0% or 100% says nothing. That marker started as
+ * `TaskRow`'s check circle and is now the quest's number (#251) — the outlined
+ * circle read as a checkbox and invited a tap, but no quest can be finished
+ * from this screen. Plain divs rather than `ul`/`li` for the same reason: the
+ * numbers are a reading order, not a list the user works down.
  */
 export function QuestChecklist({
   name,
@@ -36,7 +37,19 @@ export function QuestChecklist({
 }) {
   return (
     <>
-      <p className="text-overline text-terracotta">Welcome, {name}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-overline text-terracotta">Welcome, {name}</p>
+        {/* #251 — a way out at the top, so the list isn't a corridor whose only
+            exit is the CTA past the bottom of it. Same destination as "Let's
+            go": these quests are finished on the other screens anyway. */}
+        <Link
+          href="/tasks"
+          aria-label="Close"
+          className="-mt-2 -mr-2 flex size-9 flex-none items-center justify-center rounded-full text-ink-soft transition-colors duration-120 hover:bg-warm hover:text-ink"
+        >
+          <X size={18} aria-hidden />
+        </Link>
+      </div>
       <h1 className="mt-1 text-section">Your first three quests</h1>
       <p className="mt-1 mb-4 text-secondary text-[12.5px]">
         Finish these to meet your first pet.
@@ -44,15 +57,17 @@ export function QuestChecklist({
 
       <ProgressRing status={status} />
 
-      <ul className="flex flex-col gap-[11px]">
-        {status.goals.map((goal) => (
-          <GoalCard key={goal.key} goal={goal} />
+      <div className="flex flex-col gap-[11px]">
+        {status.goals.map((goal, index) => (
+          <GoalCard key={goal.key} goal={goal} number={index + 1} />
         ))}
-      </ul>
+      </div>
 
       <div className="flex-1" />
 
-      <Link href="/tasks" className={buttonClasses()}>
+      {/* mt-6, not the bare flex-1 above it: on a short frame the spacer
+          collapses to nothing and the CTA sat against the last quest (#251). */}
+      <Link href="/tasks" className={buttonClasses({ className: "mt-6" })}>
         Let&apos;s go
       </Link>
     </>
@@ -88,26 +103,21 @@ function ProgressRing({ status }: { status: OnboardingStatus }) {
   );
 }
 
-function GoalCard({ goal }: { goal: OnboardingGoal }) {
+function GoalCard({ goal, number }: { goal: OnboardingGoal; number: number }) {
   return (
-    <li className="flex items-center gap-[11px] rounded-card border border-border-track bg-surface px-[14px] py-[13px]">
+    <div className="flex items-center gap-[11px] rounded-card border border-border-track bg-surface px-[14px] py-[13px]">
       <span
         aria-hidden
-        className={cn(
-          "flex size-[22px] flex-none items-center justify-center rounded-full",
-          goal.complete ? "bg-sage" : "border-2 border-checkbox",
-        )}
+        className="flex size-[22px] flex-none items-center justify-center font-display text-[14px] font-semibold text-terracotta"
       >
-        {goal.complete ? (
-          <Check size={13} strokeWidth={3} className="text-white" />
-        ) : null}
+        {goal.complete ? <Check size={15} strokeWidth={3} className="text-sage" /> : number}
       </span>
-      {/* The circle is decorative; the state is announced here instead, so it
+      {/* The marker is decorative; the state is announced here instead, so it
           reads as one phrase rather than a checkbox the user could operate. */}
       <span className="text-body-strong">
         {goal.label}
         <span className="sr-only">{goal.complete ? " — done" : " — not done yet"}</span>
       </span>
-    </li>
+    </div>
   );
 }

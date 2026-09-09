@@ -10,6 +10,12 @@ import { ItemWell } from "@/components/store/item-visual";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { feedEffectOf } from "@/lib/feed-value";
+import {
+  SHEET_GRAB_CLASS,
+  SHEET_SCROLL_CLASS,
+  useSwipeToDismiss,
+} from "@/lib/swipe-to-dismiss";
 // Type-only: erased at compile time, same reasoning `AnimalCard` documents for
 // `PetWithItem` — this stays a client component without pulling
 // `src/lib/inventory.ts`'s Prisma import into the browser bundle.
@@ -56,6 +62,8 @@ export function FeedSheet({
   foodItems: InventoryItemWithStoreItem[];
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // #261 — drag the sheet down to close it; see `useSwipeToDismiss`.
+  const { swipeProps } = useSwipeToDismiss(() => onOpenChange(false));
   const headingId = useId();
   const router = useRouter();
   const { celebrate: celebrateAchievements } = useAchievementUnlock();
@@ -130,17 +138,23 @@ export function FeedSheet({
         "frame:inset-0 frame:m-auto frame:h-fit frame:w-[calc(100%-2.5rem)] frame:max-w-app frame:rounded-[26px]",
       )}
     >
-      <div className="flex max-h-[85vh] flex-col overflow-hidden rounded-t-[26px] bg-surface pb-[env(safe-area-inset-bottom)] shadow-modal frame:rounded-[26px]">
+      <div
+        {...swipeProps}
+        className={cn(
+          "flex max-h-[85vh] flex-col overflow-hidden rounded-t-[26px] bg-surface pb-[env(safe-area-inset-bottom)] shadow-modal frame:rounded-[26px]",
+          swipeProps.className,
+        )}
+      >
         <button
           type="button"
           onClick={() => onOpenChange(false)}
           aria-label="Close"
-          className="group w-full flex-none py-3"
+          className={cn("group w-full flex-none py-3", SHEET_GRAB_CLASS)}
         >
           <span className="mx-auto block h-[5px] w-10 rounded-[3px] bg-step-idle transition-colors duration-120 group-hover:bg-checkbox" />
         </button>
 
-        <div className="overflow-y-auto px-5 pt-1 pb-5">
+        <div data-sheet-scroll className={cn("overflow-y-auto px-5 pt-1 pb-5", SHEET_SCROLL_CLASS)}>
           {foodItems.length === 0 ? (
             // There's nothing to pick, so this replaces the picker entirely
             // rather than showing a "Feed" sheet with nothing feedable in it —
@@ -211,6 +225,17 @@ export function FeedSheet({
                           {item.storeItem.name}
                         </span>
                         <span className="text-[11px] text-ink-soft">×{item.quantity} owned</span>
+                        {/* What this one is worth, now that food no longer all
+                            feeds the same amount — the row is where the choice
+                            between a Shrimp and some Hay actually gets made. */}
+                        <span className="mt-[2px] flex items-center gap-[6px] text-[11px] font-extrabold">
+                          <span className="text-sage-text">
+                            {feedEffectOf(item.storeItem.rarity).hunger} hunger
+                          </span>
+                          <span className="text-amber-text">
+                            +{feedEffectOf(item.storeItem.rarity).happiness} mood
+                          </span>
+                        </span>
                       </span>
                     </button>
                   );

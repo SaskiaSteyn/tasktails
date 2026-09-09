@@ -15,12 +15,38 @@ import {
  * The onboarding skip modal promises this ("you can change it at any time from
  * your profile"), so it is the same field and the same availability check the
  * step uses.
+ *
+ * **#258 — `username` is the stored handle, `null` when there isn't one.** It
+ * used to be `displayNameFor(record)`, which substitutes the email's local
+ * part for an account that skipped the ONB-04 step — so this card showed
+ * `sameet@…` as "@sameet" and, worse, the "nothing actually changed"
+ * short-circuit below compared the typed handle against that stand-in.
+ * Someone who skipped the step and then set their handle to the obvious
+ * thing — the name the card was already showing them — hit `candidate ===
+ * username`, watched the editor close, and saved nothing: reported as "saved
+ * his new username and it didn't update". A `null` never equals a candidate,
+ * so the request always fires for an account that has no handle yet.
+ *
+ * The unset state now says so rather than showing a stand-in as though it
+ * were a handle, and names what the leaderboard calls them meanwhile — the
+ * other half of #258 ("it shows participant[x] on the leaderboard"). That
+ * fallback is deliberate (see `nameFor()` in `src/lib/leaderboard.ts`: an
+ * email's local part is not something to disclose to other participants), so
+ * the fix is to make it visible and fixable, not to remove it.
  */
-export function UsernameCard({ username }: { username: string }) {
+export function UsernameCard({
+  username,
+  suggestion,
+}: {
+  /** The stored handle, or `null` for an account that never set one. */
+  username: string | null;
+  /** What to pre-fill the editor with when there is no handle yet — `displayNameFromEmail()`, the same stand-in the rest of the app greets them by. */
+  suggestion: string;
+}) {
   const router = useRouter();
 
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(username);
+  const [value, setValue] = useState(username ?? suggestion);
   const [availability, setAvailability] = useState<Availability>({
     state: "idle",
   });
@@ -76,9 +102,20 @@ export function UsernameCard({ username }: { username: string }) {
       <div className="flex items-center justify-between gap-3 rounded-card border border-border-track bg-warm px-[13px] py-[11px]">
         <div className="min-w-0">
           <p className="text-overline">Username</p>
-          <p className="mt-[2px] truncate text-[14px] font-extrabold">
-            @{username}
-          </p>
+          {username ? (
+            <p className="mt-[2px] truncate text-[14px] font-extrabold">
+              @{username}
+            </p>
+          ) : (
+            <>
+              <p className="mt-[2px] truncate text-[14px] font-extrabold text-ink-soft">
+                Not set
+              </p>
+              <p className="mt-[2px] text-[11px] leading-[1.4] text-ink-faint">
+                The leaderboard shows you by number until you pick one.
+              </p>
+            </>
+          )}
         </div>
 
         <Button
@@ -87,12 +124,12 @@ export function UsernameCard({ username }: { username: string }) {
           fullWidth={false}
           className="px-[14px]"
           onClick={() => {
-            setValue(username);
+            setValue(username ?? suggestion);
             setFormError(null);
             setEditing(true);
           }}
         >
-          Edit
+          {username ? "Edit" : "Set"}
         </Button>
       </div>
     );
@@ -128,7 +165,7 @@ export function UsernameCard({ username }: { username: string }) {
           variant="secondary"
           disabled={pending}
           onClick={() => {
-            setValue(username);
+            setValue(username ?? suggestion);
             setEditing(false);
           }}
         >

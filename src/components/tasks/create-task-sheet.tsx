@@ -8,6 +8,11 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/tasks/date-picker";
 import { TierSelect } from "@/components/tasks/tier-select";
 import { cn } from "@/lib/cn";
+import {
+  SHEET_GRAB_CLASS,
+  SHEET_SCROLL_CLASS,
+  useSwipeToDismiss,
+} from "@/lib/swipe-to-dismiss";
 import type { TaskTier } from "@/lib/task-tiers";
 
 /**
@@ -44,6 +49,8 @@ export function CreateTaskSheet({
 }) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // #261 — drag the sheet down to close it; see `useSwipeToDismiss`.
+  const { swipeProps } = useSwipeToDismiss(() => onOpenChange(false));
   const headingId = useId();
   const titleFieldId = useId();
   const titleErrorId = useId();
@@ -196,21 +203,31 @@ export function CreateTaskSheet({
         "desk:max-w-[760px]",
       )}
     >
-      <div className="flex max-h-[85vh] flex-col overflow-hidden rounded-t-[26px] bg-surface pb-[env(safe-area-inset-bottom)] shadow-modal frame:rounded-[26px]">
+      <div
+        {...swipeProps}
+        className={cn(
+          "flex max-h-[85vh] flex-col overflow-hidden rounded-t-[26px] bg-surface pb-[env(safe-area-inset-bottom)] shadow-modal frame:rounded-[26px]",
+          swipeProps.className,
+        )}
+      >
         {/* The grabber is a real control, not decoration: tapping it closes the
             sheet, which is the gesture the shape is already promising. */}
         <button
           type="button"
           onClick={() => onOpenChange(false)}
           aria-label="Close"
-          className="group w-full flex-none py-3"
+          className={cn("group w-full flex-none py-3", SHEET_GRAB_CLASS)}
         >
           <span className="mx-auto block h-[5px] w-10 rounded-[3px] bg-step-idle transition-colors duration-120 group-hover:bg-checkbox" />
         </button>
 
         {/* pt-1, not pt-4: the grabber above is now a button and carries its own
             bottom padding as tap target, which the bare handle did not. */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto px-5 pt-1 pb-5">
+        <form
+          onSubmit={handleSubmit}
+          data-sheet-scroll
+          className={cn("overflow-y-auto px-5 pt-1 pb-5", SHEET_SCROLL_CLASS)}
+        >
           <h2 id={headingId} className="mb-4 font-display text-[20px] font-semibold">
             New task
           </h2>

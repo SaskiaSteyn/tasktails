@@ -37,7 +37,7 @@ export async function DesktopHeader() {
         <StreakPill days={economy.streak} />
         <CoinPill coins={economy.coins} />
         {board.you ? (
-          <RankBadge rank={board.you.rank} className="xl:size-[38px] xl:text-[14px]" />
+          <RankBadge rank={board.you.rank} className="xl:py-[7px] xl:text-[14px]" />
         ) : null}
       </div>
     </header>

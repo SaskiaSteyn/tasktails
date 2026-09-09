@@ -84,8 +84,11 @@ export type Leaderboard = {
  * participant. Anyone who skipped the AUTH-07 username step gets a positional
  * label instead, the same "Participant 7" convention the admin tables use.
  *
- * Your own row is exempt: `allTimeLeaderboard()` overrides it with the name you
- * already see on your own Profile.
+ * **Your own row is not exempt** — this comment used to claim
+ * `allTimeLeaderboard()` overrode it with your Profile name, which it has
+ * never done. Corrected while fixing #258: seeing your own number is what
+ * tells you the handle is unset at all, and `UsernameCard` now says the same
+ * thing in the one place you can act on it.
  */
 export function nameFor(
   participant: Pick<ParticipantSummary, "username">,

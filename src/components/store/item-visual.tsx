@@ -5,6 +5,7 @@ import Image from "next/image";
 
 import type { StoreItem, StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
+import { feedEffectOf } from "@/lib/feed-value";
 import {
   ANIMAL_SHADOW,
   type ArtFocus,
@@ -167,7 +168,18 @@ const RARITY_LABEL: Record<string, string> = {
 export function itemSubtitle(item: Pick<StoreItem, "category" | "rarity">): string {
   const category = CATEGORY_LABEL[item.category];
   const rarity = item.rarity ? RARITY_LABEL[item.rarity] : null;
-  return rarity ? `${rarity} ${category.toLowerCase()}` : category;
+  const label = rarity ? `${rarity} ${category.toLowerCase()}` : category;
+  // Food says what it is worth, because that is the whole purchase decision
+  // and it used to be invisible: every food fed the same amount whatever it
+  // cost, and even now that rarer food feeds more, a card that only says
+  // "Epic food" gives a participant nothing to compare against "Common
+  // food". In the subtitle rather than a new line on the card — the card's
+  // other two slots (corner badge, footer note) carry the Group B urgency
+  // stimuli, and nothing neutral should compete for them.
+  if (item.category === "FOOD") {
+    return `${label} · ${feedEffectOf(item.rarity).hunger} hunger`;
+  }
+  return label;
 }
 
 const CATEGORY_WELL: Record<StoreItemCategory, { bg: string; icon: string }> = {
