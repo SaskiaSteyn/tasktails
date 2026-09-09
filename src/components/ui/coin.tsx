@@ -53,19 +53,18 @@ export function Coin({
  * numbers to show it went up"), but the complaint behind it is general: every
  * screen that sells, buys or earns already re-renders this pill through a
  * `router.refresh()` and the balance silently changed under the participant.
- * Animating here rather than at one call site means the zoo's long-press sell,
- * the store's checkout and the sell screen all get the same feedback from one
- * place — and it is why this file is now `"use client"`: a server-rendered
+ * Animating here rather than at one call site means the store's checkout and
+ * the sell screen both get the same feedback from one place — and it is why this file is now `"use client"`: a server-rendered
  * number cannot notice it changed.
  */
 /** How long a roll takes. Long enough to read as movement, short enough that the number is settled before a participant looks away. */
 const ROLL_MS = 700;
 
-function useRollingNumber(value: number): number {
-  const [shown, setShown] = useState(value);
+function useRollingNumber(value: number, start?: number): number {
+  const [shown, setShown] = useState(start ?? value);
   // The value the last roll ended on, not `shown` — reading `shown` inside the
   // effect would restart the roll on every frame it sets.
-  const from = useRef(value);
+  const from = useRef(start ?? value);
 
   useEffect(() => {
     const start = from.current;
@@ -95,6 +94,21 @@ function useRollingNumber(value: number): number {
   }, [value]);
 
   return shown;
+}
+
+/**
+ * The same count-up without the pill — for the screens that print a balance in
+ * their own type rather than the header chip (#267: any spend or gain rolls,
+ * not just a sell).
+ *
+ * `from` is for the number that mounts *after* the money already moved — the
+ * checkout confirmation replacing the cart, the Lucky Box reveal replacing the
+ * box — where there is no previous render to roll away from. Without it such a
+ * number starts on its final value and never moves.
+ */
+export function RollingCoins({ value, from }: { value: number; from?: number }) {
+  // Locale pinned explicitly, same hydration reason `CoinPill` documents below.
+  return <>{useRollingNumber(value, from).toLocaleString("en-US")}</>;
 }
 
 export function CoinPill({

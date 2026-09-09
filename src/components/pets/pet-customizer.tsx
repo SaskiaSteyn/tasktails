@@ -12,7 +12,6 @@ import {
 } from "@/components/economy/achievement-unlock-screen";
 import type { LevelUpEventLike } from "@/components/economy/level-up-provider";
 import { LevelUpScreen } from "@/components/economy/level-up-screen";
-import { OwnedItemActions } from "@/components/economy/owned-item-actions";
 import { AppShell } from "@/components/layout/app-shell";
 import { PetArt } from "@/components/pets/pet-art";
 import { hasRealArt, ItemWell } from "@/components/store/item-visual";
@@ -24,7 +23,6 @@ import { cn } from "@/lib/cn";
 // Prisma imports into the browser bundle.
 import type { InventoryItemWithStoreItem } from "@/lib/inventory";
 import { backgroundImageStyle, petDisplayName } from "@/lib/pet-mood";
-import { sellValueOf } from "@/lib/sell-value";
 import type { PetWithItem } from "@/lib/pets";
 
 /**
@@ -456,25 +454,8 @@ export function PetCustomizer({
               // another pet is never this pet's equipped id).
               const lockedOwner = lockedByPet[item.id];
               return (
-                // Long-press (or right-click) a tile for the same two things
-                // the user asked for everywhere they own something: take it
-                // off, or sell it. Tapping is unchanged — it still equips,
-                // or unequips the already-equipped tile.
-                <OwnedItemActions
-                  key={item.id}
-                  id={item.id}
-                  name={item.storeItem.name}
-                  sellValue={sellValueOf(item.storeItem.coinPrice)}
-                  equipped={isEquipped}
-                  onUnequip={() => handleTap(item)}
-                  onSold={() => {
-                    // The row is gone server-side; drop the optimistic
-                    // equipped id with it, or the stage would keep drawing
-                    // an item that no longer exists until a full reload.
-                    if (isEquipped) setCurrentIdFor(item)(undefined);
-                  }}
-                >
                 <button
+                  key={item.id}
                   type="button"
                   role="radio"
                   aria-checked={isEquipped}
@@ -499,10 +480,7 @@ export function PetCustomizer({
                     // art, so it reads as the border plus an inset ring
                     // instead — a ring rather than a thicker border because
                     // border-width changes would resize the art on select.
-                    // `w-full`: the tile is no longer the grid item itself
-                    // (`OwnedItemActions` wraps it), so it has to be told to
-                    // fill the cell the wrapper now occupies.
-                    "relative aspect-square w-full overflow-hidden rounded-[13px] border transition-colors duration-120",
+                    "relative aspect-square overflow-hidden rounded-[13px] border transition-colors duration-120",
                     isEquipped
                       ? "border-sage ring-1 ring-sage ring-inset"
                       : "border-border-track",
@@ -549,7 +527,6 @@ export function PetCustomizer({
                     </>
                   ) : null}
                 </button>
-                </OwnedItemActions>
               );
             })}
             {/* Matches the item tiles' new square, label-less shape so the
