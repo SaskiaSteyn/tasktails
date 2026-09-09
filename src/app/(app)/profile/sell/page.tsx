@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { SellItemsList } from "@/components/profile/sell-items-list";
+import { CoinPill } from "@/components/ui/coin";
+import { currentEconomy } from "@/lib/economy";
 import { sellableItemsForUser } from "@/lib/sell";
 
 export const metadata: Metadata = {
@@ -26,21 +28,31 @@ export const metadata: Metadata = {
  * client-side fetch-on-mount needed for data that's already known at render
  * time. `SellItemsList` (client) owns everything after that: each row's own
  * sell action and removing it from view on success.
+ *
+ * #256 put the coin balance in this header — the ticket's "have the coins in
+ * the header of the sell page, and let the coins count up". It is the shared
+ * `CoinPill`, which now rolls to any new value on its own, so the animation
+ * is just what happens when `SellItemsList` refreshes this server component
+ * after a sale. The back chevron goes to `/store` rather than `/profile`
+ * now that the store's "Sell items" card is the only way in.
  */
 export default async function SellItemsPage() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
 
-  const items = await sellableItemsForUser(userId);
+  const [items, economy] = await Promise.all([
+    sellableItemsForUser(userId),
+    currentEconomy(),
+  ]);
 
   return (
     <AppShell
       header={
         <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] py-[14px]">
           <Link
-            href="/profile"
-            aria-label="Back to profile"
+            href="/store"
+            aria-label="Back to store"
             className="-m-1 flex items-center p-1 text-ink-soft hover:text-ink"
           >
             <ChevronLeft size={22} strokeWidth={2} aria-hidden />
@@ -48,6 +60,7 @@ export default async function SellItemsPage() {
           <h1 className="min-w-0 flex-1 truncate font-display text-[17px] leading-[1.15] font-semibold">
             Sell items
           </h1>
+          <CoinPill coins={economy?.coins ?? 0} />
         </header>
       }
       className="desk:mx-auto desk:w-full desk:max-w-[640px] desk:py-8"

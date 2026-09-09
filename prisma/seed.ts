@@ -66,6 +66,12 @@ const catalogue: Array<{
   imageUrl: string;
   rarity?: StoreItemRarity;
 }> = [
+  // Food prices sit on `src/lib/feed-value.ts`'s ladder: coins-per-hunger-
+  // point strictly improves with rarity, so an Epic is always better value
+  // than a Rare and a Rare than a Common. Repriced 2026-09-09 — before that
+  // every food had the same flat effect, which made a 950-coin Shrimp a
+  // 31×-worse buy than 30-coin Hay. `levelRequired` is what still gates
+  // progression; cheap Epic food is not early Epic food.
   // ---- INF-20's original 7, now carrying a rarity where the PDF matches ----
   {
     name: "Sunflower seeds",
@@ -87,7 +93,7 @@ const catalogue: Array<{
     name: "Treat box",
     category: StoreItemCategory.FOOD,
     levelRequired: 6,
-    coinPrice: 120,
+    coinPrice: 66,
     imageUrl: "/food/treats.svg",
     rarity: StoreItemRarity.RARE, // = PDF "Carrots" (Food)
   },
@@ -183,14 +189,14 @@ const catalogue: Array<{
 
   // ---- GACHA-03: the rest of Gatcha stuffs.pdf's Food table. levelRequired
   // is the 2026-08-11 remap (ADDENDUM-xp-curve.md), not the PDF's own numbers.
-  { name: "Steak", category: StoreItemCategory.FOOD, levelRequired: 13, coinPrice: 480, imageUrl: "/food/steak.svg", rarity: StoreItemRarity.EPIC },
-  { name: "Chicken", category: StoreItemCategory.FOOD, levelRequired: 8, coinPrice: 150, imageUrl: "/food/chicken.svg", rarity: StoreItemRarity.RARE },
+  { name: "Steak", category: StoreItemCategory.FOOD, levelRequired: 13, coinPrice: 100, imageUrl: "/food/steak.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Chicken", category: StoreItemCategory.FOOD, levelRequired: 8, coinPrice: 70, imageUrl: "/food/chicken.svg", rarity: StoreItemRarity.RARE },
   { name: "Hay", category: StoreItemCategory.FOOD, levelRequired: 1, coinPrice: 30, imageUrl: "/food/hay.svg", rarity: StoreItemRarity.COMMON },
-  { name: "Fish", category: StoreItemCategory.FOOD, levelRequired: 10, coinPrice: 220, imageUrl: "/food/fish.svg", rarity: StoreItemRarity.RARE },
+  { name: "Fish", category: StoreItemCategory.FOOD, levelRequired: 10, coinPrice: 74, imageUrl: "/food/fish.svg", rarity: StoreItemRarity.RARE },
   { name: "Lettuce", category: StoreItemCategory.FOOD, levelRequired: 3, coinPrice: 45, imageUrl: "/food/lettuce.svg", rarity: StoreItemRarity.COMMON },
   { name: "Branch", category: StoreItemCategory.FOOD, levelRequired: 4, coinPrice: 50, imageUrl: "/food/branch.svg", rarity: StoreItemRarity.COMMON },
-  { name: "Shrimp", category: StoreItemCategory.FOOD, levelRequired: 15, coinPrice: 950, imageUrl: "/food/shrimp.svg", rarity: StoreItemRarity.EPIC },
-  { name: "Bananas", category: StoreItemCategory.FOOD, levelRequired: 11, coinPrice: 420, imageUrl: "/food/bananas.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Shrimp", category: StoreItemCategory.FOOD, levelRequired: 15, coinPrice: 110, imageUrl: "/food/shrimp.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Bananas", category: StoreItemCategory.FOOD, levelRequired: 11, coinPrice: 95, imageUrl: "/food/bananas.svg", rarity: StoreItemRarity.EPIC },
 
   // ---- GACHA-03: the rest of Gatcha stuffs.pdf's Accessories table.
   // Hats and ties used to share one loose-fit lucide glyph each; the

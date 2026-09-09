@@ -358,8 +358,11 @@ export type AchievementUnlockResult = {
  * `Achievements.pdf` seeded for each (`grantAchievementReward()`, which
  * bypasses the daily XP cap — see that function's own doc comment).
  *
- * Called after task completion, subtask completion, checkout, and all three
- * pet-interaction routes — the same five call sites PRO-09 established.
+ * Called after task completion, subtask completion, checkout, the Lucky Box
+ * pull, and all three pet-interaction routes. PRO-09 established five of
+ * those; the pull was added by #259, which is the bug that showed the list
+ * has to cover *every* way progress can move, not just the obvious ones — a
+ * pull is one of only two ways to come to own something.
  * Re-evaluates the whole catalogue on every call rather than only the
  * criterion types that trigger could plausibly move; the snapshot this reads
  * from is built once per call regardless of catalogue size, so this stays a

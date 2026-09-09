@@ -4,6 +4,11 @@ import { Gift, Info, Lock } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import {
+  useAchievementUnlock,
+  type AchievementUnlockLike,
+} from "@/components/economy/achievement-unlock-provider";
+import { useLevelUp, type LevelUpEventLike } from "@/components/economy/level-up-provider";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
 import { LuckyBoxOpening } from "@/components/store/lucky-box-opening";
 import { Button, buttonClasses } from "@/components/ui/button";
@@ -52,7 +57,13 @@ type PulledItemShape = {
 };
 
 type PullResponse =
-  | { item: PulledItemShape; economy: { coins: number } }
+  | {
+      item: PulledItemShape;
+      economy: { coins: number };
+      /** #259 — the pull evaluates achievements now, same as a checkout does. */
+      achievementsUnlocked?: AchievementUnlockLike[];
+      levelUp?: LevelUpEventLike | null;
+    }
   | { error: string };
 
 const RARITY_STYLE: Record<string, { tint: string; text: string }> = {
@@ -72,6 +83,9 @@ export function LuckyBoxHome({
   price: number;
   coins: number;
 }) {
+  const { celebrate: celebrateAchievements } = useAchievementUnlock();
+  const { celebrate: celebrateLevelUp } = useLevelUp();
+
   const [coins, setCoins] = useState(initialCoins);
   const [pulling, setPulling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +106,13 @@ export function LuckyBoxHome({
       }
       setCoins(body.economy.coins);
       setResult(body.item);
+      // Over the reveal, not instead of it: the celebration is a dialog and
+      // the pulled item stays on the screen behind it, exactly as a checkout
+      // confirmation does (`CartPanel`). #259 — a pull is how the ownership
+      // badges are earned, so this is where they have to be announced.
+      celebrateAchievements(body.achievementsUnlocked);
+      // A pull grants no XP itself, but an achievement it unlocks can.
+      celebrateLevelUp(body.levelUp);
     } catch {
       setError("Couldn't reach TaskTails. Try again.");
     } finally {

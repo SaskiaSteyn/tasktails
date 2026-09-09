@@ -12,7 +12,6 @@ import { AchievementsGrid } from "@/components/profile/achievements-grid";
 import { BuyXpCard } from "@/components/profile/buy-xp-card";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { RankButton } from "@/components/profile/rank-button";
-import { SellItemsCard } from "@/components/profile/sell-items-card";
 import { StatsGrid } from "@/components/profile/stats-grid";
 import { UsernameCard } from "@/components/profile/username-card";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
@@ -21,7 +20,7 @@ import { currentEconomy } from "@/lib/economy";
 import { allTimeLeaderboard } from "@/lib/leaderboard";
 import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
 import { lifetimeStatsFor } from "@/lib/stats";
-import { displayNameFor, findUserByEmail } from "@/lib/users";
+import { displayNameFor, displayNameFromEmail, findUserByEmail } from "@/lib/users";
 
 export const metadata: Metadata = {
   title: "Profile · TaskTails",
@@ -127,14 +126,24 @@ export default async function ProfilePage() {
         {economy ? <XpCard economy={economy} /> : null}
       </div>
 
-      <UsernameCard username={record.username ?? displayNameFor(record)} />
+      <UsernameCard username={record.username} suggestion={displayNameFromEmail(record.email)} />
 
       <div className="mt-4">
         <StatsGrid stats={stats} />
       </div>
 
-      {/* LEAD-08 — between the stats grid and Buy XP, as the addendum draws it.
-          Hidden rather than shown empty when this account somehow isn't ranked:
+      {/* #257 — directly under the stats cards, not below Buy XP where the
+          handoff draws it: a participant had to scroll past three cards to
+          reach what they were working toward. The strip itself is unchanged.
+          Deliberate departure from `ADDENDUM-achievements.md`'s ordering,
+          user-directed 2026-09-09. */}
+      <div className="mt-4">
+        <AchievementsGrid achievements={achievementsPreview} />
+      </div>
+
+      {/* LEAD-08 — above Buy XP, as the addendum draws it. It used to follow
+          the stats grid directly; #257 put the achievements strip between the
+          two. Hidden rather than shown empty when this account somehow isn't ranked:
           a card that says "Your rank" with nothing in it is worse than no card,
           and `you` is only ever null for a non-participant, who is redirected
           away above. */}
@@ -148,17 +157,15 @@ export default async function ProfilePage() {
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-col gap-[10px]">
+      {/* #256 moved the "Sell items" card out of here and into the store,
+          beside the Lucky Box — participants were looking for selling where
+          they buy. `/profile/sell` itself is unchanged. */}
+      <div className="mt-4">
         <BuyXpCard
           costCoins={BUY_XP_COST_COINS}
           gainXp={BUY_XP_GAIN_XP}
           coins={economy?.coins ?? 0}
         />
-        <SellItemsCard />
-      </div>
-
-      <div className="mt-4">
-        <AchievementsGrid achievements={achievementsPreview} />
       </div>
 
       <div className="min-h-2 flex-1" />

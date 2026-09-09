@@ -330,11 +330,19 @@ export type RewardInput = {
    */
   antiSpamKeep?: number;
   /**
-   * Which subtask of how many this grant is for (SUB-3), omitted for a whole
-   * task. Handed to `splitShare()` rather than being a plain fraction so the
-   * shares add up to the parent's reward exactly (#236).
+   * Which shares of a parent's reward this grant covers (SUB-3), omitted for
+   * a task that has no subtasks. Handed to `splitShare()` rather than being a
+   * plain fraction so the shares add up to the parent's reward exactly (#236).
+   *
+   * `indices` is a list, not one position, because two callers need it: a
+   * subtask completion claims its own share (`[i]`), and completing the parent
+   * claims whatever shares are still open (#253 — the parent no longer
+   * auto-completes, so it is tapped afterwards and must not re-pay the shares
+   * its subtasks already banked). An empty list is the every-subtask-done
+   * case and prices at zero, which is SUB-4's "no additional reward" by
+   * arithmetic rather than by a special case.
    */
-  split?: { index: number; count: number };
+  split?: { indices: number[]; count: number };
 };
 
 /** Every stage's output, kept for the completion toast and for telemetry. */
@@ -366,11 +374,16 @@ export type RewardBreakdown = {
 export function calculateReward(input: RewardInput): RewardBreakdown {
   const { split } = input;
   const full = baseReward(input.tier);
+  const sumShares = (total: number) =>
+    split
+      ? split.indices.reduce(
+          (sum, index) => sum + splitShare(total, split.count, index),
+          0,
+        )
+      : total;
+
   const base: Reward = split
-    ? {
-        coins: splitShare(full.coins, split.count, split.index),
-        xp: splitShare(full.xp, split.count, split.index),
-      }
+    ? { coins: sumShares(full.coins), xp: sumShares(full.xp) }
     : full;
 
   const efficiency = efficiencyOf(input.dueDate, input.completedAt);

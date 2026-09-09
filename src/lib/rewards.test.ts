@@ -215,11 +215,40 @@ describe("calculateReward", () => {
     const result = calculateReward({
       tier: 3,
       completedAt: at(2026, 7, 20),
-      split: { index: 0, count: 3 },
+      split: { indices: [0], count: 3 },
     });
 
     // Requirements §3.5's worked example: ~12 coins, ~15 XP per subtask.
     expect(result.granted).toEqual({ coins: 12, xp: 15 });
+  });
+
+  // #253 — the parent is completed by hand now, priced on the shares still
+  // open. All done means nothing left to pay; a half-done Medium pays exactly
+  // the half its subtasks did not.
+  it("prices a parent on the subtask shares still open (#253)", () => {
+    const whole = calculateReward({ tier: 3, completedAt: at(2026, 7, 20) });
+    const first = calculateReward({
+      tier: 3,
+      completedAt: at(2026, 7, 20),
+      split: { indices: [0], count: 3 },
+    });
+
+    expect(
+      calculateReward({
+        tier: 3,
+        completedAt: at(2026, 7, 20),
+        split: { indices: [], count: 3 },
+      }).granted,
+    ).toEqual({ coins: 0, xp: 0 });
+
+    const rest = calculateReward({
+      tier: 3,
+      completedAt: at(2026, 7, 20),
+      split: { indices: [1, 2], count: 3 },
+    }).granted;
+
+    expect(rest.coins).toBe(whole.granted.coins - first.granted.coins);
+    expect(rest.xp).toBe(whole.granted.xp - first.granted.xp);
   });
 
   // #236 — every tier, every subtask count from 1 to 8: the shares must add up
@@ -234,7 +263,7 @@ describe("calculateReward", () => {
           calculateReward({
             tier,
             completedAt: at(2026, 7, 20),
-            split: { index, count },
+            split: { indices: [index], count },
           }).granted,
         );
 

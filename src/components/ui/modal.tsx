@@ -43,7 +43,8 @@ export function Modal({
   body: React.ReactNode;
   confirmLabel: string;
   confirmVariant?: "primary" | "destructive";
-  cancelLabel: string;
+  /** Omit for a dialog with nothing to decline — an acknowledgement rather than a confirm (#256's "Sold!"). Escape and a scrim tap still call `onCancel`. */
+  cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -110,9 +111,11 @@ export function Modal({
           <Button size="dialog" variant={confirmVariant} onClick={onConfirm}>
             {confirmLabel}
           </Button>
-          <Button size="dialog" variant="secondary" onClick={onCancel}>
-            {cancelLabel}
-          </Button>
+          {cancelLabel ? (
+            <Button size="dialog" variant="secondary" onClick={onCancel}>
+              {cancelLabel}
+            </Button>
+          ) : null}
         </div>
       </div>
     </dialog>

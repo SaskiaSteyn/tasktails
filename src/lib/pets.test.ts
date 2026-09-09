@@ -271,6 +271,36 @@ describe("recordFeedInteraction", () => {
     });
   });
 
+  it("feeds by the food's rarity, not a flat rate", async () => {
+    // The bug this replaced: a 950-coin Epic Shrimp fed exactly as much as
+    // 30-coin Hay. `foodRow()` carries no rarity, so every other test in
+    // this block is still asserting the Common baseline.
+    const pet = petRow({ happiness: 60, hunger: 90 });
+    const item = foodRow({
+      storeItem: { ...foodRow().storeItem, name: "Shrimp", rarity: "EPIC" },
+    } as Partial<InventoryItemWithStoreItem>);
+    prismaMock.pet.findFirst.mockResolvedValue(pet);
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.inventoryItem.findUniqueOrThrow.mockResolvedValue({
+      ...item,
+      quantity: item.quantity - 1,
+    } as never);
+    prismaMock.pet.update.mockImplementation(
+      (args) => Promise.resolve({ ...pet, ...(args.data as object) }) as never,
+    );
+
+    const now = at(12);
+    await recordFeedInteraction("user-1", "pet-1", "item-1", now);
+
+    // 90 − 80 = 10 hunger, 60 + 22 = 82 happiness — where a Common would
+    // have left 72 and 64.
+    expect(prismaMock.pet.update).toHaveBeenCalledWith({
+      where: { id: "pet-1" },
+      data: { happiness: 82, hunger: 10, lastInteractedAt: now },
+      include: { storeItem: true },
+    });
+  });
+
   it("clamps hunger at 0", async () => {
     const pet = petRow({ hunger: 10, lastInteractedAt: at(12) });
     prismaMock.pet.findFirst.mockResolvedValue(pet);

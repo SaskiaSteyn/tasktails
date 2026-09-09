@@ -32,9 +32,16 @@ import { markTaskComplete, taskForUser } from "@/lib/tasks";
  *     streak is recorded even while the #224 earning cooldown is active.
  *  3. `antiSpamCheck()` against the *original* task (title/createdAt from
  *     before this completion) — its own history, not this write.
- *  4. `calculateReward()` prices the completion. There is no cap stage any
- *     more (#224 retired `NFR-TASK-2`); whether the priced reward is banked
- *     or withheld by a cooldown is `grantEarnings()`'s call below.
+ *  4. `calculateReward()` prices the completion, over the *open* subtask
+ *     shares when the task has subtasks (#253). Since the parent no longer
+ *     auto-completes, this is the tap that closes a task whose subtasks are
+ *     already done, and it must not re-pay what they banked: each open
+ *     subtask's share is granted here (`markTaskComplete()` closes those
+ *     subtasks out, per #198), and with none open the task completes for
+ *     zero — SUB-4's "no additional reward", now by arithmetic. There is no
+ *     cap stage any more (#224 retired `NFR-TASK-2`); whether the priced
+ *     reward is banked or withheld by a cooldown is `grantEarnings()`'s call
+ *     below.
  *  5. `grantEarnings()` banks the priced reward through the #224 cooldown
  *     gate — a whole-task completion (`advancesWindow: true`), so its tier
  *     joins the earning window; the 3rd one starts a cooldown. Returns the
@@ -97,6 +104,17 @@ export async function POST(
     completedAt,
     streak: streakUpdate?.streak ?? 0,
     antiSpamKeep: antiSpam.keep,
+    // Only the shares nobody has banked yet (#253). No subtasks at all means
+    // no split: the task is worth its whole tier reward.
+    split:
+      task.subtasks.length > 0
+        ? {
+            count: task.subtasks.length,
+            indices: task.subtasks.flatMap((subtask, index) =>
+              subtask.completedAt ? [] : [index],
+            ),
+          }
+        : undefined,
   });
 
   const grant = await grantEarnings(

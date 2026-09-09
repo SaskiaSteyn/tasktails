@@ -10,6 +10,7 @@ import {
   type InventoryItemWithStoreItem,
   unequipCustomization,
 } from "@/lib/inventory";
+import { feedEffectOf } from "@/lib/feed-value";
 import { decayedStateFor } from "@/lib/pet-decay";
 import { prisma } from "@/lib/prisma";
 import { logTelemetryEvent } from "@/lib/telemetry";
@@ -159,9 +160,15 @@ export async function recordPetInteraction(
   });
 }
 
-/** PET-04's feed sheet's "Feed" boost/relief (README's mock: "Feed: hunger −18 (min 0) + happiness +4"). */
-const FEED_HUNGER_DELTA = -18;
-const FEED_HAPPINESS_BOOST = 4;
+/**
+ * PET-04's feed sheet's "Feed" boost/relief. The README's mock fixed one
+ * flat rate for every food ("Feed: hunger −18 (min 0) + happiness +4");
+ * that is now only the Common rate, and rarer food does proportionally
+ * more — see `feed-value.ts` for the table, the repricing that goes with
+ * it, and why a flat rate made the whole top of the food catalogue a
+ * strictly worse buy than the bottom.
+ */
+export { FEED_EFFECT, feedEffectOf } from "@/lib/feed-value";
 
 /**
  * What `recordFeedInteraction()` reports back — three outcomes, not just
@@ -220,8 +227,12 @@ export async function recordFeedInteraction(
     await incrementFeedInteractionCount(tx, userId);
 
     const decayed = decayedStateFor(pet, now);
-    const hunger = Math.max(0, decayed.hunger + FEED_HUNGER_DELTA);
-    const happiness = Math.min(100, decayed.happiness + FEED_HAPPINESS_BOOST);
+    // What this particular food is worth — `consumeFoodItem()` already
+    // returns the item with its `storeItem`, so the rarity is in hand
+    // without a second read.
+    const effect = feedEffectOf(item.storeItem.rarity);
+    const hunger = Math.max(0, decayed.hunger + effect.hunger);
+    const happiness = Math.min(100, decayed.happiness + effect.happiness);
 
     const updatedPet = await tx.pet.update({
       where: { id: petId },

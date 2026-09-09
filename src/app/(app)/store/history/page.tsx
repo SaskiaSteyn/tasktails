@@ -1,4 +1,4 @@
-import { ChevronLeft, Receipt } from "lucide-react";
+import { ChevronDown, ChevronLeft, Receipt } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -24,10 +24,11 @@ export const metadata: Metadata = {
  * Bespoke header, same shape as `CartPage`'s own (back chevron + title, no
  * coin pill, no `BottomNav` — a focused flow, not tab content).
  *
- * Pure server component, no client boundary anywhere in this file — nothing
- * here is interactive, so there's no hydration risk from the day/time
- * formatting below even though locale is pinned anyway (`"en-US"`, matching
- * the `toLocaleString()` convention established for numbers elsewhere).
+ * Pure server component, no client boundary anywhere in this file — the only
+ * interaction is the per-day accordion (#254), which is a native `<details>`,
+ * so there's no hydration risk from the day/time formatting below even though
+ * locale is pinned anyway (`"en-US"`, matching the `toLocaleString()`
+ * convention established for numbers elsewhere).
  *
  * Two deliberate deviations from the mock, both because of what
  * `Transaction` actually stores (STOR-16): no `Bought 40 XP` row — XP
@@ -113,12 +114,45 @@ export default async function PurchaseHistoryPage() {
               <span className="text-right">Cost</span>
             </div>
 
-            {groups.map((group) => (
-              <div key={group.label} className="mb-4">
-                <p className="mb-[9px] text-[11px] font-extrabold tracking-[0.4px] text-ink-soft desk:mt-3 desk:px-[22px]">
-                  {group.label.toUpperCase()}
-                </p>
-                <div className="flex flex-col gap-[9px] desk:gap-0">
+            {/* One `<details>` per day (#254) — a long unbroken list made the
+                dates hard to pick out and the scroll long. Native disclosure
+                rather than a toggle component: this page has no client
+                boundary anywhere (see the note above), and `<details>` keeps
+                it that way, with keyboard and screen-reader semantics for
+                free. The newest day opens on load, since it is the one a
+                participant just came from the store to check. */}
+            {groups.map((group, index) => (
+              <details
+                key={group.label}
+                open={index === 0}
+                className="group/day mb-2 desk:mb-0"
+              >
+                {/* The summary keeps its default `display: list-item` and
+                    lays its contents out in a `<div>` instead: Safari has a
+                    long-standing quirk where a `<summary>` displayed as
+                    anything else stops toggling reliably, and the study runs
+                    on iPhones. `list-none` plus the WebKit marker rule hides
+                    the triangle without touching `display`. */}
+                <summary className="cursor-pointer list-none py-[7px] desk:mt-2 desk:px-[22px] [&::-webkit-details-marker]:hidden">
+                  <div className="flex items-center gap-[6px] text-[11px] font-extrabold tracking-[0.4px] text-ink-soft">
+                    <ChevronDown
+                      size={14}
+                      aria-hidden
+                      className="flex-none transition-transform duration-120 group-open/day:rotate-180"
+                    />
+                    <span className="min-w-0 truncate">
+                      {group.label.toUpperCase()} ({group.entries.length})
+                    </span>
+                    {/* The day's spend, so a collapsed row still answers "what
+                        did that day cost me" without opening it. */}
+                    <span className="ml-auto flex-none font-display text-[12px] text-terracotta">
+                      −{group.entries
+                        .reduce((sum, entry) => sum + entry.coinSpent, 0)
+                        .toLocaleString("en-US")}
+                    </span>
+                  </div>
+                </summary>
+                <div className="flex flex-col gap-[9px] pb-2 desk:gap-0 desk:pb-0">
                   {group.entries.map((entry) => (
                     <div
                       key={entry.id}
@@ -154,7 +188,7 @@ export default async function PurchaseHistoryPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </details>
             ))}
           </div>
 

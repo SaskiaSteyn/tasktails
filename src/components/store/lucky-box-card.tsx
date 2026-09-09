@@ -1,11 +1,18 @@
 import { Gift } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
 
 import { Coin } from "@/components/ui/coin";
-import { cn } from "@/lib/cn";
 
 /**
+ * #256 reshaped this from a full-width row into one half of the store's
+ * top row: the "Sell items" card moved off Profile to sit beside it
+ * ("put the card next to lucky box card, there should be enough space"),
+ * so both are now the same compact portrait card — well, name, price,
+ * action — sized to the same footprint a `StoreItemCard` already occupies
+ * in the two-column phone grid. The horizontal row it used to be does not
+ * survive being halved: the 52px well plus a trailing button leaves no
+ * width for the name in a 300px frame.
+ *
  * GACHA-10 — the Lucky Box's entry point on the Store screen, per the
  * approved design board (`Beta/Planning/TaskTails Screens - Gacha.html`
  * §1, rev.3) rather than `design_handoff/TaskTails Screens.dc.html` (which
@@ -16,15 +23,13 @@ import { cn } from "@/lib/cn";
  * button, label" note is what trimmed this down from an earlier draft that
  * also carried a subtitle.
  *
- * `extra` (`GACHA-11`) is the Group B urgency content — the odds-boost
- * countdown banner plus the "N opened in the last hour" line — rendered
- * beneath the base row when present. A `ReactNode` slot, not a boolean or
- * the raw urgency data, same reasoning `StoreBrowser`'s own `flashSaleBanner`
- * prop documents: `StorePage` is the only place that ever knows the study
- * group, and it decides the *entire* extra subtree server-side (or `null`)
- * before handing it down, so this component (and `StoreBrowser`, which just
- * passes it through) never contains a single line of group-conditional
- * logic itself.
+ * The Group B urgency content (`GACHA-11`) used to render inside this card
+ * via an `extra` slot; #256 moved it out to `StoreBrowser`, full width
+ * directly beneath the two-card row. At half width the odds-boost banner's
+ * headline and its countdown badge no longer fit on one line, and a
+ * stimulus that has to wrap to three lines is a weaker stimulus than one
+ * that spans the screen. Both study groups get the identical two-card row
+ * either way — only the banner below it differs, which is the point.
  *
  * `price` arrives as a plain prop rather than importing `LUCKY_BOX_COST_
  * COINS` from `@/lib/gacha` here — this component is reachable from
@@ -50,40 +55,31 @@ import { cn } from "@/lib/cn";
  * once it had — found live, 2026-08-08, still pointing nowhere after
  * `GACHA-12` existed.
  */
-export function LuckyBoxCard({
-  price,
-  extra,
-}: {
-  price: number;
-  extra?: ReactNode;
-}) {
+export function LuckyBoxCard({ price }: { price: number }) {
   return (
-    <div className="mb-[11px] w-full rounded-card border border-border-track bg-warm px-[11px] py-3">
-      <div className={cn("flex items-center gap-3", extra ? "mb-[9px]" : undefined)}>
-        <div className="flex size-[52px] flex-none items-center justify-center rounded-[11px] bg-amber-tint">
-          <Gift size={24} strokeWidth={2} className="text-amber-text" aria-hidden />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p className="text-[13.5px] font-extrabold">Lucky Box</p>
-          <span className="mt-1 flex items-center gap-[3px]">
-            <Coin size={12} />
-            <span className="text-[12px] font-extrabold text-amber-text">
-              {/* Locale pinned explicitly — see `coin.tsx`'s `CoinPill` for the hydration mismatch this avoids. */}
-              {price.toLocaleString("en-US")}
-            </span>
-          </span>
-        </div>
-
-        <Link
-          href="/store/lucky-box"
-          className="flex-none rounded-[10px] bg-terracotta px-4 py-2 font-display text-[12.5px] font-semibold text-white"
-        >
-          Open
-        </Link>
+    <div className="flex h-full flex-col rounded-card border border-border-track bg-warm p-[11px]">
+      <div className="flex size-[44px] flex-none items-center justify-center rounded-[11px] bg-amber-tint">
+        <Gift size={22} strokeWidth={2} className="text-amber-text" aria-hidden />
       </div>
 
-      {extra}
+      <p className="mt-[9px] text-[13px] font-extrabold">Lucky Box</p>
+      <span className="mt-[3px] mb-[11px] flex items-center gap-[3px]">
+        <Coin size={12} />
+        <span className="text-[12px] font-extrabold text-amber-text">
+          {/* Locale pinned explicitly — see `coin.tsx`'s `CoinPill` for the hydration mismatch this avoids. */}
+          {price.toLocaleString("en-US")}
+        </span>
+      </span>
+
+      {/* `mt-auto`: the two cards in this row stretch to a shared height, and
+          their buttons line up with each other rather than each floating
+          under its own copy. */}
+      <Link
+        href="/store/lucky-box"
+        className="mt-auto flex h-[32px] items-center justify-center rounded-[10px] bg-terracotta font-display text-[12.5px] font-semibold text-white hover:bg-terracotta-hover"
+      >
+        Open
+      </Link>
     </div>
   );
 }
