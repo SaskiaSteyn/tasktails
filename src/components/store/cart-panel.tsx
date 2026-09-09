@@ -2,13 +2,14 @@
 
 import { Check, History, Minus, Plus, ShoppingBag } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
 import { Button, buttonClasses } from "@/components/ui/button";
-import { Coin } from "@/components/ui/coin";
+import { Coin, RollingCoins } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
 import type { CartItemWithStoreItem } from "@/lib/cart";
 import type { PurchasedLine } from "@/lib/checkout";
@@ -18,6 +19,8 @@ type Confirmation = {
   spent: number;
   purchased: PurchasedLine[];
   coins: number;
+  /** The balance before this checkout — what the new one rolls down from. */
+  from: number;
 };
 
 /**
@@ -83,6 +86,7 @@ export function CartPanel({
   /** `"rail"` keeps the narrow single-column layout at every width. */
   variant?: "page" | "rail";
 }) {
+  const router = useRouter();
   const { celebrate: celebrateAchievements } = useAchievementUnlock();
   const { celebrate: celebrateLevelUp } = useLevelUp();
   const [cart, setCart] = useState(initialCart);
@@ -116,12 +120,20 @@ export function CartPanel({
         spent: body.spent,
         purchased: body.purchased,
         coins: body.economy.coins,
+        // #267 — the confirmation replaces this panel outright, so the new
+        // balance mounts with nothing to roll away from unless it is handed
+        // the old one.
+        from: coins,
       });
       setCart([]);
       celebrateAchievements(body.achievementsUnlocked);
       // PRO-18 — a purchase itself grants no XP, but an achievement it
       // unlocks (e.g. "own every accessory") can.
       celebrateLevelUp(body.levelUp);
+      // #267 — the desktop header's own coin pill is server-rendered, so it
+      // sat on the pre-checkout balance until the next navigation. This is
+      // what makes it roll down with the confirmation.
+      router.refresh();
     } catch {
       setCheckoutError("Couldn't reach TaskTails. Check your connection and try again.");
     } finally {
@@ -170,7 +182,8 @@ export function CartPanel({
         </p>
         <p className="mt-3 flex items-center gap-1 text-[13px] font-extrabold text-amber-text">
           <Coin size={13} />
-          {confirmation.spent.toLocaleString("en-US")} spent · {confirmation.coins.toLocaleString("en-US")} left
+          {confirmation.spent.toLocaleString("en-US")} spent ·{" "}
+          <RollingCoins value={confirmation.coins} from={confirmation.from} /> left
         </p>
         <div className="mt-[18px] flex w-full flex-col gap-[10px]">
           <Link href="/zoo" className={buttonClasses({ size: "inline" })}>

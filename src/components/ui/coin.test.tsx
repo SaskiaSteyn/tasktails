@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { CoinPill } from "@/components/ui/coin";
+import { CoinPill, RollingCoins } from "@/components/ui/coin";
 
 /**
  * #256 — the balance rolls to a new value instead of snapping to it.
@@ -81,5 +81,35 @@ describe("CoinPill", () => {
     expect(queued).toHaveLength(0);
 
     vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  });
+});
+
+describe("RollingCoins", () => {
+  // #267 — the checkout confirmation and the Lucky Box reveal both mount
+  // *after* the money moved, so their balance has no previous render to roll
+  // away from. `from` is what gives them one.
+  it("rolls down from `from` on its very first render", () => {
+    const host = document.createElement("div");
+    const root = createRoot(host);
+
+    act(() => root.render(<RollingCoins value={200} from={1000} />));
+    expect(host.textContent).toBe("1,000");
+
+    advance(200);
+    const midway = Number(host.textContent?.replace(/,/g, ""));
+    expect(midway).toBeLessThan(1000);
+    expect(midway).toBeGreaterThan(200);
+
+    advance(1000);
+    expect(host.textContent).toBe("200");
+  });
+
+  it("stays put with no `from` — nothing moved, nothing to animate", () => {
+    const host = document.createElement("div");
+    const root = createRoot(host);
+
+    act(() => root.render(<RollingCoins value={640} />));
+    expect(host.textContent).toBe("640");
+    expect(queued).toHaveLength(0);
   });
 });

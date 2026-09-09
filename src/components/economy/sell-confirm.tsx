@@ -9,10 +9,8 @@ import { Modal } from "@/components/ui/modal";
 /**
  * The "are you sure" for selling one owned thing, plus the `POST
  * /api/inventory/[id]/sell` it guards — shared by every surface that offers
- * to sell: the long-press menu on `/zoo` and the customize screen
- * (`OwnedItemActions`) and the store card's own Sell button
- * (`StoreItemCard`). One copy of the wording, one copy of the request, so
- * the three can't drift.
+ * to sell: the store card's own Sell button (`StoreItemCard`). One copy of
+ * the wording, one copy of the request, so callers can't drift.
  *
  * `/profile/sell`'s list keeps its own inline version — it has a per-row
  * pending/error state tied to a list it also mutates locally, which this
@@ -27,10 +25,10 @@ import { Modal } from "@/components/ui/modal";
  * animal simply vanished and nothing said the coins had arrived (the
  * ticket's own complaint). The dialog stays open on a second,
  * acknowledgement-only step naming the payout and the new balance, and the
- * refresh is held until that is dismissed. Holding it is load-bearing, not
- * politeness: `OwnedItemActions` renders this *inside* the card for the item
- * being sold, so refreshing first unmounts the dialog mid-sentence. It also
- * spares the participant the same disappearing act #253 fixed for subtasks.
+ * refresh is held until that is dismissed. Holding it is load-bearing where
+ * a caller renders this *inside* the card for the item being sold —
+ * refreshing first would unmount the dialog mid-sentence. It also spares the
+ * participant the same disappearing act #253 fixed for subtasks.
  *
  * The zoo's header carries no coin pill (its addendum deliberately omits
  * one), so `CoinPill`'s rolling count-up can't be the feedback there —

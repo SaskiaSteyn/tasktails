@@ -36,7 +36,7 @@ export function SellItemsCard() {
         href="/profile/sell"
         className="mt-auto flex h-[32px] items-center justify-center rounded-[10px] border-[1.5px] border-terracotta font-display text-[12.5px] font-semibold text-terracotta hover:border-terracotta-hover hover:text-terracotta-hover"
       >
-        Manage
+        Sell
       </Link>
     </div>
   );
