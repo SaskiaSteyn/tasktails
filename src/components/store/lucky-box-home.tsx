@@ -2,6 +2,7 @@
 
 import { Gift, Info, Lock } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import {
@@ -12,7 +13,7 @@ import { useLevelUp, type LevelUpEventLike } from "@/components/economy/level-up
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
 import { LuckyBoxOpening } from "@/components/store/lucky-box-opening";
 import { Button, buttonClasses } from "@/components/ui/button";
-import { Coin } from "@/components/ui/coin";
+import { Coin, RollingCoins } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
 
 /**
@@ -86,7 +87,12 @@ export function LuckyBoxHome({
   const { celebrate: celebrateAchievements } = useAchievementUnlock();
   const { celebrate: celebrateLevelUp } = useLevelUp();
 
+  const router = useRouter();
   const [coins, setCoins] = useState(initialCoins);
+  // #267 — what the balance line rolls down *from*. A pull unmounts this whole
+  // screen for `LuckyBoxOpening`, so the balance always comes back on a fresh
+  // mount and has no previous render of its own to animate away from.
+  const [spentFrom, setSpentFrom] = useState(initialCoins);
   const [pulling, setPulling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PulledItemShape | null>(null);
@@ -104,6 +110,7 @@ export function LuckyBoxHome({
         setError("error" in body ? body.error : "Something went wrong.");
         return;
       }
+      setSpentFrom(coins);
       setCoins(body.economy.coins);
       setResult(body.item);
       // Over the reveal, not instead of it: the celebration is a dialog and
@@ -113,6 +120,9 @@ export function LuckyBoxHome({
       celebrateAchievements(body.achievementsUnlocked);
       // A pull grants no XP itself, but an achievement it unlocks can.
       celebrateLevelUp(body.levelUp);
+      // The desktop header's coin pill is server-rendered — without this it
+      // keeps the pre-pull balance until the next navigation.
+      router.refresh();
     } catch {
       setError("Couldn't reach TaskTails. Try again.");
     } finally {
@@ -189,7 +199,7 @@ export function LuckyBoxHome({
           </div>
         </div>
         <p className="mt-[10px] text-[11px] text-ink-faint">
-          Balance: {coins.toLocaleString("en-US")} coins
+          Balance: <RollingCoins value={coins} from={spentFrom} /> coins
         </p>
       </div>
     );
@@ -229,7 +239,7 @@ export function LuckyBoxHome({
         {price.toLocaleString("en-US")}
       </button>
       <p className="mt-[10px] text-[11px] text-ink-faint">
-        Balance: {coins.toLocaleString("en-US")} coins
+        Balance: <RollingCoins value={coins} from={spentFrom} /> coins
       </p>
     </div>
   );
