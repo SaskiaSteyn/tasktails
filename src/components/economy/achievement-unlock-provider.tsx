@@ -12,8 +12,9 @@ export type { AchievementUnlockLike };
 /**
  * The plumbing behind the achievement-unlock celebration — same shape as
  * `LevelUpProvider`, deliberately: every route that can newly unlock a badge
- * (`evaluateAchievements()`'s five call sites — task/subtask completion,
- * checkout, and all three pet interactions) returns the newly-unlocked list
+ * (`evaluateAchievements()`'s call sites — task/subtask completion,
+ * checkout, the Lucky Box pull, and all three pet interactions) returns the
+ * newly-unlocked list
  * in its response, and this turns that into the screen so no caller owns
  * dialog state of its own.
  *
