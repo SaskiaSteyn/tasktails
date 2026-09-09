@@ -10,6 +10,7 @@ import { ItemWell } from "@/components/store/item-visual";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { feedEffectOf } from "@/lib/feed-value";
 import {
   SHEET_GRAB_CLASS,
   SHEET_SCROLL_CLASS,
@@ -224,6 +225,17 @@ export function FeedSheet({
                           {item.storeItem.name}
                         </span>
                         <span className="text-[11px] text-ink-soft">×{item.quantity} owned</span>
+                        {/* What this one is worth, now that food no longer all
+                            feeds the same amount — the row is where the choice
+                            between a Shrimp and some Hay actually gets made. */}
+                        <span className="mt-[2px] flex items-center gap-[6px] text-[11px] font-extrabold">
+                          <span className="text-sage-text">
+                            {feedEffectOf(item.storeItem.rarity).hunger} hunger
+                          </span>
+                          <span className="text-amber-text">
+                            +{feedEffectOf(item.storeItem.rarity).happiness} mood
+                          </span>
+                        </span>
                       </span>
                     </button>
                   );
