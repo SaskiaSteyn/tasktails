@@ -48,18 +48,20 @@ import type { Subtask } from "@/generated/prisma/client";
  * complete one, but nothing could fix a typo or drop a row that turned out
  * not to be needed.
  *
- * It is the parent task's own TITLE field, in look and in behaviour (user's
- * direction, 2026-09-10). Class for class the same input — same height,
- * radius, fill, 16px bold text, focus ring and error treatment — and saved
- * the same way, by "Save changes" rather than by clicking out of it. This
+ * It saves the way the parent task's title does (user's direction,
+ * 2026-09-10) — by "Save changes", not by clicking out of it. This
  * component therefore does not `PATCH` a rename at all: the inputs are
  * `name`d and sit inside `EditTaskForm`'s form, which reads them from
  * `FormData` on submit. Enter and Escape are left to the browser, exactly as
  * on the parent field.
  *
- * Being a real always-visible field rather than row text that turns into one
- * makes the row taller than the handoff's 12.5px line. That is the
- * deliberate departure here.
+ * The row *is* the field: the input is bare and the row around it carries
+ * the border, fill, focus ring and error state, so the highlight lands on
+ * the whole row rather than on a box drawn inside one. Delete sits beside
+ * it as a 38px square, the same shape and column as the "Add a subtask"
+ * control's "+" button, which keeps the row back at the handoff's height.
+ * Only the text departs, at 16px rather than 12.5px, because iOS
+ * Safari/Chrome zooms the page in on a focused input below 16px.
  *
  * Adding and deleting stay immediate — those are actions, not fields, and
  * neither has a "Save changes" to wait for.
@@ -201,83 +203,95 @@ export function SubtaskList({
             const done = subtask.completedAt !== null;
             const titleError = titleErrors[subtask.id];
             return (
-              <li
-                key={subtask.id}
-                className="rounded-[11px] border border-border-track bg-warm px-[11px] py-[9px]"
-              >
-                <div className="flex items-center gap-[10px]">
-                  <input
-                    // Read at submit out of `EditTaskForm`'s own <form> via
-                    // FormData, which is why this needs a name and no value
-                    // state: the parent already owns the save, so mirroring
-                    // every keystroke up into it would buy nothing.
-                    //
-                    // Keyed by title so a title changed on the server (an add
-                    // or delete elsewhere in the list refreshes this one) still
-                    // reaches an input React would otherwise leave alone.
-                    name={`subtask-title-${subtask.id}`}
-                    key={subtask.title}
-                    defaultValue={subtask.title}
-                    onChange={() => onTitleInput(subtask.id)}
-                    // The strikethrough is CSS, so with the state circle gone
-                    // this label is the only thing left telling a screen reader
-                    // the row is finished.
-                    aria-label={
-                      done
-                        ? `Subtask name: ${subtask.title} (done)`
-                        : `Subtask name: ${subtask.title}`
-                    }
-                    aria-invalid={titleError ? true : undefined}
-                    aria-describedby={titleError ? `${errorId}-${subtask.id}` : undefined}
+              // Mirrors the "Add a subtask" control below: a 38px field with
+              // a square button beside it, not a button tucked inside the
+              // field. Back to the handoff's row height too — what made it
+              // 46px was giving the input its own box inside the row, and a
+              // field inside a field is exactly what looked wrong.
+              <li key={subtask.id} className="flex items-start gap-[7px]">
+                <div className="min-w-0 flex-1">
+                  <div
                     className={cn(
-                      // Deliberately the exact class list `EditTaskForm` gives
-                      // the parent task's TITLE field (user's direction,
-                      // 2026-09-10) — same height, radius, fill, 16px bold text,
-                      // terracotta focus ring and error treatment, so editing a
-                      // subtask is editing the task's name in miniature.
-                      // `flex-1` rather than `w-full` only because this one sits
-                      // in a flex row.
-                      "h-[46px] min-w-0 flex-1 rounded-input border px-[13px] text-[16px] font-bold text-ink outline-none",
+                      // The row *is* the field now: the input below is bare,
+                      // and this is what carries the border, fill and focus
+                      // ring, so the highlight lands on the whole row.
+                      "flex h-[38px] items-center gap-[10px] rounded-[11px] border px-[11px]",
                       "transition-[background-color,border-color,box-shadow] duration-120",
                       titleError
                         ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"
                         : cn(
-                            "border-border-input bg-input",
-                            "focus:border-terracotta focus:bg-surface",
-                            "focus:shadow-[0_0_0_1px_var(--color-terracotta),0_0_0_5px_rgb(226_122_84/0.16)]",
+                            "border-border-track bg-warm",
+                            "focus-within:border-terracotta focus-within:bg-surface",
+                            "focus-within:shadow-[0_0_0_1px_var(--color-terracotta),0_0_0_5px_rgb(226_122_84/0.16)]",
                           ),
-                      // Not on the parent field, which has no completed state:
-                      // the handoff strikes a finished subtask's title through.
-                      done && !titleError && "text-ink-disabled line-through",
                     )}
-                  />
+                  >
+                    <input
+                      // Read at submit out of `EditTaskForm`'s own <form> via
+                      // FormData, which is why this needs a name and no value
+                      // state: the parent already owns the save, so mirroring
+                      // every keystroke up into it would buy nothing.
+                      //
+                      // Keyed by title so a title changed on the server (an add
+                      // or delete elsewhere in the list refreshes this one) still
+                      // reaches an input React would otherwise leave alone.
+                      name={`subtask-title-${subtask.id}`}
+                      key={subtask.title}
+                      defaultValue={subtask.title}
+                      onChange={() => onTitleInput(subtask.id)}
+                      // The strikethrough is CSS, so with the state circle gone
+                      // this label is the only thing left telling a screen reader
+                      // the row is finished.
+                      aria-label={
+                        done
+                          ? `Subtask name: ${subtask.title} (done)`
+                          : `Subtask name: ${subtask.title}`
+                      }
+                      aria-invalid={titleError ? true : undefined}
+                      aria-describedby={titleError ? `${errorId}-${subtask.id}` : undefined}
+                      className={cn(
+                        // Bare — no border, fill or ring of its own; the row
+                        // around it owns all three. 16px, not the handoff's
+                        // 12.5px, for the same reason every other input here
+                        // is 16px: below that iOS Safari/Chrome zooms the page
+                        // in on focus. The row still measures 38px because its
+                        // height never came from the text.
+                        "min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-ink outline-none",
+                        done && !titleError && "text-ink-disabled line-through",
+                      )}
+                    />
 
-                  {done ? null : (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(subtask.id)}
-                      disabled={deletingId === subtask.id}
-                      aria-label={`Delete "${subtask.title}"`}
-                      className="flex-none text-ink-faint transition-colors duration-120 hover:text-urgency-text disabled:opacity-60"
+                    <span className="flex-none text-[11px] font-extrabold text-amber-text">
+                      {shareCoins}
+                    </span>
+                  </div>
+
+                  {titleError ? (
+                    <p
+                      id={`${errorId}-${subtask.id}`}
+                      role="alert"
+                      className="mt-1 text-[11px] font-bold text-urgency-text"
                     >
-                      <Trash2 size={13} strokeWidth={2.2} aria-hidden />
-                    </button>
-                  )}
-
-                  <span className="text-[11px] font-extrabold text-amber-text">
-                    {shareCoins}
-                  </span>
+                      {titleError}
+                    </p>
+                  ) : null}
                 </div>
 
-                {titleError ? (
-                  <p
-                    id={`${errorId}-${subtask.id}`}
-                    role="alert"
-                    className="mt-1 text-[11px] font-bold text-urgency-text"
+                {done ? (
+                  // Holds the column so every row's field ends on the same
+                  // edge — a finished subtask has no delete (see below).
+                  <span className="size-[38px] flex-none" aria-hidden />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(subtask.id)}
+                    disabled={deletingId === subtask.id}
+                    aria-label={`Delete "${subtask.title}"`}
+                    className="flex size-[38px] flex-none items-center justify-center rounded-input border border-border-input bg-surface text-urgency-text transition-colors duration-120 hover:bg-warm disabled:opacity-60"
                   >
-                    {titleError}
-                  </p>
-                ) : null}
+                    <Trash2 size={16} strokeWidth={2.2} aria-hidden />
+                  </button>
+                )}
               </li>
             );
           })}
