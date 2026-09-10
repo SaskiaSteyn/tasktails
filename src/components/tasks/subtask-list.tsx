@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 
@@ -54,6 +54,23 @@ type CompleteResponse = {
  * task and losing the typed subtask title). Enter-to-submit is wired by
  * hand via `onKeyDown` instead of relying on native form submission.
  *
+ * A row's title is editable in place (#273) — SUB-04 could add a subtask
+ * and SUB-05 complete one, but nothing could fix a typo or drop a row that
+ * turned out not to be needed. It behaves like the parent task's own title
+ * field: click in, type, click away and it keeps what was typed. No confirm
+ * or cancel button (user's direction, 2026-09-10), so the row gains only a
+ * delete icon over what the handoff draws.
+ *
+ * The one visual departure is the font size. The handoff sets a row at
+ * 12.5px, which is where it stays at rest, but a focused input below 16px
+ * makes iOS Safari/Chrome zoom the whole page in — the reason every other
+ * input in this app is 16px — so it steps up while focused and back on blur.
+ *
+ * Delete is offered only on an *incomplete* row. Removing one that has
+ * already banked its share lets its siblings re-split the parent's full
+ * reward on a smaller count — see `deleteSubtask()` for the arithmetic. The
+ * API enforces it; this only avoids showing a button that would 409.
+ *
  * The coin figure per row is a client-side preview of SUB-05's proportional
  * split — the exact `parentCoins / subtasks.length`, to two decimals, so a
  * 15-coin Small task split two ways reads 7.5 rather than the 7 a floor used
@@ -84,7 +101,11 @@ export function SubtaskList({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<string>();
+
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<{
     subtaskId: string;
     coins: number;
@@ -105,6 +126,12 @@ export function SubtaskList({
     const timer = setTimeout(() => setCompleteError(undefined), 4000);
     return () => clearTimeout(timer);
   }, [completeError]);
+
+  useEffect(() => {
+    if (!rowError) return;
+    const timer = setTimeout(() => setRowError(undefined), 4000);
+    return () => clearTimeout(timer);
+  }, [rowError]);
 
   function openAdd() {
     setAdding(true);
@@ -138,6 +165,75 @@ export function SubtaskList({
       setSubmitError("Couldn't reach TaskTails. Check your connection and try again.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  /**
+   * Saves on blur, the way the parent task's own title field behaves — no
+   * confirm button to hunt for, and clicking away keeps what was typed
+   * (user's direction, 2026-09-10).
+   *
+   * The input is uncontrolled, so there is no per-row draft state to keep in
+   * step with `subtasks`: the DOM already holds what was typed, and after
+   * `router.refresh()` the props catch up to it. That is also why a rejected
+   * value is put back by writing to the element directly — an empty title is
+   * the one thing the row cannot keep, and reverting is friendlier than an
+   * error on a field the participant has already clicked away from.
+   */
+  async function handleRename(subtask: Subtask, input: HTMLInputElement) {
+    const title = input.value.trim();
+    setEditingId(null);
+
+    if (!title) {
+      input.value = subtask.title;
+      return;
+    }
+    if (title === subtask.title) return;
+
+    setRowError(undefined);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/subtasks/${subtask.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+
+      if (!response.ok) {
+        input.value = subtask.title;
+        setRowError("Couldn't rename the subtask. Try again.");
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      input.value = subtask.title;
+      setRowError("Couldn't reach TaskTails. Check your connection and try again.");
+    }
+  }
+
+  async function handleDelete(subtaskId: string) {
+    setDeletingId(subtaskId);
+    setRowError(undefined);
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/subtasks/${subtaskId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        // 409 carries the reason the row can't go (already complete); anything
+        // else is a generic failure the participant can retry.
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        setRowError(body?.error ?? "Couldn't delete the subtask. Try again.");
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      setRowError("Couldn't reach TaskTails. Check your connection and try again.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -201,6 +297,8 @@ export function SubtaskList({
               celebration?.subtaskId === subtask.id
                 ? { coins: celebration.coins, xp: celebration.xp }
                 : null;
+            const editing = editingId === subtask.id;
+
             return (
               <li
                 key={subtask.id}
@@ -228,14 +326,58 @@ export function SubtaskList({
                     ) : null}
                   </button>
                 </span>
-                <span
+
+                <input
+                  // Uncontrolled, keyed by title: React leaves an uncontrolled
+                  // input's value alone on re-render, which is what lets the
+                  // typed text survive until `router.refresh()` lands — but it
+                  // would also ignore a title changed anywhere else, so the key
+                  // remounts the row when the server sends a different one.
+                  key={subtask.title}
+                  defaultValue={subtask.title}
+                  onFocus={() => setEditingId(subtask.id)}
+                  onBlur={(event) => handleRename(subtask, event.currentTarget)}
+                  onKeyDown={(event) => {
+                    // Enter commits by blurring rather than submitting: this
+                    // list renders inside `EditTaskForm`'s own <form>, so a
+                    // real submit would save the whole task instead.
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      event.currentTarget.blur();
+                    }
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      event.currentTarget.value = subtask.title;
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  aria-label={`Subtask name: ${subtask.title}`}
                   className={cn(
-                    "flex-1 text-[12.5px] font-semibold",
-                    done && "text-ink-disabled line-through",
+                    "min-w-0 flex-1 truncate rounded-[7px] border border-transparent bg-transparent font-semibold text-ink outline-none",
+                    "transition-[background-color,border-color,font-size] duration-120",
+                    // 12.5px at rest to match the handoff's row, 16px while
+                    // focused: below 16px iOS Safari/Chrome zooms the page in
+                    // on focus, the same reason every other input in this app
+                    // sits at 16px.
+                    editing
+                      ? "-mx-[5px] border-terracotta bg-surface px-[5px] py-[1px] text-[16px]"
+                      : "text-[12.5px]",
+                    done && !editing && "text-ink-disabled line-through",
                   )}
-                >
-                  {subtask.title}
-                </span>
+                />
+
+                {done ? null : (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(subtask.id)}
+                    disabled={deletingId === subtask.id}
+                    aria-label={`Delete "${subtask.title}"`}
+                    className="flex-none text-ink-faint transition-colors duration-120 hover:text-urgency-text disabled:opacity-60"
+                  >
+                    <Trash2 size={13} strokeWidth={2.2} aria-hidden />
+                  </button>
+                )}
+
                 {reward ? (
                   <span className="text-[11px] font-extrabold whitespace-nowrap text-sage-text">
                     +{reward.coins} · +{reward.xp} XP
@@ -251,9 +393,9 @@ export function SubtaskList({
         </ul>
       )}
 
-      {completeError ? (
+      {(completeError ?? rowError) ? (
         <p role="alert" className="mt-[7px] text-[11px] font-bold text-urgency-text">
-          {completeError}
+          {completeError ?? rowError}
         </p>
       ) : null}
 

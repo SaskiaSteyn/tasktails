@@ -185,6 +185,59 @@ export async function createSubtask(
 }
 
 /**
+ * Retitles a subtask (#273), scoped by `taskId` — `Subtask` has no `userId`
+ * of its own, so the caller confirms the parent belongs to the signed-in
+ * user first, same contract as `markSubtaskComplete()`.
+ *
+ * A completed subtask can still be renamed: the title is a label with no
+ * bearing on what was already banked, unlike `deleteSubtask()` below. No
+ * `titleKey` to rewrite either — that is a `Task` column, and ECO-02's
+ * anti-spam grading has never applied to subtasks (see SUB-05's route).
+ */
+export async function renameSubtask(
+  taskId: string,
+  subtaskId: string,
+  title: string,
+): Promise<Subtask | null> {
+  const { count } = await prisma.subtask.updateMany({
+    where: { id: subtaskId, taskId },
+    data: { title: normaliseTitle(title) },
+  });
+
+  return count === 0
+    ? null
+    : prisma.subtask.findFirst({ where: { id: subtaskId, taskId } });
+}
+
+/**
+ * Deletes a subtask (#273), scoped by `taskId` like `renameSubtask()`.
+ *
+ * `completedAt: null` in the where clause is an economy guard, not a
+ * convenience: a subtask's payout is `splitShare(parentReward, siblingCount,
+ * index)` priced at the moment it completes, so removing one that has
+ * already banked its share lets the survivors re-split the parent's full
+ * reward across a smaller count. A 15-coin task with three subtasks pays
+ * 5 + 8 + 7 = 20 if the first is completed and then deleted. Removing an
+ * *incomplete* subtask only ever under-pays, so it is left alone.
+ *
+ * The guard lives in the where clause rather than in a caller pre-check for
+ * the same reason `markSubtaskComplete()` puts its own there — two racing
+ * requests both pass a pre-check, only one matches the write.
+ *
+ * Returns whether a row went, so the route can tell a real delete from
+ * "nothing to delete" and answer accordingly.
+ */
+export async function deleteSubtask(
+  taskId: string,
+  subtaskId: string,
+): Promise<boolean> {
+  const { count } = await prisma.subtask.deleteMany({
+    where: { id: subtaskId, taskId, completedAt: null },
+  });
+  return count > 0;
+}
+
+/**
  * Edits a task (TASK-09). Retitling rewrites `titleKey` with it — a task
  * whose key still described its old title would be graded against the
  * wrong history.
