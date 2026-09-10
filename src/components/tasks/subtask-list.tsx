@@ -1,30 +1,17 @@
 "use client";
 
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 
-import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
-import { useLevelUp } from "@/components/economy/level-up-provider";
 import { cn } from "@/lib/cn";
 import { previewShare } from "@/lib/rewards";
 import type { Subtask } from "@/generated/prisma/client";
 
-/** The pieces of SUB-05's response this component actually reads. */
-type CompleteResponse = {
-  reward: { granted: { coins: number; xp: number } } | null;
-  levelUp: Parameters<ReturnType<typeof useLevelUp>["celebrate"]>[0];
-  achievementsUnlocked: Parameters<
-    ReturnType<typeof useAchievementUnlock>["celebrate"]
-  >[0];
-  error?: string;
-};
-
 /**
- * SUB-01/02/03/04/05 — subtask list on the task edit screen. Matches the
- * "Task detail / edit" frame's SUBTASKS block: `bg-warm` rows, 18px
- * completion circle, strikethrough title once done, coin share on the
- * right, "Add" above.
+ * SUB-01/02/04 — subtask list on the task edit screen. Matches the
+ * "Task detail / edit" frame's SUBTASKS block: `bg-warm` rows,
+ * strikethrough title once done, coin share on the right, "Add" above.
  *
  * The list has no fixed height and simply grows with `subtasks.length`,
  * which is what the ticket's "expandable" means here — the mock has no
@@ -37,15 +24,18 @@ type CompleteResponse = {
  * is how the new row shows up; the input closes rather than staying open,
  * since there's nothing left to fix once the add actually worked.
  *
- * Each incomplete row's checkbox (SUB-03) `POST`s SUB-05's
- * `/api/tasks/[id]/subtasks/[subId]/complete` for real, same "wired the
- * same day" convention. **Forward-only**, same rule as TASK-05/11 — a done
- * row's checkbox is disabled rather than toggling back. `router.refresh()`
- * on success updates the row's own `completedAt`/strikethrough *and* the
- * header's coins/XP/streak from the server. Ticking the last row leaves the
- * parent task open (#253) — closing it is the participant's own tap, on the
- * task itself. A level-up crossing goes straight to ECO-07's
- * `useLevelUp().celebrate()`, same as TASK-05.
+ * **A subtask cannot be completed here** (user's direction, 2026-09-10).
+ * SUB-03/05's checkbox used to live on this row; this screen is for editing
+ * a task, and completing one is doing it. The dashboard still does it —
+ * `TaskList` renders subtasks through `TaskRow` and posts SUB-05's
+ * `/api/tasks/[id]/subtasks/[subId]/complete` there — so the capability is
+ * The handoff's circle goes with it rather than staying on as a state dot
+ * — a row that cannot be completed has no use for one. A finished subtask
+ * still reads as finished from its struck-through title.
+ *
+ * That is also why this component no longer touches `useLevelUp()` or
+ * `useAchievementUnlock()`, and no longer shows a reward pop — a completion
+ * was the only thing that could have raised one.
  *
  * The add control is a plain `div`, not a nested `<form>` — this whole list
  * renders inside `EditTaskForm`'s own `<form>` (TASK-03's save/submit), and
@@ -71,8 +61,8 @@ type CompleteResponse = {
  * makes the row taller than the handoff's 12.5px line. That is the
  * deliberate departure here.
  *
- * Adding, completing and deleting stay immediate — those are actions, not
- * fields, and none of them has a "Save changes" to wait for.
+ * Adding and deleting stay immediate — those are actions, not fields, and
+ * neither has a "Save changes" to wait for.
  *
  * Delete is offered only on an *incomplete* row. Removing one that has
  * already banked its share lets its siblings re-split the parent's full
@@ -104,8 +94,6 @@ export function SubtaskList({
   onTitleInput: (subtaskId: string) => void;
 }) {
   const router = useRouter();
-  const { celebrate } = useLevelUp();
-  const { celebrate: celebrateAchievements } = useAchievementUnlock();
   const inputId = useId();
   const errorId = useId();
 
@@ -117,28 +105,9 @@ export function SubtaskList({
 
   const [rowError, setRowError] = useState<string>();
 
-  const [completingId, setCompletingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [celebration, setCelebration] = useState<{
-    subtaskId: string;
-    coins: number;
-    xp: number;
-  } | null>(null);
-  const [completeError, setCompleteError] = useState<string>();
 
   const shareCoins = previewShare(parentCoins, subtasks.length);
-
-  useEffect(() => {
-    if (!celebration) return;
-    const timer = setTimeout(() => setCelebration(null), 900);
-    return () => clearTimeout(timer);
-  }, [celebration]);
-
-  useEffect(() => {
-    if (!completeError) return;
-    const timer = setTimeout(() => setCompleteError(undefined), 4000);
-    return () => clearTimeout(timer);
-  }, [completeError]);
 
   useEffect(() => {
     if (!rowError) return;
@@ -207,38 +176,6 @@ export function SubtaskList({
     }
   }
 
-  async function handleComplete(subtaskId: string) {
-    setCompletingId(subtaskId);
-    setCompleteError(undefined);
-    try {
-      const response = await fetch(
-        `/api/tasks/${taskId}/subtasks/${subtaskId}/complete`,
-        { method: "POST" },
-      );
-      const body = (await response.json()) as CompleteResponse;
-
-      if (!response.ok) {
-        setCompleteError(body.error ?? "Couldn't complete the subtask. Try again.");
-        return;
-      }
-
-      if (body.reward) {
-        setCelebration({
-          subtaskId,
-          coins: body.reward.granted.coins,
-          xp: body.reward.granted.xp,
-        });
-      }
-      celebrate(body.levelUp);
-      celebrateAchievements(body.achievementsUnlocked);
-      router.refresh();
-    } catch {
-      setCompleteError("Couldn't reach TaskTails. Check your connection and try again.");
-    } finally {
-      setCompletingId(null);
-    }
-  }
-
   return (
     <div>
       <div className="mb-[10px] flex items-center justify-between">
@@ -263,100 +200,73 @@ export function SubtaskList({
           {subtasks.map((subtask) => {
             const done = subtask.completedAt !== null;
             const titleError = titleErrors[subtask.id];
-            const pending = completingId === subtask.id;
-            const reward =
-              celebration?.subtaskId === subtask.id
-                ? { coins: celebration.coins, xp: celebration.xp }
-                : null;
             return (
               <li
                 key={subtask.id}
                 className="rounded-[11px] border border-border-track bg-warm px-[11px] py-[9px]"
               >
                 <div className="flex items-center gap-[10px]">
-                <span className="relative flex-none">
-                  <button
-                    type="button"
-                    onClick={() => handleComplete(subtask.id)}
-                    disabled={done || pending}
-                    aria-pressed={done}
+                  <input
+                    // Read at submit out of `EditTaskForm`'s own <form> via
+                    // FormData, which is why this needs a name and no value
+                    // state: the parent already owns the save, so mirroring
+                    // every keystroke up into it would buy nothing.
+                    //
+                    // Keyed by title so a title changed on the server (an add
+                    // or delete elsewhere in the list refreshes this one) still
+                    // reaches an input React would otherwise leave alone.
+                    name={`subtask-title-${subtask.id}`}
+                    key={subtask.title}
+                    defaultValue={subtask.title}
+                    onChange={() => onTitleInput(subtask.id)}
+                    // The strikethrough is CSS, so with the state circle gone
+                    // this label is the only thing left telling a screen reader
+                    // the row is finished.
                     aria-label={
-                      done ? `"${subtask.title}" is done` : `Mark "${subtask.title}" as done`
-                    }
-                    className={cn(
-                      "flex size-[18px] items-center justify-center rounded-full transition-colors duration-120",
                       done
-                        ? "bg-sage"
-                        : "border-2 border-checkbox hover:border-ink-disabled",
-                      pending && "opacity-60",
+                        ? `Subtask name: ${subtask.title} (done)`
+                        : `Subtask name: ${subtask.title}`
+                    }
+                    aria-invalid={titleError ? true : undefined}
+                    aria-describedby={titleError ? `${errorId}-${subtask.id}` : undefined}
+                    className={cn(
+                      // Deliberately the exact class list `EditTaskForm` gives
+                      // the parent task's TITLE field (user's direction,
+                      // 2026-09-10) — same height, radius, fill, 16px bold text,
+                      // terracotta focus ring and error treatment, so editing a
+                      // subtask is editing the task's name in miniature.
+                      // `flex-1` rather than `w-full` only because this one sits
+                      // in a flex row.
+                      "h-[46px] min-w-0 flex-1 rounded-input border px-[13px] text-[16px] font-bold text-ink outline-none",
+                      "transition-[background-color,border-color,box-shadow] duration-120",
+                      titleError
+                        ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"
+                        : cn(
+                            "border-border-input bg-input",
+                            "focus:border-terracotta focus:bg-surface",
+                            "focus:shadow-[0_0_0_1px_var(--color-terracotta),0_0_0_5px_rgb(226_122_84/0.16)]",
+                          ),
+                      // Not on the parent field, which has no completed state:
+                      // the handoff strikes a finished subtask's title through.
+                      done && !titleError && "text-ink-disabled line-through",
                     )}
-                  >
-                    {done ? (
-                      <Check size={11} strokeWidth={3} className="text-surface" />
-                    ) : null}
-                  </button>
-                </span>
+                  />
 
-                <input
-                  // Read at submit out of `EditTaskForm`'s own <form> via
-                  // FormData, which is why this needs a name and no value
-                  // state: the parent already owns the save, so mirroring
-                  // every keystroke up into it would buy nothing.
-                  //
-                  // Keyed by title so a title changed on the server (an add
-                  // or delete elsewhere in the list refreshes this one) still
-                  // reaches an input React would otherwise leave alone.
-                  name={`subtask-title-${subtask.id}`}
-                  key={subtask.title}
-                  defaultValue={subtask.title}
-                  onChange={() => onTitleInput(subtask.id)}
-                  aria-label={`Subtask name: ${subtask.title}`}
-                  aria-invalid={titleError ? true : undefined}
-                  aria-describedby={titleError ? `${errorId}-${subtask.id}` : undefined}
-                  className={cn(
-                    // Deliberately the exact class list `EditTaskForm` gives
-                    // the parent task's TITLE field (user's direction,
-                    // 2026-09-10) — same height, radius, fill, 16px bold text,
-                    // terracotta focus ring and error treatment, so editing a
-                    // subtask is editing the task's name in miniature.
-                    // `flex-1` rather than `w-full` only because this one sits
-                    // in a flex row.
-                    "h-[46px] min-w-0 flex-1 rounded-input border px-[13px] text-[16px] font-bold text-ink outline-none",
-                    "transition-[background-color,border-color,box-shadow] duration-120",
-                    titleError
-                      ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"
-                      : cn(
-                          "border-border-input bg-input",
-                          "focus:border-terracotta focus:bg-surface",
-                          "focus:shadow-[0_0_0_1px_var(--color-terracotta),0_0_0_5px_rgb(226_122_84/0.16)]",
-                        ),
-                    // Not on the parent field, which has no completed state:
-                    // the handoff strikes a finished subtask's title through.
-                    done && !titleError && "text-ink-disabled line-through",
+                  {done ? null : (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(subtask.id)}
+                      disabled={deletingId === subtask.id}
+                      aria-label={`Delete "${subtask.title}"`}
+                      className="flex-none text-ink-faint transition-colors duration-120 hover:text-urgency-text disabled:opacity-60"
+                    >
+                      <Trash2 size={13} strokeWidth={2.2} aria-hidden />
+                    </button>
                   )}
-                />
 
-                {done ? null : (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(subtask.id)}
-                    disabled={deletingId === subtask.id}
-                    aria-label={`Delete "${subtask.title}"`}
-                    className="flex-none text-ink-faint transition-colors duration-120 hover:text-urgency-text disabled:opacity-60"
-                  >
-                    <Trash2 size={13} strokeWidth={2.2} aria-hidden />
-                  </button>
-                )}
-
-                {reward ? (
-                  <span className="text-[11px] font-extrabold whitespace-nowrap text-sage-text">
-                    +{reward.coins} · +{reward.xp} XP
-                  </span>
-                ) : (
                   <span className="text-[11px] font-extrabold text-amber-text">
                     {shareCoins}
                   </span>
-                )}
                 </div>
 
                 {titleError ? (
@@ -374,9 +284,9 @@ export function SubtaskList({
         </ul>
       )}
 
-      {(completeError ?? rowError) ? (
+      {rowError ? (
         <p role="alert" className="mt-[7px] text-[11px] font-bold text-urgency-text">
-          {completeError ?? rowError}
+          {rowError}
         </p>
       ) : null}
 
