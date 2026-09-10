@@ -226,7 +226,7 @@ export function CreateTaskSheet({
         <form
           onSubmit={handleSubmit}
           data-sheet-scroll
-          className={cn("overflow-y-auto px-5 pt-1 pb-5", SHEET_SCROLL_CLASS)}
+          className={cn("overflow-y-auto scroll-smooth px-5 pt-1 pb-5", SHEET_SCROLL_CLASS)}
         >
           <h2 id={headingId} className="mb-4 font-display text-[20px] font-semibold">
             New task
@@ -299,7 +299,14 @@ export function CreateTaskSheet({
           </div>
 
           <div className="mb-4">
-            <DatePicker value={dueDate} onChange={setDueDate} label="DUE (OPTIONAL)" />
+            <DatePicker
+              value={dueDate}
+              onChange={setDueDate}
+              label="DUE (OPTIONAL)"
+              // #272 — the sheet is short and the picker is the third field,
+              // so its panel opened below the fold and had to be scrolled to.
+              scrollIntoViewOnOpen
+            />
           </div>
 
           <div className="mb-[18px]">

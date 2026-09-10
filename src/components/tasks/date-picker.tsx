@@ -14,6 +14,12 @@ import { cn } from "@/lib/cn";
  * content down, rather than overlaying it. Closes on an outside click or
  * Escape; there's no focus trap because it was deliberately not built as a
  * dialog.
+ *
+ * #272 — because the panel pushes rather than overlays, opening it inside a
+ * short scroller (the create-task sheet) can leave the calendar below the
+ * fold. `scrollIntoViewOnOpen` brings the whole control back into view on
+ * open; opt-in, since the edit screen scrolls the page rather than a sheet
+ * and doesn't want it.
  */
 
 function startOfDay(date: Date): Date {
@@ -84,10 +90,12 @@ export function DatePicker({
   value,
   onChange,
   label,
+  scrollIntoViewOnOpen = false,
 }: {
   value: Date | null;
   onChange: (date: Date | null) => void;
   label: string;
+  scrollIntoViewOnOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(() => value ?? new Date());
@@ -95,6 +103,12 @@ export function DatePicker({
 
   useEffect(() => {
     if (!open) return;
+
+    // `block: "nearest"` scrolls the minimum needed and does nothing when the
+    // control is already fully visible. No `behavior` — that defers to CSS
+    // `scroll-behavior`, which globals.css already forces to `auto` under
+    // both reduce-motion switches, so this is honoured for free.
+    if (scrollIntoViewOnOpen) containerRef.current?.scrollIntoView({ block: "nearest" });
 
     function handlePointerDown(event: MouseEvent) {
       if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
@@ -109,7 +123,7 @@ export function DatePicker({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open]);
+  }, [open, scrollIntoViewOnOpen]);
 
   function select(date: Date) {
     onChange(startOfDay(date));
