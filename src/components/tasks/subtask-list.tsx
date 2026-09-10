@@ -54,17 +54,25 @@ type CompleteResponse = {
  * task and losing the typed subtask title). Enter-to-submit is wired by
  * hand via `onKeyDown` instead of relying on native form submission.
  *
- * A row's title is editable in place (#273) — SUB-04 could add a subtask
- * and SUB-05 complete one, but nothing could fix a typo or drop a row that
- * turned out not to be needed. It behaves like the parent task's own title
- * field: click in, type, click away and it keeps what was typed. No confirm
- * or cancel button (user's direction, 2026-09-10), so the row gains only a
- * delete icon over what the handoff draws.
+ * A row's title is editable (#273) — SUB-04 could add a subtask and SUB-05
+ * complete one, but nothing could fix a typo or drop a row that turned out
+ * not to be needed.
  *
- * The one visual departure is the font size. The handoff sets a row at
- * 12.5px, which is where it stays at rest, but a focused input below 16px
- * makes iOS Safari/Chrome zoom the whole page in — the reason every other
- * input in this app is 16px — so it steps up while focused and back on blur.
+ * It is the parent task's own TITLE field, in look and in behaviour (user's
+ * direction, 2026-09-10). Class for class the same input — same height,
+ * radius, fill, 16px bold text, focus ring and error treatment — and saved
+ * the same way, by "Save changes" rather than by clicking out of it. This
+ * component therefore does not `PATCH` a rename at all: the inputs are
+ * `name`d and sit inside `EditTaskForm`'s form, which reads them from
+ * `FormData` on submit. Enter and Escape are left to the browser, exactly as
+ * on the parent field.
+ *
+ * Being a real always-visible field rather than row text that turns into one
+ * makes the row taller than the handoff's 12.5px line. That is the
+ * deliberate departure here.
+ *
+ * Adding, completing and deleting stay immediate — those are actions, not
+ * fields, and none of them has a "Save changes" to wait for.
  *
  * Delete is offered only on an *incomplete* row. Removing one that has
  * already banked its share lets its siblings re-split the parent's full
@@ -84,10 +92,16 @@ export function SubtaskList({
   taskId,
   subtasks,
   parentCoins,
+  titleErrors,
+  onTitleInput,
 }: {
   taskId: string;
   subtasks: Subtask[];
   parentCoins: number;
+  /** Per-subtask "give it a title" errors, raised by `EditTaskForm`'s submit. */
+  titleErrors: Record<string, string>;
+  /** Clears this row's error as soon as it is being fixed, same as the parent title field. */
+  onTitleInput: (subtaskId: string) => void;
 }) {
   const router = useRouter();
   const { celebrate } = useLevelUp();
@@ -101,7 +115,6 @@ export function SubtaskList({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
 
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string>();
 
   const [completingId, setCompletingId] = useState<string | null>(null);
@@ -165,49 +178,6 @@ export function SubtaskList({
       setSubmitError("Couldn't reach TaskTails. Check your connection and try again.");
     } finally {
       setSubmitting(false);
-    }
-  }
-
-  /**
-   * Saves on blur, the way the parent task's own title field behaves — no
-   * confirm button to hunt for, and clicking away keeps what was typed
-   * (user's direction, 2026-09-10).
-   *
-   * The input is uncontrolled, so there is no per-row draft state to keep in
-   * step with `subtasks`: the DOM already holds what was typed, and after
-   * `router.refresh()` the props catch up to it. That is also why a rejected
-   * value is put back by writing to the element directly — an empty title is
-   * the one thing the row cannot keep, and reverting is friendlier than an
-   * error on a field the participant has already clicked away from.
-   */
-  async function handleRename(subtask: Subtask, input: HTMLInputElement) {
-    const title = input.value.trim();
-    setEditingId(null);
-
-    if (!title) {
-      input.value = subtask.title;
-      return;
-    }
-    if (title === subtask.title) return;
-
-    setRowError(undefined);
-    try {
-      const response = await fetch(`/api/tasks/${taskId}/subtasks/${subtask.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
-
-      if (!response.ok) {
-        input.value = subtask.title;
-        setRowError("Couldn't rename the subtask. Try again.");
-        return;
-      }
-
-      router.refresh();
-    } catch {
-      input.value = subtask.title;
-      setRowError("Couldn't reach TaskTails. Check your connection and try again.");
     }
   }
 
@@ -292,18 +262,18 @@ export function SubtaskList({
         <ul className="flex flex-col gap-[7px]">
           {subtasks.map((subtask) => {
             const done = subtask.completedAt !== null;
+            const titleError = titleErrors[subtask.id];
             const pending = completingId === subtask.id;
             const reward =
               celebration?.subtaskId === subtask.id
                 ? { coins: celebration.coins, xp: celebration.xp }
                 : null;
-            const editing = editingId === subtask.id;
-
             return (
               <li
                 key={subtask.id}
-                className="flex items-center gap-[10px] rounded-[11px] border border-border-track bg-warm px-[11px] py-[9px]"
+                className="rounded-[11px] border border-border-track bg-warm px-[11px] py-[9px]"
               >
+                <div className="flex items-center gap-[10px]">
                 <span className="relative flex-none">
                   <button
                     type="button"
@@ -328,41 +298,41 @@ export function SubtaskList({
                 </span>
 
                 <input
-                  // Uncontrolled, keyed by title: React leaves an uncontrolled
-                  // input's value alone on re-render, which is what lets the
-                  // typed text survive until `router.refresh()` lands — but it
-                  // would also ignore a title changed anywhere else, so the key
-                  // remounts the row when the server sends a different one.
+                  // Read at submit out of `EditTaskForm`'s own <form> via
+                  // FormData, which is why this needs a name and no value
+                  // state: the parent already owns the save, so mirroring
+                  // every keystroke up into it would buy nothing.
+                  //
+                  // Keyed by title so a title changed on the server (an add
+                  // or delete elsewhere in the list refreshes this one) still
+                  // reaches an input React would otherwise leave alone.
+                  name={`subtask-title-${subtask.id}`}
                   key={subtask.title}
                   defaultValue={subtask.title}
-                  onFocus={() => setEditingId(subtask.id)}
-                  onBlur={(event) => handleRename(subtask, event.currentTarget)}
-                  onKeyDown={(event) => {
-                    // Enter commits by blurring rather than submitting: this
-                    // list renders inside `EditTaskForm`'s own <form>, so a
-                    // real submit would save the whole task instead.
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      event.currentTarget.blur();
-                    }
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      event.currentTarget.value = subtask.title;
-                      event.currentTarget.blur();
-                    }
-                  }}
+                  onChange={() => onTitleInput(subtask.id)}
                   aria-label={`Subtask name: ${subtask.title}`}
+                  aria-invalid={titleError ? true : undefined}
+                  aria-describedby={titleError ? `${errorId}-${subtask.id}` : undefined}
                   className={cn(
-                    "min-w-0 flex-1 truncate rounded-[7px] border border-transparent bg-transparent font-semibold text-ink outline-none",
-                    "transition-[background-color,border-color,font-size] duration-120",
-                    // 12.5px at rest to match the handoff's row, 16px while
-                    // focused: below 16px iOS Safari/Chrome zooms the page in
-                    // on focus, the same reason every other input in this app
-                    // sits at 16px.
-                    editing
-                      ? "-mx-[5px] border-terracotta bg-surface px-[5px] py-[1px] text-[16px]"
-                      : "text-[12.5px]",
-                    done && !editing && "text-ink-disabled line-through",
+                    // Deliberately the exact class list `EditTaskForm` gives
+                    // the parent task's TITLE field (user's direction,
+                    // 2026-09-10) — same height, radius, fill, 16px bold text,
+                    // terracotta focus ring and error treatment, so editing a
+                    // subtask is editing the task's name in miniature.
+                    // `flex-1` rather than `w-full` only because this one sits
+                    // in a flex row.
+                    "h-[46px] min-w-0 flex-1 rounded-input border px-[13px] text-[16px] font-bold text-ink outline-none",
+                    "transition-[background-color,border-color,box-shadow] duration-120",
+                    titleError
+                      ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"
+                      : cn(
+                          "border-border-input bg-input",
+                          "focus:border-terracotta focus:bg-surface",
+                          "focus:shadow-[0_0_0_1px_var(--color-terracotta),0_0_0_5px_rgb(226_122_84/0.16)]",
+                        ),
+                    // Not on the parent field, which has no completed state:
+                    // the handoff strikes a finished subtask's title through.
+                    done && !titleError && "text-ink-disabled line-through",
                   )}
                 />
 
@@ -387,6 +357,17 @@ export function SubtaskList({
                     {shareCoins}
                   </span>
                 )}
+                </div>
+
+                {titleError ? (
+                  <p
+                    id={`${errorId}-${subtask.id}`}
+                    role="alert"
+                    className="mt-1 text-[11px] font-bold text-urgency-text"
+                  >
+                    {titleError}
+                  </p>
+                ) : null}
               </li>
             );
           })}
