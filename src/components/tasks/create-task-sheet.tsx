@@ -391,17 +391,6 @@ export function CreateTaskSheet({
                 >
                   <Plus size={17} strokeWidth={2.4} aria-hidden />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSubtaskDraft("");
-                    setAddingSubtask(false);
-                  }}
-                  aria-label="Stop adding subtasks"
-                  className="flex-none text-[12px] font-bold text-ink-soft hover:text-ink"
-                >
-                  Done
-                </button>
               </div>
             ) : null}
           </div>
