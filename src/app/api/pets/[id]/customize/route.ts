@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 import { evaluateAchievements } from "@/lib/achievements";
-import { recordCustomizeInteraction, recordUnequipInteraction } from "@/lib/pets";
+import {
+  recordCustomizeInteraction,
+  recordUnequipInteraction,
+} from "@/lib/pets";
 import { fieldErrors } from "@/lib/validation/auth";
 import { customizePetSchema } from "@/lib/validation/pets";
 
@@ -15,7 +18,9 @@ async function parseRequest(request: Request) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) {
-    return { error: NextResponse.json({ error: "Not signed in." }, { status: 401 }) } as const;
+    return {
+      error: NextResponse.json({ error: "Not signed in." }, { status: 401 }),
+    } as const;
   }
 
   let body: unknown;
@@ -23,14 +28,20 @@ async function parseRequest(request: Request) {
     body = await request.json();
   } catch {
     return {
-      error: NextResponse.json({ error: "Malformed request body." }, { status: 400 }),
+      error: NextResponse.json(
+        { error: "Malformed request body." },
+        { status: 400 },
+      ),
     } as const;
   }
 
   const parsed = customizePetSchema.safeParse(body);
   if (!parsed.success) {
     return {
-      error: NextResponse.json({ fieldErrors: fieldErrors(parsed.error) }, { status: 400 }),
+      error: NextResponse.json(
+        { fieldErrors: fieldErrors(parsed.error) },
+        { status: 400 },
+      ),
     } as const;
   }
 
@@ -57,21 +68,18 @@ export async function POST(
   if ("error" in parsed) return parsed.error;
 
   const { id } = await params;
-  const result = await recordCustomizeInteraction(parsed.userId, id, parsed.inventoryItemId);
+  const result = await recordCustomizeInteraction(
+    parsed.userId,
+    id,
+    parsed.inventoryItemId,
+  );
 
   if (!result.ok) {
-    // #215 — one pet at a time. The client already draws such items locked
-    // with the owner's name; this covers a stale grid or a hand-made
-    // request. 409, not 404: the request is well-formed and the item is
-    // real, it's just spoken for — same "well-formed, not entitled right
-    // now" reasoning `buy-xp`'s 409 documents.
-    if (result.reason === "equipped-elsewhere") {
-      return NextResponse.json(
-        { error: "That item is on another pet — unequip it there first." },
-        { status: 409 },
-      );
-    }
-    const error = result.reason === "pet-not-found" ? "Pet not found." : "Item not found.";
+    // #279 removed the third outcome here. An item already on another pet
+    // used to 409 ("unequip it there first"); moving it is now a legal
+    // request, confirmed in the UI rather than refused by the API.
+    const error =
+      result.reason === "pet-not-found" ? "Pet not found." : "Item not found.";
     return NextResponse.json({ error }, { status: 404 });
   }
 
@@ -81,7 +89,14 @@ export async function POST(
   const { unlocked: achievementsUnlocked, levelUp } =
     await evaluateAchievements(parsed.userId);
 
-  return NextResponse.json({ item: result.item, achievementsUnlocked, levelUp });
+  // #279 — names the pet it was taken off, or null. The client confirms
+  // before asking, so this is confirmation of what happened, not news.
+  return NextResponse.json({
+    item: result.item,
+    movedFrom: result.movedFrom,
+    achievementsUnlocked,
+    levelUp,
+  });
 }
 
 /**
@@ -100,10 +115,15 @@ export async function DELETE(
   if ("error" in parsed) return parsed.error;
 
   const { id } = await params;
-  const result = await recordUnequipInteraction(parsed.userId, id, parsed.inventoryItemId);
+  const result = await recordUnequipInteraction(
+    parsed.userId,
+    id,
+    parsed.inventoryItemId,
+  );
 
   if (!result.ok) {
-    const error = result.reason === "pet-not-found" ? "Pet not found." : "Item not found.";
+    const error =
+      result.reason === "pet-not-found" ? "Pet not found." : "Item not found.";
     return NextResponse.json({ error }, { status: 404 });
   }
 

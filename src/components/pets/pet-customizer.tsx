@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, Lock, Pencil, Plus } from "lucide-react";
+import { Check, ChevronLeft, Pencil, Plus, Shirt } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,7 @@ import { cn } from "@/lib/cn";
 // component without pulling `src/lib/pets.ts`/`src/lib/inventory.ts`'s
 // Prisma imports into the browser bundle.
 import type { InventoryItemWithStoreItem } from "@/lib/inventory";
+import { Modal } from "@/components/ui/modal";
 import { backgroundImageStyle, petDisplayName } from "@/lib/pet-mood";
 import type { PetWithItem } from "@/lib/pets";
 
@@ -37,7 +38,12 @@ type CustomizeTab = "accessories" | "decorations";
 
 const TAB_COPY: Record<
   CustomizeTab,
-  { label: string; heading: string; addLabel: string; storeCategory: "ACCESSORIES" | "DECORATIONS" }
+  {
+    label: string;
+    heading: string;
+    addLabel: string;
+    storeCategory: "ACCESSORIES" | "DECORATIONS";
+  }
 > = {
   accessories: {
     label: "Accessories",
@@ -96,14 +102,18 @@ const TAB_COPY: Record<
  * the trailing "Add …" tile carry their text as `aria-label` instead, so
  * nothing is lost to a screen reader.
  *
- * #215 — an accessory or background can only be on one pet at a time. A copy
- * already equipped to a *different* pet renders locked in the grid (`lockedByPet`,
- * keyed by inventory-item id → that pet's name): dimmed art, a lock badge,
- * and the owner's name in a band across the bottom, and it can't be tapped.
- * To move it you unequip it from its current pet first. `equipCustomization()`
- * enforces the same rule server-side (`reason: "equipped-elsewhere"` → 409),
- * which the tap handler surfaces on the error line if a stale grid slips one
- * through.
+ * #215/#279 — an accessory or background is still only ever on one pet at a
+ * time, but taking it from another pet is now a move rather than a wall. A
+ * copy worn elsewhere (`wornByOtherPet`, keyed by inventory-item id → that
+ * pet's name) draws dimmed with that name banded across the bottom, and
+ * tapping it asks first: "Take Red collar from Mochi?". Confirming equips it
+ * here, which is the same write that takes it off there.
+ *
+ * #215 originally drew these tiles locked and unclickable, with the only way
+ * round being to visit the other pet's customize screen and unequip it
+ * there — a dead end on the screen where you had already decided what you
+ * wanted. The dimming and the owner name stay, because "this is on Mochi"
+ * is still worth knowing before you tap; only the refusal is gone.
  *
  * Each grid ends with a dashed "Add accessory"/"Add decoration" tile linking
  * to `/store?category=...` (`StoreBrowser`'s `initialCategory`, `StorePage`'s
@@ -131,14 +141,14 @@ export function PetCustomizer({
   pet,
   accessories,
   decorations,
-  lockedByPet = {},
+  wornByOtherPet = {},
 }: {
   pet: PetWithItem;
   accessories: InventoryItemWithStoreItem[];
   /** Owned DECORATIONS inventory — the Decorations tab's grid. */
   decorations: InventoryItemWithStoreItem[];
-  /** #215 — inventory-item id → the name of the *other* pet that copy is equipped to. Those tiles render locked. */
-  lockedByPet?: Record<string, string>;
+  /** #215/#279 — inventory-item id → the name of the *other* pet wearing that copy. Those tiles ask before taking it. */
+  wornByOtherPet?: Record<string, string>;
 }) {
   const router = useRouter();
   const nameInputId = useId();
@@ -168,8 +178,16 @@ export function PetCustomizer({
   >([]);
   const [levelUpQueue, setLevelUpQueue] = useState<LevelUpEventLike[]>([]);
 
-  const equippedAccessory = accessories.find((item) => item.id === equippedAccessoryId);
-  const equippedDecoration = decorations.find((item) => item.id === equippedDecorationId);
+  // #279 — the tile awaiting "take it from the other pet?" confirmation.
+  const [pendingSteal, setPendingSteal] =
+    useState<InventoryItemWithStoreItem | null>(null);
+
+  const equippedAccessory = accessories.find(
+    (item) => item.id === equippedAccessoryId,
+  );
+  const equippedDecoration = decorations.find(
+    (item) => item.id === equippedDecorationId,
+  );
   const backgroundUrl =
     equippedDecoration && hasRealArt(equippedDecoration.storeItem.imageUrl)
       ? equippedDecoration.storeItem.imageUrl
@@ -180,7 +198,8 @@ export function PetCustomizer({
       : undefined;
 
   const items = tab === "accessories" ? accessories : decorations;
-  const equippedId = tab === "accessories" ? equippedAccessoryId : equippedDecorationId;
+  const equippedId =
+    tab === "accessories" ? equippedAccessoryId : equippedDecorationId;
   const copy = TAB_COPY[tab];
 
   async function handleRename(event: React.FormEvent<HTMLFormElement>) {
@@ -205,14 +224,20 @@ export function PetCustomizer({
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-        setNameError(body?.fieldErrors?.name ?? body?.error ?? "Couldn't save that name. Try again.");
+        setNameError(
+          body?.fieldErrors?.name ??
+            body?.error ??
+            "Couldn't save that name. Try again.",
+        );
         return;
       }
       setName(trimmed);
       setEditingName(false);
       router.refresh();
     } catch {
-      setNameError("Couldn't reach TaskTails. Check your connection and try again.");
+      setNameError(
+        "Couldn't reach TaskTails. Check your connection and try again.",
+      );
     } finally {
       setSavingName(false);
     }
@@ -235,14 +260,26 @@ export function PetCustomizer({
       : setEquippedAccessoryId;
   }
 
+  /**
+   * #279 — a tile worn by another pet asks before taking it; anything else
+   * goes straight through. The confirmation is here rather than in the API
+   * because moving it is a legal, reversible request — the server has no
+   * business refusing it, but the participant should not do it by accident.
+   */
+  function handleTileTap(item: InventoryItemWithStoreItem) {
+    if (equipping) return;
+    if (wornByOtherPet[item.id]) {
+      setPendingSteal(item);
+      return;
+    }
+    void handleTap(item);
+  }
+
   async function handleTap(item: InventoryItemWithStoreItem) {
     const isDecoration = item.storeItem.category === "DECORATIONS";
     const currentId = isDecoration ? equippedDecorationId : equippedAccessoryId;
     const setCurrentId = setCurrentIdFor(item);
     if (equipping) return;
-    // #215 — this copy is on another pet; the tile is already `disabled`, this
-    // is the belt-and-braces guard.
-    if (lockedByPet[item.id]) return;
 
     const alreadyEquipped = item.id === currentId;
     setCurrentId(alreadyEquipped ? undefined : item.id);
@@ -273,7 +310,10 @@ export function PetCustomizer({
       if (!alreadyEquipped) {
         const body = await response.json();
         if (body.achievementsUnlocked?.length) {
-          setAchievementQueue((current) => [...current, ...body.achievementsUnlocked]);
+          setAchievementQueue((current) => [
+            ...current,
+            ...body.achievementsUnlocked,
+          ]);
         }
         if (body.levelUp) {
           setLevelUpQueue((current) => [...current, body.levelUp]);
@@ -282,7 +322,9 @@ export function PetCustomizer({
       router.refresh();
     } catch {
       setCurrentId(currentId);
-      setEquipError("Couldn't reach TaskTails. Check your connection and try again.");
+      setEquipError(
+        "Couldn't reach TaskTails. Check your connection and try again.",
+      );
     } finally {
       setEquipping(false);
     }
@@ -365,7 +407,13 @@ export function PetCustomizer({
                 disabled={savingName}
                 className="w-32 rounded-input border border-border-input bg-surface px-2.5 py-1.5 text-center font-display text-[16px] font-semibold text-ink"
               />
-              <Button type="submit" size="inline" fullWidth={false} disabled={savingName} className="px-3">
+              <Button
+                type="submit"
+                size="inline"
+                fullWidth={false}
+                disabled={savingName}
+                className="px-3"
+              >
                 {savingName ? "Saving…" : "Save"}
               </Button>
               <button
@@ -402,7 +450,10 @@ export function PetCustomizer({
           )}
         </div>
         {nameError ? (
-          <p role="alert" className="mt-1 text-[11px] font-bold text-urgency-text">
+          <p
+            role="alert"
+            className="mt-1 text-[11px] font-bold text-urgency-text"
+          >
             {nameError}
           </p>
         ) : null}
@@ -417,7 +468,11 @@ export function PetCustomizer({
             one grid in place, these swap the whole grid/empty-state content
             below, so `tablist`/`tab`/`aria-selected` is the correct roles
             rather than `radiogroup`/`radio`. */}
-        <div role="tablist" aria-label="Customize" className="mb-3 flex flex-none gap-[6px]">
+        <div
+          role="tablist"
+          aria-label="Customize"
+          className="mb-3 flex flex-none gap-[6px]"
+        >
           {(Object.keys(TAB_COPY) as CustomizeTab[]).map((key) => {
             const active = key === tab;
             return (
@@ -440,19 +495,25 @@ export function PetCustomizer({
           })}
         </div>
 
-        <p className="text-overline mb-[10px] flex-none text-ink-faint">{copy.heading}</p>
+        <p className="text-overline mb-[10px] flex-none text-ink-faint">
+          {copy.heading}
+        </p>
 
         {/* Grid always renders, even with nothing owned yet — the trailing
             dashed tile is then the only tile, same as `ZooPage`'s "Adopt
             another" slot at zero pets. */}
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <div role="radiogroup" aria-label={copy.label} className="grid grid-cols-3 gap-[9px] pb-2">
+          <div
+            role="radiogroup"
+            aria-label={copy.label}
+            className="grid grid-cols-3 gap-[9px] pb-2"
+          >
             {items.map((item) => {
               const isEquipped = item.id === equippedId;
               // #215 — the name of the *other* pet this copy is equipped to,
               // if any. Mutually exclusive with `isEquipped` (a copy on
               // another pet is never this pet's equipped id).
-              const lockedOwner = lockedByPet[item.id];
+              const wornBy = wornByOtherPet[item.id];
               return (
                 <button
                   key={item.id}
@@ -465,12 +526,12 @@ export function PetCustomizer({
                   // art and it would announce as an unnamed option. When
                   // locked, the owner pet is part of what the tile is.
                   aria-label={
-                    lockedOwner
-                      ? `${item.storeItem.name}, on ${lockedOwner}`
+                    wornBy
+                      ? `${item.storeItem.name}, on ${wornBy} — tap to move it here`
                       : item.storeItem.name
                   }
-                  disabled={equipping || Boolean(lockedOwner)}
-                  onClick={() => handleTap(item)}
+                  disabled={equipping}
+                  onClick={() => handleTileTap(item)}
                   className={cn(
                     // `aspect-square` + `overflow-hidden` and no padding: the
                     // art fills the frame edge to edge (user request,
@@ -484,9 +545,8 @@ export function PetCustomizer({
                     isEquipped
                       ? "border-sage ring-1 ring-sage ring-inset"
                       : "border-border-track",
-                    !isEquipped && !lockedOwner && "hover:border-checkbox",
-                    lockedOwner && "cursor-not-allowed",
-                    equipping && !lockedOwner && "cursor-wait",
+                    !isEquipped && "hover:border-checkbox",
+                    equipping && "cursor-wait",
                   )}
                 >
                   <ItemWell
@@ -506,23 +566,24 @@ export function PetCustomizer({
                       <Check size={10} strokeWidth={3} aria-hidden />
                     </span>
                   ) : null}
-                  {lockedOwner ? (
+                  {wornBy ? (
                     <>
-                      {/* Dim the art so the lock + name read clearly over it. */}
+                      {/* Dimmed and named, but no longer padlocked (#279):
+                          the tile is tappable, so a lock glyph would promise
+                          a refusal that no longer happens. Lighter dimming
+                          than #215's for the same reason — this reads as
+                          "in use", not "unavailable". */}
                       <span
                         aria-hidden
-                        className="pointer-events-none absolute inset-0 bg-ink/45"
+                        className="pointer-events-none absolute inset-0 bg-ink/30"
                       />
-                      <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-ink-soft text-white">
-                        <Lock size={9} strokeWidth={2.8} aria-hidden />
-                      </span>
                       {/* Owner name across the bottom — `aria-hidden` since
                           it's already in the tile's `aria-label`. */}
                       <span
                         aria-hidden
                         className="absolute inset-x-0 bottom-0 truncate bg-ink/75 px-1 py-[3px] text-center text-[10px] font-bold text-white"
                       >
-                        {lockedOwner}
+                        {wornBy}
                       </span>
                     </>
                   ) : null}
@@ -544,7 +605,10 @@ export function PetCustomizer({
         </div>
 
         {equipError ? (
-          <p role="alert" className="mt-2 flex-none text-[11px] font-bold text-urgency-text">
+          <p
+            role="alert"
+            className="mt-2 flex-none text-[11px] font-bold text-urgency-text"
+          >
             {equipError}
           </p>
         ) : null}
@@ -570,6 +634,33 @@ export function PetCustomizer({
           onDismiss={() => setLevelUpQueue((current) => current.slice(1))}
         />
       ) : null}
+
+      {/* #279 — asks before taking an item off another pet. `Modal` (SHR-03),
+          the same primitive the task-delete and username steps use, so this
+          confirm behaves like every other one in the app: focus-trapped,
+          Escape to cancel, scrim tap to cancel. */}
+      <Modal
+        open={pendingSteal !== null}
+        icon={Shirt}
+        title={pendingSteal ? `Move ${pendingSteal.storeItem.name}?` : ""}
+        body={
+          pendingSteal ? (
+            <>
+              {wornByOtherPet[pendingSteal.id]} is wearing this. Putting it on{" "}
+              {petDisplayName(pet)} takes it off{" "}
+              {wornByOtherPet[pendingSteal.id]}.
+            </>
+          ) : null
+        }
+        confirmLabel="Move it"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          const item = pendingSteal;
+          setPendingSteal(null);
+          if (item) void handleTap(item);
+        }}
+        onCancel={() => setPendingSteal(null)}
+      />
     </AppShell>
   );
 }

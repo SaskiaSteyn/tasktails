@@ -18,7 +18,9 @@ import { prisma } from "@/lib/prisma";
 export type { InventoryItem };
 
 /** An inventory row with the store item it's a copy of — name, category, art. */
-export type InventoryItemWithStoreItem = InventoryItem & { storeItem: StoreItem };
+export type InventoryItemWithStoreItem = InventoryItem & {
+  storeItem: StoreItem;
+};
 
 /**
  * The user's owned food, for PET-04's feed sheet. `quantity: { gt: 0 }`
@@ -138,18 +140,24 @@ export async function consumeFoodItem(
 }
 
 /** The two categories a pet can equip via the customize screen — see `equipCustomization()`. */
-const EQUIPPABLE_CATEGORIES: StoreItemCategory[] = ["ACCESSORIES", "DECORATIONS"];
+const EQUIPPABLE_CATEGORIES: StoreItemCategory[] = [
+  "ACCESSORIES",
+  "DECORATIONS",
+];
 
 /**
- * What `equipCustomization()` reports back. `"not-found"` covers all three of
- * "doesn't exist / isn't the caller's / isn't equippable" (same "can't tell
- * the difference" reasoning as elsewhere); `"equipped-elsewhere"` is #215's
- * one-pet-at-a-time rule — the exact copy is already on another pet and has
- * to be unequipped there first.
+ * What `equipCustomization()` reports back. `"not-found"` covers all three
+ * of "doesn't exist / isn't the caller's / isn't equippable" (same "can't
+ * tell the difference" reasoning as elsewhere).
+ *
+ * #279 retired the third outcome, `"equipped-elsewhere"`: taking an item
+ * off another pet is now a legal move rather than a refusal, so there is
+ * nothing left to report. `movedFrom` names the pet it came off, when it
+ * came off one, so the caller can say so.
  */
 export type EquipCustomizationResult =
-  | { ok: true; item: InventoryItemWithStoreItem }
-  | { ok: false; reason: "not-found" | "equipped-elsewhere" };
+  | { ok: true; item: InventoryItemWithStoreItem; movedFrom: string | null }
+  | { ok: false; reason: "not-found" };
 
 /**
  * PET-09 — equips an accessory *or decoration* (background) to a pet, or
@@ -175,15 +183,19 @@ export type EquipCustomizationResult =
  * have silently unequipped a pet's background the moment it also equipped an
  * accessory, once DECORATIONS became equippable too.
  *
- * **#215 — one pet at a time.** An accessory or background already equipped
- * to a *different* pet can't be grabbed from here; the request is refused
- * (`reason: "equipped-elsewhere"`) rather than silently stripping the other
- * pet. To move an item you unequip it from its current pet first
- * (`unequipCustomization()` — tapping its equipped tile on that pet's
- * customize screen). `PetCustomizer` already draws such copies locked with
- * the owner's name, so this guard is the backstop for a stale client or a
- * hand-made request, not the primary UX. Re-equipping the item this pet
- * *already* has on is still fine (`equippedToPetId === petId`).
+ * **Still one pet at a time, but moving is allowed (#279).** An item lives
+ * on exactly one pet — that part of #215 stands, and is what the single
+ * `equippedToPetId` column enforces. What changed is the answer when the
+ * item is already on a *different* pet: #215 refused the request and made
+ * you go unequip it there first, which meant a locked tile and a trip to
+ * another screen to undo it. It now simply moves, because the write that
+ * equips it here (`update` below) is the same write that takes it off the
+ * other pet.
+ *
+ * The confirmation lives in `PetCustomizer`, not here: taking a hat off
+ * Mochi is worth asking about once, but it is a reversible cosmetic move,
+ * not something the data layer should refuse. `movedFrom` is returned so
+ * the caller can name the pet that lost it.
  *
  * Unlike `consumeFoodItem()`'s scarce, racy `quantity` decrement, equipping
  * isn't consumed or capped — a race between two clients equipping two
@@ -194,7 +206,7 @@ export type EquipCustomizationResult =
  * Returns the newly-equipped item's state, `{ ok: false, reason: "not-found" }`
  * if it doesn't exist / isn't the caller's / isn't an accessory or
  * decoration (one reason for all three, same "can't tell the difference"
- * reasoning `petForUser()` documents), or `"equipped-elsewhere"` per #215.
+ * reasoning `petForUser()` documents).
  */
 export async function equipCustomization(
   tx: Prisma.TransactionClient,
@@ -203,17 +215,28 @@ export async function equipCustomization(
   inventoryItemId: string,
 ): Promise<EquipCustomizationResult> {
   const owned = await tx.inventoryItem.findFirst({
-    where: { id: inventoryItemId, userId, storeItem: { category: { in: EQUIPPABLE_CATEGORIES } } },
+    where: {
+      id: inventoryItemId,
+      userId,
+      storeItem: { category: { in: EQUIPPABLE_CATEGORIES } },
+    },
     include: { storeItem: true },
   });
   if (!owned) return { ok: false, reason: "not-found" };
 
-  // #215 — refuse a copy that's on another pet; it must be unequipped there
-  // first. Applies to both equippable categories (accessories and
-  // backgrounds alike). Equipping what this pet already has on is unaffected.
-  if (owned.equippedToPetId !== null && owned.equippedToPetId !== petId) {
-    return { ok: false, reason: "equipped-elsewhere" };
-  }
+  // #279 — where #215 refused, this now reports. Captured before the write
+  // below, which is what actually moves the item: setting `equippedToPetId`
+  // to this pet is the same operation as taking it off the old one.
+  const previousPetId =
+    owned.equippedToPetId && owned.equippedToPetId !== petId
+      ? owned.equippedToPetId
+      : null;
+  const previousPet = previousPetId
+    ? await tx.pet.findUnique({
+        where: { id: previousPetId },
+        select: { name: true, storeItem: { select: { name: true } } },
+      })
+    : null;
 
   await tx.inventoryItem.updateMany({
     where: {
@@ -229,7 +252,15 @@ export async function equipCustomization(
     data: { equippedToPetId: petId },
     include: { storeItem: true },
   });
-  return { ok: true, item };
+  // A renamed pet answers to its own name; one never renamed falls back to
+  // its species, the same rule `displayNameFor()` applies to people.
+  return {
+    ok: true,
+    item,
+    movedFrom: previousPet
+      ? (previousPet.name ?? previousPet.storeItem.name)
+      : null,
+  };
 }
 
 /**
@@ -282,7 +313,11 @@ export async function equippedBackgroundsForUser(
   userId: string,
 ): Promise<Record<string, string>> {
   const equipped = await prisma.inventoryItem.findMany({
-    where: { userId, equippedToPetId: { not: null }, storeItem: { category: "DECORATIONS" } },
+    where: {
+      userId,
+      equippedToPetId: { not: null },
+      storeItem: { category: "DECORATIONS" },
+    },
     include: { storeItem: true },
   });
 
@@ -314,7 +349,11 @@ export async function equippedAccessoriesForUser(
   userId: string,
 ): Promise<Record<string, string>> {
   const equipped = await prisma.inventoryItem.findMany({
-    where: { userId, equippedToPetId: { not: null }, storeItem: { category: "ACCESSORIES" } },
+    where: {
+      userId,
+      equippedToPetId: { not: null },
+      storeItem: { category: "ACCESSORIES" },
+    },
     include: { storeItem: true },
   });
 
@@ -333,10 +372,16 @@ export async function equippedAccessoryForPet(
   petId: string,
 ): Promise<string | undefined> {
   const item = await prisma.inventoryItem.findFirst({
-    where: { userId, equippedToPetId: petId, storeItem: { category: "ACCESSORIES" } },
+    where: {
+      userId,
+      equippedToPetId: petId,
+      storeItem: { category: "ACCESSORIES" },
+    },
     include: { storeItem: true },
   });
-  return item && item.storeItem.imageUrl.startsWith("/") ? item.storeItem.imageUrl : undefined;
+  return item && item.storeItem.imageUrl.startsWith("/")
+    ? item.storeItem.imageUrl
+    : undefined;
 }
 
 /**
@@ -349,8 +394,14 @@ export async function equippedBackgroundForPet(
   petId: string,
 ): Promise<string | undefined> {
   const item = await prisma.inventoryItem.findFirst({
-    where: { userId, equippedToPetId: petId, storeItem: { category: "DECORATIONS" } },
+    where: {
+      userId,
+      equippedToPetId: petId,
+      storeItem: { category: "DECORATIONS" },
+    },
     include: { storeItem: true },
   });
-  return item && item.storeItem.imageUrl.startsWith("/") ? item.storeItem.imageUrl : undefined;
+  return item && item.storeItem.imageUrl.startsWith("/")
+    ? item.storeItem.imageUrl
+    : undefined;
 }

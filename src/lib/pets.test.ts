@@ -396,6 +396,7 @@ describe("recordCustomizeInteraction", () => {
     expect(result).toEqual({
       ok: true,
       item: expect.objectContaining({ equippedToPetId: "pet-1" }),
+      movedFrom: null,
     });
   });
 
@@ -420,6 +421,7 @@ describe("recordCustomizeInteraction", () => {
     expect(result).toEqual({
       ok: true,
       item: expect.objectContaining({ equippedToPetId: "pet-1" }),
+      movedFrom: null,
     });
   });
 
@@ -458,32 +460,52 @@ describe("recordCustomizeInteraction", () => {
     expect(result).toEqual({ ok: false, reason: "item-not-found" });
   });
 
-  // #215 — one pet at a time. A copy already on another pet is refused here
-  // (and drawn locked in `PetCustomizer`), rather than moved off that pet.
-  it("refuses a decoration that's equipped to another pet, writing nothing", async () => {
+  /**
+   * #279 reversed #215 here. An item on another pet used to be refused
+   * outright ("unequip it there first"); it now moves, and reports the pet
+   * it came off so the UI can name it. Still one pet at a time — that part
+   * of #215 stands and is what the single `equippedToPetId` enforces.
+   */
+  it("moves a decoration off another pet, naming the pet it came from", async () => {
     prismaMock.pet.findFirst.mockResolvedValue(petRow());
     prismaMock.inventoryItem.findFirst.mockResolvedValue(
       decorationRow({ equippedToPetId: "pet-2" }),
     );
+    prismaMock.pet.findUnique.mockResolvedValue({
+      name: "Mochi",
+      storeItem: { name: "Koala kit" },
+    } as never);
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.inventoryItem.update.mockResolvedValue(
+      decorationRow({ equippedToPetId: "pet-1" }) as never,
+    );
 
     const result = await recordCustomizeInteraction("user-1", "pet-1", "decor-1");
 
-    expect(result).toEqual({ ok: false, reason: "equipped-elsewhere" });
-    expect(prismaMock.inventoryItem.updateMany).not.toHaveBeenCalled();
-    expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: true,
+      item: expect.objectContaining({ equippedToPetId: "pet-1" }),
+      movedFrom: "Mochi",
+    });
   });
 
-  it("refuses an accessory that's equipped to another pet too — same rule, both categories", async () => {
+  it("falls back to the species when the pet it came off was never renamed", async () => {
     prismaMock.pet.findFirst.mockResolvedValue(petRow());
     prismaMock.inventoryItem.findFirst.mockResolvedValue(
       accessoryRow({ equippedToPetId: "pet-2" }),
     );
+    prismaMock.pet.findUnique.mockResolvedValue({
+      name: null,
+      storeItem: { name: "Koala kit" },
+    } as never);
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.inventoryItem.update.mockResolvedValue(
+      accessoryRow({ equippedToPetId: "pet-1" }) as never,
+    );
 
     const result = await recordCustomizeInteraction("user-1", "pet-1", "acc-1");
 
-    expect(result).toEqual({ ok: false, reason: "equipped-elsewhere" });
-    expect(prismaMock.inventoryItem.updateMany).not.toHaveBeenCalled();
-    expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ ok: true, movedFrom: "Koala kit" });
   });
 
   it("still equips a copy that this pet already has on (equippedToPetId === petId is not 'elsewhere')", async () => {
@@ -501,6 +523,7 @@ describe("recordCustomizeInteraction", () => {
     expect(result).toEqual({
       ok: true,
       item: expect.objectContaining({ equippedToPetId: "pet-1" }),
+      movedFrom: null,
     });
   });
 });
@@ -533,6 +556,7 @@ describe("recordUnequipInteraction", () => {
     expect(result).toEqual({
       ok: true,
       item: expect.objectContaining({ equippedToPetId: null }),
+      movedFrom: null,
     });
     // #235 — this is the one reachable path that takes an accessory off a
     // pet without deleting anything, so it has to leave a trace.

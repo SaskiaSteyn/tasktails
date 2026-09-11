@@ -264,15 +264,21 @@ function equipEventPayload(petId: string, item: InventoryItemWithStoreItem) {
 /**
  * What `recordCustomizeInteraction()` reports back — `pet-not-found` and
  * `item-not-found` each map to their own 404 message (same shape/reason as
- * `FeedResult`), and `equipped-elsewhere` (#215 — the accessory or
- * background is already on another pet) maps to a 409 in the route. No `pet`
- * on success, unlike `FeedResult` — customizing never touches the `Pet` row
+ * `FeedResult`). #279 retired the third, `equipped-elsewhere`: taking an
+ * item off another pet is a legal move now, reported through `movedFrom`
+ * rather than refused. No `pet` on success, unlike `FeedResult` —
+ * customizing never touches the `Pet` row
  * itself (PET-09's own scope is "set `equippedToPetId` on `InventoryItem`",
  * nothing about happiness/hunger), so there's nothing pet-shaped to hand back.
  */
 export type CustomizeResult =
-  | { ok: true; item: InventoryItemWithStoreItem }
-  | { ok: false; reason: "pet-not-found" | "item-not-found" | "equipped-elsewhere" };
+  | {
+      ok: true;
+      item: InventoryItemWithStoreItem;
+      /** #279 — the pet this item was taken off, when it came off one. */
+      movedFrom: string | null;
+    }
+  | { ok: false; reason: "pet-not-found" | "item-not-found" };
 
 /**
  * PET-09 — records a "Customize" interaction (PET-05's sheet): equips an
@@ -307,19 +313,19 @@ export async function recordCustomizeInteraction(
 
   return prisma.$transaction(async (tx) => {
     const result = await equipCustomization(tx, userId, petId, inventoryItemId);
-    if (!result.ok) {
-      return {
-        ok: false,
-        reason: result.reason === "not-found" ? "item-not-found" : "equipped-elsewhere",
-      };
-    }
+    if (!result.ok) return { ok: false, reason: "item-not-found" };
 
     // #235 — see `TelemetryEventType`. Inside the transaction, same reasoning
     // `checkout.ts`'s `ITEM_PURCHASED` gives: the log describes this write,
     // so it commits or rolls back with it.
-    await logTelemetryEvent(userId, "ITEM_EQUIPPED", equipEventPayload(petId, result.item), tx);
+    await logTelemetryEvent(
+      userId,
+      "ITEM_EQUIPPED",
+      equipEventPayload(petId, result.item),
+      tx,
+    );
 
-    return { ok: true, item: result.item };
+    return { ok: true, item: result.item, movedFrom: result.movedFrom };
   });
 }
 
@@ -346,12 +352,18 @@ export async function recordUnequipInteraction(
   return prisma.$transaction(async (tx) => {
     const item = await unequipCustomization(tx, userId, petId, inventoryItemId);
     if (!item) return { ok: false, reason: "item-not-found" };
+    // Always null here: clearing a slot takes nothing off any *other* pet.
 
     // #235 — the tap-on-the-equipped-tile path, the one reachable way an
     // accessory comes off a pet that leaves no other trace.
-    await logTelemetryEvent(userId, "ITEM_UNEQUIPPED", equipEventPayload(petId, item), tx);
+    await logTelemetryEvent(
+      userId,
+      "ITEM_UNEQUIPPED",
+      equipEventPayload(petId, item),
+      tx,
+    );
 
-    return { ok: true, item };
+    return { ok: true, item, movedFrom: null };
   });
 }
 
