@@ -109,14 +109,14 @@ describe("StoreBrowser tabs", () => {
     expect(markup.indexOf(">Buy<")).toBeLessThan(markup.indexOf(">Sell<"));
   });
 
-  it("marks Buy pressed and Sell not, so the control reads as a pair", () => {
+  it("marks Buy selected and Sell not, so the control reads as a pair", () => {
     const markup = renderToStaticMarkup(
       <StoreBrowser {...base} items={items} />,
     );
-    const buy = markup.slice(markup.indexOf('aria-pressed="true"'));
+    const buy = markup.slice(markup.indexOf('aria-selected="true"'));
 
     expect(buy).toContain(">Buy<");
-    expect(markup).toContain('aria-pressed="false"');
+    expect(markup).toContain('aria-selected="false"');
   });
 });
 
@@ -140,6 +140,13 @@ function renderBrowser() {
     root.render(<StoreBrowser {...base} items={items.slice(0, 5)} />);
   });
   return host;
+}
+
+/** Fires a real keydown so the component's own handler decides what happens. */
+function press(element: HTMLElement, key: string) {
+  act(() => {
+    element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+  });
 }
 
 function tab(container: HTMLElement, label: string) {
@@ -177,5 +184,74 @@ describe("switching to Sell", () => {
 
     expect(container.querySelectorAll("[data-card]")).toHaveLength(5);
     expect(container.querySelector("[data-sell-card]")).toBeNull();
+  });
+});
+
+/**
+ * #280 — the WAI-ARIA tab pattern's actual contract, which is the part
+ * that is easy to ship half of: one tab stop for the pair, arrows to move
+ * within it, and each tab owning its panel.
+ */
+describe("the tablist contract", () => {
+  it("is a single tab stop — only the selected tab is reachable with Tab", () => {
+    const container = renderBrowser();
+    const [buy, sell] = [tab(container, "Buy"), tab(container, "Sell")];
+
+    expect(buy.tabIndex).toBe(0);
+    expect(sell.tabIndex).toBe(-1);
+
+    act(() => sell.click());
+
+    expect(tab(container, "Buy").tabIndex).toBe(-1);
+    expect(tab(container, "Sell").tabIndex).toBe(0);
+  });
+
+  it("each tab points at the panel it controls, and the panel back at it", () => {
+    const container = renderBrowser();
+    const buy = tab(container, "Buy");
+    const panel = container.querySelector('[role="tabpanel"]')!;
+
+    expect(panel.id).toBe(buy.getAttribute("aria-controls"));
+    expect(panel.getAttribute("aria-labelledby")).toBe(buy.id);
+  });
+
+  it("moves with the arrow keys and wraps", () => {
+    const container = renderBrowser();
+
+    press(tab(container, "Buy"), "ArrowRight");
+    expect(tab(container, "Sell").getAttribute("aria-selected")).toBe("true");
+
+    // Wraps back round rather than stopping at the end.
+    press(tab(container, "Sell"), "ArrowRight");
+    expect(tab(container, "Buy").getAttribute("aria-selected")).toBe("true");
+
+    press(tab(container, "Buy"), "ArrowLeft");
+    expect(tab(container, "Sell").getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("jumps to the ends with Home and End", () => {
+    const container = renderBrowser();
+
+    press(tab(container, "Buy"), "End");
+    expect(tab(container, "Sell").getAttribute("aria-selected")).toBe("true");
+
+    press(tab(container, "Sell"), "Home");
+    expect(tab(container, "Buy").getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("moves focus with the selection, so the arrowed-to tab is the focused one", () => {
+    const container = renderBrowser();
+
+    press(tab(container, "Buy"), "ArrowRight");
+
+    expect(document.activeElement).toBe(tab(container, "Sell"));
+  });
+
+  it("leaves other keys alone", () => {
+    const container = renderBrowser();
+
+    press(tab(container, "Buy"), "a");
+
+    expect(tab(container, "Buy").getAttribute("aria-selected")).toBe("true");
   });
 });

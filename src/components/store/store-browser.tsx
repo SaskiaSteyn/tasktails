@@ -1,7 +1,14 @@
 "use client";
 
 import { Search, ShoppingCart, Tag } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { CartLink } from "@/components/store/cart-link";
 import { LockedByLevelState } from "@/components/store/locked-by-level-state";
@@ -110,6 +117,14 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * reasoning `flashSaleBanner` already established: this component never
  * branches on it, just draws whatever `StorePage` decided.
  */
+/** #280 — the two store modes, in the order they are arrowed through. */
+const TABS = [
+  { value: "buy", label: "Buy", icon: ShoppingCart },
+  { value: "sell", label: "Sell", icon: Tag },
+] as const;
+
+type StoreMode = (typeof TABS)[number]["value"];
+
 export function StoreBrowser({
   items,
   flashSaleBanner,
@@ -144,7 +159,41 @@ export function StoreBrowser({
 }) {
   // #280 — Buy browses the catalogue; Sell is where coins come back, either
   // by selling something or by converting them to XP.
-  const [mode, setMode] = useState<"buy" | "sell">("buy");
+  const [mode, setMode] = useState<StoreMode>("buy");
+  // `useId` rather than hard-coded ids: `aria-controls` has to point at a
+  // unique element, and nothing stops this component being mounted twice.
+  const tabsId = useId();
+  const tabId = (value: StoreMode) => `${tabsId}-tab-${value}`;
+  const panelId = (value: StoreMode) => `${tabsId}-panel-${value}`;
+  const tabRefs = useRef<Partial<Record<StoreMode, HTMLButtonElement | null>>>(
+    {},
+  );
+
+  /**
+   * Arrow keys move within the tablist and wrap; Home/End jump to the ends.
+   * Focus follows selection, which is what "automatic activation" means —
+   * so the newly selected tab is focused explicitly here, since the button
+   * the user pressed the key on is no longer the selected one.
+   */
+  function handleTabKeyDown(event: React.KeyboardEvent) {
+    const current = TABS.findIndex((tab) => tab.value === mode);
+    const next =
+      event.key === "ArrowRight" || event.key === "ArrowDown"
+        ? (current + 1) % TABS.length
+        : event.key === "ArrowLeft" || event.key === "ArrowUp"
+          ? (current - 1 + TABS.length) % TABS.length
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? TABS.length - 1
+              : null;
+    if (next === null) return;
+
+    event.preventDefault();
+    const value = TABS[next].value;
+    setMode(value);
+    tabRefs.current[value]?.focus();
+  }
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<StoreItemCategory | "ALL">(
     initialCategory,
@@ -228,24 +277,39 @@ export function StoreBrowser({
           `bg-input` track, `bg-surface` active panel, `text-ink` /
           `text-ink-soft` for the labels.
 
-          Two plain buttons with `aria-pressed`, not `role="tab"`: the tab
-          pattern carries a contract (roving tabindex, arrow-key movement,
-          `aria-controls`) and a half-implemented one reads worse to a
-          screen reader than no role at all. */}
-      <div className="mb-[9px] flex flex-none gap-1 rounded-[14px] bg-input p-1">
-        {(
-          [
-            { value: "buy", label: "Buy", icon: ShoppingCart },
-            { value: "sell", label: "Sell", icon: Tag },
-          ] as const
-        ).map((tab) => {
+          The full WAI-ARIA tab pattern (user's direction), not two
+          `aria-pressed` buttons: `role="tablist"`/`"tab"`/`"tabpanel"`,
+          each tab owning its panel through `aria-controls`, and roving
+          tabindex so the pair is a *single* tab stop — Tab moves past the
+          control, arrows move within it. Automatic activation (selecting on
+          arrow rather than on a further Enter) is the pattern's default and
+          the right one here: both panels are already rendered client-side,
+          so there is no load cost to landing on one. */}
+      <div
+        role="tablist"
+        aria-label="Store mode"
+        className="mb-[9px] flex flex-none gap-1 rounded-[14px] bg-input p-1"
+      >
+        {TABS.map((tab) => {
           const active = mode === tab.value;
           return (
             <button
               key={tab.value}
               type="button"
-              aria-pressed={active}
+              role="tab"
+              id={tabId(tab.value)}
+              aria-selected={active}
+              aria-controls={panelId(tab.value)}
+              // Roving tabindex: only the selected tab is reachable with
+              // Tab; the other is reached with an arrow key. Without this
+              // every tab is its own tab stop, which is the single most
+              // common way this pattern is got wrong.
+              tabIndex={active ? 0 : -1}
+              ref={(node) => {
+                tabRefs.current[tab.value] = node;
+              }}
               onClick={() => setMode(tab.value)}
+              onKeyDown={handleTabKeyDown}
               className={cn(
                 "flex flex-1 items-center justify-center gap-[6px] rounded-[11px] py-[7px] text-[13px] transition-colors duration-120",
                 active
@@ -265,7 +329,12 @@ export function StoreBrowser({
            catalogue, so they are not rendered here — there is no catalogue
            to filter. Two cards on the same two-column grid the Buy pane's
            top row uses, so they line up with everything else. */
-        <div className="desk:min-h-0 desk:flex-1 desk:overflow-y-auto desk:px-1">
+        <div
+          role="tabpanel"
+          id={panelId("sell")}
+          aria-labelledby={tabId("sell")}
+          className="desk:min-h-0 desk:flex-1 desk:overflow-y-auto desk:px-1"
+        >
           <div className="grid grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
             <SellItemsCard />
             {/* #280 — moved off Profile. Buying XP is a conversion out of
@@ -276,7 +345,12 @@ export function StoreBrowser({
           </div>
         </div>
       ) : (
-        <>
+        <div
+          role="tabpanel"
+          id={panelId("buy")}
+          aria-labelledby={tabId("buy")}
+          className="flex min-h-0 flex-col"
+        >
           <div className="mb-[9px] flex flex-none items-center gap-2">
             <label className="flex h-[38px] min-w-0 flex-1 items-center gap-2 rounded-input border border-border-input bg-surface px-4">
               <Search
@@ -366,14 +440,13 @@ export function StoreBrowser({
           Level-locked cards are buttons, so the outermost column of them is
           exactly where that shows. */}
           <div className="flex min-w-0 flex-col desk:min-h-0 desk:flex-1 desk:overflow-y-auto desk:px-1">
-            {/* The store's top row: spend on the left, get paid on the right
-            (#256). Same two-column phone grid and same `auto-fill` desktop
-            track as the item grid below, so the pair line up with the
-            catalogue rather than sitting in their own private layout. */}
+            {/* The store's top row. #256 paired the Lucky Box here with
+                "Sell items"; #280 moved selling to its own tab, leaving the
+                box alone — so it spans the full width rather than sitting in
+                half a two-column grid with a hole beside it (user's
+                direction). */}
             <div className="mb-[11px] desk:mb-4">
-              <div className="grid grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
-                <LuckyBoxCard price={luckyBoxPrice} />
-              </div>
+              <LuckyBoxCard price={luckyBoxPrice} />
               {luckyBoxUrgency ? (
                 <div className="mt-[9px]">{luckyBoxUrgency}</div>
               ) : null}
@@ -424,7 +497,7 @@ export function StoreBrowser({
               <div ref={sentinelRef} aria-hidden className="h-px flex-none" />
             ) : null}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
