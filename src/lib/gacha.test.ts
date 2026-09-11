@@ -111,9 +111,54 @@ describe("pullLuckyBox", () => {
     expect(result.pet).toBeNull();
     expect(result.spent).toBe(LUCKY_BOX_COST_COINS);
     expect(prismaMock.inventoryItem.create).toHaveBeenCalledWith({
-      data: { userId: "user-1", storeItemId: "collar", quantity: 1 },
+      // `shiny: false` is part of the row, not incidental — it is what
+      // keeps a plain pull out of a shiny stack and vice versa (#276).
+      data: { userId: "user-1", storeItemId: "collar", quantity: 1, shiny: false },
     });
     expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
+  });
+
+  /**
+   * #276 — Shiny rides on any tier and comes only from a box. The risk
+   * worth a test is the stack: `quantity` merges identical instances, and
+   * a shiny is not identical to a plain one, so a shiny pull merged into
+   * an existing plain stack would be destroyed on the way in.
+   */
+  describe("shiny", () => {
+    it("looks for an existing stack of the same shininess, not just the same item", async () => {
+      prismaMock.$queryRaw.mockResolvedValue(account());
+      prismaMock.storeItem.findMany.mockResolvedValue([
+        storeItem({ id: "collar", name: "Red collar", category: "ACCESSORIES" }),
+      ]);
+      // 0 rolls Common, and 0 < SHINY_PULL_CHANCE, so this pull is shiny.
+      vi.spyOn(Math, "random").mockReturnValue(0);
+
+      const result = await pullLuckyBox("user-1");
+
+      expect(result.ok && result.item.shiny).toBe(true);
+      expect(prismaMock.inventoryItem.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: "user-1",
+          storeItemId: "collar",
+          equippedToPetId: null,
+          shiny: true,
+        },
+      });
+      expect(prismaMock.inventoryItem.create).toHaveBeenCalledWith({
+        data: { userId: "user-1", storeItemId: "collar", quantity: 1, shiny: true },
+      });
+    });
+
+    it("is not shiny when the roll misses", async () => {
+      prismaMock.$queryRaw.mockResolvedValue(account());
+      // 0.99 is above the 10% chance — and rolls Legendary, showing the two
+      // rolls are independent: a Legendary is not automatically shiny.
+      vi.spyOn(Math, "random").mockReturnValue(0.99);
+
+      const result = await pullLuckyBox("user-1");
+
+      expect(result.ok && result.item.shiny).toBe(false);
+    });
   });
 
   it("increments quantity instead of duplicating when the goods item is already owned", async () => {

@@ -90,7 +90,8 @@ export const RARITY_TOKENS: Record<StoreItemRarity, RarityTokens> = {
   },
   LEGENDARY: {
     frame: "border-amber/70",
-    field: "bg-[linear-gradient(160deg,var(--color-warm),var(--color-amber-tint))]",
+    field:
+      "bg-[linear-gradient(160deg,var(--color-warm),var(--color-amber-tint))]",
     fieldFx:
       "radial-gradient(circle at 50% 28%, rgba(255,255,255,.9), rgba(255,255,255,0) 58%)",
     shadow: "shadow-rarity-legendary",
@@ -109,15 +110,36 @@ export const RARITY_TOKENS: Record<StoreItemRarity, RarityTokens> = {
  * (`RARITY_STYLE` in `lucky-box-home.tsx`, the per-key colours in
  * `achievement-style.ts`); this is the shared one UPDATE-01 asks for.
  */
-export const RARITY_FAMILY: Record<StoreItemRarity, { tint: string; text: string; border: string }> = {
-  COMMON: { tint: "bg-input", text: "text-ink-soft", border: "border-border-track" },
-  RARE: { tint: "bg-sage-tint", text: "text-sage-text", border: "border-sage/30" },
-  EPIC: { tint: "bg-violet-tint", text: "text-violet-text", border: "border-violet/30" },
-  LEGENDARY: { tint: "bg-amber-tint", text: "text-amber-text", border: "border-amber/30" },
+export const RARITY_FAMILY: Record<
+  StoreItemRarity,
+  { tint: string; text: string; border: string }
+> = {
+  COMMON: {
+    tint: "bg-input",
+    text: "text-ink-soft",
+    border: "border-border-track",
+  },
+  RARE: {
+    tint: "bg-sage-tint",
+    text: "text-sage-text",
+    border: "border-sage/30",
+  },
+  EPIC: {
+    tint: "bg-violet-tint",
+    text: "text-violet-text",
+    border: "border-violet/30",
+  },
+  LEGENDARY: {
+    tint: "bg-amber-tint",
+    text: "text-amber-text",
+    border: "border-amber/30",
+  },
 };
 
 /** Null and unknown tiers render as Common — UPDATE-01 §7 rule 2. */
-export function rarityTokens(rarity: StoreItemRarity | null | undefined): RarityTokens {
+export function rarityTokens(
+  rarity: StoreItemRarity | null | undefined,
+): RarityTokens {
   return (rarity && RARITY_TOKENS[rarity]) || RARITY_TOKENS.COMMON;
 }
 
@@ -127,7 +149,9 @@ export function rarityFamily(rarity: StoreItemRarity | null | undefined) {
 }
 
 /** What the tier chip reads. Title case; the chip uppercases it in CSS. */
-export function rarityLabel(rarity: StoreItemRarity | null | undefined): string {
+export function rarityLabel(
+  rarity: StoreItemRarity | null | undefined,
+): string {
   const value = rarity ?? "COMMON";
   return value.charAt(0) + value.slice(1).toLowerCase();
 }

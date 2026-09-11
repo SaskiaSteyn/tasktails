@@ -77,7 +77,9 @@ export const UNLOCK_LEVEL_BUFFER = 1;
 const RARITY_ORDER: StoreItemRarity[] = ["COMMON", "RARE", "EPIC", "LEGENDARY"];
 
 /** Weighted roll against `RARITY_ODDS`. Pure — no Prisma, no clock, easy to test against a stubbed `Math.random`. */
-export function rollRarity(random: () => number = Math.random): StoreItemRarity {
+export function rollRarity(
+  random: () => number = Math.random,
+): StoreItemRarity {
   const roll = random();
   let cumulative = 0;
   for (const rarity of RARITY_ORDER) {
@@ -98,6 +100,13 @@ export type PulledItem = StoreItem & {
    * level above unlocks immediately and reads as `false` here.
    */
   locked: boolean;
+  /**
+   * #276 — whether this pull came out Shiny. Rolled independently of the
+   * tier, so a Common can be shiny and a Legendary need not be. The reveal
+   * is the only screen that reads it off the pull itself; every other
+   * surface reads the flag from the owned row the pull created.
+   */
+  shiny: boolean;
 };
 
 export type GachaPullResult =
@@ -110,7 +119,12 @@ export type GachaPullResult =
       economy: UserEconomy;
     }
   | { ok: false; reason: "no-account" }
-  | { ok: false; reason: "insufficient-coins"; coins: number; shortfall: number }
+  | {
+      ok: false;
+      reason: "insufficient-coins";
+      coins: number;
+      shortfall: number;
+    }
   /** Defensive — unreachable against `GACHA-03`'s seed (every rarity has at least one item), kept for a catalogue that regresses. */
   | { ok: false; reason: "empty-catalogue"; rarity: StoreItemRarity };
 
@@ -129,6 +143,18 @@ export type GachaPullResult =
  * see the file doc comment) — so `pool.length === 0` only happens if a
  * rarity has zero items anywhere in the catalogue.
  */
+/**
+ * #276 — how often a pull comes out Shiny, independent of the tier rolled
+ * (a Common can be shiny; a Legendary can fail to be). 10% at the user's
+ * direction, 2026-09-11: common enough that most participants will see one
+ * in a study-length session, which is the point of a collectible signal
+ * nobody can buy.
+ *
+ * **A Lucky Box is the only source.** `checkout.ts` never sets it, so a
+ * shiny cannot be bought — that exclusivity is what the flag is for.
+ */
+export const SHINY_PULL_CHANCE = 0.1;
+
 export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
   return prisma.$transaction(async (tx) => {
     const lockedRow = await tx.$queryRaw<
@@ -166,14 +192,33 @@ export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
     }
 
     const storeItem = pool[Math.floor(Math.random() * pool.length)];
-    const locked = storeItem.levelRequired > account.level + UNLOCK_LEVEL_BUFFER;
+    const locked =
+      storeItem.levelRequired > account.level + UNLOCK_LEVEL_BUFFER;
+    // Rolled after the tier and independently of it — shiny rides on any
+    // tier rather than being one (#276).
+    const shiny = Math.random() < SHINY_PULL_CHANCE;
 
     let pet: PetWithItem | null = null;
     if (storeItem.category === "ANIMALS") {
-      pet = await createPetForTransaction(tx, userId, storeItem);
+      pet = await createPetForTransaction(
+        tx,
+        userId,
+        storeItem,
+        new Date(),
+        shiny,
+      );
     } else {
       const existing = await tx.inventoryItem.findFirst({
-        where: { userId, storeItemId: storeItem.id, equippedToPetId: null },
+        // `shiny` belongs in this lookup, not just in the create below: a
+        // shiny is not the same object as a plain one, so merging it into
+        // an existing plain stack would silently destroy it. Shinies stack
+        // with shinies, plains with plains.
+        where: {
+          userId,
+          storeItemId: storeItem.id,
+          equippedToPetId: null,
+          shiny,
+        },
       });
 
       if (existing) {
@@ -183,7 +228,7 @@ export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
         });
       } else {
         await tx.inventoryItem.create({
-          data: { userId, storeItemId: storeItem.id, quantity: 1 },
+          data: { userId, storeItemId: storeItem.id, quantity: 1, shiny },
         });
       }
     }
@@ -196,7 +241,7 @@ export async function pullLuckyBox(userId: string): Promise<GachaPullResult> {
     return {
       ok: true,
       spent: LUCKY_BOX_COST_COINS,
-      item: { ...storeItem, locked },
+      item: { ...storeItem, locked, shiny },
       pet,
       economy,
     } as const;

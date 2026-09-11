@@ -425,6 +425,8 @@ export async function createPetForTransaction(
   userId: string,
   storeItem: Pick<StoreItem, "id" | "category">,
   now: Date = new Date(),
+  /** #276 — only a Lucky Box pull ever passes true; a store purchase leaves it false. */
+  shiny = false,
 ): Promise<PetWithItem | null> {
   if (storeItem.category !== "ANIMALS") return null;
 
@@ -435,6 +437,7 @@ export async function createPetForTransaction(
       happiness: NEW_PET_HAPPINESS,
       hunger: NEW_PET_HUNGER,
       lastInteractedAt: now,
+      shiny,
     },
     include: { storeItem: true },
   });

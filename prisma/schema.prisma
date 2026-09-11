@@ -171,6 +171,17 @@ model InventoryItem {
 
   quantity Int @default(1)
 
+  /// #276 — a Shiny variant. A property of this owned stack, never of the
+  /// catalogue item: two people can own the same Cosy den and only one of
+  /// them have the shiny one. Obtainable **only** from a Lucky Box pull
+  /// (`pullLuckyBox()`); a plain store purchase always writes false.
+  ///
+  /// Load-bearing for stacking: `quantity` merges identical instances, and
+  /// a shiny is not identical to a plain one, so the pull's
+  /// "have I got one of these already" lookup filters on this too. Without
+  /// that, a shiny pull would vanish into an existing plain stack.
+  shiny Boolean @default(false)
+
   /// Seven reads in `inventory.ts` filter on `userId` first (often narrowing
   /// further by category through the `storeItem` relation, which this still
   /// serves as the leading column).
@@ -220,6 +231,10 @@ model Pet {
   happiness        Int
   hunger           Int
   lastInteractedAt DateTime
+
+  /// #276 — a Shiny variant, per pet rather than per species: two owned
+  /// foxes can differ. Only a Lucky Box pull can set it.
+  shiny Boolean @default(false)
 
   /// PRO-18. Lifetime count of "pet" interactions on this specific pet —
   /// `lastInteractedAt` is overwritten on every interaction so it cannot

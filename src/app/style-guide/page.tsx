@@ -192,6 +192,7 @@ function samplePet(
     hunger,
     lastInteractedAt: new Date(),
     timesPetted: 0,
+    shiny: false,
     storeItem: {
       id: `sample-${name}-item`,
       name,
@@ -212,6 +213,7 @@ const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
     storeItemId: "sample-sunflower-seeds-item",
     equippedToPetId: null,
     quantity: 3,
+    shiny: false,
     storeItem: {
       id: "sample-sunflower-seeds-item",
       name: "Sunflower seeds",
@@ -228,6 +230,7 @@ const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
     storeItemId: "sample-treat-box-item",
     equippedToPetId: null,
     quantity: 1,
+    shiny: false,
     storeItem: {
       id: "sample-treat-box-item",
       name: "Treat box",

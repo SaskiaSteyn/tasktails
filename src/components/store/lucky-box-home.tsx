@@ -9,9 +9,13 @@ import {
   useAchievementUnlock,
   type AchievementUnlockLike,
 } from "@/components/economy/achievement-unlock-provider";
-import { useLevelUp, type LevelUpEventLike } from "@/components/economy/level-up-provider";
+import {
+  useLevelUp,
+  type LevelUpEventLike,
+} from "@/components/economy/level-up-provider";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
 import { LuckyBoxOpening } from "@/components/store/lucky-box-opening";
+import { SHINY_WASH, ShinyPill } from "@/components/store/shiny";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Coin, RollingCoins } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
@@ -56,6 +60,8 @@ type PulledItemShape = {
   imageUrl: string;
   rarity: "COMMON" | "RARE" | "EPIC" | "LEGENDARY" | null;
   locked: boolean;
+  /** #276 — rolled independently of the tier; only a box can produce one. */
+  shiny: boolean;
 };
 
 type PullResponse =
@@ -67,8 +73,6 @@ type PullResponse =
       levelUp?: LevelUpEventLike | null;
     }
   | { error: string };
-
-
 
 /** GACHA-13 — "~1.5s beat before reveal" per the design board; enforced here since `LuckyBoxOpening` is purely the visual. */
 const OPENING_MIN_DURATION_MS = 1500;
@@ -101,7 +105,8 @@ export function LuckyBoxHome({
       const res = await fetch("/api/gacha/pull", { method: "POST" });
       const body: PullResponse = await res.json();
       const remaining = OPENING_MIN_DURATION_MS - (Date.now() - startedAt);
-      if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+      if (remaining > 0)
+        await new Promise((resolve) => setTimeout(resolve, remaining));
       if (!res.ok || "error" in body) {
         setError("error" in body ? body.error : "Something went wrong.");
         return;
@@ -142,9 +147,17 @@ export function LuckyBoxHome({
       <div className="flex flex-1 flex-col items-center px-[30px] pt-2 pb-1.5 text-center">
         <div className="flex-1" />
 
-        <p className={cn("mb-3 text-[10.5px] font-extrabold tracking-[1px]", style.text)}>
-          {result.rarity ?? "COMMON"}
-        </p>
+        <div className="mb-3 flex items-center gap-[6px]">
+          <p
+            className={cn(
+              "text-[10.5px] font-extrabold tracking-[1px]",
+              style.text,
+            )}
+          >
+            {result.rarity ?? "COMMON"}
+          </p>
+          {result.shiny ? <ShinyPill /> : null}
+        </div>
 
         <ItemWell
           item={{ category: result.category, imageUrl: result.imageUrl }}
@@ -154,16 +167,25 @@ export function LuckyBoxHome({
           rounded="rounded-[24px]"
           bgClassNameOverride={tier.field}
           iconClassNameOverride={style.text}
-          fieldFx={tier.fieldFx}
+          // #276 §4 — the shiny wash replaces the tier's own highlight
+          // rather than stacking with it: both paint the same layer, and
+          // the wash is the stronger statement of the two.
+          fieldFx={result.shiny ? SHINY_WASH : tier.fieldFx}
           overlay={
             tier.sparks ? (
-              <span aria-hidden className="pointer-events-none absolute inset-0">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0"
+              >
                 <span
                   style={{ ["--spark-rotate" as string]: "45deg" }}
                   className="animate-twinkle absolute top-[16px] left-[20px] size-[9px] rounded-[2px] bg-white"
                 />
                 <span
-                  style={{ ["--spark-rotate" as string]: "45deg", animationDelay: "0.8s" }}
+                  style={{
+                    ["--spark-rotate" as string]: "45deg",
+                    animationDelay: "0.8s",
+                  }}
                   className="animate-twinkle absolute right-[22px] bottom-[22px] size-[7px] rounded-[2px] bg-white"
                 />
                 <span
@@ -177,7 +199,9 @@ export function LuckyBoxHome({
         />
 
         <p className="font-display text-[21px] font-semibold">{result.name}</p>
-        <p className="mt-[3px] text-[12px] text-ink-faint">{CATEGORY_LABEL[result.category]}</p>
+        <p className="mt-[3px] text-[12px] text-ink-faint">
+          {CATEGORY_LABEL[result.category]}
+        </p>
 
         {result.locked ? (
           <div className="mt-[10px] flex items-center gap-[5px] rounded-[8px] bg-amber-tint px-3 py-[6px] text-[11px] font-extrabold text-amber-text">
@@ -185,13 +209,18 @@ export function LuckyBoxHome({
             Added, locked — unlocks soon
           </div>
         ) : (
-          <p className="mt-1 text-[12px] text-ink-soft">Added to your collection</p>
+          <p className="mt-1 text-[12px] text-ink-soft">
+            Added to your collection
+          </p>
         )}
 
         <div className="min-h-5 flex-1" />
 
         {error && (
-          <p role="alert" className="mb-2 text-[11.5px] font-bold text-urgency-text">
+          <p
+            role="alert"
+            className="mb-2 text-[11.5px] font-bold text-urgency-text"
+          >
             {error}
           </p>
         )}
@@ -206,7 +235,12 @@ export function LuckyBoxHome({
             splitting the row per the design board. */}
         <div className="flex w-full gap-2">
           <div className="flex-1">
-            <Button variant="secondary" size="dialog" onClick={pull} disabled={coins < price}>
+            <Button
+              variant="secondary"
+              size="dialog"
+              onClick={pull}
+              disabled={coins < price}
+            >
               Pull again
             </Button>
           </div>
@@ -232,18 +266,31 @@ export function LuckyBoxHome({
 
       <div className="relative mb-[18px] flex size-[128px] items-center justify-center rounded-[26px] bg-amber-tint">
         <div className="pointer-events-none absolute -inset-[10px] rounded-[32px] border border-amber-ring" />
-        <Gift size={58} strokeWidth={1.6} className="text-amber-text" aria-hidden />
+        <Gift
+          size={58}
+          strokeWidth={1.6}
+          className="text-amber-text"
+          aria-hidden
+        />
       </div>
 
       <p className="font-display text-[19px] font-semibold">1 Lucky Box</p>
       <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-soft">
         Every box is Common, Rare, Epic or Legendary. Tap{" "}
-        <Info size={11} strokeWidth={2.4} className="inline-block align-[-1px] text-ink-soft" aria-hidden />{" "}
+        <Info
+          size={11}
+          strokeWidth={2.4}
+          className="inline-block align-[-1px] text-ink-soft"
+          aria-hidden
+        />{" "}
         above for the full odds.
       </p>
 
       {error && (
-        <p role="alert" className="mt-3 text-[11.5px] font-bold text-urgency-text">
+        <p
+          role="alert"
+          className="mt-3 text-[11.5px] font-bold text-urgency-text"
+        >
           {error}
         </p>
       )}

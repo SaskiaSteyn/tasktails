@@ -13,7 +13,9 @@ import { PetArt } from "@/components/pets/pet-art";
 import { hasRealArt } from "@/components/store/item-visual";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { ShinyPill } from "@/components/store/shiny";
 import { cn } from "@/lib/cn";
+import { rarityTokens } from "@/lib/rarity";
 // Type-only: erased at compile time, so this doesn't pull `src/lib/inventory.ts`
 // or `src/lib/pets.ts`'s Prisma imports into the client bundle.
 import type { InventoryItemWithStoreItem } from "@/lib/inventory";
@@ -113,6 +115,10 @@ export function AnimalCard({
   accessoryUrl?: string;
 }) {
   const name = petDisplayName(pet);
+  // #276 — both read off the pet's own row: the tier from the catalogue
+  // item it was adopted from, shiny from the owned pet itself.
+  const tier = rarityTokens(pet.storeItem.rarity);
+  const shiny = pet.shiny;
   const mood = moodFor(pet);
   const { label, className } = MOOD_COPY[mood];
   // Hunger is inverted before it reaches `stateTone()`: the function expects
@@ -166,30 +172,38 @@ export function AnimalCard({
     const originLeft = imageRect.left + imageRect.width / 2 - cardRect.left;
     const originTop = imageRect.top + imageRect.height / 2 - cardRect.top;
 
-    const batch: FloatingHeart[] = Array.from({ length: HEART_COUNT }, (_, i) => ({
-      id: nextHeartId.current++,
-      // Scattered across the animal's whole width/height, not jittered
-      // around one shared point — this is what keeps the burst from reading
-      // as a single row or a single "poof" location, and is also what gives
-      // the front/behind layering below something to actually show: a heart
-      // landing near the animal's edge reads clearly as one or the other,
-      // where one dead centre would barely peek out either way.
-      left: originLeft + (Math.random() * imageRect.width - imageRect.width / 2),
-      top: originTop + (Math.random() * imageRect.height - imageRect.height / 2),
-      delay: i * HEART_STAGGER_MS,
-      // Independent left/right wander per heart as it climbs — this is what
-      // keeps five hearts from reading as a single row that moves as one
-      // block; each one drifts its own way instead.
-      drift: Math.random() * 64 - 32,
-      // Randomised per heart, not alternated by index — an alternating
-      // pattern would itself read as a regular, predictable order.
-      layer: Math.random() < 0.5 ? "behind" : "front",
-    }));
+    const batch: FloatingHeart[] = Array.from(
+      { length: HEART_COUNT },
+      (_, i) => ({
+        id: nextHeartId.current++,
+        // Scattered across the animal's whole width/height, not jittered
+        // around one shared point — this is what keeps the burst from reading
+        // as a single row or a single "poof" location, and is also what gives
+        // the front/behind layering below something to actually show: a heart
+        // landing near the animal's edge reads clearly as one or the other,
+        // where one dead centre would barely peek out either way.
+        left:
+          originLeft + (Math.random() * imageRect.width - imageRect.width / 2),
+        top:
+          originTop + (Math.random() * imageRect.height - imageRect.height / 2),
+        delay: i * HEART_STAGGER_MS,
+        // Independent left/right wander per heart as it climbs — this is what
+        // keeps five hearts from reading as a single row that moves as one
+        // block; each one drifts its own way instead.
+        drift: Math.random() * 64 - 32,
+        // Randomised per heart, not alternated by index — an alternating
+        // pattern would itself read as a regular, predictable order.
+        layer: Math.random() < 0.5 ? "behind" : "front",
+      }),
+    );
     setHearts((current) => [...current, ...batch]);
 
     const batchIds = new Set(batch.map((heart) => heart.id));
     setTimeout(
-      () => setHearts((current) => current.filter((heart) => !batchIds.has(heart.id))),
+      () =>
+        setHearts((current) =>
+          current.filter((heart) => !batchIds.has(heart.id)),
+        ),
       (HEART_COUNT - 1) * HEART_STAGGER_MS + HEART_ANIMATION_MS,
     );
   }
@@ -209,7 +223,10 @@ export function AnimalCard({
   function handleStrokeMove(event: React.PointerEvent<HTMLDivElement>) {
     const previous = stroke.current;
     if (!previous) return;
-    previous.distance += Math.hypot(event.clientX - previous.x, event.clientY - previous.y);
+    previous.distance += Math.hypot(
+      event.clientX - previous.x,
+      event.clientY - previous.y,
+    );
     previous.x = event.clientX;
     previous.y = event.clientY;
     if (previous.distance < STROKE_THRESHOLD_PX) return;
@@ -240,7 +257,9 @@ export function AnimalCard({
     setPetting(true);
     setNotice(undefined);
     try {
-      const response = await fetch(`/api/pets/${pet.id}/pet`, { method: "POST" });
+      const response = await fetch(`/api/pets/${pet.id}/pet`, {
+        method: "POST",
+      });
       if (!response.ok) {
         setNotice(`Couldn't pet ${name}. Try again.`);
         return;
@@ -253,7 +272,9 @@ export function AnimalCard({
       celebrateLevelUp(body.levelUp);
       router.refresh();
     } catch {
-      setNotice("Couldn't reach TaskTails. Check your connection and try again.");
+      setNotice(
+        "Couldn't reach TaskTails. Check your connection and try again.",
+      );
     } finally {
       pettingRef.current = false;
       setPetting(false);
@@ -263,17 +284,38 @@ export function AnimalCard({
   return (
     <div
       ref={cardRef}
-      className="relative flex flex-1 min-h-fit flex-col overflow-hidden rounded-card-lg border border-border-track bg-surface"
+      className={cn(
+        "relative flex min-h-fit flex-1 flex-col overflow-hidden rounded-card-lg border-[1.5px] bg-surface",
+        // #276 — the tier the animal came at frames its own stage too, so a
+        // Legendary fox does not read as Common the moment you open it.
+        tier.frame,
+      )}
     >
       <div
         className={cn(
-          "flex flex-1 flex-col items-center px-4 pt-4 pb-[14px]",
+          "relative flex flex-1 flex-col items-center px-4 pt-4 pb-[14px]",
           !backgroundUrl && "bg-linear-to-b from-[#EAF3EC] to-[#F3ECE1]",
         )}
         style={backgroundImageStyle(backgroundUrl)}
       >
-        <p className="font-display text-[18px] font-semibold">{name}</p>
-        <p className={cn("mt-[3px] text-[12px] font-extrabold", className)}>{label}</p>
+        {/* #276 §4 — the iridescent wash tints the stage *behind* the
+            animal, which keeps its own colours. Painted over the habitat
+            background rather than replacing it, exactly as the handoff
+            specifies for a shiny on a habitat. */}
+        {shiny ? (
+          <span
+            aria-hidden
+            className="bg-(image:--gradient-shiny-wash) pointer-events-none absolute inset-0"
+          />
+        ) : null}
+
+        <div className="relative flex items-center gap-[6px]">
+          <p className="font-display text-[18px] font-semibold">{name}</p>
+          {shiny ? <ShinyPill /> : null}
+        </div>
+        <p className={cn("mt-[3px] text-[12px] font-extrabold", className)}>
+          {label}
+        </p>
         {/* `flex-1 min-h-0` is what lets the animal claim whatever vertical
             room the stage isn't using for the name/mood label above it and
             the stat bars (`mt-auto`) below it, instead of sitting at a fixed
@@ -339,7 +381,12 @@ export function AnimalCard({
         <div className="mt-auto flex w-full flex-col gap-[9px]">
           <div className="rounded-input border border-border-track bg-surface px-3 py-[9px]">
             <div className="mb-1.5 flex items-center text-[10.5px] font-extrabold text-ink-soft">
-              <span className={cn("flex items-center gap-1", STATE_TEXT_CLASS[happinessTone])}>
+              <span
+                className={cn(
+                  "flex items-center gap-1",
+                  STATE_TEXT_CLASS[happinessTone],
+                )}
+              >
                 <Heart size={13} strokeWidth={2.2} />
                 HAPPINESS
               </span>
@@ -353,7 +400,12 @@ export function AnimalCard({
           </div>
           <div className="rounded-input border border-border-track bg-surface px-3 py-[9px]">
             <div className="mb-1.5 flex items-center text-[10.5px] font-extrabold text-ink-soft">
-              <span className={cn("flex items-center gap-1", STATE_TEXT_CLASS[hungerTone])}>
+              <span
+                className={cn(
+                  "flex items-center gap-1",
+                  STATE_TEXT_CLASS[hungerTone],
+                )}
+              >
                 <Drumstick size={13} strokeWidth={2.2} />
                 HUNGER
               </span>
@@ -383,12 +435,21 @@ export function AnimalCard({
             race on stylesheet order instead of one clearly winning (same fix
             `EditTaskForm`'s "Save changes" needed for TASK-03). */}
         <div className="flex-1">
-          <Button variant="primary" size="inline" onClick={handlePet} disabled={petting}>
+          <Button
+            variant="primary"
+            size="inline"
+            onClick={handlePet}
+            disabled={petting}
+          >
             Pet
           </Button>
         </div>
         <div className="flex-1">
-          <Button variant="positive" size="inline" onClick={() => setFeedOpen(true)}>
+          <Button
+            variant="positive"
+            size="inline"
+            onClick={() => setFeedOpen(true)}
+          >
             Feed
           </Button>
         </div>
@@ -402,7 +463,10 @@ export function AnimalCard({
       </div>
 
       {notice ? (
-        <p role="alert" className="px-3 pb-3 text-[11px] font-bold text-urgency-text">
+        <p
+          role="alert"
+          className="px-3 pb-3 text-[11px] font-bold text-urgency-text"
+        >
           {notice}
         </p>
       ) : null}

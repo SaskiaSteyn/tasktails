@@ -1,4 +1,8 @@
-import type { StoreItemCategory, StoreItemRarity, UserEconomy } from "@/generated/prisma/client";
+import type {
+  StoreItemCategory,
+  StoreItemRarity,
+  UserEconomy,
+} from "@/generated/prisma/client";
 import { UNLOCK_LEVEL_BUFFER } from "@/lib/gacha";
 import { allInventoryForUser } from "@/lib/inventory";
 import { petsForUser } from "@/lib/pets";
@@ -118,7 +122,10 @@ export async function sellOwnedItem(
       return {
         ok: true,
         refund,
-        item: { storeItemId: inventoryItem.storeItemId, name: inventoryItem.storeItem.name },
+        item: {
+          storeItemId: inventoryItem.storeItemId,
+          name: inventoryItem.storeItem.name,
+        },
         economy,
       } as const;
     }
@@ -160,7 +167,10 @@ export async function sellOwnedItem(
     return {
       ok: true,
       refund,
-      item: { storeItemId: pet.storeItemId, name: pet.name ?? pet.storeItem.name },
+      item: {
+        storeItemId: pet.storeItemId,
+        name: pet.name ?? pet.storeItem.name,
+      },
       economy,
     } as const;
   });
@@ -176,6 +186,8 @@ export type SellableItem = {
   imageUrl: string;
   /** #276 — the tier this row is framed in. Nullable like the column it comes from; null renders Common. */
   rarity: StoreItemRarity | null;
+  /** #276 — a Shiny variant, which only a Lucky Box pull can produce. */
+  shiny: boolean;
   /** Always 1 for a pet — an animal has no stack to hold a bigger count. */
   quantity: number;
   coinPrice: number;
@@ -201,7 +213,9 @@ export type SellableItem = {
  * them exactly like anything else, and the Sell Items screen is explicit
  * that a locked animal like Rhino belongs in this list too.
  */
-export async function sellableItemsForUser(userId: string): Promise<SellableItem[]> {
+export async function sellableItemsForUser(
+  userId: string,
+): Promise<SellableItem[]> {
   const [goods, pets, level] = await Promise.all([
     allInventoryForUser(userId),
     petsForUser(userId),
@@ -215,6 +229,7 @@ export async function sellableItemsForUser(userId: string): Promise<SellableItem
     category: item.storeItem.category,
     imageUrl: item.storeItem.imageUrl,
     rarity: item.storeItem.rarity,
+    shiny: item.shiny,
     quantity: item.quantity,
     coinPrice: item.storeItem.coinPrice,
     sellValue: sellValueOf(item.storeItem.coinPrice),
@@ -229,6 +244,7 @@ export async function sellableItemsForUser(userId: string): Promise<SellableItem
     category: pet.storeItem.category,
     imageUrl: pet.storeItem.imageUrl,
     rarity: pet.storeItem.rarity,
+    shiny: pet.shiny,
     quantity: 1,
     coinPrice: pet.storeItem.coinPrice,
     sellValue: sellValueOf(pet.storeItem.coinPrice),

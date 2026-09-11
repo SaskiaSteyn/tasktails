@@ -594,6 +594,7 @@ describe("createPetForTransaction", () => {
         happiness: 100,
         hunger: 0,
         lastInteractedAt: now,
+        shiny: false,
       },
       include: { storeItem: true },
     });

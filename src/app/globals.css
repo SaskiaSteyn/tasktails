@@ -651,6 +651,25 @@
   --animate-sheen: sheen 3600ms ease-in-out infinite;
   --animate-twinkle: twinkle 2400ms ease-in-out infinite;
   --animate-floaty: floaty 4500ms ease-in-out infinite;
+  /* #276 §4 — Shiny. The frame gradient and the wash that tints the field
+     behind the art. Kept as raw gradients rather than tokens: these four
+     stops are the Shiny identity itself, not a reuse of any app accent,
+     and nothing else in the system refers to them. */
+  --gradient-shiny-frame: linear-gradient(
+    135deg,
+    #8fd3e8,
+    #c9a7ec 34%,
+    #f5b0c6 62%,
+    #fbd98a
+  );
+  --gradient-shiny-wash: linear-gradient(
+    135deg,
+    rgb(143 211 232 / 0.3),
+    rgb(201 167 236 / 0.26) 40%,
+    rgb(245 176 198 / 0.24) 70%,
+    rgb(251 217 138 / 0.28)
+  );
+  --shadow-shiny: 0 14px 30px rgb(140 110 190 / 0.22);
 }
 
 /* Respect the OS reduce-motion setting. */

@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
-import { RarityChip, rarityRowFrame, rarityThumbFill } from "@/components/store/rarity-chip";
+import {
+  RarityChip,
+  rarityRowFrame,
+  rarityThumbFill,
+} from "@/components/store/rarity-chip";
+import { ShinyPill } from "@/components/store/shiny";
 import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 import type { SellableItem } from "@/lib/sell";
@@ -51,7 +56,11 @@ import type { SellableItem } from "@/lib/sell";
  * expected outcome rather than the disappearing act that made selling from
  * `/zoo` confusing.
  */
-export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }) {
+export function SellItemsList({
+  initialItems,
+}: {
+  initialItems: SellableItem[];
+}) {
   const [items, setItems] = useState(initialItems);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
@@ -64,7 +73,9 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
     setErrorId(null);
 
     try {
-      const response = await fetch(`/api/inventory/${id}/sell`, { method: "POST" });
+      const response = await fetch(`/api/inventory/${id}/sell`, {
+        method: "POST",
+      });
       if (!response.ok) {
         setErrorId(id);
         return;
@@ -88,7 +99,9 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
         >
           <PackageOpen size={26} strokeWidth={1.8} className="text-ink-faint" />
         </div>
-        <p className="font-display text-[17px] font-semibold">Nothing to sell yet</p>
+        <p className="font-display text-[17px] font-semibold">
+          Nothing to sell yet
+        </p>
         <p className="mt-[6px] text-[12.5px] text-ink-soft">
           Items you buy or pull will show up here.
         </p>
@@ -107,12 +120,16 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
               // locked row keeps the muted treatment, so no tier on it.
               className={cn(
                 "flex items-center gap-[11px] rounded-[14px] border-[1.5px] bg-warm p-[10px]",
-                item.locked ? "border-border-track" : rarityRowFrame(item.rarity),
+                item.locked
+                  ? "border-border-track"
+                  : rarityRowFrame(item.rarity),
               )}
             >
               <ItemWell
                 item={item}
-                bgClassNameOverride={item.locked ? undefined : rarityThumbFill(item.rarity)}
+                bgClassNameOverride={
+                  item.locked ? undefined : rarityThumbFill(item.rarity)
+                }
                 locked={item.locked}
                 size={44}
                 iconSize={20}
@@ -123,7 +140,10 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-2 truncate text-[13px] font-extrabold">
                   {item.name}
-                  {!item.locked && <RarityChip rarity={item.rarity} size="row" />}
+                  {!item.locked && (
+                    <RarityChip rarity={item.rarity} size="row" />
+                  )}
+                  {!item.locked && item.shiny ? <ShinyPill /> : null}
                   {item.locked && (
                     <span className="ml-[3px] rounded-[5px] bg-input px-[5px] py-px text-[9.5px] font-extrabold text-ink-soft">
                       LOCKED · LVL {item.levelRequired}
@@ -134,8 +154,12 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
                   Bought for {item.coinPrice.toLocaleString("en-US")}
                 </p>
                 {errorId === item.id && (
-                  <p role="alert" className="mt-[2px] text-[10px] font-bold text-urgency-text">
-                    Couldn&rsquo;t sell {CATEGORY_LABEL[item.category].toLowerCase()}. Try again.
+                  <p
+                    role="alert"
+                    className="mt-[2px] text-[10px] font-bold text-urgency-text"
+                  >
+                    Couldn&rsquo;t sell{" "}
+                    {CATEGORY_LABEL[item.category].toLowerCase()}. Try again.
                   </p>
                 )}
               </div>
@@ -150,7 +174,9 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
                   "hover:not-disabled:bg-sage-hover disabled:opacity-60",
                 )}
               >
-                {pendingId === item.id ? "Selling…" : `Sell · +${item.sellValue.toLocaleString("en-US")}`}
+                {pendingId === item.id
+                  ? "Selling…"
+                  : `Sell · +${item.sellValue.toLocaleString("en-US")}`}
               </button>
             </div>
           ))}
@@ -158,8 +184,8 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
       </div>
 
       <p className="flex-none border-t border-border-track bg-warm px-[18px] py-[14px] text-[11px] leading-[1.5] text-ink-soft">
-        Everything you own can be sold — including animals you haven&rsquo;t unlocked yet. Selling
-        removes the item from your account for good.
+        Everything you own can be sold — including animals you haven&rsquo;t
+        unlocked yet. Selling removes the item from your account for good.
       </p>
 
       <Modal
