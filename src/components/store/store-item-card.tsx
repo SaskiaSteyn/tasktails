@@ -150,6 +150,9 @@ export function StoreItemCard({
   // within `FEEDBACK_MS` would have the first click's stale timeout reset
   // the second click's still-fresh "added"/"error" state back to idle early.
   const revertTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  // #274 — where the fly-to-cart mark starts from. The button, not the art:
+  // it is what was actually pressed, so the mark leaves from under the finger.
+  const addButtonRef = useRef<HTMLButtonElement>(null);
   const cart = useCartCount();
   const router = useRouter();
 
@@ -170,6 +173,10 @@ export function StoreItemCard({
       setStatus(response.ok ? "added" : "error");
       if (response.ok) {
         cart?.increment();
+        // #274 — the green tick below is easy to miss on a grid of cards, and
+        // says nothing about where the item went. This is the other half:
+        // a toast under the cart icon and a mark that travels to it.
+        cart?.announceAdded(addLabel, addButtonRef.current);
         router.refresh();
       }
     } catch {
@@ -285,6 +292,7 @@ export function StoreItemCard({
             </span>
 
             <button
+              ref={addButtonRef}
               type="button"
               onClick={handleAddToCart}
               disabled={status === "pending"}

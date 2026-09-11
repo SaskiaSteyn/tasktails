@@ -11,6 +11,10 @@ import { cn } from "@/lib/cn";
  * `CartCountContext` rather than a plain prop so `StoreItemCard`'s
  * add-to-cart button can bump it live — see that context's own doc comment
  * for why this and the grid can't just pass the count directly.
+ *
+ * It also registers itself with that context as the target for #274's
+ * add-to-cart flourish, so the toast and the flying mark find the icon
+ * wherever the current breakpoint has put it.
  */
 export function CartLink({ className }: { className?: string }) {
   const cart = useCartCount();
@@ -18,6 +22,7 @@ export function CartLink({ className }: { className?: string }) {
 
   return (
     <Link
+      ref={cart?.registerCartAnchor}
       href="/store/cart"
       aria-label={count > 0 ? `Cart, ${count} items` : "Cart"}
       className={cn(

@@ -522,6 +522,47 @@
   }
 }
 
+/* #274 — the add-to-cart flourish. A single mark travels from the "+" that
+   was pressed to the cart icon in the header, so the item visibly goes
+   somewhere rather than the button just flashing a tick in place.
+
+   `--cart-fly-x` / `--cart-fly-y` are per-element custom properties set
+   inline by `CartAddOverlay`, which measures both ends for real — the
+   distance is different for every card in the grid and different again at
+   each breakpoint, so a keyframe (one shared set of rules) cannot know it.
+   Same reasoning `pet-heart-float` documents for its own drift.
+
+   The shrink is what sells the travel as "into the cart" rather than a mark
+   sliding across the screen, and the late fade keeps it visible for most of
+   the trip instead of ghosting out halfway. */
+@keyframes cart-fly {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(0, 0) scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%)
+      translate(var(--cart-fly-x, 0px), var(--cart-fly-y, 0px)) scale(0.35);
+  }
+}
+
+/* The toast that lands under the cart icon. Drops in from behind the header
+   rather than fading in place, so the eye is led to the cart. */
+@keyframes cart-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes medallion-pop {
   from {
     opacity: 0;
@@ -543,6 +584,13 @@
   --animate-confetti-fall: confetti-fall 2600ms cubic-bezier(0.3, 0.5, 0.6, 1)
     both;
   --animate-medallion-pop: medallion-pop 420ms cubic-bezier(0.2, 0.8, 0.3, 1.1)
+    both;
+  /* Eased out hard: the mark leaves the button quickly and settles into the
+     cart, which reads as "put away" where a linear travel reads as "passing
+     through". Duration must match `CART_FLY_MS` in `cart-add-overlay.tsx`,
+     which is what unmounts the element afterwards. */
+  --animate-cart-fly: cart-fly 620ms cubic-bezier(0.32, 0.72, 0.3, 1) both;
+  --animate-cart-toast-in: cart-toast-in 180ms cubic-bezier(0.2, 0.8, 0.3, 1)
     both;
 }
 
