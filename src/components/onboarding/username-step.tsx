@@ -59,7 +59,9 @@ export function UsernameStep({
 
       router.push(AFTER_USERNAME);
     } catch {
-      setFormError("Can't reach TaskTails. Check your connection and try again.");
+      setFormError(
+        "Can't reach TaskTails. Check your connection and try again.",
+      );
     } finally {
       setPending(false);
     }
@@ -84,7 +86,7 @@ export function UsernameStep({
 
   return (
     <>
-    <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col">
         <div className="mx-auto mt-[26px] mb-[14px] flex size-16 items-center justify-center rounded-full bg-terracotta-tint text-terracotta">
           <User size={30} strokeWidth={2.2} aria-hidden />
         </div>
@@ -96,7 +98,11 @@ export function UsernameStep({
           It&apos;s how TaskTails greets you and how your pets know you.
         </p>
 
-        <form noValidate onSubmit={handleSubmit} className="flex flex-1 flex-col justify-between">
+        <form
+          noValidate
+          onSubmit={handleSubmit}
+          className="flex flex-1 flex-col justify-between"
+        >
           <div>
             <UsernameField
               value={username}
@@ -177,7 +183,7 @@ export function UsernameStep({
         icon={AtSign}
         iconTint="terracotta"
         title={`We'll call you @${skipUsername}`}
-        body="Skipping picks a handle from your email for you. You can change it at any time from your profile."
+        body="Skipping picks a handle from your email for you. You can change it at any time from Settings."
         confirmLabel="Sounds good"
         cancelLabel="Let me pick one"
         onConfirm={() => {

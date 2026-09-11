@@ -12,17 +12,12 @@ import { AchievementsGrid } from "@/components/profile/achievements-grid";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { RankButton } from "@/components/profile/rank-button";
 import { StatsGrid } from "@/components/profile/stats-grid";
-import { UsernameCard } from "@/components/profile/username-card";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { currentEconomy } from "@/lib/economy";
 import { allTimeLeaderboard } from "@/lib/leaderboard";
 import { lifetimeStatsFor } from "@/lib/stats";
-import {
-  displayNameFor,
-  displayNameFromEmail,
-  findUserByEmail,
-} from "@/lib/users";
+import { displayNameFor, findUserByEmail } from "@/lib/users";
 
 export const metadata: Metadata = {
   title: "Profile · TaskTails",
@@ -127,11 +122,6 @@ export default async function ProfilePage() {
             the widest layout would be the one that lost the bar. */}
         {economy ? <XpCard economy={economy} /> : null}
       </div>
-
-      <UsernameCard
-        username={record.username}
-        suggestion={displayNameFromEmail(record.email)}
-      />
 
       <div className="mt-4">
         <StatsGrid stats={stats} />

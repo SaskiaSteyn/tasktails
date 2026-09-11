@@ -8,11 +8,12 @@ import { LogoutButton } from "@/components/auth/logout-button";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AccountCard } from "@/components/settings/account-card";
+import { UsernameCard } from "@/components/settings/username-card";
 import { SettingsToggleCard } from "@/components/settings/settings-toggle-card";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { settingsForUser } from "@/lib/settings";
-import { findUserByEmail } from "@/lib/users";
+import { displayNameFromEmail, findUserByEmail } from "@/lib/users";
 
 export const metadata: Metadata = {
   title: "Settings · TaskTails",
@@ -73,7 +74,6 @@ export default async function SettingsPage() {
       >
         {[
           ["Account", "#account"],
-          ["Notifications", "#notifications"],
           ["Preferences", "#preferences"],
           ["Research participation", "#research"],
         ].map(([label, href]) => (
@@ -89,35 +89,41 @@ export default async function SettingsPage() {
 
       <div className="flex min-w-0 flex-1 flex-col desk:max-w-[960px] desk:overflow-y-auto desk:px-10 desk:py-[30px]">
         <div className="flex flex-col gap-4 desk:gap-[26px]">
-          <section id="account">
+          <section id="account" className="flex flex-col gap-2">
             <AccountCard email={record.email} />
-          </section>
-
-          <section id="notifications">
-            <SettingsToggleCard
-              title="Notifications"
-              rows={[
-                { key: "dailyReminder", label: "Daily task reminder" },
-                { key: "streakAlert", label: "Streak at risk alert" },
-              ]}
-              initialValues={{
-                dailyReminder: settings?.dailyReminder ?? true,
-                streakAlert: settings?.streakAlert ?? true,
-              }}
+            {/* #284 — moved off Profile. A handle is an account detail, and
+                this is where the other two live (email, password). */}
+            <UsernameCard
+              username={record.username}
+              suggestion={displayNameFromEmail(record.email)}
             />
           </section>
 
+          {/* #284 — "if anything doesn't actually do anything, it should be
+              removed". Three toggles didn't:
+
+              - "Daily task reminder" and "Streak at risk alert" (PRO-13)
+                depended on PRO-17, reminder delivery, which is To Do and
+                which that ticket itself notes leaves them controlling
+                nothing. There is no push subscription, no scheduler and no
+                email provider in this app.
+              - "Sound effects" had no audio to switch: nothing calls
+                `Audio`, and `public/` holds no sound files.
+
+              "Reduce motion" stays because it is real — the root layout
+              reads it onto `<html data-reduce-motion>` and globals.css acts
+              on it. With its two neighbours gone the Notifications section
+              has nothing left in it at all, so the section goes too.
+
+              The columns stay in the schema: a study is running against
+              this database, dropping columns is irreversible, and they cost
+              nothing sitting there. If reminders are ever built, PRO-13's
+              toggles come back with them. */}
           <section id="preferences">
             <SettingsToggleCard
               title="Preferences"
-              rows={[
-                { key: "soundEffects", label: "Sound effects" },
-                { key: "reduceMotion", label: "Reduce motion" },
-              ]}
-              initialValues={{
-                soundEffects: settings?.soundEffects ?? false,
-                reduceMotion: settings?.reduceMotion ?? false,
-              }}
+              rows={[{ key: "reduceMotion", label: "Reduce motion" }]}
+              initialValues={{ reduceMotion: settings?.reduceMotion ?? false }}
             />
           </section>
         </div>
@@ -128,8 +134,9 @@ export default async function SettingsPage() {
           id="research"
           className="mb-2 rounded-[11px] bg-violet-tint px-[11px] py-[9px] text-[10.5px] leading-[1.45] text-violet-text desk:mt-[26px] desk:px-5 desk:py-[18px] desk:text-[12.5px]"
         >
-          <b className="font-extrabold">Research participant.</b> Anonymous usage
-          is logged for the IMY761 study. Contact the researcher to withdraw.
+          <b className="font-extrabold">Research participant.</b> Anonymous
+          usage is logged for the IMY761 study. Contact the researcher to
+          withdraw.
         </p>
 
         <LogoutButton />
