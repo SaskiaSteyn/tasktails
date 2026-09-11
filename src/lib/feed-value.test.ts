@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FEED_EFFECT, type FoodRarity, feedEffectOf } from "@/lib/feed-value";
+import { FEED_EFFECT, type FoodRarity, feedEffectOf, hungerLabel } from "@/lib/feed-value";
 
 /**
  * The point of the table is the ordering, not the exact figures: rarer food
@@ -38,5 +38,28 @@ describe("FEED_EFFECT", () => {
     // into the pet's hunger.
     expect(feedEffectOf(null)).toEqual(FEED_EFFECT.COMMON);
     expect(feedEffectOf(undefined)).toEqual(FEED_EFFECT.COMMON);
+  });
+});
+
+/**
+ * #277 — the stored value is negative because it is subtracted from the
+ * pet's hunger, but "-18 hunger" reads as *more* hungry. The copy says
+ * "less".
+ */
+describe("hungerLabel", () => {
+  it("says less, and never shows the minus sign", () => {
+    expect(hungerLabel("COMMON")).toBe("less 18 hunger");
+    expect(hungerLabel("EPIC")).toBe("less 80 hunger");
+  });
+
+  it("never leaks a minus for any tier, including the one with no food seeded", () => {
+    for (const rarity of Object.keys(FEED_EFFECT) as FoodRarity[]) {
+      expect(hungerLabel(rarity)).not.toContain("-");
+      expect(hungerLabel(rarity)).toMatch(/^less \d+ hunger$/);
+    }
+  });
+
+  it("falls back to Common for an item with no rarity, same as feedEffectOf", () => {
+    expect(hungerLabel(null)).toBe("less 18 hunger");
   });
 });

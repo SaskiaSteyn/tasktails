@@ -5,7 +5,7 @@ import Image from "next/image";
 
 import type { StoreItem, StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
-import { feedEffectOf } from "@/lib/feed-value";
+import { hungerLabel } from "@/lib/feed-value";
 import {
   ANIMAL_SHADOW,
   type ArtFocus,
@@ -177,7 +177,7 @@ export function itemSubtitle(item: Pick<StoreItem, "category" | "rarity">): stri
   // other two slots (corner badge, footer note) carry the Group B urgency
   // stimuli, and nothing neutral should compete for them.
   if (item.category === "FOOD") {
-    return `${label} · ${feedEffectOf(item.rarity).hunger} hunger`;
+    return `${label} · ${hungerLabel(item.rarity)}`;
   }
   return label;
 }

@@ -11,7 +11,7 @@ import { RarityChip, rarityRowFrame, rarityThumbFill } from "@/components/store/
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
-import { feedEffectOf } from "@/lib/feed-value";
+import { feedEffectOf, hungerLabel } from "@/lib/feed-value";
 import {
   SHEET_GRAB_CLASS,
   SHEET_SCROLL_CLASS,
@@ -245,7 +245,7 @@ export function FeedSheet({
                             between a Shrimp and some Hay actually gets made. */}
                         <span className="mt-[2px] flex items-center gap-[6px] text-[11px] font-extrabold">
                           <span className="text-sage-text">
-                            {feedEffectOf(item.storeItem.rarity).hunger} hunger
+                            {hungerLabel(item.storeItem.rarity)}
                           </span>
                           <span className="text-amber-text">
                             +{feedEffectOf(item.storeItem.rarity).happiness} mood
