@@ -8,8 +8,13 @@ import { AppShell } from "@/components/layout/app-shell";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
 import { RarityChip, rarityThumbFill } from "@/components/store/rarity-chip";
 import { buttonClasses } from "@/components/ui/button";
-import { transactionsForUser, type TransactionWithStoreItem } from "@/lib/checkout";
+import {
+  transactionsForUser,
+  type TransactionWithStoreItem,
+} from "@/lib/checkout";
+import { cn } from "@/lib/cn";
 import { calendarDaysBetween, isSameDay } from "@/lib/day";
+import { spendByDay, spendByWeek } from "@/lib/spend-breakdown";
 
 export const metadata: Metadata = {
   title: "Purchase history · TaskTails",
@@ -52,9 +57,13 @@ export default async function PurchaseHistoryPage() {
   const now = new Date();
 
   const groups = groupByDay(transactions, now);
-  const spentThisWeek = transactions
-    .filter((t) => calendarDaysBetween(t.purchasedAt, now) < 7)
-    .reduce((sum, t) => sum + t.coinSpent, 0);
+  // #278 — the footer used to show the last 7 days only, which answered a
+  // narrower question than the screen it sits on: this is the *history*,
+  // so the headline figure is everything ever spent. The week is still
+  // there, one tap down, alongside the rest of the shape.
+  const spentAllTime = transactions.reduce((sum, t) => sum + t.coinSpent, 0);
+  const weeks = spendByWeek(transactions, now);
+  const days = spendByDay(transactions, now);
 
   return (
     <AppShell
@@ -82,7 +91,9 @@ export default async function PurchaseHistoryPage() {
           >
             <Receipt size={26} strokeWidth={1.8} className="text-ink-faint" />
           </div>
-          <p className="font-display text-[17px] font-semibold">No purchases yet</p>
+          <p className="font-display text-[17px] font-semibold">
+            No purchases yet
+          </p>
           <p className="mt-[6px] mb-[18px] text-[12.5px] text-ink-soft">
             Buy something and it&rsquo;ll show up here.
           </p>
@@ -147,7 +158,8 @@ export default async function PurchaseHistoryPage() {
                     {/* The day's spend, so a collapsed row still answers "what
                         did that day cost me" without opening it. */}
                     <span className="ml-auto flex-none font-display text-[12px] text-terracotta">
-                      −{group.entries
+                      −
+                      {group.entries
                         .reduce((sum, entry) => sum + entry.coinSpent, 0)
                         .toLocaleString("en-US")}
                     </span>
@@ -167,7 +179,9 @@ export default async function PurchaseHistoryPage() {
                       </p>
                       <div className="flex min-w-0 flex-1 items-center gap-[11px] desk:flex-none">
                         <ItemWell
-                          bgClassNameOverride={rarityThumbFill(entry.storeItem.rarity)}
+                          bgClassNameOverride={rarityThumbFill(
+                            entry.storeItem.rarity,
+                          )}
                           item={entry.storeItem}
                           size={38}
                           iconSize={16}
@@ -176,10 +190,15 @@ export default async function PurchaseHistoryPage() {
                         />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <p className="truncate text-[13px] font-bold">{entry.storeItem.name}</p>
+                            <p className="truncate text-[13px] font-bold">
+                              {entry.storeItem.name}
+                            </p>
                             {/* #276 §5 — the tier, with no effects: this is a
                                 dense historical list, not a shop window. */}
-                            <RarityChip rarity={entry.storeItem.rarity} size="row" />
+                            <RarityChip
+                              rarity={entry.storeItem.rarity}
+                              size="row"
+                            />
                           </div>
                           <p className="text-[11px] text-ink-faint desk:hidden">
                             {rowTimestamp(entry.purchasedAt, now)}
@@ -199,22 +218,89 @@ export default async function PurchaseHistoryPage() {
             ))}
           </div>
 
-          <div className="flex flex-none items-center justify-between border-t border-border-track bg-warm px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] desk:px-[34px] desk:py-4">
-            <span className="text-[12px] text-ink-soft">Spent this week</span>
-            <span className="font-display text-[18px] font-semibold text-amber-text">
-              {spentThisWeek.toLocaleString("en-US")} coins
-            </span>
-          </div>
+          {/* A native `<details>`, like the per-day accordion above it — the
+              breakdown costs this page no client boundary and still works
+              with JavaScript off. `group` drives the chevron; `open:` is
+              what lets the summary's own border appear only once expanded. */}
+          <details className="group flex-none border-t border-border-track bg-warm">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 desk:px-[34px] desk:py-4 [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-[6px] text-[12px] text-ink-soft">
+                Total spent
+                <ChevronDown
+                  size={14}
+                  strokeWidth={2.4}
+                  aria-hidden
+                  className="transition-transform duration-120 group-open:rotate-180"
+                />
+              </span>
+              <span className="font-display text-[18px] font-semibold text-amber-text">
+                {spentAllTime.toLocaleString("en-US")} coins
+              </span>
+            </summary>
+
+            <div className="border-t border-border-track px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] desk:px-[34px] desk:pb-4">
+              <SpendSection title="By week" buckets={weeks} />
+              {/* The span is named rather than left implicit: every purchase
+                  is already listed day by day up the page, so this is the
+                  recent shape at a glance, not a second copy of the log. */}
+              <SpendSection
+                title="Last 7 days"
+                buckets={days}
+                className="mt-[14px]"
+              />
+            </div>
+          </details>
         </>
       )}
     </AppShell>
   );
 }
 
+/** #278 — one labelled list of spend buckets inside the footer's breakdown. */
+function SpendSection({
+  title,
+  buckets,
+  className,
+}: {
+  title: string;
+  buckets: { label: string; coins: number }[];
+  className?: string;
+}) {
+  if (buckets.length === 0) return null;
+
+  return (
+    <div className={className}>
+      <p className="text-overline mb-[6px]">{title}</p>
+      <dl className="flex flex-col gap-[5px]">
+        {buckets.map((bucket) => (
+          <div
+            key={bucket.label}
+            className="flex items-baseline justify-between gap-3"
+          >
+            <dt className="text-[12px] text-ink-soft">{bucket.label}</dt>
+            {/* A zero day is greyed rather than hidden — see `spendByDay`. */}
+            <dd
+              className={cn(
+                "text-[12.5px] font-extrabold",
+                bucket.coins > 0 ? "text-amber-text" : "text-ink-faint",
+              )}
+            >
+              {bucket.coins.toLocaleString("en-US")}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 type DayGroup = { label: string; entries: TransactionWithStoreItem[] };
 
 /** Groups already-newest-first transactions (STOR-17) into day buckets without re-sorting. */
-function groupByDay(transactions: TransactionWithStoreItem[], now: Date): DayGroup[] {
+function groupByDay(
+  transactions: TransactionWithStoreItem[],
+  now: Date,
+): DayGroup[] {
   const groups: DayGroup[] = [];
   for (const entry of transactions) {
     const label = dayLabel(entry.purchasedAt, now);
