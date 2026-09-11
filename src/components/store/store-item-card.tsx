@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useRef, useState } from "react";
 
 import { useCartCount } from "@/components/store/cart-count-context";
+import { fieldStyle, rarityLabel, rarityTokens } from "@/lib/rarity";
 import { ItemWell, itemSubtitle } from "@/components/store/item-visual";
 import { Coin } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
@@ -186,14 +187,55 @@ export function StoreItemCard({
     }
   }
 
+  // #276 — the tier this card is drawn in. A locked card is deliberately
+  // *not* tiered: it keeps the muted treatment and shows no chip and no
+  // effects, because advertising a Legendary nobody can buy reads as a taunt
+  // (UPDATE-01 §7 rule 5, the same call the urgency badges already made).
+  const tier = rarityTokens(item.rarity);
+  const tiered = !locked;
+
   const cardClassName = cn(
-    "relative flex w-full flex-col overflow-hidden rounded-card border border-border-track",
+    "relative flex w-full flex-col overflow-hidden rounded-card",
+    // 1.5px at every tier, not Tailwind's 1px `border` — the handoff's frame
+    // width is part of what separates the tiers at a glance, and Common's
+    // frame colour *is* `border-track`, so an untiered card is what shipped
+    // plus half a pixel.
+    tiered ? "border-[1.5px]" : "border border-border-track",
     // `bg-surface` (white), not the old `bg-warm` cream tint the pre-addendum
     // card used for its whole body — per the addendum's card art, the card
     // itself is plain white and only the art tile inside it carries a pale
     // category tint (`ItemWell`'s own fill).
     locked ? "bg-[#F2EEE7] text-left transition-colors duration-120 hover:border-checkbox" : "bg-surface",
   );
+
+  const cardStyle = tiered
+    ? { borderColor: tier.frame, boxShadow: tier.shadow ?? undefined }
+    : undefined;
+
+  /**
+   * Epic and Legendary only. Sizes and offsets are UPDATE-01 §2's rescale of
+   * the reference's 170px figures onto this card's 82px tile.
+   *
+   * The rotation rides in `--spark-rotate` rather than a `rotate-45` class:
+   * `twinkle` animates `transform`, and an animated transform replaces a
+   * class-set one outright rather than composing with it.
+   */
+  const sparkles = tier.sparks ? (
+    <span aria-hidden className="pointer-events-none absolute inset-0">
+      <span
+        style={{ ["--spark-rotate" as string]: "45deg" }}
+        className="absolute top-[9px] left-[12px] size-[6px] rounded-[2px] bg-white animate-twinkle"
+      />
+      <span
+        style={{ ["--spark-rotate" as string]: "45deg", animationDelay: "0.8s" }}
+        className="absolute right-[14px] bottom-[10px] size-[5px] rounded-[2px] bg-white animate-twinkle"
+      />
+      <span
+        style={{ animationDelay: "1.5s" }}
+        className="absolute top-[24px] right-[10px] size-[4px] rounded-full bg-[#FFF3D6] animate-twinkle"
+      />
+    </span>
+  ) : null;
 
   const content = (
     <>
@@ -203,14 +245,40 @@ export function StoreItemCard({
           name, and the art tile now spans the card's full width rather than
           sitting inset above the text. */}
       <div className="px-[11px] pt-[10px] pb-[9px]">
-        <p
-          className={cn(
-            "truncate text-[12.5px] font-extrabold",
-            locked && "text-ink-disabled",
-          )}
-        >
-          {item.name}
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <p
+            className={cn(
+              "min-w-0 flex-1 truncate text-[12.5px] font-extrabold",
+              locked && "text-ink-disabled",
+            )}
+          >
+            {item.name}
+          </p>
+
+          {/* #276 — the tier chip lives in the header, not floating in the
+              art tile as the rarity reference draws it. That tile's
+              `top-2 right-2` slot already belongs to the urgency badges
+              (`StockBadge`, `CartActivityBadge`, …) and rarity must not
+              stack with them — UPDATE-01 §2 makes that the one placement
+              change from the reference. */}
+          {tiered ? (
+            <span
+              style={{
+                backgroundColor: tier.chipBg,
+                color: tier.chipInk,
+                borderColor: tier.chipLine,
+              }}
+              className="flex flex-none items-center gap-[4px] rounded-[6px] border px-[6px] py-[2px] text-[9.5px] font-extrabold tracking-[.5px] uppercase"
+            >
+              <span
+                aria-hidden
+                style={{ backgroundColor: tier.chipInk }}
+                className="size-[6px] flex-none rounded-full"
+              />
+              {rarityLabel(item.rarity)}
+            </span>
+          ) : null}
+        </div>
         <p className={cn("text-[10px]", locked ? "text-ink-disabled" : "text-ink-faint")}>
           {itemSubtitle(item)}
         </p>
@@ -248,10 +316,19 @@ export function StoreItemCard({
           animalIconSize={54}
           rounded="rounded-none"
           fullWidth
+          fieldStyle={tiered ? fieldStyle(tier) : undefined}
+          fieldFx={tiered ? tier.fieldFx : null}
+          overlay={sparkles}
         />
       </div>
 
-      <div className="border-t border-border-track px-[11px] py-[10px]">
+      <div
+        style={tiered ? { borderTopColor: tier.frame } : undefined}
+        className={cn(
+          "border-t px-[11px] py-[10px]",
+          tiered ? "" : "border-border-track",
+        )}
+      >
         {footerNote}
 
         {locked ? (
@@ -332,8 +409,23 @@ export function StoreItemCard({
   );
 
   return (
-    <div className={cardClassName}>
+    <div className={cardClassName} style={cardStyle}>
       {content}
+
+      {/* #276 — Legendary only. Above the whole card, not just the art tile,
+          so the glint crosses the header and footer too. `overflow-hidden`
+          on this wrapper (not the band) is what stops it painting outside
+          the card's rounded corners; the band is deliberately taller than
+          the card so a skewed edge never shows a horizontal seam. */}
+      {tiered && tier.sheen ? (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 overflow-hidden rounded-card"
+        >
+          <span className="absolute top-[-20%] bottom-[-20%] w-[64px] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.72)_50%,transparent)] animate-sheen" />
+        </span>
+      ) : null}
+
       {locked ? (
         // The whole card is still the tap target (SHR-06) — it just isn't the
         // element wrapping the layout any more (#260). `rounded-card` so the

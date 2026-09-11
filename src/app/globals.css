@@ -535,6 +535,50 @@
    The shrink is what sells the travel as "into the cart" rather than a mark
    sliding across the screen, and the late fade keeps it visible for most of
    the trip instead of ghosting out halfway. */
+/* #276 — the rarity treatments, timings quoted from
+   `design_handoff_rarity/README.md` §"Interactions & Behavior". All three are
+   decorative and infinite, carry no state, and are neutralised by the
+   reduce-motion rules further down — the tier's colour is what actually
+   carries the distinction (UPDATE-01 §7 rule 4). */
+
+/* The band sweeps the whole card, not just the art tile. The gap between
+   sweeps is intentional: the keyframe finishes travelling at 55% and holds
+   off-screen for the rest, which is what makes it a periodic glint rather
+   than a strobe. */
+@keyframes sheen {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  55%,
+  100% {
+    transform: translateX(240%) skewX(-18deg);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: rotate(var(--spark-rotate, 0deg)) scale(0.4);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(var(--spark-rotate, 0deg)) scale(1);
+  }
+}
+
+/* Shiny art only. `--spark-rotate` is not wanted here, so this one composes
+   nothing and can translate plainly. */
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
 @keyframes cart-fly {
   from {
     opacity: 1;
@@ -592,6 +636,13 @@
   --animate-cart-fly: cart-fly 620ms cubic-bezier(0.32, 0.72, 0.3, 1) both;
   --animate-cart-toast-in: cart-toast-in 180ms cubic-bezier(0.2, 0.8, 0.3, 1)
     both;
+  /* #276. The sparkle's own rotation is carried in `--spark-rotate` rather
+     than a `rotate-45` utility, because an animated `transform` replaces a
+     class-set one outright — the same trap `task-reward-float` documents for
+     its centring. */
+  --animate-sheen: sheen 3600ms ease-in-out infinite;
+  --animate-twinkle: twinkle 2400ms ease-in-out infinite;
+  --animate-floaty: floaty 4500ms ease-in-out infinite;
 }
 
 /* Respect the OS reduce-motion setting. */

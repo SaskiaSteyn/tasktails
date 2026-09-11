@@ -260,6 +260,9 @@ export function ItemWell({
   fill = false,
   className,
   bgClassNameOverride,
+  fieldStyle,
+  fieldFx,
+  overlay,
   iconClassNameOverride,
 }: {
   item: Pick<StoreItem, "category" | "imageUrl">;
@@ -278,6 +281,20 @@ export function ItemWell({
   className?: string;
   /** Replaces the default category-tinted fill. Ignored when `locked`. */
   bgClassNameOverride?: string;
+  /**
+   * #276 — replaces the fill with a rarity tier's own `field`, as a style
+   * rather than a class because Legendary's is a gradient. Ignored when
+   * `locked`: a locked card keeps its muted treatment and shows no tier at
+   * all (UPDATE-01 §7 rule 5). Wins over `bgClassNameOverride`.
+   */
+  fieldStyle?: React.CSSProperties;
+  /**
+   * #276 — the tier's field effect, painted `inset-0` *behind* the art so
+   * the artwork is never tinted or recoloured (UPDATE-01 §7 rule 3).
+   */
+  fieldFx?: string | null;
+  /** #276 — Epic+ sparkles and any other overlay that belongs inside the tile, painted above the art. */
+  overlay?: React.ReactNode;
   /** Replaces the default category-tinted icon colour (goods only — animal artwork has no tint to override). */
   iconClassNameOverride?: string;
 }) {
@@ -292,10 +309,16 @@ export function ItemWell({
   // fedora would have been tiled across the well like wallpaper.
   const fillArt = showArt && item.category === "DECORATIONS" && !locked;
 
+  const tiered = !locked && !!fieldStyle;
+
   return (
     <div
       className={cn(
         "flex items-center justify-center",
+        // Only once there is something absolutely positioned inside it —
+        // `relative` on every well would change nothing but is still a
+        // claim this component does not otherwise need to make.
+        (tiered || !!fieldFx || !!overlay) && "relative overflow-hidden",
         fill ? "size-full" : fullWidth ? "w-full" : "flex-none",
         rounded,
         locked
@@ -306,11 +329,14 @@ export function ItemWell({
           // decoration like `Cosy den`) gets that category's tint. Moot for
           // `fillArt` either way, since the pattern paints over it, but kept
           // so the well isn't briefly the wrong colour while the image loads.
-          : (bgClassNameOverride ?? (isAnimal || showArt ? "bg-input" : CATEGORY_WELL[item.category].bg)),
+          : tiered
+            ? undefined
+            : (bgClassNameOverride ?? (isAnimal || showArt ? "bg-input" : CATEGORY_WELL[item.category].bg)),
         className,
       )}
       style={{
         ...(fill ? null : fullWidth ? { height: size } : { width: size, height: size }),
+        ...(tiered ? fieldStyle : null),
         // Tiled, not stretched — same reasoning `backgroundImageStyle()` in
         // `src/lib/pet-mood.ts` documents for the pet stage's own background,
         // including *why* the tile has to be this big: each source SVG is
@@ -321,9 +347,25 @@ export function ItemWell({
         // (2026-08-16/17, live feedback each round) — smaller than 150px,
         // individual motifs in these ~38-112px wells read as faint texture
         // rather than a recognisable shape.
+        // Last, so a tiled decoration still wins over #276's tier field.
+        // Deliberate: both decoration tiles are opaque (gingham is a
+        // full-bleed WebP, retro has a white backdrop rect), so a tier
+        // gradient painted under one would be invisible — layering them
+        // would be work nobody could see. A Legendary decoration reads its
+        // tier from the frame, chip, shadow, sheen and sparkles instead.
         ...(fillArt ? { backgroundImage: `url(${item.imageUrl})`, backgroundSize: "150px", backgroundRepeat: "repeat" } : null),
       }}
     >
+      {/* Behind the art, and behind the lock glyph too — a locked well never
+          gets one of these, but the ordering is what guarantees it. */}
+      {!locked && fieldFx ? (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ backgroundImage: fieldFx }}
+        />
+      ) : null}
+
       {locked ? (
         <Lock size={iconSize} strokeWidth={2.2} className="text-ink-disabled" aria-hidden />
       ) : fillArt ? null : showArt ? (
@@ -356,6 +398,9 @@ export function ItemWell({
           aria-hidden
         />
       )}
+
+      {/* Above the art. Never rendered on a locked well — see rule 5. */}
+      {!locked && overlay ? overlay : null}
     </div>
   );
 }
