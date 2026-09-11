@@ -55,13 +55,25 @@ export function AchievementUnlockScreen({
   onDismiss: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // #286 — see the open effect below.
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
 
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // #286 — move focus off the first focusable descendant, which
+      // `showModal()`'s own focusing steps would otherwise pick (the confirm
+      // button), and onto the heading. Done here rather than with React's
+      // `autoFocus` prop: that prop emits no `autofocus` attribute on the
+      // client, it just calls `focus()` at mount — which happens *before*
+      // this `showModal()` and is promptly overridden by it. Explicit and
+      // after the fact is the only ordering that actually holds.
+      headingRef.current?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -92,13 +104,23 @@ export function AchievementUnlockScreen({
             holding the badge's own icon instead of a level numeral. */}
         <div className="relative mt-5 flex size-[150px] flex-none items-center justify-center rounded-full bg-white/16 motion-safe:animate-medallion-pop">
           <div className="flex size-[122px] flex-col items-center justify-center rounded-full bg-surface shadow-[0_10px_24px_rgb(46_42_38/0.2)]">
-            <Icon size={48} strokeWidth={2} className="text-violet" aria-hidden />
+            <Icon
+              size={48}
+              strokeWidth={2}
+              className="text-violet"
+              aria-hidden
+            />
           </div>
         </div>
 
         <h1
           id={titleId}
-          className="relative mt-6 text-center font-display text-[26px] font-semibold text-white"
+          // #286 — the dialog's focus target, so `showModal()` does not hand
+          // focus to a button and light its ring on iOS. See `Modal` for the
+          // full reasoning.
+          ref={headingRef}
+          tabIndex={-1}
+          className="relative mt-6 text-center font-display text-[26px] font-semibold text-white outline-none"
         >
           {achievement.name}!
         </h1>
@@ -117,7 +139,6 @@ export function AchievementUnlockScreen({
           <button
             type="button"
             onClick={onDismiss}
-            autoFocus
             className={cn(
               "flex h-[50px] w-full items-center justify-center rounded-btn font-display text-[16px] font-semibold",
               "bg-surface text-violet shadow-[0_6px_14px_rgb(46_42_38/0.18)] transition-all duration-120 ease-out",

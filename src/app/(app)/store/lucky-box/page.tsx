@@ -37,7 +37,7 @@ export default async function LuckyBoxPage() {
   return (
     <AppShell
       header={
-        <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] py-[14px]">
+        <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-[14px]">
           <Link
             href="/store"
             aria-label="Back to store"

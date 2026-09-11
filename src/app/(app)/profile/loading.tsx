@@ -19,7 +19,7 @@ export default function Loading() {
   return (
     <LoadingScreen
       header={
-        <header className="flex flex-none items-center gap-[13px] border-b border-border-track bg-warm px-[18px] pt-[14px] pb-4">
+        <header className="flex flex-none items-center gap-[13px] border-b border-border-track bg-warm px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-4">
           <Skeleton className="size-14 flex-none rounded-full" />
           <div className="min-w-0 flex-1">
             <Skeleton className="h-[19px] w-[126px] rounded-chip" />

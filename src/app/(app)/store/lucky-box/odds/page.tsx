@@ -87,7 +87,7 @@ export default async function LuckyBoxOddsPage() {
   return (
     <AppShell
       header={
-        <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] py-[14px]">
+        <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-[14px]">
           <Link
             href="/store/lucky-box"
             aria-label="Back to Lucky Box"
@@ -114,7 +114,10 @@ export default async function LuckyBoxOddsPage() {
               row.rowBorder,
             )}
           >
-            <span aria-hidden className={cn("size-[9px] flex-none rounded-full", row.dot)} />
+            <span
+              aria-hidden
+              className={cn("size-[9px] flex-none rounded-full", row.dot)}
+            />
             <span className="flex-1 text-[13.5px] font-bold">{row.label}</span>
             <span className={cn("text-[13.5px] font-extrabold", row.text)}>
               {Math.round(RARITY_ODDS[row.rarity] * 100)}%

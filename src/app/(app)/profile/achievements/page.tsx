@@ -37,12 +37,14 @@ export default async function AchievementsPage() {
   if (!userId) redirect("/login");
 
   const achievements = await achievementsForUser(userId);
-  const unlockedCount = achievements.filter((a) => a.unlockedAt !== null).length;
+  const unlockedCount = achievements.filter(
+    (a) => a.unlockedAt !== null,
+  ).length;
 
   return (
     <AppShell
       header={
-        <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] py-[14px]">
+        <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-[14px]">
           <Link
             href="/profile"
             aria-label="Back to Profile"

@@ -29,7 +29,7 @@ const LINKS = [
 
 export function MarketingNav() {
   return (
-    <header className="sticky top-0 z-10 flex-none border-b border-border-track bg-surface">
+    <header className="sticky top-0 z-10 flex-none border-b border-border-track bg-surface pt-[env(safe-area-inset-top)]">
       <nav
         aria-label="Main"
         className="mx-auto flex max-w-site items-center justify-between px-5 py-3 md:px-10 md:py-[18px]"

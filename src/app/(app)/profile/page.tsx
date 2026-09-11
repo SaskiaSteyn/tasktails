@@ -69,7 +69,7 @@ export default async function ProfilePage() {
       className="px-4 pt-4 pb-[14px] desk:px-[34px] desk:py-7"
       nav={<BottomNav />}
       header={
-        <header className="flex flex-none flex-col gap-3 border-b border-border-track bg-warm px-[18px] pt-[14px] pb-4">
+        <header className="flex flex-none flex-col gap-3 border-b border-border-track bg-warm px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-4">
           <div className="flex items-center gap-[13px]">
             <ProfileHeader
               name={displayNameFor(record)}

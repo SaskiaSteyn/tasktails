@@ -51,12 +51,13 @@ export default async function ZooPage() {
   return (
     <AppShell
       header={
-        <header className="flex-none border-b border-border-track px-[18px] pt-[14px] pb-3">
+        <header className="flex-none border-b border-border-track px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-3">
           <h1 className="font-display text-[19px] leading-[1.15] font-semibold">
             Your zoo
           </h1>
           <p className="mt-[2px] text-[11px] text-ink-faint">
-            {pets.length} {pets.length === 1 ? "friend" : "friends"} · tap to visit
+            {pets.length} {pets.length === 1 ? "friend" : "friends"} · tap to
+            visit
           </p>
         </header>
       }
@@ -67,7 +68,8 @@ export default async function ZooPage() {
       {/* The count line from the phone header, which `AppShell` hides at
           desktop widths — the universal header carries the title only. */}
       <p className="mb-4 hidden text-[12.5px] font-bold text-ink-soft desk:block">
-        {pets.length} {pets.length === 1 ? "friend" : "friends"} · click to visit
+        {pets.length} {pets.length === 1 ? "friend" : "friends"} · click to
+        visit
       </p>
       <ZooGrid
         pets={pets}

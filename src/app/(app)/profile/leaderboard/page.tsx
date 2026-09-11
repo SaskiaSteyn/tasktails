@@ -63,7 +63,7 @@ export default async function LeaderboardPage({
         <header
           // 8px top / 18px sides / 14px bottom, safe-area-aware — see the
           // note on this same header shape in settings/page.tsx.
-          className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] py-[14px]"
+          className="flex flex-none items-center gap-3 border-b border-border-track px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-[14px]"
         >
           <Link
             href={backHref}
@@ -81,7 +81,9 @@ export default async function LeaderboardPage({
       <SessionTracker />
 
       {/* Stands in for LEAD-10's tab row while all time is the only period. */}
-      <p className="text-overline flex-none px-4 pt-3 text-ink-faint desk:px-[34px] desk:pt-6">All time</p>
+      <p className="text-overline flex-none px-4 pt-3 text-ink-faint desk:px-[34px] desk:pt-6">
+        All time
+      </p>
 
       {board.entries.length === 0 || nobodyScored ? (
         <div className="flex flex-1 flex-col items-center justify-center px-8 pb-10 text-center">

@@ -7,7 +7,11 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { ItemWell } from "@/components/store/item-visual";
-import { RarityChip, rarityRowFrame, rarityThumbFill } from "@/components/store/rarity-chip";
+import {
+  RarityChip,
+  rarityRowFrame,
+  rarityThumbFill,
+} from "@/components/store/rarity-chip";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -63,6 +67,8 @@ export function FeedSheet({
   foodItems: InventoryItemWithStoreItem[];
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // #286 — see the open effect below.
+  const headingRef = useRef<HTMLHeadingElement>(null);
   // #261 — drag the sheet down to close it; see `useSwipeToDismiss`.
   const { swipeProps } = useSwipeToDismiss(() => onOpenChange(false));
   const headingId = useId();
@@ -90,7 +96,17 @@ export function FeedSheet({
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // #286 — move focus off the first focusable descendant, which
+      // `showModal()`'s own focusing steps would otherwise pick (the confirm
+      // button), and onto the heading. Done here rather than with React's
+      // `autoFocus` prop: that prop emits no `autofocus` attribute on the
+      // client, it just calls `focus()` at mount — which happens *before*
+      // this `showModal()` and is promptly overridden by it. Explicit and
+      // after the fact is the only ordering that actually holds.
+      headingRef.current?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -119,7 +135,9 @@ export function FeedSheet({
       celebrateLevelUp(body.levelUp);
       router.refresh();
     } catch {
-      setNotice("Couldn't reach TaskTails. Check your connection and try again.");
+      setNotice(
+        "Couldn't reach TaskTails. Check your connection and try again.",
+      );
     } finally {
       setFeeding(false);
     }
@@ -155,7 +173,10 @@ export function FeedSheet({
           <span className="mx-auto block h-[5px] w-10 rounded-[3px] bg-step-idle transition-colors duration-120 group-hover:bg-checkbox" />
         </button>
 
-        <div data-sheet-scroll className={cn("overflow-y-auto px-5 pt-1 pb-5", SHEET_SCROLL_CLASS)}>
+        <div
+          data-sheet-scroll
+          className={cn("overflow-y-auto px-5 pt-1 pb-5", SHEET_SCROLL_CLASS)}
+        >
           {foodItems.length === 0 ? (
             // There's nothing to pick, so this replaces the picker entirely
             // rather than showing a "Feed" sheet with nothing feedable in it —
@@ -165,11 +186,20 @@ export function FeedSheet({
               <span className="mb-4 flex size-16 flex-none items-center justify-center rounded-card-lg bg-terracotta-tint text-terracotta">
                 <Utensils size={28} strokeWidth={2} aria-hidden />
               </span>
-              <h2 id={headingId} className="font-display text-[20px] font-semibold">
+              <h2
+                id={headingId}
+                // #286 — the dialog's focus target, so `showModal()` does not hand
+                // focus to a button and light its ring on iOS. See `Modal` for the
+                // full reasoning.
+                ref={headingRef}
+                tabIndex={-1}
+                className="font-display text-[20px] font-semibold outline-none"
+              >
                 Out of food
               </h2>
               <p className="mt-2 mb-5 text-[13px] leading-[1.5] text-ink-soft">
-                {petName}&rsquo;s hungry — grab a snack from the store to feed them.
+                {petName}&rsquo;s hungry — grab a snack from the store to feed
+                them.
               </p>
               {/* #275 — filtered to food: this button only ever appears
                   because there is none left, so the whole catalogue is the
@@ -187,11 +217,23 @@ export function FeedSheet({
             </div>
           ) : (
             <>
-              <h2 id={headingId} className="mb-4 font-display text-[20px] font-semibold">
+              <h2
+                id={headingId}
+                // #286 — the dialog's focus target, so `showModal()` does not hand
+                // focus to a button and light its ring on iOS. See `Modal` for the
+                // full reasoning.
+                ref={headingRef}
+                tabIndex={-1}
+                className="mb-4 font-display text-[20px] font-semibold outline-none"
+              >
                 Feed {petName}
               </h2>
 
-              <div role="radiogroup" aria-label="Food" className="mb-4 flex flex-col gap-[9px]">
+              <div
+                role="radiogroup"
+                aria-label="Food"
+                className="mb-4 flex flex-col gap-[9px]"
+              >
                 {foodItems.map((item) => {
                   const isSelected = item.id === selectedId;
                   return (
@@ -211,11 +253,14 @@ export function FeedSheet({
                         "flex items-center gap-[11px] rounded-[14px] border-[1.5px] px-[10px] py-[10px] text-left transition-colors duration-120",
                         isSelected
                           ? "border-terracotta bg-terracotta-tint"
-                          // #276 §5 — the food's own tier frames the row.
-                          // Food rarity already drives `feedEffectOf`, so the
-                          // colour now says out loud what the numbers below
-                          // already encode.
-                          : cn("bg-warm hover:border-checkbox", rarityRowFrame(item.storeItem.rarity)),
+                          : // #276 §5 — the food's own tier frames the row.
+                            // Food rarity already drives `feedEffectOf`, so the
+                            // colour now says out loud what the numbers below
+                            // already encode.
+                            cn(
+                              "bg-warm hover:border-checkbox",
+                              rarityRowFrame(item.storeItem.rarity),
+                            ),
                       )}
                     >
                       {/* The store's own well, not a hand-rolled copy of it —
@@ -225,7 +270,9 @@ export function FeedSheet({
                           still falls back to the amber-tinted lucide glyph
                           this used to hard-code. */}
                       <ItemWell
-                        bgClassNameOverride={rarityThumbFill(item.storeItem.rarity)}
+                        bgClassNameOverride={rarityThumbFill(
+                          item.storeItem.rarity,
+                        )}
                         item={item.storeItem}
                         size={44}
                         iconSize={20}
@@ -237,9 +284,14 @@ export function FeedSheet({
                           <span className="min-w-0 truncate text-[13px] font-extrabold">
                             {item.storeItem.name}
                           </span>
-                          <RarityChip rarity={item.storeItem.rarity} size="row" />
+                          <RarityChip
+                            rarity={item.storeItem.rarity}
+                            size="row"
+                          />
                         </span>
-                        <span className="text-[11px] text-ink-soft">×{item.quantity} owned</span>
+                        <span className="text-[11px] text-ink-soft">
+                          ×{item.quantity} owned
+                        </span>
                         {/* What this one is worth, now that food no longer all
                             feeds the same amount — the row is where the choice
                             between a Shrimp and some Hay actually gets made. */}
@@ -248,7 +300,8 @@ export function FeedSheet({
                             {hungerLabel(item.storeItem.rarity)}
                           </span>
                           <span className="text-amber-text">
-                            +{feedEffectOf(item.storeItem.rarity).happiness} mood
+                            +{feedEffectOf(item.storeItem.rarity).happiness}{" "}
+                            mood
                           </span>
                         </span>
                       </span>
@@ -276,7 +329,10 @@ export function FeedSheet({
                 </button>
               </div>
               {notice ? (
-                <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
+                <p
+                  role="alert"
+                  className="mt-2 text-center text-[11px] font-bold text-urgency-text"
+                >
                   {notice}
                 </p>
               ) : null}

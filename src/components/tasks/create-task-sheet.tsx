@@ -49,6 +49,8 @@ export function CreateTaskSheet({
 }) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // #286 — see the open effect below.
+  const headingRef = useRef<HTMLHeadingElement>(null);
   // #261 — drag the sheet down to close it; see `useSwipeToDismiss`.
   const { swipeProps } = useSwipeToDismiss(() => onOpenChange(false));
   const headingId = useId();
@@ -103,7 +105,17 @@ export function CreateTaskSheet({
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // #286 — move focus off the first focusable descendant, which
+      // `showModal()`'s own focusing steps would otherwise pick (the confirm
+      // button), and onto the heading. Done here rather than with React's
+      // `autoFocus` prop: that prop emits no `autofocus` attribute on the
+      // client, it just calls `focus()` at mount — which happens *before*
+      // this `showModal()` and is promptly overridden by it. Explicit and
+      // after the fact is the only ordering that actually holds.
+      headingRef.current?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -159,7 +171,9 @@ export function CreateTaskSheet({
       onOpenChange(false);
       router.refresh();
     } catch {
-      setSubmitError("Couldn't reach TaskTails. Check your connection and try again.");
+      setSubmitError(
+        "Couldn't reach TaskTails. Check your connection and try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -226,9 +240,20 @@ export function CreateTaskSheet({
         <form
           onSubmit={handleSubmit}
           data-sheet-scroll
-          className={cn("overflow-y-auto scroll-smooth px-5 pt-1 pb-5", SHEET_SCROLL_CLASS)}
+          className={cn(
+            "overflow-y-auto scroll-smooth px-5 pt-1 pb-5",
+            SHEET_SCROLL_CLASS,
+          )}
         >
-          <h2 id={headingId} className="mb-4 font-display text-[20px] font-semibold">
+          <h2
+            id={headingId}
+            // #286 — the dialog's focus target, so `showModal()` does not hand
+            // focus to a button and light its ring on iOS. See `Modal` for the
+            // full reasoning.
+            ref={headingRef}
+            tabIndex={-1}
+            className="mb-4 font-display text-[20px] font-semibold outline-none"
+          >
             New task
           </h2>
 
@@ -269,7 +294,11 @@ export function CreateTaskSheet({
               )}
             />
             {titleError ? (
-              <p id={titleErrorId} role="alert" className="mt-1 text-[11px] font-bold text-urgency-text">
+              <p
+                id={titleErrorId}
+                role="alert"
+                className="mt-1 text-[11px] font-bold text-urgency-text"
+              >
                 {titleError}
               </p>
             ) : null}
@@ -292,7 +321,11 @@ export function CreateTaskSheet({
               describedBy={tierError ? tierErrorId : undefined}
             />
             {tierError ? (
-              <p id={tierErrorId} role="alert" className="mt-1 text-[11px] font-bold text-urgency-text">
+              <p
+                id={tierErrorId}
+                role="alert"
+                className="mt-1 text-[11px] font-bold text-urgency-text"
+              >
                 {tierError}
               </p>
             ) : null}
@@ -335,11 +368,15 @@ export function CreateTaskSheet({
                     key={index}
                     className="flex items-center gap-2 rounded-input border border-border-track bg-warm px-3 py-2 text-[13px]"
                   >
-                    <span className="min-w-0 flex-1 truncate">{subtaskTitle}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {subtaskTitle}
+                    </span>
                     <button
                       type="button"
                       onClick={() =>
-                        setSubtasks((current) => current.filter((_, i) => i !== index))
+                        setSubtasks((current) =>
+                          current.filter((_, i) => i !== index),
+                        )
                       }
                       aria-label={`Remove subtask "${subtaskTitle}"`}
                       className="flex-none text-ink-faint hover:text-urgency-text"
@@ -415,7 +452,10 @@ export function CreateTaskSheet({
             </button>
           </div>
           {submitError ? (
-            <p role="alert" className="mt-2 text-center text-[11px] font-bold text-urgency-text">
+            <p
+              role="alert"
+              className="mt-2 text-center text-[11px] font-bold text-urgency-text"
+            >
               {submitError}
             </p>
           ) : null}

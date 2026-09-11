@@ -1,4 +1,7 @@
-import { BackHeaderSkeleton, LoadingScreen } from "@/components/layout/loading-screen";
+import {
+  BackHeaderSkeleton,
+  LoadingScreen,
+} from "@/components/layout/loading-screen";
 import { Skeleton, Spinner } from "@/components/ui/skeleton";
 
 /**

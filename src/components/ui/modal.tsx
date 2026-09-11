@@ -14,6 +14,23 @@ import { cn } from "@/lib/cn";
  * Built on the native `<dialog>` so focus trapping, the inert background and
  * Escape-to-close come from the platform rather than a hand-rolled focus
  * manager. Escape and a scrim tap both mean cancel.
+ *
+ * **#286 — the heading takes focus, not the confirm button.** With no
+ * `autofocus` anywhere, the HTML spec's dialog focusing steps hand focus to
+ * the first focusable descendant, which here was the confirm `<Button>`. On
+ * iOS that arrived wearing the focus ring: `globals.css` only rings
+ * `:focus-visible` (#252 saw to that), but a *button* focused by
+ * `showModal()` is exactly the case engines disagree on, and Safari matches
+ * it. Suppressing the ring in CSS would have been the wrong fix — it is a
+ * real keyboard affordance — so the fix is to stop focusing a control at
+ * all: `autofocus` on the `tabindex="-1"` heading is spec-defined and
+ * deterministic, and a programmatically focused non-interactive element is
+ * not a `:focus-visible` candidate in any engine.
+ *
+ * It is better for screen readers too — focus lands on the dialog's title,
+ * so the reading cursor starts at what the dialog is about — and it defuses
+ * a real footgun: the confirm button being focused meant Enter immediately
+ * confirmed, including on the destructive variant.
  */
 
 export type ModalIconTint = "terracotta" | "violet" | "destructive";
@@ -49,6 +66,8 @@ export function Modal({
   onCancel: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // #286 — see the open effect below.
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   // Generated, not hardcoded: two modals mounted at once would otherwise both
   // claim id="modal-title", and an aria-labelledby that resolves to a duplicate
@@ -60,7 +79,17 @@ export function Modal({
     const dialog = ref.current;
     if (!dialog) return;
 
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // #286 — move focus off the first focusable descendant, which
+      // `showModal()`'s own focusing steps would otherwise pick (the confirm
+      // button), and onto the heading. Done here rather than with React's
+      // `autoFocus` prop: that prop emits no `autofocus` attribute on the
+      // client, it just calls `focus()` at mount — which happens *before*
+      // this `showModal()` and is promptly overridden by it. Explicit and
+      // after the fact is the only ordering that actually holds.
+      headingRef.current?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -94,7 +123,13 @@ export function Modal({
 
         <h2
           id={titleId}
-          className="text-center font-display text-[20px] font-semibold"
+          // See the note above: this is the dialog's focus target.
+          // `tabIndex={-1}` makes it focusable without putting it in the tab
+          // order, and `outline-none` covers the engines that would still
+          // ring a programmatically focused element.
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-center font-display text-[20px] font-semibold outline-none"
         >
           {title}
         </h2>

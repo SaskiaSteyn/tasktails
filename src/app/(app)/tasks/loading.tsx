@@ -1,4 +1,7 @@
-import { GreetingHeaderSkeleton, LoadingScreen } from "@/components/layout/loading-screen";
+import {
+  GreetingHeaderSkeleton,
+  LoadingScreen,
+} from "@/components/layout/loading-screen";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -13,7 +16,15 @@ import { Skeleton } from "@/components/ui/skeleton";
  * table, which is exactly what this screen is not. The second row carries the
  * indented subtask shape `TaskList` nests under a parent task.
  */
-const ROWS = ["w-[62%]", "w-[45%]", "w-[71%]", "w-[54%]", "w-[66%]", "w-[49%]", "w-[68%]"];
+const ROWS = [
+  "w-[62%]",
+  "w-[45%]",
+  "w-[71%]",
+  "w-[54%]",
+  "w-[66%]",
+  "w-[49%]",
+  "w-[68%]",
+];
 
 export default function Loading() {
   return (
@@ -35,7 +46,13 @@ export default function Loading() {
 }
 
 /** `TaskRow`'s shape — check circle, title over tier/date badges, coin value. */
-function TaskRowSkeleton({ width, indent }: { width: string; indent?: boolean }) {
+function TaskRowSkeleton({
+  width,
+  indent,
+}: {
+  width: string;
+  indent?: boolean;
+}) {
   return (
     <div
       className={`flex items-center gap-[11px] rounded-card border border-border-track px-3 py-[11px] ${

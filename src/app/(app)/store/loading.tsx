@@ -1,4 +1,7 @@
-import { LoadingScreen, TitleHeaderSkeleton } from "@/components/layout/loading-screen";
+import {
+  LoadingScreen,
+  TitleHeaderSkeleton,
+} from "@/components/layout/loading-screen";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -14,7 +17,14 @@ import { Skeleton } from "@/components/ui/skeleton";
  * beside the coin pill.
  */
 const CHIPS = ["w-[52px]", "w-[68px]", "w-[58px]", "w-[74px]", "w-[62px]"];
-const CARDS = ["w-[78%]", "w-[62%]", "w-[85%]", "w-[54%]", "w-[70%]", "w-[80%]"];
+const CARDS = [
+  "w-[78%]",
+  "w-[62%]",
+  "w-[85%]",
+  "w-[54%]",
+  "w-[70%]",
+  "w-[80%]",
+];
 
 export default function Loading() {
   return (
@@ -33,7 +43,10 @@ export default function Loading() {
 
       <div className="no-scrollbar -mx-1 -mt-1 mb-[7px] flex flex-none gap-[6px] overflow-x-auto p-1">
         {CHIPS.map((width, i) => (
-          <Skeleton key={i} className={`h-[23px] flex-none rounded-pill ${width}`} />
+          <Skeleton
+            key={i}
+            className={`h-[23px] flex-none rounded-pill ${width}`}
+          />
         ))}
       </div>
 

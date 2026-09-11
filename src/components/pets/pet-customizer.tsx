@@ -336,7 +336,7 @@ export function PetCustomizer({
         <header
           // 8px top / 18px sides / 14px bottom, safe-area-aware — see the
           // note on this same header shape in settings/page.tsx.
-          className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] py-[14px]"
+          className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-[14px]"
         >
           <Link
             href={`/zoo/${pet.id}`}

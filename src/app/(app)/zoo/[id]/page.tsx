@@ -29,7 +29,9 @@ export async function generateMetadata({
 
   const { id } = await params;
   const pet = await petForUser(userId, id);
-  return { title: pet ? `${petDisplayName(pet)} · TaskTails` : "Sanctuary · TaskTails" };
+  return {
+    title: pet ? `${petDisplayName(pet)} · TaskTails` : "Sanctuary · TaskTails",
+  };
 }
 
 /**
@@ -58,16 +60,23 @@ export default async function SanctuaryPage({
   if (!userId) redirect("/login");
 
   const { id } = await params;
-  const [pet, foodItems, backgroundUrl, accessoryUrl, pets, backgrounds, accessories] =
-    await Promise.all([
-      petForUser(userId, id),
-      foodInventoryForUser(userId),
-      equippedBackgroundForPet(userId, id),
-      equippedAccessoryForPet(userId, id),
-      petsForUser(userId),
-      equippedBackgroundsForUser(userId),
-      equippedAccessoriesForUser(userId),
-    ]);
+  const [
+    pet,
+    foodItems,
+    backgroundUrl,
+    accessoryUrl,
+    pets,
+    backgrounds,
+    accessories,
+  ] = await Promise.all([
+    petForUser(userId, id),
+    foodInventoryForUser(userId),
+    equippedBackgroundForPet(userId, id),
+    equippedAccessoryForPet(userId, id),
+    petsForUser(userId),
+    equippedBackgroundsForUser(userId),
+    equippedAccessoriesForUser(userId),
+  ]);
   if (!pet) redirect("/zoo");
 
   // INF-22 — the handoff's roster beside the stage. Everyone but the animal
@@ -80,7 +89,7 @@ export default async function SanctuaryPage({
         <header
           // 8px top / 18px sides / 14px bottom, safe-area-aware — see the
           // note on this same header shape in settings/page.tsx.
-          className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] py-[14px]"
+          className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-[14px]"
         >
           <Link
             href="/zoo"
@@ -113,7 +122,9 @@ export default async function SanctuaryPage({
           put: the rest of the zoo, one click away from the stage. */}
       <aside className="hidden flex-none flex-col gap-4 overflow-y-auto desk:flex desk:w-[420px]">
         <div className="flex items-baseline justify-between">
-          <h2 className="font-display text-[15.5px] font-semibold">Your other friends</h2>
+          <h2 className="font-display text-[15.5px] font-semibold">
+            Your other friends
+          </h2>
           <Link
             href="/zoo"
             className="text-[12px] font-bold text-terracotta hover:text-terracotta-hover"
@@ -121,7 +132,11 @@ export default async function SanctuaryPage({
             See all
           </Link>
         </div>
-        <ZooGrid pets={others} backgrounds={backgrounds} accessories={accessories} />
+        <ZooGrid
+          pets={others}
+          backgrounds={backgrounds}
+          accessories={accessories}
+        />
       </aside>
     </AppShell>
   );
