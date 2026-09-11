@@ -11,13 +11,19 @@ import type { StoreItemRarity } from "@/generated/prisma/client";
  * for Rare is sage, which the Lucky Box and achievement screens already
  * ship. UPDATE-01 §3 makes that correction in writing.
  *
- * Every colour here is quoted exactly from that table rather than mapped
- * onto the nearest existing `@theme` token. The tokens and these are close
- * cousins (Rare *is* the sage family) but not equal to the hex the handoff
- * calls final, and the handoff is explicit that it is high-fidelity: the
- * `shipped token family` column names the relative, it does not license a
- * substitution. Anything that only needs the family — a chip's text colour
- * in a dense row — can still use the token.
+ * **Everything here is a `@theme` token, not the handoff's raw hex**
+ * (user's direction, 2026-09-11: the repository's colours are the source of
+ * truth). The handoff calls its hex final, but several of its values
+ * predate this repo's contrast audit — its Common chip ink `#8A8178` is the
+ * old `ink-soft`, since darkened to `#524C47` to reach AA, and it measures
+ * 2.99 BPCA on the chip fill it is paired with. The handoff's own table
+ * names the shipped family for each tier in its last column, so this is the
+ * mapping it asks for rather than a substitution: sage for Rare, violet for
+ * Epic, amber for Legendary, the neutral border/ink for Common.
+ *
+ * Class strings rather than style objects so the tokens stay the single
+ * source (AGENTS.md: "Tokens, not hex"), and so a tier's colours can be
+ * retuned in `globals.css` without touching a component.
  *
  * `rarity` is nullable in the schema, so every lookup goes through
  * {@link rarityTokens}, which falls back to Common — the same fallback
@@ -25,13 +31,17 @@ import type { StoreItemRarity } from "@/generated/prisma/client";
  * GACHA-03 seeded it, but the column still permits them.
  */
 export type RarityTokens = {
-  /** 1.5px card border and the footer's hairline. */
+  /** Card/row frame. Paired with `border-[1.5px]`, never Tailwind's 1px `border`. */
   frame: string;
-  /** Art-tile fill. A gradient at Legendary, a flat colour elsewhere. */
+  /** Art-tile and row-thumb fill. A gradient at Legendary, a flat tint elsewhere. */
   field: string;
-  /** Absolutely-positioned layer behind the art. Null where the tier has no effect. */
+  /**
+   * Absolutely-positioned highlight behind the art. Achromatic — plain
+   * white at varying opacity — so unlike everything else here it stays a
+   * raw gradient: there is no brand colour in it to tokenise.
+   */
   fieldFx: string | null;
-  /** Card shadow. Null at Common, which has none. */
+  /** Card shadow class. Null at Common, which has none. */
   shadow: string | null;
   chipBg: string;
   chipInk: string;
@@ -44,52 +54,66 @@ export type RarityTokens = {
 
 export const RARITY_TOKENS: Record<StoreItemRarity, RarityTokens> = {
   COMMON: {
-    frame: "#EFE7DA",
-    field: "#FBF3E6",
+    frame: "border-border-track",
+    field: "bg-input",
     fieldFx: null,
     shadow: null,
-    chipBg: "#F4EEE4",
-    chipInk: "#8A8178",
-    chipLine: "#E8DFD0",
+    chipBg: "bg-input",
+    chipInk: "text-ink-soft",
+    chipLine: "border-border-input",
     sparks: false,
     sheen: false,
   },
   RARE: {
-    frame: "#CADFCF",
-    field: "#EEF5EF",
+    frame: "border-sage/45",
+    field: "bg-sage-tint",
     fieldFx:
       "radial-gradient(circle at 50% 30%, rgba(255,255,255,.85), rgba(255,255,255,0) 62%)",
-    shadow: "0 10px 22px rgba(63,140,99,.10)",
-    chipBg: "#E7F0E9",
-    chipInk: "#3F8C63",
-    chipLine: "#CBE1D2",
+    shadow: "shadow-rarity-rare",
+    chipBg: "bg-sage-tint",
+    chipInk: "text-sage-text",
+    chipLine: "border-sage/30",
     sparks: false,
     sheen: false,
   },
   EPIC: {
-    frame: "#CFC2E8",
-    field: "#EEE9F5",
+    frame: "border-violet/45",
+    field: "bg-violet-tint",
     fieldFx:
       "linear-gradient(115deg, rgba(255,255,255,0) 38%, rgba(255,255,255,.7) 50%, rgba(255,255,255,0) 62%)",
-    shadow: "0 14px 30px rgba(92,84,112,.20)",
-    chipBg: "#EBE4F6",
-    chipInk: "#5C5470",
-    chipLine: "#D8CDEC",
+    shadow: "shadow-rarity-epic",
+    chipBg: "bg-violet-tint",
+    chipInk: "text-violet-text",
+    chipLine: "border-violet/30",
     sparks: true,
     sheen: false,
   },
   LEGENDARY: {
-    frame: "#E9C26A",
-    field: "linear-gradient(160deg,#FDF3DE,#FBE3B4)",
+    frame: "border-amber/70",
+    field: "bg-[linear-gradient(160deg,var(--color-warm),var(--color-amber-tint))]",
     fieldFx:
       "radial-gradient(circle at 50% 28%, rgba(255,255,255,.9), rgba(255,255,255,0) 58%)",
-    shadow: "0 16px 34px rgba(200,150,40,.26)",
-    chipBg: "#FBE3B4",
-    chipInk: "#8A6410",
-    chipLine: "#EBCB84",
+    shadow: "shadow-rarity-legendary",
+    chipBg: "bg-amber-tint",
+    chipInk: "text-amber-text",
+    chipLine: "border-amber/40",
     sparks: true,
     sheen: true,
   },
+};
+
+/**
+ * The Tailwind family each tier belongs to, for the surfaces that colour
+ * *something other than* a card — the Lucky Box reveal's rarity word, the
+ * achievement tiles. Both kept private copies of this map before #276
+ * (`RARITY_STYLE` in `lucky-box-home.tsx`, the per-key colours in
+ * `achievement-style.ts`); this is the shared one UPDATE-01 asks for.
+ */
+export const RARITY_FAMILY: Record<StoreItemRarity, { tint: string; text: string; border: string }> = {
+  COMMON: { tint: "bg-input", text: "text-ink-soft", border: "border-border-track" },
+  RARE: { tint: "bg-sage-tint", text: "text-sage-text", border: "border-sage/30" },
+  EPIC: { tint: "bg-violet-tint", text: "text-violet-text", border: "border-violet/30" },
+  LEGENDARY: { tint: "bg-amber-tint", text: "text-amber-text", border: "border-amber/30" },
 };
 
 /** Null and unknown tiers render as Common — UPDATE-01 §7 rule 2. */
@@ -97,20 +121,13 @@ export function rarityTokens(rarity: StoreItemRarity | null | undefined): Rarity
   return (rarity && RARITY_TOKENS[rarity]) || RARITY_TOKENS.COMMON;
 }
 
-/** What the tier chip reads. Title case, uppercased by CSS where the design asks for it. */
+/** Null and unknown tiers render as Common, same rule as {@link rarityTokens}. */
+export function rarityFamily(rarity: StoreItemRarity | null | undefined) {
+  return (rarity && RARITY_FAMILY[rarity]) || RARITY_FAMILY.COMMON;
+}
+
+/** What the tier chip reads. Title case; the chip uppercases it in CSS. */
 export function rarityLabel(rarity: StoreItemRarity | null | undefined): string {
   const value = rarity ?? "COMMON";
   return value.charAt(0) + value.slice(1).toLowerCase();
-}
-
-/**
- * `field` is a colour at three tiers and a gradient at Legendary, and those
- * are different CSS properties — `background-color` cannot hold a gradient
- * and `background-image` cannot hold a bare colour. One helper so no caller
- * has to remember which tier is the odd one out.
- */
-export function fieldStyle(tokens: RarityTokens): React.CSSProperties {
-  return tokens.field.includes("gradient")
-    ? { backgroundImage: tokens.field }
-    : { backgroundColor: tokens.field };
 }

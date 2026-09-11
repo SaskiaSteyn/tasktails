@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
+import { RarityChip, rarityRowFrame, rarityThumbFill } from "@/components/store/rarity-chip";
 import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 import type { SellableItem } from "@/lib/sell";
@@ -102,10 +103,16 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
           {items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-[11px] rounded-[14px] border border-border-track bg-warm p-[10px]"
+              // #276 §5 — tier frame, tinted thumb, chip. No effects. A
+              // locked row keeps the muted treatment, so no tier on it.
+              className={cn(
+                "flex items-center gap-[11px] rounded-[14px] border-[1.5px] bg-warm p-[10px]",
+                item.locked ? "border-border-track" : rarityRowFrame(item.rarity),
+              )}
             >
               <ItemWell
                 item={item}
+                bgClassNameOverride={item.locked ? undefined : rarityThumbFill(item.rarity)}
                 locked={item.locked}
                 size={44}
                 iconSize={20}
@@ -114,8 +121,9 @@ export function SellItemsList({ initialItems }: { initialItems: SellableItem[] }
               />
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-extrabold">
+                <p className="flex items-center gap-2 truncate text-[13px] font-extrabold">
                   {item.name}
+                  {!item.locked && <RarityChip rarity={item.rarity} size="row" />}
                   {item.locked && (
                     <span className="ml-[3px] rounded-[5px] bg-input px-[5px] py-px text-[9.5px] font-extrabold text-ink-soft">
                       LOCKED · LVL {item.levelRequired}

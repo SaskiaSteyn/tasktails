@@ -15,6 +15,7 @@ import { LuckyBoxOpening } from "@/components/store/lucky-box-opening";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Coin, RollingCoins } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
+import { rarityFamily, rarityTokens } from "@/lib/rarity";
 
 /**
  * GACHA-12 — the Lucky Box home screen's content, per the approved design
@@ -67,12 +68,7 @@ type PullResponse =
     }
   | { error: string };
 
-const RARITY_STYLE: Record<string, { tint: string; text: string }> = {
-  COMMON: { tint: "bg-input", text: "text-ink-soft" },
-  RARE: { tint: "bg-sage-tint", text: "text-sage-text" },
-  EPIC: { tint: "bg-violet-tint", text: "text-violet-text" },
-  LEGENDARY: { tint: "bg-amber-tint", text: "text-amber-text" },
-};
+
 
 /** GACHA-13 — "~1.5s beat before reveal" per the design board; enforced here since `LuckyBoxOpening` is purely the visual. */
 const OPENING_MIN_DURATION_MS = 1500;
@@ -135,7 +131,13 @@ export function LuckyBoxHome({
   }
 
   if (result) {
-    const style = RARITY_STYLE[result.rarity ?? "COMMON"];
+    // #276 — the shared family map, not a private copy of it.
+    const style = rarityFamily(result.rarity);
+    // #276 UPDATE-01 §6 — the reveal gets the *full* tier treatment, field
+    // effect and sparkles included. This is the payoff moment the whole
+    // Lucky Box exists for, so it is the one place the effects earn their
+    // keep at full size rather than the card grid's rescaled version.
+    const tier = rarityTokens(result.rarity);
     return (
       <div className="flex flex-1 flex-col items-center px-[30px] pt-2 pb-1.5 text-center">
         <div className="flex-1" />
@@ -150,9 +152,28 @@ export function LuckyBoxHome({
           iconSize={44}
           animalIconSize={56}
           rounded="rounded-[24px]"
-          bgClassNameOverride={style.tint}
+          bgClassNameOverride={tier.field}
           iconClassNameOverride={style.text}
-          className="mb-[18px]"
+          fieldFx={tier.fieldFx}
+          overlay={
+            tier.sparks ? (
+              <span aria-hidden className="pointer-events-none absolute inset-0">
+                <span
+                  style={{ ["--spark-rotate" as string]: "45deg" }}
+                  className="animate-twinkle absolute top-[16px] left-[20px] size-[9px] rounded-[2px] bg-white"
+                />
+                <span
+                  style={{ ["--spark-rotate" as string]: "45deg", animationDelay: "0.8s" }}
+                  className="animate-twinkle absolute right-[22px] bottom-[22px] size-[7px] rounded-[2px] bg-white"
+                />
+                <span
+                  style={{ animationDelay: "1.5s" }}
+                  className="animate-twinkle absolute top-[40px] right-[16px] size-[5px] rounded-full bg-[#FFF3D6]"
+                />
+              </span>
+            ) : null
+          }
+          className={cn("mb-[18px]", tier.shadow)}
         />
 
         <p className="font-display text-[21px] font-semibold">{result.name}</p>

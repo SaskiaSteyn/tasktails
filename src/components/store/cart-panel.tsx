@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
+import { RarityChip, rarityRowFrame, rarityThumbFill } from "@/components/store/rarity-chip";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Coin, RollingCoins } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
@@ -273,13 +274,18 @@ export function CartPanel({
             <div
               key={line.id}
               className={cn(
-                "flex items-center gap-[11px] rounded-[14px] border border-border-track bg-warm p-[10px]",
+                rarityRowFrame(line.storeItem.rarity),
+                // #276 §5 — a full 1.5px tier frame, never a left rail. No
+                // shadow, sheen or sparkles at any tier: a dense list of
+                // twinkling rows would be unreadable, and colour carries it.
+                "flex items-center gap-[11px] rounded-[14px] border-[1.5px] bg-warm p-[10px]",
                 wide &&
                   "xl:grid xl:grid-cols-[1fr_130px_150px_120px] xl:gap-4 xl:rounded-none xl:border-x-0 xl:border-t-0 xl:bg-transparent xl:px-5 xl:py-4",
               )}
             >
               <div className="flex min-w-0 flex-1 items-center gap-[11px] xl:flex-none">
                 <ItemWell
+                  bgClassNameOverride={rarityThumbFill(line.storeItem.rarity)}
                   item={line.storeItem}
                   size={44}
                   iconSize={20}
@@ -287,7 +293,10 @@ export function CartPanel({
                   rounded="rounded-[10px]"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-extrabold">{line.storeItem.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-[13px] font-extrabold">{line.storeItem.name}</p>
+                    <RarityChip rarity={line.storeItem.rarity} size="row" />
+                  </div>
                   <p className="text-[11px] text-ink-faint">{CATEGORY_LABEL[line.storeItem.category]}</p>
                 </div>
               </div>

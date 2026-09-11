@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { StoreItemRarity } from "@/generated/prisma/client";
-import { RARITY_TOKENS, fieldStyle, rarityLabel, rarityTokens } from "@/lib/rarity";
+import { RARITY_TOKENS, rarityFamily, rarityLabel, rarityTokens } from "@/lib/rarity";
 
 /**
  * #276 — the rarity token table and the product rules that constrain it,
@@ -58,17 +58,24 @@ describe("tier motion rules", () => {
   });
 });
 
-describe("fieldStyle", () => {
-  it("paints a flat tier as a colour", () => {
-    expect(fieldStyle(RARITY_TOKENS.RARE)).toEqual({ backgroundColor: "#EEF5EF" });
+describe("tokens, not hex", () => {
+  it("expresses every colour as a theme class", () => {
+    // User's direction, 2026-09-11: the repository's colours are the source
+    // of truth, not the handoff's raw hex. A literal `#` here means a tier
+    // has been hard-coded past the token layer.
+    for (const tokens of Object.values(RARITY_TOKENS)) {
+      for (const value of [tokens.frame, tokens.field, tokens.chipBg, tokens.chipInk, tokens.chipLine]) {
+        expect(value).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+      }
+      // The field highlight is the exception: plain white at varying alpha,
+      // with no brand colour in it to tokenise.
+      if (tokens.fieldFx) expect(tokens.fieldFx).toContain("rgba(255,255,255");
+    }
   });
 
-  it("paints Legendary's gradient as an image — a gradient is not a colour", () => {
-    // The one tier whose `field` is a gradient; `background-color` cannot
-    // hold one, which is the whole reason this helper exists.
-    expect(fieldStyle(RARITY_TOKENS.LEGENDARY)).toEqual({
-      backgroundImage: "linear-gradient(160deg,#FDF3DE,#FBE3B4)",
-    });
+  it("gives the reveal and achievement surfaces one family map to share", () => {
+    expect(rarityFamily("EPIC").text).toBe("text-violet-text");
+    expect(rarityFamily(null).text).toBe("text-ink-soft");
   });
 });
 

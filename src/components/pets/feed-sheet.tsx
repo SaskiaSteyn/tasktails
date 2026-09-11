@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { ItemWell } from "@/components/store/item-visual";
+import { RarityChip, rarityRowFrame, rarityThumbFill } from "@/components/store/rarity-chip";
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -203,11 +204,18 @@ export function FeedSheet({
                         setSelectedId(item.id);
                         setNotice(undefined);
                       }}
+                      // The selected row keeps the terracotta selection
+                      // frame — selection is the more urgent signal, and the
+                      // chip still says the tier.
                       className={cn(
-                        "flex items-center gap-[11px] rounded-[14px] border px-[10px] py-[10px] text-left transition-colors duration-120",
+                        "flex items-center gap-[11px] rounded-[14px] border-[1.5px] px-[10px] py-[10px] text-left transition-colors duration-120",
                         isSelected
                           ? "border-terracotta bg-terracotta-tint"
-                          : "border-border-track bg-warm hover:border-checkbox",
+                          // #276 §5 — the food's own tier frames the row.
+                          // Food rarity already drives `feedEffectOf`, so the
+                          // colour now says out loud what the numbers below
+                          // already encode.
+                          : cn("bg-warm hover:border-checkbox", rarityRowFrame(item.storeItem.rarity)),
                       )}
                     >
                       {/* The store's own well, not a hand-rolled copy of it —
@@ -217,6 +225,7 @@ export function FeedSheet({
                           still falls back to the amber-tinted lucide glyph
                           this used to hard-code. */}
                       <ItemWell
+                        bgClassNameOverride={rarityThumbFill(item.storeItem.rarity)}
                         item={item.storeItem}
                         size={44}
                         iconSize={20}
@@ -224,8 +233,11 @@ export function FeedSheet({
                         rounded="rounded-[10px]"
                       />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-extrabold">
-                          {item.storeItem.name}
+                        <span className="flex items-center gap-2">
+                          <span className="min-w-0 truncate text-[13px] font-extrabold">
+                            {item.storeItem.name}
+                          </span>
+                          <RarityChip rarity={item.storeItem.rarity} size="row" />
                         </span>
                         <span className="text-[11px] text-ink-soft">×{item.quantity} owned</span>
                         {/* What this one is worth, now that food no longer all

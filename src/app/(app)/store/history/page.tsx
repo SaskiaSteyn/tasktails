@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
+import { RarityChip, rarityThumbFill } from "@/components/store/rarity-chip";
 import { buttonClasses } from "@/components/ui/button";
 import { transactionsForUser, type TransactionWithStoreItem } from "@/lib/checkout";
 import { calendarDaysBetween, isSameDay } from "@/lib/day";
@@ -166,6 +167,7 @@ export default async function PurchaseHistoryPage() {
                       </p>
                       <div className="flex min-w-0 flex-1 items-center gap-[11px] desk:flex-none">
                         <ItemWell
+                          bgClassNameOverride={rarityThumbFill(entry.storeItem.rarity)}
                           item={entry.storeItem}
                           size={38}
                           iconSize={16}
@@ -173,7 +175,12 @@ export default async function PurchaseHistoryPage() {
                           rounded="rounded-[10px]"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[13px] font-bold">{entry.storeItem.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-[13px] font-bold">{entry.storeItem.name}</p>
+                            {/* #276 §5 — the tier, with no effects: this is a
+                                dense historical list, not a shop window. */}
+                            <RarityChip rarity={entry.storeItem.rarity} size="row" />
+                          </div>
                           <p className="text-[11px] text-ink-faint desk:hidden">
                             {rowTimestamp(entry.purchasedAt, now)}
                           </p>

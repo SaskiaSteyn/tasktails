@@ -1,4 +1,4 @@
-import type { StoreItemCategory, UserEconomy } from "@/generated/prisma/client";
+import type { StoreItemCategory, StoreItemRarity, UserEconomy } from "@/generated/prisma/client";
 import { UNLOCK_LEVEL_BUFFER } from "@/lib/gacha";
 import { allInventoryForUser } from "@/lib/inventory";
 import { petsForUser } from "@/lib/pets";
@@ -174,6 +174,8 @@ export type SellableItem = {
   category: StoreItemCategory;
   /** For `ItemWell` (`GACHA-17`) — a lucide icon name for goods, an SVG path for animals, same as `StoreItem.imageUrl` everywhere else. */
   imageUrl: string;
+  /** #276 — the tier this row is framed in. Nullable like the column it comes from; null renders Common. */
+  rarity: StoreItemRarity | null;
   /** Always 1 for a pet — an animal has no stack to hold a bigger count. */
   quantity: number;
   coinPrice: number;
@@ -212,6 +214,7 @@ export async function sellableItemsForUser(userId: string): Promise<SellableItem
     name: item.storeItem.name,
     category: item.storeItem.category,
     imageUrl: item.storeItem.imageUrl,
+    rarity: item.storeItem.rarity,
     quantity: item.quantity,
     coinPrice: item.storeItem.coinPrice,
     sellValue: sellValueOf(item.storeItem.coinPrice),
@@ -225,6 +228,7 @@ export async function sellableItemsForUser(userId: string): Promise<SellableItem
     name: pet.name ?? pet.storeItem.name,
     category: pet.storeItem.category,
     imageUrl: pet.storeItem.imageUrl,
+    rarity: pet.storeItem.rarity,
     quantity: 1,
     coinPrice: pet.storeItem.coinPrice,
     sellValue: sellValueOf(pet.storeItem.coinPrice),

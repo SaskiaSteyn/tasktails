@@ -276,6 +276,14 @@
   --shadow-btn-danger: 0 6px 14px rgb(219 76 63 / 0.35);
   --shadow-btn-sage: 0 5px 12px rgb(95 169 126 / 0.32);
   --shadow-btn-sage-hover: 0 8px 16px rgb(95 169 126 / 0.42);
+  /* #276 — the rarity tiers' card shadows. Offsets and blur are the
+     handoff's; the colour is this repo's own accent for each tier, spelled
+     out the way every shadow token above already spells its own (compare
+     `--shadow-btn-sage`, which is `--color-sage` written as rgb). Common
+     has no shadow at all. */
+  --shadow-rarity-rare: 0 10px 22px rgb(95 169 126 / 0.16);
+  --shadow-rarity-epic: 0 14px 30px rgb(132 120 196 / 0.22);
+  --shadow-rarity-legendary: 0 16px 34px rgb(229 169 60 / 0.3);
   --shadow-nav-idle: 0 4px 12px rgb(46 42 38 / 0.1);
   --shadow-nav-active: 0 6px 14px rgb(226 122 84 / 0.4);
   --shadow-fab: 0 8px 18px rgb(226 122 84 / 0.4);

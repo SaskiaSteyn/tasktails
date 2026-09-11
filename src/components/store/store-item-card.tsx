@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useRef, useState } from "react";
 
 import { useCartCount } from "@/components/store/cart-count-context";
-import { fieldStyle, rarityLabel, rarityTokens } from "@/lib/rarity";
+import { RarityChip } from "@/components/store/rarity-chip";
+import { rarityTokens } from "@/lib/rarity";
 import { ItemWell, itemSubtitle } from "@/components/store/item-visual";
 import { Coin } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
@@ -200,17 +201,13 @@ export function StoreItemCard({
     // width is part of what separates the tiers at a glance, and Common's
     // frame colour *is* `border-track`, so an untiered card is what shipped
     // plus half a pixel.
-    tiered ? "border-[1.5px]" : "border border-border-track",
+    tiered ? cn("border-[1.5px]", tier.frame, tier.shadow) : "border border-border-track",
     // `bg-surface` (white), not the old `bg-warm` cream tint the pre-addendum
     // card used for its whole body — per the addendum's card art, the card
     // itself is plain white and only the art tile inside it carries a pale
     // category tint (`ItemWell`'s own fill).
     locked ? "bg-[#F2EEE7] text-left transition-colors duration-120 hover:border-checkbox" : "bg-surface",
   );
-
-  const cardStyle = tiered
-    ? { borderColor: tier.frame, boxShadow: tier.shadow ?? undefined }
-    : undefined;
 
   /**
    * Epic and Legendary only. Sizes and offsets are UPDATE-01 §2's rescale of
@@ -261,23 +258,7 @@ export function StoreItemCard({
               (`StockBadge`, `CartActivityBadge`, …) and rarity must not
               stack with them — UPDATE-01 §2 makes that the one placement
               change from the reference. */}
-          {tiered ? (
-            <span
-              style={{
-                backgroundColor: tier.chipBg,
-                color: tier.chipInk,
-                borderColor: tier.chipLine,
-              }}
-              className="flex flex-none items-center gap-[4px] rounded-[6px] border px-[6px] py-[2px] text-[9.5px] font-extrabold tracking-[.5px] uppercase"
-            >
-              <span
-                aria-hidden
-                style={{ backgroundColor: tier.chipInk }}
-                className="size-[6px] flex-none rounded-full"
-              />
-              {rarityLabel(item.rarity)}
-            </span>
-          ) : null}
+          {tiered ? <RarityChip rarity={item.rarity} /> : null}
         </div>
         <p className={cn("text-[10px]", locked ? "text-ink-disabled" : "text-ink-faint")}>
           {itemSubtitle(item)}
@@ -316,19 +297,13 @@ export function StoreItemCard({
           animalIconSize={54}
           rounded="rounded-none"
           fullWidth
-          fieldStyle={tiered ? fieldStyle(tier) : undefined}
+          bgClassNameOverride={tiered ? tier.field : undefined}
           fieldFx={tiered ? tier.fieldFx : null}
           overlay={sparkles}
         />
       </div>
 
-      <div
-        style={tiered ? { borderTopColor: tier.frame } : undefined}
-        className={cn(
-          "border-t px-[11px] py-[10px]",
-          tiered ? "" : "border-border-track",
-        )}
-      >
+      <div className={cn("border-t px-[11px] py-[10px]", tiered ? tier.frame : "border-border-track")}>
         {footerNote}
 
         {locked ? (
@@ -409,7 +384,7 @@ export function StoreItemCard({
   );
 
   return (
-    <div className={cardClassName} style={cardStyle}>
+    <div className={cardClassName}>
       {content}
 
       {/* #276 — Legendary only. Above the whole card, not just the art tile,
