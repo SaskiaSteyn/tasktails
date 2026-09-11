@@ -40,7 +40,12 @@ export function ZooGrid({
         />
       ))}
       <Link
-        href="/store"
+        // #275 — lands on the store already filtered to animals rather than
+        // on the whole catalogue, so "adopt another" arrives at something
+        // adoptable. `PetCustomizer`'s own store link has worked this way
+        // since it shipped; this is the same deep link (`StorePage`'s
+        // `?category=`) applied to the tile that starts the same errand.
+        href="/store?category=ANIMALS"
         className="flex min-h-[170px] flex-col items-center justify-center gap-2 rounded-card-lg border-2 border-dashed border-checkbox text-ink-faint transition-colors duration-120 hover:border-ink-disabled hover:text-ink-soft"
       >
         <span className="flex size-9 items-center justify-center rounded-full border-2 border-checkbox">

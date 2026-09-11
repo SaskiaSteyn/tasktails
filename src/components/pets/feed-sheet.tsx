@@ -170,7 +170,10 @@ export function FeedSheet({
               <p className="mt-2 mb-5 text-[13px] leading-[1.5] text-ink-soft">
                 {petName}&rsquo;s hungry — grab a snack from the store to feed them.
               </p>
-              <Link href="/store" className={buttonClasses()}>
+              {/* #275 — filtered to food: this button only ever appears
+                  because there is none left, so the whole catalogue is the
+                  wrong place to land. */}
+              <Link href="/store?category=FOOD" className={buttonClasses()}>
                 Go to store
               </Link>
               <button
