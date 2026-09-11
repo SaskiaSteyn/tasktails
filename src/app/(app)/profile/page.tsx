@@ -9,7 +9,6 @@ import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { XpCard } from "@/components/economy/xp-card";
 import { AchievementsGrid } from "@/components/profile/achievements-grid";
-import { BuyXpCard } from "@/components/profile/buy-xp-card";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { RankButton } from "@/components/profile/rank-button";
 import { StatsGrid } from "@/components/profile/stats-grid";
@@ -18,9 +17,12 @@ import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { currentEconomy } from "@/lib/economy";
 import { allTimeLeaderboard } from "@/lib/leaderboard";
-import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
 import { lifetimeStatsFor } from "@/lib/stats";
-import { displayNameFor, displayNameFromEmail, findUserByEmail } from "@/lib/users";
+import {
+  displayNameFor,
+  displayNameFromEmail,
+  findUserByEmail,
+} from "@/lib/users";
 
 export const metadata: Metadata = {
   title: "Profile · TaskTails",
@@ -126,7 +128,10 @@ export default async function ProfilePage() {
         {economy ? <XpCard economy={economy} /> : null}
       </div>
 
-      <UsernameCard username={record.username} suggestion={displayNameFromEmail(record.email)} />
+      <UsernameCard
+        username={record.username}
+        suggestion={displayNameFromEmail(record.email)}
+      />
 
       <div className="mt-4">
         <StatsGrid stats={stats} />
@@ -157,16 +162,10 @@ export default async function ProfilePage() {
         </div>
       ) : null}
 
-      {/* #256 moved the "Sell items" card out of here and into the store,
-          beside the Lucky Box — participants were looking for selling where
-          they buy. `/profile/sell` itself is unchanged. */}
-      <div className="mt-4">
-        <BuyXpCard
-          costCoins={BUY_XP_COST_COINS}
-          gainXp={BUY_XP_GAIN_XP}
-          coins={economy?.coins ?? 0}
-        />
-      </div>
+      {/* #256 moved the "Sell items" card into the store, and #280 moved
+          "Buy XP" after it — both now live on the store's Sell tab, where
+          coins come back rather than go out. Profile keeps the stats and
+          the achievements; `/profile/sell` itself is unchanged. */}
 
       <div className="min-h-2 flex-1" />
     </AppShell>

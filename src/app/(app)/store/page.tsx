@@ -28,6 +28,7 @@ import { redirectAdminsAway } from "@/lib/admin";
 import { cartForUser } from "@/lib/cart";
 import { currentEconomy } from "@/lib/economy";
 import { LUCKY_BOX_COST_COINS, luckyBoxUrgencyForUser } from "@/lib/gacha";
+import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
 import { levelOf, storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
 import { logTelemetryEvent } from "@/lib/telemetry";
@@ -150,7 +151,12 @@ export const metadata: Metadata = {
  * `StoreBrowser`'s own `luckyBoxUrgency` doc comment.
  */
 /** The four real `StoreItemCategory` values `?category=` may deep-link to — anything else falls back to "ALL", same as never passing the param at all. */
-const DEEP_LINKABLE_CATEGORIES = ["FOOD", "ACCESSORIES", "ANIMALS", "DECORATIONS"];
+const DEEP_LINKABLE_CATEGORIES = [
+  "FOOD",
+  "ACCESSORIES",
+  "ANIMALS",
+  "DECORATIONS",
+];
 
 export default async function StorePage({
   searchParams,
@@ -206,7 +212,9 @@ export default async function StorePage({
       if (row.showStockBadge) {
         urgencyBadges[item.id] = <StockBadge key={item.id} stock={row.stock} />;
       } else if (row.showCartActivityBadge) {
-        urgencyBadges[item.id] = <CartActivityBadge key={item.id} count={row.cartActivity} />;
+        urgencyBadges[item.id] = (
+          <CartActivityBadge key={item.id} count={row.cartActivity} />
+        );
       }
       // Footer note, below the image and above the price — everything else.
       if (row.showRecentPurchases) {
@@ -270,7 +278,9 @@ export default async function StorePage({
             <CartActivityBadge count={7} />
           </div>
         );
-        urgencyFooterNotes[item.id] = <RecentPurchasesBadge key={item.id} count={12} />;
+        urgencyFooterNotes[item.id] = (
+          <RecentPurchasesBadge key={item.id} count={12} />
+        );
       } else if (item.name === "Red collar") {
         urgencyBadges[item.id] = <BuyOneGetOneBadge key={item.id} />;
       } else if (item.name === "Hearts") {
@@ -278,7 +288,9 @@ export default async function StorePage({
         // addendum's own curated art for this specific card — see
         // `CurrencyUrgencyBadge`'s doc comment.
         urgencyBadges[item.id] = <CurrencyUrgencyBadge key={item.id} overlay />;
-        urgencyFooterNotes[item.id] = <RecentPurchasesBadge key={item.id} count={4} />;
+        urgencyFooterNotes[item.id] = (
+          <RecentPurchasesBadge key={item.id} count={4} />
+        );
       }
     }
   }
@@ -314,7 +326,9 @@ export default async function StorePage({
             // moment anything on the page re-renders on the client. Latent
             // until INF-22, which put a stateful cart rail on this page and
             // made adding to the cart refresh it. Bisected, not guessed.
-            flashSaleBanner={showFlashSale ? <FlashSaleBanner key="flash-sale" /> : null}
+            flashSaleBanner={
+              showFlashSale ? <FlashSaleBanner key="flash-sale" /> : null
+            }
             urgencyBadges={urgencyBadges}
             urgencyFooterNotes={urgencyFooterNotes}
             pricing={pricing}
@@ -322,11 +336,16 @@ export default async function StorePage({
             level={level}
             initialCategory={initialCategory}
             luckyBoxPrice={LUCKY_BOX_COST_COINS}
+            coins={economy?.coins ?? 0}
+            buyXpCost={BUY_XP_COST_COINS}
+            buyXpGain={BUY_XP_GAIN_XP}
             luckyBoxUrgency={
               luckyBoxUrgencyRow ? (
                 <>
                   <LuckyBoxOddsBoostBanner />
-                  <LuckyBoxRecentPullsNote count={luckyBoxUrgencyRow.recentPulls} />
+                  <LuckyBoxRecentPullsNote
+                    count={luckyBoxUrgencyRow.recentPulls}
+                  />
                 </>
               ) : null
             }
@@ -339,7 +358,11 @@ export default async function StorePage({
             <p className="flex-none border-b border-border-track px-[18px] py-[15px] font-display text-[16px] font-semibold">
               Your cart
             </p>
-            <CartPanel initialCart={cart} coins={economy?.coins ?? 0} variant="rail" />
+            <CartPanel
+              initialCart={cart}
+              coins={economy?.coins ?? 0}
+              variant="rail"
+            />
           </aside>
         </div>
       </AppShell>

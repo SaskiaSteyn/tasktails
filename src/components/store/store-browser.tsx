@@ -1,12 +1,13 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, ShoppingCart, Tag } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { CartLink } from "@/components/store/cart-link";
 import { LockedByLevelState } from "@/components/store/locked-by-level-state";
 import { LuckyBoxCard } from "@/components/store/lucky-box-card";
 import { SellItemsCard } from "@/components/store/sell-items-card";
+import { BuyXpCard } from "@/components/profile/buy-xp-card";
 import { StoreItemCard } from "@/components/store/store-item-card";
 import type { StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
@@ -119,6 +120,9 @@ export function StoreBrowser({
   level,
   luckyBoxPrice,
   luckyBoxUrgency,
+  coins,
+  buyXpCost,
+  buyXpGain,
   initialCategory = "ALL",
 }: {
   items: StoreItemWithLock[];
@@ -133,10 +137,20 @@ export function StoreBrowser({
   luckyBoxUrgency?: ReactNode;
   /** Pre-selects a category chip on load — `StorePage`'s own `?category=` deep link (e.g. `PetCustomizer`'s "Add accessory"/"Add decoration" tile), read once and otherwise behaving exactly like tapping the chip by hand. */
   initialCategory?: StoreItemCategory | "ALL";
+  /** #280 — for `BuyXpCard`, which now lives on the Sell tab rather than on Profile. */
+  coins: number;
+  buyXpCost: number;
+  buyXpGain: number;
 }) {
+  // #280 — Buy browses the catalogue; Sell is where coins come back, either
+  // by selling something or by converting them to XP.
+  const [mode, setMode] = useState<"buy" | "sell">("buy");
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<StoreItemCategory | "ALL">(initialCategory);
-  const [selectedLocked, setSelectedLocked] = useState<StoreItemWithLock | null>(null);
+  const [category, setCategory] = useState<StoreItemCategory | "ALL">(
+    initialCategory,
+  );
+  const [selectedLocked, setSelectedLocked] =
+    useState<StoreItemWithLock | null>(null);
 
   const visible = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
@@ -170,7 +184,8 @@ export function StoreBrowser({
     // sentinel is actually on screen.
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) setPager({ filterKey, shown: shown + PAGE_SIZE });
+        if (entry.isIntersecting)
+          setPager({ filterKey, shown: shown + PAGE_SIZE });
       },
       { rootMargin: "400px" },
     );
@@ -178,7 +193,9 @@ export function StoreBrowser({
     return () => observer.disconnect();
   }, [filterKey, shown, visible.length]);
 
-  const activeLabel = CATEGORY_CHIPS.find((chip) => chip.value === category)?.label;
+  const activeLabel = CATEGORY_CHIPS.find(
+    (chip) => chip.value === category,
+  )?.label;
 
   // The counts beside each category in the desktop column. Derived from the
   // same `items` array the grid filters, so they always agree with what
@@ -204,143 +221,211 @@ export function StoreBrowser({
 
   return (
     <div className="flex min-h-0 flex-col desk:min-w-0 desk:flex-1">
-      <div className="mb-[9px] flex flex-none items-center gap-2">
-        <label className="flex h-[38px] min-w-0 flex-1 items-center gap-2 rounded-input border border-border-input bg-surface px-4">
-          <Search size={16} strokeWidth={2} className="flex-none text-ink-faint" />
-          <span className="sr-only">Search items</span>
-          <input
-            type="text"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search items…"
-            // 16px, not the design's 13px — below 16px, iOS Safari/Chrome
-            // zooms the whole page in on focus.
-            className="w-full bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-disabled py-[5px]"
-          />
-        </label>
-        {/* The phone header's cart button, which `AppShell` hides from
-            `desk:` up — and the cart rail that replaces it only appears at
-            `xl:`. Without this, the 900–1279px band would have no way to
-            reach the cart at all. */}
-        <CartLink className="hidden desk:flex xl:hidden" />
-      </div>
+      {/* #280 — Buy / Sell, above the search bar. A segmented control per
+          the ticket's screenshot: one cream track, the active half a white
+          rounded panel that appears to sit on top of it. Shape and layout
+          from the screenshot, colours from the design system as asked —
+          `bg-input` track, `bg-surface` active panel, `text-ink` /
+          `text-ink-soft` for the labels.
 
-      {flashSaleBanner}
-
-      <div
-        role="radiogroup"
-        aria-label="Category"
-        // `flex-none`: this row is a flex item of `main` (`flex-col`,
-        // `overflow-y-auto`). Per the flexbox spec, a flex item with any
-        // non-`visible` overflow (this row's own `overflow-x-auto`, needed
-        // so long category lists scroll sideways) gets an automatic minimum
-        // size of 0 instead of its content size — so without `flex-none`
-        // this is the one element the browser will shrink to nothing when
-        // `main` is short on vertical space, which is exactly the 0-height
-        // collapse reported live. Nothing else on the page has this overflow
-        // + flex-child combination, which is why only this row broke.
-        // `p-1` with matching negative margins: `overflow-x-auto` makes this
-        // a scroll box on both axes, and the tabs exactly fill its height, so
-        // a focused tab's ring (`outline-offset: 2px`) was clipped on every
-        // side. The padding gives it 4px to live in and the negative margins
-        // put the row back where it was, to the pixel. Pre-dates INF-22 — the
-        // phone chip row had it too — but this is now a tab bar people will
-        // arrow through, so it matters more.
-        className="no-scrollbar -mx-1 -mt-1 mb-[7px] flex flex-none gap-[6px] overflow-x-auto p-1 desk:gap-2"
-      >
-        {CATEGORY_CHIPS.map((chip) => {
-          const active = chip.value === category;
+          Two plain buttons with `aria-pressed`, not `role="tab"`: the tab
+          pattern carries a contract (roving tabindex, arrow-key movement,
+          `aria-controls`) and a half-implemented one reads worse to a
+          screen reader than no role at all. */}
+      <div className="mb-[9px] flex flex-none gap-1 rounded-[14px] bg-input p-1">
+        {(
+          [
+            { value: "buy", label: "Buy", icon: ShoppingCart },
+            { value: "sell", label: "Sell", icon: Tag },
+          ] as const
+        ).map((tab) => {
+          const active = mode === tab.value;
           return (
             <button
-              key={chip.value}
+              key={tab.value}
               type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => setCategory(chip.value)}
+              aria-pressed={active}
+              onClick={() => setMode(tab.value)}
               className={cn(
-                "flex flex-none items-center gap-[6px] rounded-pill px-3 py-[5px] text-[11px] transition-colors duration-120",
-                "desk:px-[15px] desk:py-[7px] desk:text-[13px]",
+                "flex flex-1 items-center justify-center gap-[6px] rounded-[11px] py-[7px] text-[13px] transition-colors duration-120",
                 active
-                  ? "bg-terracotta font-extrabold text-white"
-                  : "border border-border-input bg-surface font-bold text-ink-soft hover:border-checkbox",
+                  ? "bg-surface font-extrabold text-ink shadow-[0_1px_3px_rgb(46_42_38/0.08)]"
+                  : "font-bold text-ink-soft hover:text-ink",
               )}
             >
-              {chip.label}
-              {/* Desktop only: there is no room for it beside the label in the
-                  phone frame's chip row, and `aria-hidden` because the count
-                  is not part of what the radio is called. */}
-              <span
-                aria-hidden
-                className={cn(
-                  "hidden font-extrabold desk:inline",
-                  active ? "text-white/70" : "text-ink-faint",
-                )}
-              >
-                {counts.get(chip.value) ?? 0}
-              </span>
+              <tab.icon size={15} strokeWidth={2.2} aria-hidden />
+              {tab.label}
             </button>
           );
         })}
       </div>
 
-      {/* `desk:px-1`: from `desk:` up this column is the scroll box, and a
+      {mode === "sell" ? (
+        /* The Sell pane. Search and the category chips belong to the
+           catalogue, so they are not rendered here — there is no catalogue
+           to filter. Two cards on the same two-column grid the Buy pane's
+           top row uses, so they line up with everything else. */
+        <div className="desk:min-h-0 desk:flex-1 desk:overflow-y-auto desk:px-1">
+          <div className="grid grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
+            <SellItemsCard />
+            {/* #280 — moved off Profile. Buying XP is a conversion out of
+                coins rather than a purchase of an item, which is what puts
+                it on this side rather than in the catalogue. Keeps its
+                violet, as asked. */}
+            <BuyXpCard costCoins={buyXpCost} gainXp={buyXpGain} coins={coins} />
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mb-[9px] flex flex-none items-center gap-2">
+            <label className="flex h-[38px] min-w-0 flex-1 items-center gap-2 rounded-input border border-border-input bg-surface px-4">
+              <Search
+                size={16}
+                strokeWidth={2}
+                className="flex-none text-ink-faint"
+              />
+              <span className="sr-only">Search items</span>
+              <input
+                type="text"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search items…"
+                // 16px, not the design's 13px — below 16px, iOS Safari/Chrome
+                // zooms the whole page in on focus.
+                className="w-full bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-disabled py-[5px]"
+              />
+            </label>
+            {/* The phone header's cart button, which `AppShell` hides from
+            `desk:` up — and the cart rail that replaces it only appears at
+            `xl:`. Without this, the 900–1279px band would have no way to
+            reach the cart at all. */}
+            <CartLink className="hidden desk:flex xl:hidden" />
+          </div>
+
+          {flashSaleBanner}
+
+          <div
+            role="radiogroup"
+            aria-label="Category"
+            // `flex-none`: this row is a flex item of `main` (`flex-col`,
+            // `overflow-y-auto`). Per the flexbox spec, a flex item with any
+            // non-`visible` overflow (this row's own `overflow-x-auto`, needed
+            // so long category lists scroll sideways) gets an automatic minimum
+            // size of 0 instead of its content size — so without `flex-none`
+            // this is the one element the browser will shrink to nothing when
+            // `main` is short on vertical space, which is exactly the 0-height
+            // collapse reported live. Nothing else on the page has this overflow
+            // + flex-child combination, which is why only this row broke.
+            // `p-1` with matching negative margins: `overflow-x-auto` makes this
+            // a scroll box on both axes, and the tabs exactly fill its height, so
+            // a focused tab's ring (`outline-offset: 2px`) was clipped on every
+            // side. The padding gives it 4px to live in and the negative margins
+            // put the row back where it was, to the pixel. Pre-dates INF-22 — the
+            // phone chip row had it too — but this is now a tab bar people will
+            // arrow through, so it matters more.
+            className="no-scrollbar -mx-1 -mt-1 mb-[7px] flex flex-none gap-[6px] overflow-x-auto p-1 desk:gap-2"
+          >
+            {CATEGORY_CHIPS.map((chip) => {
+              const active = chip.value === category;
+              return (
+                <button
+                  key={chip.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setCategory(chip.value)}
+                  className={cn(
+                    "flex flex-none items-center gap-[6px] rounded-pill px-3 py-[5px] text-[11px] transition-colors duration-120",
+                    "desk:px-[15px] desk:py-[7px] desk:text-[13px]",
+                    active
+                      ? "bg-terracotta font-extrabold text-white"
+                      : "border border-border-input bg-surface font-bold text-ink-soft hover:border-checkbox",
+                  )}
+                >
+                  {chip.label}
+                  {/* Desktop only: there is no room for it beside the label in the
+                  phone frame's chip row, and `aria-hidden` because the count
+                  is not part of what the radio is called. */}
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "hidden font-extrabold desk:inline",
+                      active ? "text-white/70" : "text-ink-faint",
+                    )}
+                  >
+                    {counts.get(chip.value) ?? 0}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* `desk:px-1`: from `desk:` up this column is the scroll box, and a
           scroll box clips on every axis — a card flush against its edge loses
           the 4px its focus ring needs (`outline-offset: 2px`, globals.css).
           Level-locked cards are buttons, so the outermost column of them is
           exactly where that shows. */}
-      <div className="flex min-w-0 flex-col desk:min-h-0 desk:flex-1 desk:overflow-y-auto desk:px-1">
-        {/* The store's top row: spend on the left, get paid on the right
+          <div className="flex min-w-0 flex-col desk:min-h-0 desk:flex-1 desk:overflow-y-auto desk:px-1">
+            {/* The store's top row: spend on the left, get paid on the right
             (#256). Same two-column phone grid and same `auto-fill` desktop
             track as the item grid below, so the pair line up with the
             catalogue rather than sitting in their own private layout. */}
-        <div className="mb-[11px] desk:mb-4">
-          <div className="grid grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
-            <LuckyBoxCard price={luckyBoxPrice} />
-            <SellItemsCard />
-          </div>
-          {luckyBoxUrgency ? <div className="mt-[9px]">{luckyBoxUrgency}</div> : null}
-        </div>
+            <div className="mb-[11px] desk:mb-4">
+              <div className="grid grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
+                <LuckyBoxCard price={luckyBoxPrice} />
+              </div>
+              {luckyBoxUrgency ? (
+                <div className="mt-[9px]">{luckyBoxUrgency}</div>
+              ) : null}
+            </div>
 
-        {visible.length === 0 ? (
-          <p className="py-10 text-center text-[13px] text-ink-soft">
-            {query.trim() ? (
-              <>No items match &ldquo;{query.trim()}&rdquo;{category === "ALL" ? "" : ` in ${activeLabel}`}.</>
+            {visible.length === 0 ? (
+              <p className="py-10 text-center text-[13px] text-ink-soft">
+                {query.trim() ? (
+                  <>
+                    No items match &ldquo;{query.trim()}&rdquo;
+                    {category === "ALL" ? "" : ` in ${activeLabel}`}.
+                  </>
+                ) : (
+                  <>No items in {activeLabel}.</>
+                )}
+              </p>
             ) : (
-              <>No items in {activeLabel}.</>
+              // `items-start`, not Grid's default `stretch` — a card whose footer
+              // carries a `footerNote` line (URG-04/05/06/07) is naturally taller
+              // than a row-mate without one, and letting Grid stretch the shorter
+              // card to match used to leave a visible gap between its title and
+              // its art (see `StoreItemCard`'s own comment on the `mt-auto` this
+              // replaced) rather than just... not being exactly as tall. Reported
+              // live from a real Group B account.
+              //
+              // `auto-fill` rather than a fixed column count from `desk:` up, per
+              // the handoff's own grid spec — which is also what makes the 900px
+              // "2-up" behaviour fall out of the same rule rather than needing a
+              // second breakpoint.
+              <div className="grid grid-cols-2 items-start gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
+                {visible.slice(0, shown).map((item) => (
+                  <StoreItemCard
+                    key={item.id}
+                    item={item}
+                    badge={urgencyBadges?.[item.id]}
+                    footerNote={urgencyFooterNotes?.[item.id]}
+                    pricing={pricing?.[item.id]}
+                    addQuantity={bundleQuantities?.[item.id]}
+                    onLockedClick={() => setSelectedLocked(item)}
+                  />
+                ))}
+              </div>
             )}
-          </p>
-        ) : (
-          // `items-start`, not Grid's default `stretch` — a card whose footer
-          // carries a `footerNote` line (URG-04/05/06/07) is naturally taller
-          // than a row-mate without one, and letting Grid stretch the shorter
-          // card to match used to leave a visible gap between its title and
-          // its art (see `StoreItemCard`'s own comment on the `mt-auto` this
-          // replaced) rather than just... not being exactly as tall. Reported
-          // live from a real Group B account.
-          //
-          // `auto-fill` rather than a fixed column count from `desk:` up, per
-          // the handoff's own grid spec — which is also what makes the 900px
-          // "2-up" behaviour fall out of the same rule rather than needing a
-          // second breakpoint.
-          <div className="grid grid-cols-2 items-start gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
-            {visible.slice(0, shown).map((item) => (
-              <StoreItemCard
-                key={item.id}
-                item={item}
-                badge={urgencyBadges?.[item.id]}
-                footerNote={urgencyFooterNotes?.[item.id]}
-                pricing={pricing?.[item.id]}
-                addQuantity={bundleQuantities?.[item.id]}
-                onLockedClick={() => setSelectedLocked(item)}
-              />
-            ))}
-          </div>
-        )}
 
-        {/* The scroll sentinel — only rendered while there is a next page, so
+            {/* The scroll sentinel — only rendered while there is a next page, so
             the observer above can't loop once the grid is fully drawn. */}
-        {shown < visible.length ? <div ref={sentinelRef} aria-hidden className="h-px flex-none" /> : null}
-      </div>
+            {shown < visible.length ? (
+              <div ref={sentinelRef} aria-hidden className="h-px flex-none" />
+            ) : null}
+          </div>
+        </>
+      )}
     </div>
   );
 }
