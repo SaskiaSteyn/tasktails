@@ -5,6 +5,7 @@ import type {
   StoreItemCategory,
 } from "@/generated/prisma/client";
 
+import { accessorySlot, inAccessoryDrawOrder } from "@/lib/pet-art";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -171,6 +172,11 @@ export type EquipCustomizationResult =
  * `updateMany` (this module's usual pattern, see `consumeFoodItem()`) can't
  * prevent on its own the way it can for a single row.
  *
+ * **Accessories stack, one per spot (2026-09-13).** An accessory displaces
+ * only an accessory in the same `accessorySlot()` — a new hat replaces the old
+ * hat but leaves the glasses and the tie on. Decorations keep the rule below:
+ * one background per pet.
+ *
  * At most one item equipped **per category** per pet at a time —
  * `PetCustomizer`'s accessory/background grids each only ever highlight
  * "whichever item of *that* category is already equipped" (singular, per
@@ -238,14 +244,30 @@ export async function equipCustomization(
       })
     : null;
 
-  await tx.inventoryItem.updateMany({
+  const alsoOnThisPet = await tx.inventoryItem.findMany({
     where: {
       equippedToPetId: petId,
       id: { not: inventoryItemId },
       storeItem: { category: owned.storeItem.category },
     },
-    data: { equippedToPetId: null },
+    include: { storeItem: true },
   });
+  // The slot is a property of the artwork, not a column, so it is matched
+  // here rather than in the query. A pet wears a handful of items at most.
+  const displaced =
+    owned.storeItem.category === "ACCESSORIES"
+      ? alsoOnThisPet.filter(
+          (item) =>
+            accessorySlot(item.storeItem.imageUrl) ===
+            accessorySlot(owned.storeItem.imageUrl),
+        )
+      : alsoOnThisPet;
+  if (displaced.length > 0) {
+    await tx.inventoryItem.updateMany({
+      where: { id: { in: displaced.map((item) => item.id) } },
+      data: { equippedToPetId: null },
+    });
+  }
 
   const item = await tx.inventoryItem.update({
     where: { id: inventoryItemId },
@@ -331,7 +353,8 @@ export async function equippedBackgroundsForUser(
 }
 
 /**
- * The accessory art each pet is currently wearing, keyed by pet id — the
+ * The accessory art each pet is currently wearing — every stacked item, in
+ * draw order (`inAccessoryDrawOrder()`) — keyed by pet id. The
  * `ACCESSORIES` twin of `equippedBackgroundsForUser()`, one query for the
  * whole gallery rather than one per card.
  *
@@ -347,7 +370,7 @@ export async function equippedBackgroundsForUser(
  */
 export async function equippedAccessoriesForUser(
   userId: string,
-): Promise<Record<string, string>> {
+): Promise<Record<string, string[]>> {
   const equipped = await prisma.inventoryItem.findMany({
     where: {
       userId,
@@ -357,21 +380,24 @@ export async function equippedAccessoriesForUser(
     include: { storeItem: true },
   });
 
-  const accessories: Record<string, string> = {};
+  const accessories: Record<string, string[]> = {};
   for (const item of equipped) {
     if (item.equippedToPetId && item.storeItem.imageUrl.startsWith("/")) {
-      accessories[item.equippedToPetId] = item.storeItem.imageUrl;
+      (accessories[item.equippedToPetId] ??= []).push(item.storeItem.imageUrl);
     }
+  }
+  for (const petId in accessories) {
+    accessories[petId] = inAccessoryDrawOrder(accessories[petId]);
   }
   return accessories;
 }
 
 /** Same as `equippedAccessoriesForUser()` but scoped to one pet — the Sanctuary drill-in. */
-export async function equippedAccessoryForPet(
+export async function equippedAccessoriesForPet(
   userId: string,
   petId: string,
-): Promise<string | undefined> {
-  const item = await prisma.inventoryItem.findFirst({
+): Promise<string[]> {
+  const items = await prisma.inventoryItem.findMany({
     where: {
       userId,
       equippedToPetId: petId,
@@ -379,9 +405,11 @@ export async function equippedAccessoryForPet(
     },
     include: { storeItem: true },
   });
-  return item && item.storeItem.imageUrl.startsWith("/")
-    ? item.storeItem.imageUrl
-    : undefined;
+  return inAccessoryDrawOrder(
+    items
+      .map((item) => item.storeItem.imageUrl)
+      .filter((url) => url.startsWith("/")),
+  );
 }
 
 /**

@@ -10,7 +10,7 @@ import { AnimalCard } from "@/components/pets/animal-card";
 import { ZooGrid } from "@/components/pets/zoo-grid";
 import {
   equippedAccessoriesForUser,
-  equippedAccessoryForPet,
+  equippedAccessoriesForPet,
   equippedBackgroundForPet,
   equippedBackgroundsForUser,
   foodInventoryForUser,
@@ -64,7 +64,7 @@ export default async function SanctuaryPage({
     pet,
     foodItems,
     backgroundUrl,
-    accessoryUrl,
+    accessoryUrls,
     pets,
     backgrounds,
     accessories,
@@ -72,7 +72,7 @@ export default async function SanctuaryPage({
     petForUser(userId, id),
     foodInventoryForUser(userId),
     equippedBackgroundForPet(userId, id),
-    equippedAccessoryForPet(userId, id),
+    equippedAccessoriesForPet(userId, id),
     petsForUser(userId),
     equippedBackgroundsForUser(userId),
     equippedAccessoriesForUser(userId),
@@ -111,7 +111,7 @@ export default async function SanctuaryPage({
           pet={pet}
           foodItems={foodItems}
           backgroundUrl={backgroundUrl}
-          accessoryUrl={accessoryUrl}
+          accessoryUrls={accessoryUrls}
         />
       </div>
 

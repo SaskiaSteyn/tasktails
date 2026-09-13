@@ -360,11 +360,17 @@ describe("recordCustomizeInteraction", () => {
     prismaMock.$transaction.mockImplementation(
       (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
     );
+    // Nothing else on the pet unless a case says so.
+    prismaMock.inventoryItem.findMany.mockResolvedValue([]);
   });
 
-  it("equips the item and unequips whatever this pet had on before in the same category", async () => {
+  it("equips the item and unequips whatever this pet had on before in the same spot", async () => {
     prismaMock.pet.findFirst.mockResolvedValue(petRow());
     prismaMock.inventoryItem.findFirst.mockResolvedValue(accessoryRow());
+    // Same `imageUrl`, so the same spot.
+    prismaMock.inventoryItem.findMany.mockResolvedValue([
+      accessoryRow({ id: "acc-old", equippedToPetId: "pet-1" }),
+    ]);
     prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.inventoryItem.update.mockResolvedValue(
       accessoryRow({ equippedToPetId: "pet-1" }) as never,
@@ -380,12 +386,17 @@ describe("recordCustomizeInteraction", () => {
       },
       include: { storeItem: true },
     });
-    // Displaces whatever *this pet* already had on in the *same category*
-    // (ACCESSORIES, from the found item's own `storeItem.category`), but
-    // never the item being equipped itself, and never the other category's
-    // item — a background stays on while an accessory is (un)equipped.
-    expect(prismaMock.inventoryItem.updateMany).toHaveBeenCalledWith({
+    // Looks only at *this pet's* other items in the *same category*
+    // (ACCESSORIES, from the found item's own `storeItem.category`) — a
+    // background stays on while an accessory is (un)equipped — and takes off
+    // the ones in the same spot. The spot rules themselves are pinned in
+    // `inventory.test.ts`.
+    expect(prismaMock.inventoryItem.findMany).toHaveBeenCalledWith({
       where: { equippedToPetId: "pet-1", id: { not: "acc-1" }, storeItem: { category: "ACCESSORIES" } },
+      include: { storeItem: true },
+    });
+    expect(prismaMock.inventoryItem.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["acc-old"] } },
       data: { equippedToPetId: null },
     });
     expect(prismaMock.inventoryItem.update).toHaveBeenCalledWith({
@@ -403,6 +414,9 @@ describe("recordCustomizeInteraction", () => {
   it("equips a decoration, scoping the unequip to DECORATIONS rather than ACCESSORIES", async () => {
     prismaMock.pet.findFirst.mockResolvedValue(petRow());
     prismaMock.inventoryItem.findFirst.mockResolvedValue(decorationRow());
+    prismaMock.inventoryItem.findMany.mockResolvedValue([
+      decorationRow({ id: "decor-old", equippedToPetId: "pet-1" }),
+    ]);
     prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.inventoryItem.update.mockResolvedValue(
       decorationRow({ equippedToPetId: "pet-1" }) as never,
@@ -410,12 +424,16 @@ describe("recordCustomizeInteraction", () => {
 
     const result = await recordCustomizeInteraction("user-1", "pet-1", "decor-1");
 
-    expect(prismaMock.inventoryItem.updateMany).toHaveBeenCalledWith({
+    expect(prismaMock.inventoryItem.findMany).toHaveBeenCalledWith({
       where: {
         equippedToPetId: "pet-1",
         id: { not: "decor-1" },
         storeItem: { category: "DECORATIONS" },
       },
+      include: { storeItem: true },
+    });
+    expect(prismaMock.inventoryItem.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["decor-old"] } },
       data: { equippedToPetId: null },
     });
     expect(result).toEqual({

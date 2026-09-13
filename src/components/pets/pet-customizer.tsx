@@ -23,6 +23,7 @@ import { cn } from "@/lib/cn";
 // Prisma imports into the browser bundle.
 import type { InventoryItemWithStoreItem } from "@/lib/inventory";
 import { Modal } from "@/components/ui/modal";
+import { accessorySlot } from "@/lib/pet-art";
 import { backgroundImageStyle, petDisplayName } from "@/lib/pet-mood";
 import type { PetWithItem } from "@/lib/pets";
 
@@ -161,12 +162,14 @@ export function PetCustomizer({
 
   const [tab, setTab] = useState<CustomizeTab>("accessories");
 
-  // One equipped id per category, not one shared id — `equipCustomization()`
-  // (src/lib/inventory.ts) only ever displaces whatever the pet had on *in
-  // the same category*, so an accessory and a background can be equipped at
-  // once and each needs its own optimistic-update slot.
-  const [equippedAccessoryId, setEquippedAccessoryId] = useState(
-    () => accessories.find((item) => item.equippedToPetId === pet.id)?.id,
+  // Accessories stack, one per spot (`accessorySlot()`), so they are a set of
+  // ids; a background is still one. `equipCustomization()`
+  // (src/lib/inventory.ts) applies the same rules on the server, which is
+  // what keeps these optimistic updates honest.
+  const [equippedAccessoryIds, setEquippedAccessoryIds] = useState(() =>
+    accessories
+      .filter((item) => item.equippedToPetId === pet.id)
+      .map((item) => item.id),
   );
   const [equippedDecorationId, setEquippedDecorationId] = useState(
     () => decorations.find((item) => item.equippedToPetId === pet.id)?.id,
@@ -182,9 +185,6 @@ export function PetCustomizer({
   const [pendingSteal, setPendingSteal] =
     useState<InventoryItemWithStoreItem | null>(null);
 
-  const equippedAccessory = accessories.find(
-    (item) => item.id === equippedAccessoryId,
-  );
   const equippedDecoration = decorations.find(
     (item) => item.id === equippedDecorationId,
   );
@@ -192,14 +192,16 @@ export function PetCustomizer({
     equippedDecoration && hasRealArt(equippedDecoration.storeItem.imageUrl)
       ? equippedDecoration.storeItem.imageUrl
       : undefined;
-  const accessoryUrl =
-    equippedAccessory && hasRealArt(equippedAccessory.storeItem.imageUrl)
-      ? equippedAccessory.storeItem.imageUrl
-      : undefined;
+  const accessoryUrls = accessories
+    .filter((item) => equippedAccessoryIds.includes(item.id))
+    .map((item) => item.storeItem.imageUrl)
+    .filter(hasRealArt);
 
   const items = tab === "accessories" ? accessories : decorations;
-  const equippedId =
-    tab === "accessories" ? equippedAccessoryId : equippedDecorationId;
+  const isEquippedHere = (item: InventoryItemWithStoreItem) =>
+    item.storeItem.category === "DECORATIONS"
+      ? item.id === equippedDecorationId
+      : equippedAccessoryIds.includes(item.id);
   const copy = TAB_COPY[tab];
 
   async function handleRename(event: React.FormEvent<HTMLFormElement>) {
@@ -249,16 +251,6 @@ export function PetCustomizer({
    * no-op: clicking the selected tile did nothing, with no way to clear a
    * slot back to "nothing equipped" short of picking a different item).
    */
-  /**
-   * Which optimistic-update slot an item belongs to — an accessory can never
-   * displace a background's slot or vice versa, matching the category-scoped
-   * equip on the server (`equipCustomization()`).
-   */
-  function setCurrentIdFor(item: InventoryItemWithStoreItem) {
-    return item.storeItem.category === "DECORATIONS"
-      ? setEquippedDecorationId
-      : setEquippedAccessoryId;
-  }
 
   /**
    * #279 — a tile worn by another pet asks before taking it; anything else
@@ -277,12 +269,35 @@ export function PetCustomizer({
 
   async function handleTap(item: InventoryItemWithStoreItem) {
     const isDecoration = item.storeItem.category === "DECORATIONS";
-    const currentId = isDecoration ? equippedDecorationId : equippedAccessoryId;
-    const setCurrentId = setCurrentIdFor(item);
     if (equipping) return;
 
-    const alreadyEquipped = item.id === currentId;
-    setCurrentId(alreadyEquipped ? undefined : item.id);
+    const alreadyEquipped = isEquippedHere(item);
+    // Snapshot both, so a failed request can put either back exactly.
+    const previousDecorationId = equippedDecorationId;
+    const previousAccessoryIds = equippedAccessoryIds;
+    const restore = () => {
+      setEquippedDecorationId(previousDecorationId);
+      setEquippedAccessoryIds(previousAccessoryIds);
+    };
+
+    if (isDecoration) {
+      setEquippedDecorationId(alreadyEquipped ? undefined : item.id);
+    } else {
+      // Equipping takes off whatever was in the same spot; unequipping only
+      // this one.
+      const slot = accessorySlot(item.storeItem.imageUrl);
+      setEquippedAccessoryIds(
+        alreadyEquipped
+          ? previousAccessoryIds.filter((id) => id !== item.id)
+          : [
+              ...previousAccessoryIds.filter((id) => {
+                const worn = accessories.find((other) => other.id === id);
+                return !worn || accessorySlot(worn.storeItem.imageUrl) !== slot;
+              }),
+              item.id,
+            ],
+      );
+    }
     setEquipping(true);
     setEquipError(undefined);
     try {
@@ -292,7 +307,7 @@ export function PetCustomizer({
         body: JSON.stringify({ inventoryItemId: item.id }),
       });
       if (!response.ok) {
-        setCurrentId(currentId);
+        restore();
         // Prefer the server's own message — #215's 409 ("on another pet")
         // is worth showing verbatim rather than the generic fallback.
         const body = await response.json().catch(() => null);
@@ -321,7 +336,7 @@ export function PetCustomizer({
       }
       router.refresh();
     } catch {
-      setCurrentId(currentId);
+      restore();
       setEquipError(
         "Couldn't reach TaskTails. Check your connection and try again.",
       );
@@ -367,7 +382,7 @@ export function PetCustomizer({
         {hasRealArt(pet.storeItem.imageUrl) ? (
           <PetArt
             animalUrl={pet.storeItem.imageUrl}
-            accessoryUrl={accessoryUrl}
+            accessoryUrls={accessoryUrls}
             height={STAGE_ART_HEIGHT}
             shadow="stage"
             alt={name}
@@ -503,13 +518,15 @@ export function PetCustomizer({
             dashed tile is then the only tile, same as `ZooPage`'s "Adopt
             another" slot at zero pets. */}
         <div className="min-h-0 flex-1 overflow-y-auto">
+          {/* Accessories stack, so their tiles are checkboxes; a background is
+              one-of, so its tiles stay radios. */}
           <div
-            role="radiogroup"
+            role={tab === "accessories" ? "group" : "radiogroup"}
             aria-label={copy.label}
             className="grid grid-cols-3 gap-[9px] pb-2"
           >
             {items.map((item) => {
-              const isEquipped = item.id === equippedId;
+              const isEquipped = isEquippedHere(item);
               // #215 — the name of the *other* pet this copy is equipped to,
               // if any. Mutually exclusive with `isEquipped` (a copy on
               // another pet is never this pet's equipped id).
@@ -518,7 +535,7 @@ export function PetCustomizer({
                 <button
                   key={item.id}
                   type="button"
-                  role="radio"
+                  role={tab === "accessories" ? "checkbox" : "radio"}
                   aria-checked={isEquipped}
                   // The tile's visible name is gone (below), so the item's
                   // own name has to reach a screen reader some other way —

@@ -25,7 +25,7 @@ export function ZooGrid({
 }: {
   pets: PetWithItem[];
   backgrounds: Record<string, string | undefined>;
-  accessories: Record<string, string | undefined>;
+  accessories: Record<string, string[] | undefined>;
   /** Column count and gap — the caller owns those, they differ per placement. */
   className?: string;
 }) {
@@ -36,7 +36,7 @@ export function ZooGrid({
           key={pet.id}
           pet={pet}
           backgroundUrl={backgrounds[pet.id]}
-          accessoryUrl={accessories[pet.id]}
+          accessoryUrls={accessories[pet.id]}
         />
       ))}
       <Link

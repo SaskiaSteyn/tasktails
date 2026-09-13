@@ -94,13 +94,13 @@ const ART_REGION_HEIGHT = 150;
 export function ZooGalleryCard({
   pet,
   backgroundUrl,
-  accessoryUrl,
+  accessoryUrls,
 }: {
   pet: PetWithItem;
   /** This pet's equipped decoration art, if any — replaces the plain white art-region background, same as `AnimalCard`. */
   backgroundUrl?: string;
-  /** This pet's equipped accessory art, if any — painted onto the animal, see `PetArt`. */
-  accessoryUrl?: string;
+  /** This pet's equipped accessory art, stacked one per spot — painted onto the animal, see `PetArt`. */
+  accessoryUrls?: string[];
 }) {
   const name = petDisplayName(pet);
   const happinessTone = stateTone(pet.happiness);
@@ -181,7 +181,7 @@ export function ZooGalleryCard({
             // pack shipped a drawn-sad cut of every species.
             <PetArt
               animalUrl={pet.storeItem.imageUrl}
-              accessoryUrl={accessoryUrl}
+              accessoryUrls={accessoryUrls}
               sad={moodFor(pet) !== "happy"}
               height={ART_REGION_HEIGHT}
               shadow="card"

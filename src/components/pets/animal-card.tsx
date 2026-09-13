@@ -104,15 +104,15 @@ export function AnimalCard({
   pet,
   foodItems,
   backgroundUrl,
-  accessoryUrl,
+  accessoryUrls,
 }: {
   pet: PetWithItem;
   /** The user's owned food (PET-04) — per-user, not per-animal, so `/zoo/[id]` fetches it once and passes the same list to every card. */
   foodItems: InventoryItemWithStoreItem[];
   /** This pet's equipped decoration art, if any (`equippedBackgroundForPet()` in `src/lib/inventory.ts`) — replaces the stage's flat gradient outright when present. */
   backgroundUrl?: string;
-  /** This pet's equipped accessory art, if any (`equippedAccessoryForPet()`) — painted onto the animal itself, see `PetArt`. */
-  accessoryUrl?: string;
+  /** This pet's equipped accessory art, stacked one per spot (`equippedAccessoriesForPet()`) — painted onto the animal itself, see `PetArt`. */
+  accessoryUrls?: string[];
 }) {
   const name = petDisplayName(pet);
   // #276 — both read off the pet's own row: the tier from the catalogue
@@ -355,7 +355,7 @@ export function AnimalCard({
             // Happy, and drawn sad otherwise.
             <PetArt
               animalUrl={pet.storeItem.imageUrl}
-              accessoryUrl={accessoryUrl}
+              accessoryUrls={accessoryUrls}
               sad={mood !== "happy"}
               fill
               sizes="(min-width: 480px) 360px, 70vw"
