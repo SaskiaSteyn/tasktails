@@ -265,7 +265,7 @@ export function LuckyBoxReveal({
                         own radius (UPDATE-02 §2). */}
                     <span className="absolute inset-0 overflow-hidden rounded-[8px] border border-border-track bg-surface shadow-[0_10px_22px_rgb(46_42_38/0.12)] backface-hidden desk:rounded-[9px]">
                       <Image
-                        src="/card-back.svg"
+                        src="/card-background.svg"
                         alt=""
                         fill
                         sizes="130px"

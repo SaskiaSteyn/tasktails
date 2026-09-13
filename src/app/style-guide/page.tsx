@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import { History } from "lucide-react";
 
 import { AuthBrandMark } from "@/components/auth/auth-screen";
@@ -46,7 +47,9 @@ export const metadata: Metadata = {
  * can't drift from what ships. Colour values are parsed out of `globals.css` at
  * build time and the contrast ratios are computed from them.
  *
- * Not linked from anywhere in the app. Reachable at /style-guide.
+ * Not linked from anywhere in the app. Reachable at /style-guide in development
+ * only — a production build answers it with a 404, so the deployed study app
+ * never serves it (user's direction, 2026-09-13).
  */
 
 const SURFACES = ["surface", "warm", "input", "board"] as const;
@@ -291,6 +294,8 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 export default function StyleGuidePage() {
+  if (process.env.NODE_ENV === "production") notFound();
+
   const t = readColorTokens();
 
   const neutrals = [

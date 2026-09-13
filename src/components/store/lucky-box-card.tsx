@@ -20,10 +20,11 @@ export function BoxArt({
 }) {
   return (
     <Image
-      src={open ? "/lucky-box-open.svg" : "/lucky-box-closed.svg"}
+      src={open ? "/open-box.svg" : "/closed-box.svg"}
       alt=""
       aria-hidden
-      // The SVGs' own viewBox proportions.
+      // The SVGs' own viewBox proportions. `public/` art, which is what is
+      // synced to S3 — not the handoff's bundled copies.
       width={open ? 715 : 720}
       height={open ? 1060 : 840}
       style={{ height, width: "auto" }}
