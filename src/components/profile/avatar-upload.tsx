@@ -5,6 +5,44 @@ import { useRef, useState } from "react";
 
 import { MonogramAvatar } from "@/components/ui/monogram-avatar";
 import { cn } from "@/lib/cn";
+import { AVATAR_PX } from "@/lib/validation/avatar";
+
+/**
+ * Centre-crops to a square and scales to `AVATAR_PX` — a phone photo goes from
+ * megabytes to a few tens of KB. The stored avatar is inlined into every page
+ * that draws it, so this is what keeps the leaderboard light. JPEG over white:
+ * a transparent PNG loses its transparency, which a round avatar never shows.
+ * Rejects when the browser can't decode the file (HEIC on desktop, say).
+ */
+async function downscale(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = AVATAR_PX;
+  const context = canvas.getContext("2d")!;
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, AVATAR_PX, AVATAR_PX);
+  context.drawImage(
+    bitmap,
+    (bitmap.width - side) / 2,
+    (bitmap.height - side) / 2,
+    side,
+    side,
+    0,
+    0,
+    AVATAR_PX,
+    AVATAR_PX,
+  );
+  bitmap.close();
+
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("toBlob failed"))),
+      "image/jpeg",
+      0.85,
+    ),
+  );
+}
 
 /**
  * PRO-02 — the profile avatar, user-uploadable (`design_handoff/README.md`'s
@@ -40,9 +78,18 @@ export function AvatarUpload({
     setPending(true);
     setError(null);
 
+    let image: Blob;
+    try {
+      image = await downscale(file);
+    } catch {
+      setError("Use a JPEG, PNG, GIF or WEBP image.");
+      setPending(false);
+      return;
+    }
+
     try {
       const formData = new FormData();
-      formData.append("avatar", file);
+      formData.append("avatar", image, "avatar.jpg");
 
       const response = await fetch("/api/user/avatar", {
         method: "POST",
