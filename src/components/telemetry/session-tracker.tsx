@@ -17,6 +17,28 @@ const SESSION_STORAGE_KEY = "tt_session_id";
  * (where `beforeunload` is unreliable) and survives the page being torn
  * down mid-navigation, which a plain `fetch` in an unload handler does not
  * — `sendBeacon` is built for exactly this.
+ *
+ * **`pagehide` alone is not enough, and shipping with only it is the bug
+ * behind every real deployed account showing `sessionCount > 0` and
+ * `totalTimeInAppMs: 0` despite genuine repeat use.** On Android/iOS, going
+ * to the home screen or switching apps backgrounds the tab; the OS is then
+ * free to reclaim that tab's process under memory pressure with **no
+ * unload-family event of any kind** — the page's JavaScript simply stops
+ * existing. A start with no matching end contributes zero on purpose (see
+ * `sessionMetricsForUser`'s "an undercount is honest" comment), so a
+ * participant who never once closes the tab from the foreground (the normal
+ * way anyone uses a phone app) racks up sessions and never logs a single
+ * millisecond. `visibilitychange` → `"hidden"` is the fix: it fires the
+ * instant the tab is backgrounded, which is strictly before any later
+ * process reclaim, so it is the one signal mobile actually guarantees — it's
+ * why analytics vendors treat it as the primary "flush now" signal and
+ * `pagehide`/`unload` as a desktop-only supplement, not the other way round.
+ * Sent on every hide, not just a final one: `sessionMetricsForUser` pairs by
+ * `sessionId` with last-write-wins, so each hide simply advances the
+ * recorded end time further out — if the tab is later reopened and
+ * backgrounded again, or the true final `pagehide` never arrives, the most
+ * recent hide already stands in for it instead of leaving the session
+ * unpaired.
  */
 export function SessionTracker() {
   useEffect(() => {
@@ -45,15 +67,23 @@ export function SessionTracker() {
         .catch(() => {});
     }
 
-    const handlePageHide = () => {
+    const sendSessionEnd = () => {
       navigator.sendBeacon(
         "/api/telemetry/session-end",
         new Blob([JSON.stringify({ sessionId })], { type: "application/json" }),
       );
     };
 
-    window.addEventListener("pagehide", handlePageHide);
-    return () => window.removeEventListener("pagehide", handlePageHide);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") sendSessionEnd();
+    };
+
+    window.addEventListener("pagehide", sendSessionEnd);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("pagehide", sendSessionEnd);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   return null;

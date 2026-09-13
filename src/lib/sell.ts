@@ -82,7 +82,10 @@ export async function sellOwnedItem(
     });
 
     if (inventoryItem) {
-      const refund = sellValueOf(inventoryItem.storeItem.coinPrice);
+      const refund = sellValueOf(
+        inventoryItem.storeItem.coinPrice,
+        inventoryItem.shiny,
+      );
 
       if (inventoryItem.quantity > 1) {
         await tx.inventoryItem.update({
@@ -137,7 +140,7 @@ export async function sellOwnedItem(
 
     if (!pet) return { ok: false, reason: "not-found" } as const;
 
-    const refund = sellValueOf(pet.storeItem.coinPrice);
+    const refund = sellValueOf(pet.storeItem.coinPrice, pet.shiny);
 
     await tx.pet.delete({ where: { id: pet.id } });
 
@@ -232,7 +235,7 @@ export async function sellableItemsForUser(
     shiny: item.shiny,
     quantity: item.quantity,
     coinPrice: item.storeItem.coinPrice,
-    sellValue: sellValueOf(item.storeItem.coinPrice),
+    sellValue: sellValueOf(item.storeItem.coinPrice, item.shiny),
     levelRequired: item.storeItem.levelRequired,
     locked: item.storeItem.levelRequired > level + UNLOCK_LEVEL_BUFFER,
   }));
@@ -247,7 +250,7 @@ export async function sellableItemsForUser(
     shiny: pet.shiny,
     quantity: 1,
     coinPrice: pet.storeItem.coinPrice,
-    sellValue: sellValueOf(pet.storeItem.coinPrice),
+    sellValue: sellValueOf(pet.storeItem.coinPrice, pet.shiny),
     levelRequired: pet.storeItem.levelRequired,
     locked: pet.storeItem.levelRequired > level + UNLOCK_LEVEL_BUFFER,
   }));

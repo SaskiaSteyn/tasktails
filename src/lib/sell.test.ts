@@ -61,7 +61,9 @@ describe("sellOwnedItem", () => {
     const result = await sellOwnedItem("user-1", "inv-1");
 
     expect(result.ok).toBe(true);
-    expect(prismaMock.inventoryItem.delete).toHaveBeenCalledWith({ where: { id: "inv-1" } });
+    expect(prismaMock.inventoryItem.delete).toHaveBeenCalledWith({
+      where: { id: "inv-1" },
+    });
     expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
     // #235 — the row is gone after this, so "it was being worn when it was
     // sold" only survives if it's recorded here.
@@ -69,7 +71,10 @@ describe("sellOwnedItem", () => {
       data: {
         userId: "user-1",
         eventType: "ITEM_SOLD",
-        payload: expect.objectContaining({ removed: true, equippedToPetId: "pet-1" }),
+        payload: expect.objectContaining({
+          removed: true,
+          equippedToPetId: "pet-1",
+        }),
       },
     });
   });
@@ -104,7 +109,9 @@ describe("sellOwnedItem", () => {
     if (!result.ok) return;
     expect(result.refund).toBe(2100);
     expect(result.item).toEqual({ storeItemId: "rhino", name: "Rhino" });
-    expect(prismaMock.pet.delete).toHaveBeenCalledWith({ where: { id: "pet-1" } });
+    expect(prismaMock.pet.delete).toHaveBeenCalledWith({
+      where: { id: "pet-1" },
+    });
     expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
     expect(prismaMock.inventoryItem.delete).not.toHaveBeenCalled();
   });
@@ -225,7 +232,12 @@ describe("sellableItemsForUser", () => {
         happiness: 100,
         hunger: 0,
         lastInteractedAt: new Date(),
-        storeItem: { name: "Rhino", category: "ANIMALS", coinPrice: 3000, levelRequired: 20 },
+        storeItem: {
+          name: "Rhino",
+          category: "ANIMALS",
+          coinPrice: 3000,
+          levelRequired: 20,
+        },
       },
     ] as never);
 
@@ -244,7 +256,12 @@ describe("sellableItemsForUser", () => {
         id: "inv-next-tier",
         storeItemId: "next-tier",
         quantity: 1,
-        storeItem: { name: "Next tier item", category: "ACCESSORIES", coinPrice: 100, levelRequired: 6 },
+        storeItem: {
+          name: "Next tier item",
+          category: "ACCESSORIES",
+          coinPrice: 100,
+          levelRequired: 6,
+        },
       },
     ] as never);
     prismaMock.pet.findMany.mockResolvedValue([]);
@@ -265,12 +282,27 @@ describe("sellableItemsForUser", () => {
         happiness: 100,
         hunger: 0,
         lastInteractedAt: new Date(),
-        storeItem: { name: "Fox", category: "ANIMALS", coinPrice: 550, levelRequired: 1 },
+        storeItem: {
+          name: "Fox",
+          category: "ANIMALS",
+          coinPrice: 550,
+          levelRequired: 1,
+        },
       },
     ] as never);
 
     const items = await sellableItemsForUser("user-1");
 
     expect(items[0].name).toBe("Sunny");
+  });
+});
+
+describe("sellValueOf", () => {
+  it("adds a shiny bonus that shrinks relative to the price as it climbs", async () => {
+    const { sellValueOf } = await import("@/lib/sell");
+    expect(sellValueOf(50)).toBe(35);
+    expect(sellValueOf(50, true)).toBe(141);
+    expect(sellValueOf(2800)).toBe(1960);
+    expect(sellValueOf(2800, true)).toBe(2753);
   });
 });
