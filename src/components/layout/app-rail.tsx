@@ -6,7 +6,7 @@ import { LogoutButton } from "@/components/auth/logout-button";
 import { RailNav } from "@/components/layout/rail-nav";
 import { MonogramAvatar } from "@/components/ui/monogram-avatar";
 import { openTaskCount } from "@/lib/tasks";
-import { displayNameFor, findUserByEmail } from "@/lib/users";
+import { avatarSrc, displayNameFor, findUserByEmail } from "@/lib/users";
 
 /**
  * The persistent left rail (INF-22) — the desktop half of the nav model whose
@@ -70,7 +70,7 @@ export async function AppRail() {
       <LogoutButton className="hidden xl:block" />
 
       <div className="mt-auto flex items-center gap-[10px] xl:px-[6px] xl:py-2">
-        <MonogramAvatar name={name} avatarUrl={record.avatarUrl} size={36} />
+        <MonogramAvatar name={name} avatarUrl={avatarSrc(record)} size={36} />
         <div className="hidden min-w-0 flex-col leading-[1.25] xl:flex">
           <span className="truncate text-[13.5px] font-extrabold">{name}</span>
           <span className="truncate text-[11.5px] font-semibold text-ink-soft">

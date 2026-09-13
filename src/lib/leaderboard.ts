@@ -1,5 +1,7 @@
+import { cache } from "react";
+
 import { lifetimeEarningsFor } from "@/lib/economy";
-import { listParticipants, type ParticipantSummary } from "@/lib/users";
+import { avatarSrc, listParticipants, type ParticipantSummary } from "@/lib/users";
 
 /**
  * LEAD-03 — the all-time leaderboard (`design_handoff/ADDENDUM-leaderboard.md`).
@@ -152,8 +154,11 @@ export function rankParticipants(
  * every account gets one at creation (AUTH-04), so a missing row means a
  * half-deleted account, and silently shortening the board is a worse failure
  * than showing it on zero.
+ *
+ * Memoised per request: the desktop header ranks you on every screen, and on
+ * Profile and the leaderboard the page itself asks again.
  */
-export async function allTimeLeaderboard(
+export const allTimeLeaderboard = cache(async function allTimeLeaderboard(
   youId: string | null,
 ): Promise<Leaderboard> {
   const participants = await listParticipants();
@@ -162,7 +167,7 @@ export async function allTimeLeaderboard(
   const rows = participants.map((participant, index) => ({
     userId: participant.id,
     name: nameFor(participant, index + 1),
-    avatarUrl: participant.avatarUrl,
+    avatarUrl: avatarSrc(participant),
     score: earnings.get(participant.id) ?? 0,
   }));
 
@@ -173,4 +178,4 @@ export async function allTimeLeaderboard(
     you: entries.find((entry) => entry.isYou) ?? null,
     participantCount: entries.length,
   };
-}
+});

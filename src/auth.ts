@@ -1,4 +1,5 @@
 import NextAuth from "next-auth";
+import { cache } from "react";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 
@@ -7,7 +8,7 @@ import {
   authenticate,
   displayNameFor,
   displayNameFromEmail,
-  findUserByEmail,
+  findUserNameByEmail,
   firstName,
   upsertOAuthUser,
 } from "@/lib/users";
@@ -40,7 +41,7 @@ export const isGoogleEnabled = Boolean(
   process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
 );
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuth = NextAuth({
   ...authConfig,
   providers: [
     ...(isGoogleEnabled
@@ -107,7 +108,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // token is the fallback because NextAuth writes the provider's full name
       // there by default.
       const record = session.user.email
-        ? await findUserByEmail(session.user.email)
+        ? await findUserNameByEmail(session.user.email)
         : null;
 
       session.user.name = record
@@ -120,3 +121,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+export const { handlers, signIn, signOut } = nextAuth;
+
+/**
+ * Memoised per request. A single screen calls `auth()` from the page, the
+ * layout's rail and header, and `currentEconomy()` — and every call re-runs the
+ * session callback's database read. `cache` makes that one read per render;
+ * outside a render (route handlers) it simply calls through.
+ */
+export const auth = cache(() => nextAuth.auth());

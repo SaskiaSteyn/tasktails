@@ -1,4 +1,4 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 import { AbGroup, type User, UserRole } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -68,6 +68,37 @@ function verifyPassword(password: string, stored: string): boolean {
 
 export async function findUserByEmail(email: string): Promise<User | null> {
   return prisma.user.findUnique({ where: { email: normaliseEmail(email) } });
+}
+
+/**
+ * Just what a greeting needs. The session callback runs on every `auth()`, so
+ * it must not drag the whole row along — `avatarUrl` alone can be megabytes.
+ */
+export async function findUserNameByEmail(
+  email: string,
+): Promise<Pick<User, "username" | "email"> | null> {
+  return prisma.user.findUnique({
+    where: { email: normaliseEmail(email) },
+    select: { username: true, email: true },
+  });
+}
+
+/**
+ * What an `<img src>` for this account's photo should be — a URL, never the
+ * stored data URL itself. Pages used to inline the data URL, which React then
+ * repeats in its hydration payload: every avatar was sent twice per placement,
+ * and Profile (rail, both headers, podium) shipped one photo eight times. As a
+ * URL the page carries a few bytes and the browser fetches the photo once.
+ *
+ * `v` is a content hash, so the route can be cached forever and a new upload
+ * still shows up straight away.
+ */
+export function avatarSrc(
+  user: Pick<User, "id" | "avatarUrl">,
+): string | null {
+  if (!user.avatarUrl) return null;
+  const version = createHash("sha1").update(user.avatarUrl).digest("base64url");
+  return `/api/user/avatar/${user.id}?v=${version.slice(0, 10)}`;
 }
 
 /** Session callbacks carry `user.id`, not `user.email` — this is that lookup. */

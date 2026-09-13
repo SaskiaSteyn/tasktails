@@ -1,8 +1,12 @@
 /**
  * PRO-03's upload rules.
  *
- * 3 MB caps the base64'd row at ~4 MB in Postgres — plenty for a phone photo,
- * small enough that ~20 participants uploading one each is noise. Storage is
+ * The row is inlined as a data URL wherever an avatar is drawn — every
+ * leaderboard row, the rail, the profile header — so its size is paid on page
+ * loads, not just once. `AvatarUpload` downscales to `AVATAR_PX` square before
+ * sending (a few tens of KB); the cap is the server's backstop against a
+ * client that doesn't. It used to be 3 MB, and one 1.6 MB photo made the
+ * leaderboard several megabytes for everyone. Storage is
  * the `User.avatarUrl` text column, not a file on disk: the deployed container
  * (INF-15) has no volume outside the database, so anything written to its
  * filesystem is gone on the next `docker compose up --build`.
@@ -12,7 +16,10 @@
  * real image of a type an `<img>` tag can render, not just something a client
  * claimed was one.
  */
-export const MAX_AVATAR_BYTES = 3 * 1024 * 1024;
+export const MAX_AVATAR_BYTES = 256 * 1024;
+
+/** Stored edge length — 3× the largest drawn avatar (the 74px podium winner). */
+export const AVATAR_PX = 256;
 
 const SIGNATURES: { mime: string; bytes: number[] }[] = [
   { mime: "image/png", bytes: [0x89, 0x50, 0x4e, 0x47] },
