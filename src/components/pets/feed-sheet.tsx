@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { ItemWell } from "@/components/store/item-visual";
+import { ShinyPill } from "@/components/store/shiny";
 import {
   RarityChip,
   rarityRowFrame,
@@ -15,7 +16,11 @@ import {
 import { useLevelUp } from "@/components/economy/level-up-provider";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
-import { feedEffectOf, hungerLabel } from "@/lib/feed-value";
+import {
+  feedEffectOf,
+  hungerLabel,
+  withShinyBonus,
+} from "@/lib/feed-value";
 import {
   SHEET_GRAB_CLASS,
   SHEET_SCROLL_CLASS,
@@ -57,6 +62,7 @@ export function FeedSheet({
   petId,
   petName,
   foodItems,
+  shinySources = 0,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -65,6 +71,8 @@ export function FeedSheet({
   petId: string;
   petName: string;
   foodItems: InventoryItemWithStoreItem[];
+  /** #289 — shown in each row's "+N mood", which the server boosts by the same rule. */
+  shinySources?: number;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   // #286 — see the open effect below.
@@ -288,6 +296,7 @@ export function FeedSheet({
                             rarity={item.storeItem.rarity}
                             size="row"
                           />
+                          {item.shiny ? <ShinyPill /> : null}
                         </span>
                         <span className="text-[11px] text-ink-soft">
                           ×{item.quantity} owned
@@ -300,7 +309,11 @@ export function FeedSheet({
                             {hungerLabel(item.storeItem.rarity)}
                           </span>
                           <span className="text-amber-text">
-                            +{feedEffectOf(item.storeItem.rarity).happiness}{" "}
+                            +
+                            {withShinyBonus(
+                              feedEffectOf(item.storeItem.rarity).happiness,
+                              shinySources,
+                            )}{" "}
                             mood
                           </span>
                         </span>

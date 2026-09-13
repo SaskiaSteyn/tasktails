@@ -15,6 +15,7 @@ import { LevelUpScreen } from "@/components/economy/level-up-screen";
 import { AppShell } from "@/components/layout/app-shell";
 import { PetArt } from "@/components/pets/pet-art";
 import { hasRealArt, ItemWell } from "@/components/store/item-visual";
+import { SHINY_WASH, ShinyPill } from "@/components/store/shiny";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 // Type-only: erased at compile time, same reasoning `AnimalCard` documents
@@ -543,9 +544,8 @@ export function PetCustomizer({
                   // art and it would announce as an unnamed option. When
                   // locked, the owner pet is part of what the tile is.
                   aria-label={
-                    wornBy
-                      ? `${item.storeItem.name}, on ${wornBy} — tap to move it here`
-                      : item.storeItem.name
+                    (item.shiny ? `Shiny ${item.storeItem.name}` : item.storeItem.name) +
+                    (wornBy ? `, on ${wornBy} — tap to move it here` : "")
                   }
                   disabled={equipping}
                   onClick={() => handleTileTap(item)}
@@ -577,7 +577,12 @@ export function PetCustomizer({
                     animalIconSize={72}
                     rounded="rounded-none"
                     fill
+                    // #289 — the owned copy's shine, as on every other owned surface.
+                    fieldFx={item.shiny ? SHINY_WASH : undefined}
                   />
+                  {item.shiny ? (
+                    <ShinyPill className="absolute top-1.5 left-1.5" />
+                  ) : null}
                   {isEquipped ? (
                     <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-sage text-white">
                       <Check size={10} strokeWidth={3} aria-hidden />

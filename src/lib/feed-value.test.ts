@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { FEED_EFFECT, type FoodRarity, feedEffectOf, hungerLabel } from "@/lib/feed-value";
+import {
+  FEED_EFFECT,
+  type FoodRarity,
+  feedEffectOf,
+  hungerLabel,
+  shinySourcesOf,
+  withShinyBonus,
+} from "@/lib/feed-value";
 
 /**
  * The point of the table is the ordering, not the exact figures: rarer food
@@ -61,5 +68,19 @@ describe("hungerLabel", () => {
 
   it("falls back to Common for an item with no rarity, same as feedEffectOf", () => {
     expect(hungerLabel(null)).toBe("less 18 hunger");
+  });
+});
+
+describe("withShinyBonus", () => {
+  it("adds 15% per shiny source, stacking, and nothing without one", () => {
+    expect(withShinyBonus(7, 0)).toBe(7);
+    expect(withShinyBonus(20, 1)).toBe(23);
+    expect(withShinyBonus(20, 2)).toBe(26);
+  });
+
+  it("counts the pet itself and each shiny item it has on", () => {
+    const equippedItems = [{ shiny: true }, { shiny: false }, { shiny: true }];
+    expect(shinySourcesOf({ shiny: true, equippedItems })).toBe(3);
+    expect(shinySourcesOf({ shiny: false, equippedItems: [] })).toBe(0);
   });
 });
