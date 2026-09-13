@@ -114,7 +114,7 @@ describe("sellOwnedItem", () => {
       id: "pet-1",
       storeItemId: "fox",
       name: "Sunny",
-      storeItem: { name: "Fox kit", coinPrice: 550 },
+      storeItem: { name: "Fox", coinPrice: 550 },
     } as never);
 
     const result = await sellOwnedItem("user-1", "pet-1");
@@ -176,7 +176,7 @@ describe("sellableItemsForUser", () => {
         hunger: 0,
         lastInteractedAt: new Date(),
         storeItem: {
-          name: "Fox kit",
+          name: "Fox",
           category: "ANIMALS",
           imageUrl: "/animals/happy/fox.svg",
           coinPrice: 550,
@@ -203,7 +203,7 @@ describe("sellableItemsForUser", () => {
       {
         id: "pet-1",
         storeItemId: "fox",
-        name: "Fox kit",
+        name: "Fox",
         category: "ANIMALS",
         imageUrl: "/animals/happy/fox.svg",
         quantity: 1,
@@ -265,7 +265,7 @@ describe("sellableItemsForUser", () => {
         happiness: 100,
         hunger: 0,
         lastInteractedAt: new Date(),
-        storeItem: { name: "Fox kit", category: "ANIMALS", coinPrice: 550, levelRequired: 1 },
+        storeItem: { name: "Fox", category: "ANIMALS", coinPrice: 550, levelRequired: 1 },
       },
     ] as never);
 

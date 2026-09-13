@@ -42,7 +42,7 @@ function petRow(overrides: Partial<PetWithItem> = {}): PetWithItem {
     lastInteractedAt: at(12),
     storeItem: {
       id: "item-1",
-      name: "Koala kit",
+      name: "Koala",
       category: "ANIMALS",
       levelRequired: 1,
       coinPrice: 5,
@@ -491,7 +491,7 @@ describe("recordCustomizeInteraction", () => {
     );
     prismaMock.pet.findUnique.mockResolvedValue({
       name: "Mochi",
-      storeItem: { name: "Koala kit" },
+      storeItem: { name: "Koala" },
     } as never);
     prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 0 });
     prismaMock.inventoryItem.update.mockResolvedValue(
@@ -514,7 +514,7 @@ describe("recordCustomizeInteraction", () => {
     );
     prismaMock.pet.findUnique.mockResolvedValue({
       name: null,
-      storeItem: { name: "Koala kit" },
+      storeItem: { name: "Koala" },
     } as never);
     prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 0 });
     prismaMock.inventoryItem.update.mockResolvedValue(
@@ -523,7 +523,7 @@ describe("recordCustomizeInteraction", () => {
 
     const result = await recordCustomizeInteraction("user-1", "pet-1", "acc-1");
 
-    expect(result).toMatchObject({ ok: true, movedFrom: "Koala kit" });
+    expect(result).toMatchObject({ ok: true, movedFrom: "Koala" });
   });
 
   it("still equips a copy that this pet already has on (equippedToPetId === petId is not 'elsewhere')", async () => {
@@ -610,7 +610,7 @@ describe("recordUnequipInteraction", () => {
 describe("createPetForTransaction", () => {
   const animalStoreItem = {
     id: "koala-1",
-    name: "Koala kit",
+    name: "Koala",
     category: "ANIMALS",
     levelRequired: 1,
     coinPrice: 5,

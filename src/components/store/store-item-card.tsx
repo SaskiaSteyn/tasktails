@@ -284,7 +284,7 @@ export function StoreItemCard({
           // 120, not the 96 this shipped at (#271, reported live): the chip
           // floats at `top-2` and is ~17px tall, so on a 96px tile a centred
           // 62px piece of art started 17px down and the chip sat on top of
-          // it — plainly wrong on the Moustache and the Penguin kit, whose
+          // it — plainly wrong on the Moustache and the Penguin, whose
           // ink reaches the top of their own boxes. At 120 the art starts
           // 29px down, four clear pixels under the chip, with no change to
           // the art's own size or centring.

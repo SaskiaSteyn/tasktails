@@ -38,7 +38,7 @@ import { prisma } from "@/lib/prisma";
  * renamed to match the PDF exactly: "Sunflower seeds" = PDF "Seed" (Food),
  * "Red collar" = "Collar" (Accessories), "Treat box" = "Carrots" (Food),
  * "Koala kit"/"Fox kit"/"Penguin kit" = PDF "Koala"/"Fox"/"Penguin"
- * (Animals). The seventh, "Cosy den" (Decorations, 280 coins), had no PDF
+ * (Animals) — since renamed to the species alone, see `renames`. The seventh, "Cosy den" (Decorations, 280 coins), had no PDF
  * match at any level/price and was dropped entirely on 2026-08-24 (#207)
  * rather than kept as a fabricated, art-less catalogue row — see the
  * `removals` array below. **PRO-18 (2026-08-10)** added the remaining 19
@@ -110,7 +110,7 @@ const catalogue: Array<{
     // user's call (2026-07-29). `levelRequired` here is unrelated — Koala
     // is Common tier's cheapest animal either way, so it lands at Level 1
     // under the 2026-08-11 remap regardless of price.
-    name: "Koala kit",
+    name: "Koala",
     category: StoreItemCategory.ANIMALS,
     levelRequired: 1,
     coinPrice: 5,
@@ -118,7 +118,7 @@ const catalogue: Array<{
     rarity: StoreItemRarity.COMMON, // = PDF "Koala" ("Common*")
   },
   {
-    name: "Fox kit",
+    name: "Fox",
     category: StoreItemCategory.ANIMALS,
     levelRequired: 12,
     coinPrice: 550,
@@ -126,7 +126,7 @@ const catalogue: Array<{
     rarity: StoreItemRarity.EPIC, // = PDF "Fox"
   },
   {
-    name: "Penguin kit",
+    name: "Penguin",
     category: StoreItemCategory.ANIMALS,
     levelRequired: 15,
     coinPrice: 1200,
@@ -149,25 +149,25 @@ const catalogue: Array<{
   // match would have been the tidier half of the trade and the riskier one:
   // `ART_FOCUS` in `src/lib/pet-art.ts` and every sad-cut filename key off
   // these stems too.
-  { name: "Lion kit", category: StoreItemCategory.ANIMALS, levelRequired: 11, coinPrice: 480, imageUrl: "/animals/happy/lion.svg", rarity: StoreItemRarity.EPIC },
-  { name: "Bunny kit", category: StoreItemCategory.ANIMALS, levelRequired: 2, coinPrice: 35, imageUrl: "/animals/happy/bunny.svg", rarity: StoreItemRarity.COMMON },
-  { name: "Jaguar kit", category: StoreItemCategory.ANIMALS, levelRequired: 13, coinPrice: 620, imageUrl: "/animals/happy/jaguar.svg", rarity: StoreItemRarity.EPIC },
-  { name: "Tiger kit", category: StoreItemCategory.ANIMALS, levelRequired: 14, coinPrice: 1000, imageUrl: "/animals/happy/tiger.svg", rarity: StoreItemRarity.EPIC },
-  { name: "Monkey kit", category: StoreItemCategory.ANIMALS, levelRequired: 7, coinPrice: 170, imageUrl: "/animals/happy/monkey.svg", rarity: StoreItemRarity.RARE },
-  { name: "Giraffe kit", category: StoreItemCategory.ANIMALS, levelRequired: 6, coinPrice: 130, imageUrl: "/animals/happy/giraffe.svg", rarity: StoreItemRarity.RARE },
-  { name: "Elephant kit", category: StoreItemCategory.ANIMALS, levelRequired: 15, coinPrice: 1400, imageUrl: "/animals/happy/elephant.svg", rarity: StoreItemRarity.EPIC },
-  { name: "Donkey kit", category: StoreItemCategory.ANIMALS, levelRequired: 3, coinPrice: 45, imageUrl: "/animals/happy/donkey.svg", rarity: StoreItemRarity.COMMON },
-  { name: "Ostrich kit", category: StoreItemCategory.ANIMALS, levelRequired: 7, coinPrice: 190, imageUrl: "/animals/happy/ostrich.svg", rarity: StoreItemRarity.RARE },
-  { name: "Otters kit", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 65, imageUrl: "/animals/happy/otter.svg", rarity: StoreItemRarity.COMMON },
-  { name: "Rhino kit", category: StoreItemCategory.ANIMALS, levelRequired: 18, coinPrice: 3000, imageUrl: "/animals/happy/rhino.svg", rarity: StoreItemRarity.LEGENDARY },
-  { name: "Panda kit", category: StoreItemCategory.ANIMALS, levelRequired: 20, coinPrice: 3500, imageUrl: "/animals/happy/panda.svg", rarity: StoreItemRarity.LEGENDARY },
-  { name: "Zebra kit", category: StoreItemCategory.ANIMALS, levelRequired: 6, coinPrice: 150, imageUrl: "/animals/happy/zebra.svg", rarity: StoreItemRarity.RARE },
-  { name: "Flamingo kit", category: StoreItemCategory.ANIMALS, levelRequired: 8, coinPrice: 230, imageUrl: "/animals/happy/flamingo.svg", rarity: StoreItemRarity.RARE },
-  { name: "Axolotl kit", category: StoreItemCategory.ANIMALS, levelRequired: 8, coinPrice: 260, imageUrl: "/animals/happy/axlotl.svg", rarity: StoreItemRarity.RARE },
-  { name: "Dassie kit", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 75, imageUrl: "/animals/happy/hyrax.svg", rarity: StoreItemRarity.COMMON },
-  { name: "Platypus kit", category: StoreItemCategory.ANIMALS, levelRequired: 9, coinPrice: 300, imageUrl: "/animals/happy/platypus.svg", rarity: StoreItemRarity.RARE },
-  { name: "Tortoise kit", category: StoreItemCategory.ANIMALS, levelRequired: 4, coinPrice: 55, imageUrl: "/animals/happy/tortoise.svg", rarity: StoreItemRarity.COMMON },
-  { name: "Capybara kit", category: StoreItemCategory.ANIMALS, levelRequired: 10, coinPrice: 340, imageUrl: "/animals/happy/cappybara.svg", rarity: StoreItemRarity.RARE },
+  { name: "Lion", category: StoreItemCategory.ANIMALS, levelRequired: 11, coinPrice: 480, imageUrl: "/animals/happy/lion.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Bunny", category: StoreItemCategory.ANIMALS, levelRequired: 2, coinPrice: 35, imageUrl: "/animals/happy/bunny.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Jaguar", category: StoreItemCategory.ANIMALS, levelRequired: 13, coinPrice: 620, imageUrl: "/animals/happy/jaguar.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Tiger", category: StoreItemCategory.ANIMALS, levelRequired: 14, coinPrice: 1000, imageUrl: "/animals/happy/tiger.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Monkey", category: StoreItemCategory.ANIMALS, levelRequired: 7, coinPrice: 170, imageUrl: "/animals/happy/monkey.svg", rarity: StoreItemRarity.RARE },
+  { name: "Giraffe", category: StoreItemCategory.ANIMALS, levelRequired: 6, coinPrice: 130, imageUrl: "/animals/happy/giraffe.svg", rarity: StoreItemRarity.RARE },
+  { name: "Elephant", category: StoreItemCategory.ANIMALS, levelRequired: 15, coinPrice: 1400, imageUrl: "/animals/happy/elephant.svg", rarity: StoreItemRarity.EPIC },
+  { name: "Donkey", category: StoreItemCategory.ANIMALS, levelRequired: 3, coinPrice: 45, imageUrl: "/animals/happy/donkey.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Ostrich", category: StoreItemCategory.ANIMALS, levelRequired: 7, coinPrice: 190, imageUrl: "/animals/happy/ostrich.svg", rarity: StoreItemRarity.RARE },
+  { name: "Otter", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 65, imageUrl: "/animals/happy/otter.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Rhino", category: StoreItemCategory.ANIMALS, levelRequired: 18, coinPrice: 3000, imageUrl: "/animals/happy/rhino.svg", rarity: StoreItemRarity.LEGENDARY },
+  { name: "Panda", category: StoreItemCategory.ANIMALS, levelRequired: 20, coinPrice: 3500, imageUrl: "/animals/happy/panda.svg", rarity: StoreItemRarity.LEGENDARY },
+  { name: "Zebra", category: StoreItemCategory.ANIMALS, levelRequired: 6, coinPrice: 150, imageUrl: "/animals/happy/zebra.svg", rarity: StoreItemRarity.RARE },
+  { name: "Flamingo", category: StoreItemCategory.ANIMALS, levelRequired: 8, coinPrice: 230, imageUrl: "/animals/happy/flamingo.svg", rarity: StoreItemRarity.RARE },
+  { name: "Axolotl", category: StoreItemCategory.ANIMALS, levelRequired: 8, coinPrice: 260, imageUrl: "/animals/happy/axlotl.svg", rarity: StoreItemRarity.RARE },
+  { name: "Dassie", category: StoreItemCategory.ANIMALS, levelRequired: 5, coinPrice: 75, imageUrl: "/animals/happy/hyrax.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Platypus", category: StoreItemCategory.ANIMALS, levelRequired: 9, coinPrice: 300, imageUrl: "/animals/happy/platypus.svg", rarity: StoreItemRarity.RARE },
+  { name: "Tortoise", category: StoreItemCategory.ANIMALS, levelRequired: 4, coinPrice: 55, imageUrl: "/animals/happy/tortoise.svg", rarity: StoreItemRarity.COMMON },
+  { name: "Capybara", category: StoreItemCategory.ANIMALS, levelRequired: 10, coinPrice: 340, imageUrl: "/animals/happy/cappybara.svg", rarity: StoreItemRarity.RARE },
 
   // ---- 2026-08-23: the 23rd species. Hedgehog is the one animal in the art
   // pack with no row in Gatcha stuffs.pdf, so it has no PDF level or price to
@@ -185,7 +185,7 @@ const catalogue: Array<{
   // `zoo_adopt_all` on its own, with no achievement edit needed. Any account
   // that had already earned either keeps it: PRO-18's evaluation only ever
   // grants.
-  { name: "Hedgehog kit", category: StoreItemCategory.ANIMALS, levelRequired: 9, coinPrice: 280, imageUrl: "/animals/happy/hedgehog.svg", rarity: StoreItemRarity.RARE },
+  { name: "Hedgehog", category: StoreItemCategory.ANIMALS, levelRequired: 9, coinPrice: 280, imageUrl: "/animals/happy/hedgehog.svg", rarity: StoreItemRarity.RARE },
 
   // ---- GACHA-03: the rest of Gatcha stuffs.pdf's Food table. levelRequired
   // is the 2026-08-11 remap (ADDENDUM-xp-curve.md), not the PDF's own numbers.
@@ -386,6 +386,32 @@ const renames: Array<{ from: string; to: string; category: StoreItemCategory }> 
   // 2026-08-23, with the art pack — the two swapped accessories.
   { from: "Harry Potter glasses", to: "Moustache", category: StoreItemCategory.ACCESSORIES },
   { from: "Oversized sunglasses", to: "Mandarin", category: StoreItemCategory.ACCESSORIES },
+  // 2026-09-13 — animals are named for the species alone, not "Koala kit"
+  // (user's direction). "Otters kit" becomes the singular "Otter", like every
+  // other species and its own artwork.
+  { from: "Koala kit", to: "Koala", category: StoreItemCategory.ANIMALS },
+  { from: "Fox kit", to: "Fox", category: StoreItemCategory.ANIMALS },
+  { from: "Penguin kit", to: "Penguin", category: StoreItemCategory.ANIMALS },
+  { from: "Lion kit", to: "Lion", category: StoreItemCategory.ANIMALS },
+  { from: "Bunny kit", to: "Bunny", category: StoreItemCategory.ANIMALS },
+  { from: "Jaguar kit", to: "Jaguar", category: StoreItemCategory.ANIMALS },
+  { from: "Tiger kit", to: "Tiger", category: StoreItemCategory.ANIMALS },
+  { from: "Monkey kit", to: "Monkey", category: StoreItemCategory.ANIMALS },
+  { from: "Giraffe kit", to: "Giraffe", category: StoreItemCategory.ANIMALS },
+  { from: "Elephant kit", to: "Elephant", category: StoreItemCategory.ANIMALS },
+  { from: "Donkey kit", to: "Donkey", category: StoreItemCategory.ANIMALS },
+  { from: "Ostrich kit", to: "Ostrich", category: StoreItemCategory.ANIMALS },
+  { from: "Otters kit", to: "Otter", category: StoreItemCategory.ANIMALS },
+  { from: "Rhino kit", to: "Rhino", category: StoreItemCategory.ANIMALS },
+  { from: "Panda kit", to: "Panda", category: StoreItemCategory.ANIMALS },
+  { from: "Zebra kit", to: "Zebra", category: StoreItemCategory.ANIMALS },
+  { from: "Flamingo kit", to: "Flamingo", category: StoreItemCategory.ANIMALS },
+  { from: "Axolotl kit", to: "Axolotl", category: StoreItemCategory.ANIMALS },
+  { from: "Dassie kit", to: "Dassie", category: StoreItemCategory.ANIMALS },
+  { from: "Platypus kit", to: "Platypus", category: StoreItemCategory.ANIMALS },
+  { from: "Tortoise kit", to: "Tortoise", category: StoreItemCategory.ANIMALS },
+  { from: "Capybara kit", to: "Capybara", category: StoreItemCategory.ANIMALS },
+  { from: "Hedgehog kit", to: "Hedgehog", category: StoreItemCategory.ANIMALS },
 ];
 
 /**

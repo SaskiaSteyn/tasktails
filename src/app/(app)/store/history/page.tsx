@@ -48,7 +48,7 @@ export const metadata: Metadata = {
  * quantity column, so a suffix could only be a *derived* guess
  * (`coinSpent / storeItem.coinPrice`) that would read wrong the moment a
  * price changes after the fact (this app has already repriced an item once
- * — see `prisma/seed.ts`'s note on the Koala kit) — not a risk worth taking
+ * — see `prisma/seed.ts`'s note on the Koala) — not a risk worth taking
  * for a cosmetic suffix.
  *
  * Lucky Box buys are listed alongside, one row per box, read from
