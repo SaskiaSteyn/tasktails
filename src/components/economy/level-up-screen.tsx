@@ -67,13 +67,25 @@ export function LevelUpScreen({
   onDismiss: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // #286 — see the open effect below.
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
 
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // #286 — move focus off the first focusable descendant, which
+      // `showModal()`'s own focusing steps would otherwise pick (the confirm
+      // button), and onto the heading. Done here rather than with React's
+      // `autoFocus` prop: that prop emits no `autofocus` attribute on the
+      // client, it just calls `focus()` at mount — which happens *before*
+      // this `showModal()` and is promptly overridden by it. Explicit and
+      // after the fact is the only ordering that actually holds.
+      headingRef.current?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -121,7 +133,9 @@ export function LevelUpScreen({
         {/* Medallion — 150px ring, white disc inset 14px. */}
         <div className="relative mt-5 flex size-[150px] flex-none items-center justify-center rounded-full bg-white/16 motion-safe:animate-medallion-pop">
           <div className="flex size-[122px] flex-col items-center justify-center rounded-full bg-surface shadow-[0_10px_24px_rgb(46_42_38/0.2)]">
-            <span className="text-[11px] font-extrabold text-ink-soft">LEVEL</span>
+            <span className="text-[11px] font-extrabold text-ink-soft">
+              LEVEL
+            </span>
             <span className="font-display text-[52px] leading-none font-semibold text-terracotta">
               {level}
             </span>
@@ -130,7 +144,12 @@ export function LevelUpScreen({
 
         <h1
           id={titleId}
-          className="relative mt-6 text-center font-display text-[26px] font-semibold text-white"
+          // #286 — the dialog's focus target, so `showModal()` does not hand
+          // focus to a button and light its ring on iOS. See `Modal` for the
+          // full reasoning.
+          ref={headingRef}
+          tabIndex={-1}
+          className="relative mt-6 text-center font-display text-[26px] font-semibold text-white outline-none"
         >
           {title ?? `You reached Level ${level}!`}
         </h1>
@@ -168,7 +187,6 @@ export function LevelUpScreen({
             size="hero"
             variant="on-brand"
             onClick={onPrimary ?? onDismiss}
-            autoFocus
           >
             {primary}
           </Button>

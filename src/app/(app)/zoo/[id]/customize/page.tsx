@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { PetCustomizer } from "@/components/pets/pet-customizer";
-import { accessoryInventoryForUser, decorationInventoryForUser } from "@/lib/inventory";
+import {
+  accessoryInventoryForUser,
+  decorationInventoryForUser,
+} from "@/lib/inventory";
 import { petDisplayName } from "@/lib/pet-mood";
 import { petForUser, petsForUser } from "@/lib/pets";
 
@@ -18,7 +21,11 @@ export async function generateMetadata({
 
   const { id } = await params;
   const pet = await petForUser(userId, id);
-  return { title: pet ? `Customize ${petDisplayName(pet)} · TaskTails` : "Customize · TaskTails" };
+  return {
+    title: pet
+      ? `Customize ${petDisplayName(pet)} · TaskTails`
+      : "Customize · TaskTails",
+  };
 }
 
 /**
@@ -51,10 +58,11 @@ export default async function CustomizePetPage({
   // route enforces the same rule server-side. Keyed by inventory-item id so
   // `PetCustomizer` can look each tile up directly.
   const petNameById = new Map(pets.map((p) => [p.id, petDisplayName(p)]));
-  const lockedByPet: Record<string, string> = {};
+  const wornByOtherPet: Record<string, string> = {};
   for (const item of [...accessories, ...decorations]) {
     if (item.equippedToPetId && item.equippedToPetId !== pet.id) {
-      lockedByPet[item.id] = petNameById.get(item.equippedToPetId) ?? "another pet";
+      wornByOtherPet[item.id] =
+        petNameById.get(item.equippedToPetId) ?? "another pet";
     }
   }
 
@@ -63,7 +71,7 @@ export default async function CustomizePetPage({
       pet={pet}
       accessories={accessories}
       decorations={decorations}
-      lockedByPet={lockedByPet}
+      wornByOtherPet={wornByOtherPet}
     />
   );
 }

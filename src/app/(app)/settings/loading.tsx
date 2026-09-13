@@ -1,4 +1,7 @@
-import { BackHeaderSkeleton, LoadingScreen } from "@/components/layout/loading-screen";
+import {
+  BackHeaderSkeleton,
+  LoadingScreen,
+} from "@/components/layout/loading-screen";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -21,13 +24,17 @@ const GROUPS = [
 export default function Loading() {
   return (
     <LoadingScreen
-      header={<BackHeaderSkeleton titleWidth="w-[78px]" titleHeight="h-[17px]" />}
+      header={
+        <BackHeaderSkeleton titleWidth="w-[78px]" titleHeight="h-[17px]" />
+      }
       className="px-4 pt-[10px] pb-[14px] desk:flex-row desk:overflow-hidden desk:p-0"
     >
       <div className="flex flex-col gap-4 desk:gap-[26px] desk:max-w-[960px] desk:px-10 desk:py-[30px]">
         {GROUPS.map((group, i) => (
           <div key={i}>
-            <Skeleton className={`mb-[9px] h-[10px] rounded-chip ${group.caption}`} />
+            <Skeleton
+              className={`mb-[9px] h-[10px] rounded-chip ${group.caption}`}
+            />
             <div className="overflow-hidden rounded-[13px] border border-border-track bg-warm">
               {Array.from({ length: group.rows }, (_, row) => (
                 <div

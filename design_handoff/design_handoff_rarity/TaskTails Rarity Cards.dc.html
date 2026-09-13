@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#F7F1E8; font-family:Nunito, system-ui, sans-serif; color:#2E2A26; -webkit-font-smoothing:antialiased; }
+  a { color:#C9633F; }
+  a:hover { color:#E27A54; }
+  @keyframes sheen { 0% { transform:translateX(-140%) skewX(-18deg); } 55%,100% { transform:translateX(240%) skewX(-18deg); } }
+  @keyframes twinkle { 0%,100% { opacity:0; transform:scale(.4); } 50% { opacity:1; transform:scale(1); } }
+  @keyframes floaty { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</helmet>
+
+<div style="padding:48px 56px 72px;display:flex;flex-direction:column;gap:44px;max-width:1560px">
+
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+    <span style="font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#C9633F">TaskTails · store</span>
+    <span style="font-family:Fredoka;font-weight:600;font-size:40px;line-height:1.1">Item rarity</span>
+    <span style="font-size:15px;font-weight:600;color:#6F665D;line-height:1.6;text-wrap:pretty">Five tiers, each readable at a glance from the frame and art field alone — colour is the primary signal, motion only appears at the top two tiers. Shiny is a separate flag that can ride on any tier.</span>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span style="font-family:Fredoka;font-weight:600;font-size:22px">The ladder</span>
+      <span style="font-size:13px;font-weight:700;color:#8A8178">Same card anatomy as the live store — only the frame, field and badge change</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px">
+      <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="5">
+        <div style="background:#fff;border:1.5px solid {{ t.frame }};border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:{{ t.shadow }};position:relative;min-width:0">
+          <div style="height:170px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:{{ t.field }}">
+            <span style="position:absolute;inset:0;background:{{ t.fieldFx }}"></span>
+            <span style="position:relative;width:118px;height:118px;display:block;background-position:center;background-repeat:no-repeat;background-size:contain;background-image:url({{ t.art }})"></span>
+            <sc-if value="{{ t.sparks }}" hint-placeholder-val="{{ false }}">
+              <span style="position:absolute;top:22px;left:26px;width:9px;height:9px;background:#fff;border-radius:2px;transform:rotate(45deg);animation:twinkle 2.4s ease-in-out infinite"></span>
+              <span style="position:absolute;bottom:30px;right:28px;width:7px;height:7px;background:#fff;border-radius:2px;transform:rotate(45deg);animation:twinkle 2.4s ease-in-out .8s infinite"></span>
+              <span style="position:absolute;top:52px;right:22px;width:5px;height:5px;background:#FFF3D6;border-radius:50%;animation:twinkle 2.4s ease-in-out 1.5s infinite"></span>
+            </sc-if>
+            <span style="position:absolute;top:11px;left:11px;display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;letter-spacing:.55px;text-transform:uppercase;background:{{ t.badgeBg }};color:{{ t.badgeInk }};border:1px solid {{ t.badgeLine }};border-radius:7px;padding:4px 8px">
+              <span style="width:7px;height:7px;border-radius:50%;background:{{ t.badgeInk }};display:block"></span>{{ t.label }}
+            </span>
+          </div>
+          <div style="padding:13px 15px 0;display:flex;flex-direction:column;gap:3px;border-top:1px solid {{ t.frame }}">
+            <span style="font-weight:800;font-size:14px;line-height:1.25">{{ t.name }}</span>
+            <span style="font-size:11.5px;font-weight:700;color:#A89E92">{{ t.cat }}</span>
+          </div>
+          <div style="padding:11px 15px 14px;display:flex;align-items:center;justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:16px;border-radius:50%;background:#E5A93C;box-shadow:inset 0 0 0 2.4px #F2C879;display:block"></span><span style="font-family:Fredoka;font-weight:600;font-size:16px;color:#B67F1E">{{ t.price }}</span></span>
+            <button style="width:34px;height:34px;background:#E27A54;border:none;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 10px rgba(226,122,84,.3)" style-hover="background:#C9633F">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+          </div>
+          <sc-if value="{{ t.sheen }}" hint-placeholder-val="{{ false }}">
+            <span style="position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:18px">
+              <span style="position:absolute;top:-20%;bottom:-20%;width:80px;background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.72) 50%,rgba(255,255,255,0) 100%);animation:sheen 3.6s ease-in-out infinite"></span>
+            </span>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span style="font-family:Fredoka;font-weight:600;font-size:22px">Shiny</span>
+      <span style="font-size:13px;font-weight:700;color:#8A8178">An independent flag layered over the card — iridescent frame, tinted field, sheen and ✦ marker. The art itself is never touched. 1 in 40 drops.</span>
+    </div>
+
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:stretch">
+      <div style="display:flex;gap:20px;flex-wrap:wrap">
+        <div style="width:250px;background:#fff;border:1.5px solid #BFD5E6;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(59,110,150,.12)">
+          <div style="height:186px;display:flex;align-items:center;justify-content:center;background:#E9F1F6;position:relative">
+            <span style="position:absolute;inset:0;background:radial-gradient(circle at 50% 32%,rgba(255,255,255,.85),rgba(255,255,255,0) 62%)"></span>
+            <span style="position:relative;width:130px;height:130px;display:block;background:center/contain no-repeat url(assets/zoo/penguin.png)"></span>
+            <span style="position:absolute;top:11px;left:11px;font-size:10.5px;font-weight:800;letter-spacing:.55px;text-transform:uppercase;background:#E4EEF6;color:#3B6E96;border:1px solid #C6DCEB;border-radius:7px;padding:4px 8px">Rare</span>
+          </div>
+          <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;border-top:1px solid #E4EEF6">
+            <span style="font-weight:800;font-size:15px">Waddles the penguin</span>
+            <span style="font-size:11.5px;font-weight:700;color:#A89E92">Animal · standard</span>
+          </div>
+        </div>
+
+        <div style="width:250px;padding:2px;border-radius:20px;background:linear-gradient(135deg,#8FD3E8,#C9A7EC 34%,#F5B0C6 62%,#FBD98A);box-shadow:0 14px 30px rgba(140,110,190,.22)">
+          <div style="background:#fff;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;height:100%;position:relative">
+            <div style="height:186px;display:flex;align-items:center;justify-content:center;background:#E9F1F6;position:relative;overflow:hidden">
+              <span style="position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 62%)"></span>
+              <span style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(143,211,232,.30),rgba(201,167,236,.26) 40%,rgba(245,176,198,.24) 70%,rgba(251,217,138,.28))"></span>
+              <span style="position:relative;width:130px;height:130px;display:block;background:center/contain no-repeat url(assets/zoo/penguin.png);animation:floaty 4.5s ease-in-out infinite"></span>
+              <span style="position:absolute;inset:0;pointer-events:none">
+                <span style="position:absolute;top:26px;left:30px;width:10px;height:10px;background:#fff;border-radius:2px;transform:rotate(45deg);animation:twinkle 2.1s ease-in-out infinite"></span>
+                <span style="position:absolute;bottom:34px;right:30px;width:8px;height:8px;background:#fff;border-radius:2px;transform:rotate(45deg);animation:twinkle 2.1s ease-in-out .7s infinite"></span>
+                <span style="position:absolute;top:64px;right:24px;width:6px;height:6px;background:#FFF6E2;border-radius:50%;animation:twinkle 2.1s ease-in-out 1.4s infinite"></span>
+              </span>
+              <span style="position:absolute;top:11px;left:11px;display:flex;gap:6px">
+                <span style="font-size:10.5px;font-weight:800;letter-spacing:.55px;text-transform:uppercase;background:#E4EEF6;color:#3B6E96;border:1px solid #C6DCEB;border-radius:7px;padding:4px 8px">Rare</span>
+                <span style="font-size:10.5px;font-weight:800;letter-spacing:.55px;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#7FB8E0,#B58BE6 50%,#E88FB4);border-radius:7px;padding:4px 8px">✦ Shiny</span>
+              </span>
+            </div>
+            <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;border-top:1px solid #F0E6F4">
+              <span style="font-weight:800;font-size:15px">Waddles the penguin</span>
+              <span style="font-size:11.5px;font-weight:700;color:#A89E92">Animal · shiny variant</span>
+            </div>
+            <span style="position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:18px">
+              <span style="position:absolute;top:-20%;bottom:-20%;width:84px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.78) 50%,rgba(255,255,255,0));animation:sheen 3.2s ease-in-out infinite"></span>
+            </span>
+          </div>
+        </div>
+
+        <div style="width:250px;padding:2px;border-radius:20px;background:linear-gradient(135deg,#8FD3E8,#C9A7EC 34%,#F5B0C6 62%,#FBD98A);box-shadow:0 14px 30px rgba(140,110,190,.22)">
+          <div style="background:#fff;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;height:100%;position:relative">
+            <div style="height:186px;display:flex;align-items:center;justify-content:center;background:center/cover no-repeat url(assets/zoo/rainbow.png);position:relative;overflow:hidden">
+              <span style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(143,211,232,.30),rgba(201,167,236,.26) 40%,rgba(245,176,198,.24) 70%,rgba(251,217,138,.28))"></span>
+              <span style="position:relative;width:130px;height:130px;display:block;background:center/contain no-repeat url(assets/zoo/penguin.png);animation:floaty 4.5s ease-in-out infinite"></span>
+              <span style="position:absolute;inset:0;pointer-events:none">
+                <span style="position:absolute;top:26px;left:30px;width:10px;height:10px;background:#fff;border-radius:2px;transform:rotate(45deg);animation:twinkle 2.1s ease-in-out infinite"></span>
+                <span style="position:absolute;bottom:34px;right:30px;width:8px;height:8px;background:#fff;border-radius:2px;transform:rotate(45deg);animation:twinkle 2.1s ease-in-out .7s infinite"></span>
+                <span style="position:absolute;top:64px;right:24px;width:6px;height:6px;background:#FFF6E2;border-radius:50%;animation:twinkle 2.1s ease-in-out 1.4s infinite"></span>
+              </span>
+              <span style="position:absolute;top:11px;left:11px;display:flex;gap:6px">
+                <span style="font-size:10.5px;font-weight:800;letter-spacing:.55px;text-transform:uppercase;background:#E4EEF6;color:#3B6E96;border:1px solid #C6DCEB;border-radius:7px;padding:4px 8px">Rare</span>
+                <span style="font-size:10.5px;font-weight:800;letter-spacing:.55px;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#7FB8E0,#B58BE6 50%,#E88FB4);border-radius:7px;padding:4px 8px">✦ Shiny</span>
+              </span>
+            </div>
+            <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;border-top:1px solid #F0E6F4">
+              <span style="font-weight:800;font-size:15px">Waddles the penguin</span>
+              <span style="font-size:11.5px;font-weight:700;color:#A89E92">Animal · shiny · rainbow habitat</span>
+            </div>
+            <span style="position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:18px">
+              <span style="position:absolute;top:-20%;bottom:-20%;width:84px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.78) 50%,rgba(255,255,255,0));animation:sheen 3.2s ease-in-out infinite"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:300px;background:#FBF6EF;border:1px solid #EFE7DA;border-radius:18px;padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+        <span style="font-family:Fredoka;font-weight:600;font-size:17px">Rules</span>
+        <sc-for list="{{ rules }}" as="r" hint-placeholder-count="4">
+          <div style="display:flex;gap:11px;align-items:flex-start">
+            <span style="width:20px;height:20px;flex:none;border-radius:6px;background:#FBEAE3;color:#C9633F;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px">{{ r.n }}</span>
+            <span style="font-size:13px;font-weight:700;color:#6F665D;line-height:1.55;text-wrap:pretty">{{ r.t }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span style="font-family:Fredoka;font-weight:600;font-size:22px">Small surfaces</span>
+      <span style="font-size:13px;font-weight:700;color:#8A8178">Cart rows, purchase history and the zoo list carry the tier as a full 1.5px frame plus dot chip — no glow, no motion</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
+      <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="5">
+        <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid {{ t.frame }};border-radius:13px;padding:10px 14px">
+          <span style="width:44px;height:44px;flex:none;border-radius:10px;background:{{ t.field }};display:flex;align-items:center;justify-content:center"><span style="width:32px;height:32px;display:block;background-position:center;background-repeat:no-repeat;background-size:contain;background-image:url({{ t.art }})"></span></span>
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+            <span style="font-weight:800;font-size:13.5px">{{ t.name }}</span>
+            <span style="font-size:11.5px;font-weight:700;color:#A89E92">{{ t.cat }} · ×1</span>
+          </div>
+          <span style="margin-left:auto;display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;background:{{ t.badgeBg }};color:{{ t.badgeInk }};border-radius:6px;padding:3px 8px"><span style="width:6px;height:6px;border-radius:50%;background:{{ t.badgeInk }};display:block"></span>{{ t.label }}</span>
+          <span style="font-family:Fredoka;font-weight:600;font-size:14.5px;color:#B67F1E;width:48px;text-align:right">{{ t.price }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <span style="font-family:Fredoka;font-weight:600;font-size:22px">Tokens</span>
+    <div style="background:#fff;border:1px solid #EFE7DA;border-radius:18px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr 1.5fr;gap:0;background:#FBF6EF;border-bottom:1px solid #EFE7DA;padding:12px 20px;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#8A8178">
+        <span>Tier</span><span>Frame</span><span>Art field</span><span>Badge</span><span>Effects</span>
+      </div>
+      <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr 1.5fr;gap:0;align-items:center;padding:13px 20px;border-bottom:1px solid #F4EDE2;font-size:12.5px;font-weight:700;color:#6F665D">
+          <span style="display:flex;align-items:center;gap:8px;color:#2E2A26;font-weight:800"><span style="width:11px;height:11px;border-radius:50%;background:{{ t.badgeInk }};display:block"></span>{{ t.label }}</span>
+          <span style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px">{{ t.frame }}</span>
+          <span style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px">{{ t.field }}</span>
+          <span style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px">{{ t.badgeBg }} / {{ t.badgeInk }}</span>
+          <span>{{ t.fx }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;motion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Rarity&quot;},&quot;glow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Rarity&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const motion = this.props.motion ?? true;
+    const glow = this.props.glow ?? true;
+    const g = (c) => glow ? c : "0 8px 20px rgba(46,42,38,.05)";
+    return {
+      tiers: [
+        { label: "Common", name: "Sunflower seeds", cat: "Food", price: 20, art: "assets/shop/seeds.png",
+          frame: "#EFE7DA", field: "#FBF3E6", fieldFx: "none", shadow: "0 8px 20px rgba(46,42,38,.05)",
+          badgeBg: "#F4EEE4", badgeInk: "#8A8178", badgeLine: "#E8DFD0", fx: "None" },
+        { label: "Uncommon", name: "Red collar", cat: "Accessory", price: 45, art: "assets/shop/collar.png",
+          frame: "#CADFCF", field: "#EEF5EF", fieldFx: "none", shadow: g("0 10px 22px rgba(63,140,99,.10)"),
+          badgeBg: "#E7F0E9", badgeInk: "#3F8C63", badgeLine: "#CBE1D2", fx: "Tinted frame only" },
+        { label: "Rare", name: "Waddles the penguin", cat: "Animal", price: 260, art: "assets/zoo/penguin.png",
+          frame: "#BFD5E6", field: "#E9F1F6", fieldFx: "radial-gradient(circle at 50% 30%,rgba(255,255,255,.85),rgba(255,255,255,0) 62%)",
+          shadow: g("0 12px 26px rgba(59,110,150,.14)"),
+          badgeBg: "#E4EEF6", badgeInk: "#3B6E96", badgeLine: "#C6DCEB", fx: "Centre highlight + outer glow" },
+        { label: "Epic", name: "Rainbow habitat", cat: "Habitat", price: 200, art: "assets/zoo/rainbow.png",
+          frame: "#CFC2E8", field: "#EEE9F5", fieldFx: "linear-gradient(115deg,rgba(255,255,255,0) 38%,rgba(255,255,255,.7) 50%,rgba(255,255,255,0) 62%)",
+          shadow: g("0 14px 30px rgba(92,84,112,.20)"),
+          badgeBg: "#EBE4F6", badgeInk: "#5C5470", badgeLine: "#D8CDEC", fx: "Diagonal ray + stronger glow", sparks: motion },
+        { label: "Legendary", name: "Kobi the koala", cat: "Animal", price: 240, art: "assets/zoo/koala.png",
+          frame: "#E9C26A", field: "linear-gradient(160deg,#FDF3DE,#FBE3B4)", fieldFx: "radial-gradient(circle at 50% 28%,rgba(255,255,255,.9),rgba(255,255,255,0) 58%)",
+          shadow: g("0 16px 34px rgba(200,150,40,.26)"),
+          badgeBg: "#FBE3B4", badgeInk: "#8A6410", badgeLine: "#EBCB84", fx: "Sheen sweep across the whole card + sparkles",
+          sheen: motion, sparks: motion, ring: motion }
+      ],
+      rules: [
+        { n: "1", t: "Rarity never changes price, stats or availability — it is a collection signal only, so no tier is pay-to-win." },
+        { n: "2", t: "One tier per item, set server-side. The client renders whatever tier it is handed; unknown tiers fall back to Common." },
+        { n: "3", t: "Shiny is a boolean on the owned instance, not a tier. It changes the card only — iridescent frame, sheen and sparkles — the animal art is never recoloured, and the tier badge stays visible." },
+        { n: "4", t: "Motion (sheen sweep, sparkles) only at Epic and above, and it pauses under prefers-reduced-motion — the colour treatment alone must carry the distinction." }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

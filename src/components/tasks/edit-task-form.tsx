@@ -17,10 +17,11 @@ import type { TaskWithSubtasks } from "@/lib/tasks";
  * TASK-03 — task detail / edit screen. Pre-filled title, due date,
  * complexity, subtask list (SUB-01), and a footer with delete + save.
  *
- * The subtask list is read-only here — adding one (SUB-02/04) and completing
- * one (SUB-03/05) are separate, unbuilt tickets, so "Add" is an inert label
- * and each row's checkbox just reflects `completedAt`, the same stub pattern
- * TASK-02's create sheet used ahead of TASK-08.
+ * Subtask titles are part of this form (#273): `SubtaskList` renders them as
+ * named inputs, submit reads them out of `FormData` and `PATCH`es the ones
+ * that changed alongside the task itself. Adding, completing and deleting a
+ * subtask stay immediate — they are actions, not fields — but a rename waits
+ * for "Save changes" the same way the task's own title does.
  *
  * Save `PATCH`es TASK-09's `/api/tasks/[id]` for real (wired the same day
  * that ticket shipped) and returns to `/tasks` on success — the fresh
@@ -46,6 +47,10 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
   );
   const [dueDate, setDueDate] = useState<Date | null>(task.dueDate);
   const [titleError, setTitleError] = useState<string>();
+  // Keyed by subtask id. Raised by this form's own submit, exactly like
+  // `titleError` above it — subtask titles are saved by "Save changes", not
+  // by clicking out of one (user's direction, 2026-09-10).
+  const [subtaskErrors, setSubtaskErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -56,20 +61,53 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+
+    // Subtask titles are read straight out of the form rather than mirrored
+    // into state on every keystroke — `SubtaskList` renders them as named
+    // inputs inside this very form, so FormData already has them.
+    const fields = new FormData(event.currentTarget as HTMLFormElement);
+    const nextSubtaskErrors: Record<string, string> = {};
+    const renames: { id: string; title: string }[] = [];
+
+    for (const subtask of task.subtasks) {
+      const raw = fields.get(`subtask-title-${subtask.id}`);
+      if (typeof raw !== "string") continue;
+      const next = raw.trim();
+
+      if (!next) {
+        nextSubtaskErrors[subtask.id] = "Give the subtask a title.";
+      } else if (next !== subtask.title) {
+        renames.push({ id: subtask.id, title: next });
+      }
+    }
+
     const nextTitleError = title.trim() ? undefined : "Give the task a title.";
     setTitleError(nextTitleError);
-    if (nextTitleError) return;
+    setSubtaskErrors(nextSubtaskErrors);
+    if (nextTitleError || Object.keys(nextSubtaskErrors).length > 0) return;
 
     setSubmitting(true);
     setSubmitError(undefined);
     try {
-      const response = await fetch(`/api/tasks/${task.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, complexityTier: tier, dueDate }),
-      });
+      // One round trip for the task and one per renamed subtask, together —
+      // "Save changes" is a single action to the participant, so a rename
+      // must not need a second press to stick.
+      const responses = await Promise.all([
+        fetch(`/api/tasks/${task.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, complexityTier: tier, dueDate }),
+        }),
+        ...renames.map((rename) =>
+          fetch(`/api/tasks/${task.id}/subtasks/${rename.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: rename.title }),
+          }),
+        ),
+      ]);
 
-      if (!response.ok) {
+      if (responses.some((response) => !response.ok)) {
         setSubmitError("Couldn't save changes. Try again.");
         return;
       }
@@ -181,7 +219,20 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
           </div>
 
           <div className="mb-4">
-            <SubtaskList taskId={task.id} subtasks={task.subtasks} parentCoins={reward.coins} />
+            <SubtaskList
+              taskId={task.id}
+              subtasks={task.subtasks}
+              parentCoins={reward.coins}
+              titleErrors={subtaskErrors}
+              onTitleInput={(subtaskId) =>
+                setSubtaskErrors((current) => {
+                  if (!current[subtaskId]) return current;
+                  const next = { ...current };
+                  delete next[subtaskId];
+                  return next;
+                })
+              }
+            />
           </div>
         </form>
 

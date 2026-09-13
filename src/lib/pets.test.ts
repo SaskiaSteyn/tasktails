@@ -42,7 +42,7 @@ function petRow(overrides: Partial<PetWithItem> = {}): PetWithItem {
     lastInteractedAt: at(12),
     storeItem: {
       id: "item-1",
-      name: "Koala kit",
+      name: "Koala",
       category: "ANIMALS",
       levelRequired: 1,
       coinPrice: 5,
@@ -360,11 +360,17 @@ describe("recordCustomizeInteraction", () => {
     prismaMock.$transaction.mockImplementation(
       (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
     );
+    // Nothing else on the pet unless a case says so.
+    prismaMock.inventoryItem.findMany.mockResolvedValue([]);
   });
 
-  it("equips the item and unequips whatever this pet had on before in the same category", async () => {
+  it("equips the item and unequips whatever this pet had on before in the same spot", async () => {
     prismaMock.pet.findFirst.mockResolvedValue(petRow());
     prismaMock.inventoryItem.findFirst.mockResolvedValue(accessoryRow());
+    // Same `imageUrl`, so the same spot.
+    prismaMock.inventoryItem.findMany.mockResolvedValue([
+      accessoryRow({ id: "acc-old", equippedToPetId: "pet-1" }),
+    ]);
     prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.inventoryItem.update.mockResolvedValue(
       accessoryRow({ equippedToPetId: "pet-1" }) as never,
@@ -380,12 +386,17 @@ describe("recordCustomizeInteraction", () => {
       },
       include: { storeItem: true },
     });
-    // Displaces whatever *this pet* already had on in the *same category*
-    // (ACCESSORIES, from the found item's own `storeItem.category`), but
-    // never the item being equipped itself, and never the other category's
-    // item — a background stays on while an accessory is (un)equipped.
-    expect(prismaMock.inventoryItem.updateMany).toHaveBeenCalledWith({
+    // Looks only at *this pet's* other items in the *same category*
+    // (ACCESSORIES, from the found item's own `storeItem.category`) — a
+    // background stays on while an accessory is (un)equipped — and takes off
+    // the ones in the same spot. The spot rules themselves are pinned in
+    // `inventory.test.ts`.
+    expect(prismaMock.inventoryItem.findMany).toHaveBeenCalledWith({
       where: { equippedToPetId: "pet-1", id: { not: "acc-1" }, storeItem: { category: "ACCESSORIES" } },
+      include: { storeItem: true },
+    });
+    expect(prismaMock.inventoryItem.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["acc-old"] } },
       data: { equippedToPetId: null },
     });
     expect(prismaMock.inventoryItem.update).toHaveBeenCalledWith({
@@ -396,12 +407,16 @@ describe("recordCustomizeInteraction", () => {
     expect(result).toEqual({
       ok: true,
       item: expect.objectContaining({ equippedToPetId: "pet-1" }),
+      movedFrom: null,
     });
   });
 
   it("equips a decoration, scoping the unequip to DECORATIONS rather than ACCESSORIES", async () => {
     prismaMock.pet.findFirst.mockResolvedValue(petRow());
     prismaMock.inventoryItem.findFirst.mockResolvedValue(decorationRow());
+    prismaMock.inventoryItem.findMany.mockResolvedValue([
+      decorationRow({ id: "decor-old", equippedToPetId: "pet-1" }),
+    ]);
     prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.inventoryItem.update.mockResolvedValue(
       decorationRow({ equippedToPetId: "pet-1" }) as never,
@@ -409,17 +424,22 @@ describe("recordCustomizeInteraction", () => {
 
     const result = await recordCustomizeInteraction("user-1", "pet-1", "decor-1");
 
-    expect(prismaMock.inventoryItem.updateMany).toHaveBeenCalledWith({
+    expect(prismaMock.inventoryItem.findMany).toHaveBeenCalledWith({
       where: {
         equippedToPetId: "pet-1",
         id: { not: "decor-1" },
         storeItem: { category: "DECORATIONS" },
       },
+      include: { storeItem: true },
+    });
+    expect(prismaMock.inventoryItem.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["decor-old"] } },
       data: { equippedToPetId: null },
     });
     expect(result).toEqual({
       ok: true,
       item: expect.objectContaining({ equippedToPetId: "pet-1" }),
+      movedFrom: null,
     });
   });
 
@@ -458,32 +478,52 @@ describe("recordCustomizeInteraction", () => {
     expect(result).toEqual({ ok: false, reason: "item-not-found" });
   });
 
-  // #215 — one pet at a time. A copy already on another pet is refused here
-  // (and drawn locked in `PetCustomizer`), rather than moved off that pet.
-  it("refuses a decoration that's equipped to another pet, writing nothing", async () => {
+  /**
+   * #279 reversed #215 here. An item on another pet used to be refused
+   * outright ("unequip it there first"); it now moves, and reports the pet
+   * it came off so the UI can name it. Still one pet at a time — that part
+   * of #215 stands and is what the single `equippedToPetId` enforces.
+   */
+  it("moves a decoration off another pet, naming the pet it came from", async () => {
     prismaMock.pet.findFirst.mockResolvedValue(petRow());
     prismaMock.inventoryItem.findFirst.mockResolvedValue(
       decorationRow({ equippedToPetId: "pet-2" }),
     );
+    prismaMock.pet.findUnique.mockResolvedValue({
+      name: "Mochi",
+      storeItem: { name: "Koala" },
+    } as never);
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.inventoryItem.update.mockResolvedValue(
+      decorationRow({ equippedToPetId: "pet-1" }) as never,
+    );
 
     const result = await recordCustomizeInteraction("user-1", "pet-1", "decor-1");
 
-    expect(result).toEqual({ ok: false, reason: "equipped-elsewhere" });
-    expect(prismaMock.inventoryItem.updateMany).not.toHaveBeenCalled();
-    expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: true,
+      item: expect.objectContaining({ equippedToPetId: "pet-1" }),
+      movedFrom: "Mochi",
+    });
   });
 
-  it("refuses an accessory that's equipped to another pet too — same rule, both categories", async () => {
+  it("falls back to the species when the pet it came off was never renamed", async () => {
     prismaMock.pet.findFirst.mockResolvedValue(petRow());
     prismaMock.inventoryItem.findFirst.mockResolvedValue(
       accessoryRow({ equippedToPetId: "pet-2" }),
     );
+    prismaMock.pet.findUnique.mockResolvedValue({
+      name: null,
+      storeItem: { name: "Koala" },
+    } as never);
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.inventoryItem.update.mockResolvedValue(
+      accessoryRow({ equippedToPetId: "pet-1" }) as never,
+    );
 
     const result = await recordCustomizeInteraction("user-1", "pet-1", "acc-1");
 
-    expect(result).toEqual({ ok: false, reason: "equipped-elsewhere" });
-    expect(prismaMock.inventoryItem.updateMany).not.toHaveBeenCalled();
-    expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ ok: true, movedFrom: "Koala" });
   });
 
   it("still equips a copy that this pet already has on (equippedToPetId === petId is not 'elsewhere')", async () => {
@@ -501,6 +541,7 @@ describe("recordCustomizeInteraction", () => {
     expect(result).toEqual({
       ok: true,
       item: expect.objectContaining({ equippedToPetId: "pet-1" }),
+      movedFrom: null,
     });
   });
 });
@@ -533,6 +574,7 @@ describe("recordUnequipInteraction", () => {
     expect(result).toEqual({
       ok: true,
       item: expect.objectContaining({ equippedToPetId: null }),
+      movedFrom: null,
     });
     // #235 — this is the one reachable path that takes an accessory off a
     // pet without deleting anything, so it has to leave a trace.
@@ -568,7 +610,7 @@ describe("recordUnequipInteraction", () => {
 describe("createPetForTransaction", () => {
   const animalStoreItem = {
     id: "koala-1",
-    name: "Koala kit",
+    name: "Koala",
     category: "ANIMALS",
     levelRequired: 1,
     coinPrice: 5,
@@ -594,6 +636,7 @@ describe("createPetForTransaction", () => {
         happiness: 100,
         hunger: 0,
         lastInteractedAt: now,
+        shiny: false,
       },
       include: { storeItem: true },
     });

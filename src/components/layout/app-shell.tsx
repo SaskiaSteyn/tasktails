@@ -56,18 +56,24 @@ import { cn } from "@/lib/cn";
  * login/register screens don't render `AppShell` at all, so they're outside
  * its reach — deliberate, since the mock's "we'll sync your progress"
  * copy only makes sense once there is progress to sync.
+ *
+ * `fullBleed` skips the `frame:` card: the screen fills the viewport at every
+ * width. For the Lucky Box reveal (user's direction, 2026-09-13), whose fan
+ * and presented card are cramped inside a 400px card on a laptop screen.
  */
 export function AppShell({
   header,
   nav,
   children,
   className,
+  fullBleed = false,
 }: {
   header?: ReactNode;
   nav?: ReactNode;
   children: ReactNode;
   /** Padding for the content area — the designs vary it per screen. */
   className?: string;
+  fullBleed?: boolean;
 }) {
   return (
     // ECO-07's celebration and the achievement-unlock celebration are both
@@ -76,8 +82,20 @@ export function AppShell({
     // until one fires.
     <LevelUpProvider>
       <AchievementUnlockProvider>
-        <div className="flex min-h-0 flex-1 justify-center bg-board frame:items-center frame:p-6 desk:items-stretch desk:bg-surface desk:p-0">
-          <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface frame:h-[640px] frame:max-w-app frame:rounded-frame frame:border frame:border-[rgb(46_42_38/0.06)] frame:shadow-card desk:h-full desk:max-w-none desk:rounded-none desk:border-none desk:shadow-none">
+        <div
+          className={
+            fullBleed
+              ? "flex min-h-0 flex-1 bg-surface"
+              : "flex min-h-0 flex-1 justify-center bg-board frame:items-center frame:p-6 desk:items-stretch desk:bg-surface desk:p-0"
+          }
+        >
+          <div
+            className={
+              fullBleed
+                ? "relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface"
+                : "relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface frame:h-[640px] frame:max-w-app frame:rounded-frame frame:border frame:border-[rgb(46_42_38/0.06)] frame:shadow-card desk:h-full desk:max-w-none desk:rounded-none desk:border-none desk:shadow-none"
+            }
+          >
             {/* Hidden, not dropped, at desktop widths: the `(app)` layout's
                 universal header replaces it there. */}
             <div className="flex-none desk:hidden">{header}</div>

@@ -32,7 +32,10 @@ export const ART_CANVAS = { width: 1080, height: 1400 } as const;
 export const FOOD_CANVAS = { width: 1080, height: 1080 } as const;
 
 /** The canvas `imageUrl` is drawn on. */
-export function artCanvasFor(imageUrl: string): { width: number; height: number } {
+export function artCanvasFor(imageUrl: string): {
+  width: number;
+  height: number;
+} {
   return imageUrl.startsWith("/food/") ? FOOD_CANVAS : ART_CANVAS;
 }
 
@@ -65,7 +68,9 @@ export function artKey(imageUrl: string): string {
  */
 export function moodArtUrl(imageUrl: string, sad: boolean): string {
   if (!sad || !imageUrl.startsWith("/animals/happy/")) return imageUrl;
-  return imageUrl.replace("/animals/happy/", "/animals/sad/").replace(/\.svg$/, "-sad.svg");
+  return imageUrl
+    .replace("/animals/happy/", "/animals/sad/")
+    .replace(/\.svg$/, "-sad.svg");
 }
 
 /**
@@ -84,9 +89,69 @@ const SMALL_COLLAR = "/accessories/collar-small.svg";
  * The accessory art to draw on *this* animal. Only the collar varies today;
  * everything else is one file whatever it's worn on.
  */
-export function accessoryArtUrl(accessoryUrl: string, animalUrl: string): string {
+export function accessoryArtUrl(
+  accessoryUrl: string,
+  animalUrl: string,
+): string {
   if (accessoryUrl !== WIDE_COLLAR) return accessoryUrl;
-  return SMALL_COLLAR_SPECIES.has(artKey(animalUrl)) ? SMALL_COLLAR : accessoryUrl;
+  return SMALL_COLLAR_SPECIES.has(artKey(animalUrl))
+    ? SMALL_COLLAR
+    : accessoryUrl;
+}
+
+/**
+ * Where on the animal an accessory sits. A pet wears at most one accessory per
+ * spot, and any number of spots at once (user's direction, 2026-09-13): a hat,
+ * glasses, a moustache and a tie stack, but two hats would just draw over each
+ * other. Keyed by `artKey()`, since the spot is a property of the artwork —
+ * every accessory is drawn on the shared canvas at the place it sits.
+ */
+export type AccessorySlot = "NECK" | "FACE" | "EYES" | "HEAD";
+
+const ACCESSORY_SLOT: Record<string, AccessorySlot> = {
+  bawler: "HEAD",
+  cowboy: "HEAD",
+  crown: "HEAD",
+  fedora: "HEAD",
+  "flower-crown": "HEAD",
+  jester: "HEAD",
+  // Sits on top of the head, in the same band the hats occupy.
+  mandarin: "HEAD",
+  pirate: "HEAD",
+  "top-hat": "HEAD",
+  "glasses-aviators": "EYES",
+  "glasses-reading": "EYES",
+  "glasses-running": "EYES",
+  moustache: "FACE",
+  "collar-small": "NECK",
+  "collar-wide": "NECK",
+  "tie-blue": "NECK",
+  "tie-bow": "NECK",
+  "tie-gingham": "NECK",
+  "tie-hearts": "NECK",
+  "tie-red": "NECK",
+  "tie-stars": "NECK",
+};
+
+/** Bottom layer first: a hat brim covers the top of glasses, glasses cover a moustache. */
+const SLOT_DRAW_ORDER: AccessorySlot[] = ["NECK", "FACE", "EYES", "HEAD"];
+
+/**
+ * The spot an accessory occupies. An accessory missing from the map is its
+ * own spot, so a new file can always be worn alongside the rest rather than
+ * displacing something it doesn't overlap.
+ */
+export function accessorySlot(imageUrl: string): string {
+  return ACCESSORY_SLOT[artKey(imageUrl)] ?? artKey(imageUrl);
+}
+
+/** `urls` sorted into draw order, bottom layer first. */
+export function inAccessoryDrawOrder(urls: string[]): string[] {
+  const rank = (url: string) => {
+    const index = SLOT_DRAW_ORDER.indexOf(accessorySlot(url) as AccessorySlot);
+    return index === -1 ? SLOT_DRAW_ORDER.length : index;
+  };
+  return [...urls].sort((a, b) => rank(a) - rank(b));
 }
 
 /** A sub-rectangle of `ART_CANVAS`, as fractions of it. */

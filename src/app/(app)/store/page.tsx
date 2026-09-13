@@ -18,20 +18,30 @@ import { CurrencyUrgencyBadge } from "@/components/store/currency-urgency-badge"
 import { FlashSaleBanner } from "@/components/store/flash-sale-banner";
 import { LuckyBoxOddsBoostBanner } from "@/components/store/lucky-box-odds-boost-banner";
 import { LuckyBoxRecentPullsNote } from "@/components/store/lucky-box-recent-pulls-note";
+import { MyBoxesLink } from "@/components/store/my-boxes-link";
 import { RecentPurchasesBadge } from "@/components/store/recent-purchases-badge";
 import { StockBadge } from "@/components/store/stock-badge";
-import { StoreBrowser } from "@/components/store/store-browser";
+import {
+  StoreBrowser,
+  type StoreFilter,
+} from "@/components/store/store-browser";
 import { UrgencyLanguageNote } from "@/components/store/urgency-language-note";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { cartForUser } from "@/lib/cart";
 import { currentEconomy } from "@/lib/economy";
-import { LUCKY_BOX_COST_COINS, luckyBoxUrgencyForUser } from "@/lib/gacha";
+import { luckyBoxUrgencyForUser, waitingLuckyBoxCount } from "@/lib/gacha";
+import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
 import { levelOf, storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
 import { logTelemetryEvent } from "@/lib/telemetry";
-import { fakeDiscountPricing, urgencyDataForItems } from "@/lib/urgency";
+import {
+  fakeDiscountPricing,
+  flashSaleOnDay,
+  urgencyDataForItems,
+  urgencyDayKey,
+} from "@/lib/urgency";
 
 export const metadata: Metadata = {
   title: "Store · TaskTails",
@@ -74,12 +84,24 @@ export const metadata: Metadata = {
  * per keystroke, since STOR-02 asks for real-time filtering and every item's
  * `locked` state is already resolved for this user in the one server read.
  *
- * `showFlashSale` (URG-01) goes through `groupGatedData()` — `true` for Group
- * B, `null` for Group A/signed-out — rather than `currentStudyGroup()`
- * directly, both to reuse the one enforcement point INF-17 built for exactly
- * this and to keep the group value itself from ever reaching a client
- * component: only the pre-decided `<FlashSaleBanner />` element (or `null`)
- * crosses into `StoreBrowser`, never a boolean the client could branch on.
+ * `showFlashSale` (URG-01) goes through `groupGatedData()` — `null` for Group
+ * A/signed-out — rather than `currentStudyGroup()` directly, both to reuse the
+ * one enforcement point INF-17 built for exactly this and to keep the group
+ * value itself from ever reaching a client component: only the pre-decided
+ * `<FlashSaleBanner />` element (or `null`) crosses into `StoreBrowser`, never
+ * a boolean the client could branch on.
+ *
+ * **#291 — it is no longer `true` on every Group B day.** `flashSaleOnDay()`
+ * rests the discount layer one UTC day in three, seeded per participant, for
+ * the same habituation reason #187 already rotates the per-item badges: this
+ * was the one Group B stimulus that never varied, and a store that is always
+ * 20% off is not having a sale. It gates three things together, deliberately —
+ * the banner, the inflated list prices and the three curated cards below. A
+ * rest day still shows Group B's per-item badges and footer notes
+ * (`urgencyRows` is seeded separately); it is a break from the *discount*, not
+ * from the condition. On a rest day the three curated names fall back to their
+ * own seeded treatment like every other item, rather than showing curated copy
+ * with no sale behind it.
  *
  * `urgencyBadges` (URG-02/URG-03) follows the same `groupGatedData()`
  * pattern, one level deeper: `urgencyDataForItems()` (URG-08) needs the
@@ -139,9 +161,8 @@ export const metadata: Metadata = {
  * level" state's progress bar/levels-to-go label without a second fetch
  * when a locked card is tapped.
  *
- * `luckyBoxPrice` (`GACHA-10`) is `gacha.ts`'s `LUCKY_BOX_COST_COINS`,
- * passed down as a plain number rather than importing it into the client
- * `StoreBrowser` directly — see `LuckyBoxCard`'s own doc comment for why.
+ * `unopenedBoxes` is the My boxes badge (`design_handoff_lucky_boxes` §2),
+ * drawn in the phone header here and beside the search from `desk:` up.
  *
  * `luckyBoxUrgency` (`GACHA-11`) is the same `groupGatedData()` pattern as
  * `showFlashSale`, one level deeper like `urgencyRows`: `null` for Group A,
@@ -149,8 +170,14 @@ export const metadata: Metadata = {
  * .../></>` pair — the entire decided subtree, not a boolean, per
  * `StoreBrowser`'s own `luckyBoxUrgency` doc comment.
  */
-/** The four real `StoreItemCategory` values `?category=` may deep-link to — anything else falls back to "ALL", same as never passing the param at all. */
-const DEEP_LINKABLE_CATEGORIES = ["FOOD", "ACCESSORIES", "ANIMALS", "DECORATIONS"];
+/** The `?category=` values that deep-link to a chip — the four real `StoreItemCategory` values plus "BOXES" (My boxes' empty state). Anything else falls back to "ALL", same as never passing the param at all. */
+const DEEP_LINKABLE_CATEGORIES = [
+  "BOXES",
+  "FOOD",
+  "ACCESSORIES",
+  "ANIMALS",
+  "DECORATIONS",
+];
 
 export default async function StorePage({
   searchParams,
@@ -164,7 +191,7 @@ export default async function StorePage({
 
   const { category } = await searchParams;
   const initialCategory = DEEP_LINKABLE_CATEGORIES.includes(category ?? "")
-    ? (category as "FOOD" | "ACCESSORIES" | "ANIMALS" | "DECORATIONS")
+    ? (category as StoreFilter)
     : "ALL";
 
   const items = await storeItemsForUser(userId);
@@ -177,22 +204,50 @@ export default async function StorePage({
   // The `/api/telemetry/*` routes keep awaiting theirs: writing the row *is*
   // their response, and `session-end`'s `sendBeacon` would lose the event if
   // the handler returned first.
-  after(() => logTelemetryEvent(userId, "STORE_VISIT", {}));
+  // #291 — one instant for the whole render. Every fabricated stimulus used to
+  // call `new Date()` for itself, so a request that crossed 00:00 UTC could
+  // seed the badges from one day and the flash sale from the next; more to the
+  // point, nothing recorded *which* day a participant was shown. Threaded from
+  // here, and logged with the visit below.
+  const now = new Date();
 
-  const [cart, economy, showFlashSale, urgencyRows, level, luckyBoxUrgencyRow] =
-    await Promise.all([
-      cartForUser(userId),
-      currentEconomy(),
-      groupGatedData(() => true),
-      groupGatedData(() =>
-        urgencyDataForItems(
-          userId,
-          items.map((item) => item.id),
-        ),
+  const [
+    cart,
+    economy,
+    showFlashSale,
+    urgencyRows,
+    level,
+    luckyBoxUrgencyRow,
+    unopenedBoxes,
+  ] = await Promise.all([
+    cartForUser(userId),
+    currentEconomy(),
+    groupGatedData(() => flashSaleOnDay(userId, now)),
+    groupGatedData(() =>
+      urgencyDataForItems(
+        userId,
+        items.map((item) => item.id),
+        now,
       ),
-      levelOf(userId),
-      groupGatedData(() => luckyBoxUrgencyForUser(userId)),
-    ]);
+    ),
+    levelOf(userId),
+    groupGatedData(() => luckyBoxUrgencyForUser(userId, now)),
+    waitingLuckyBoxCount(userId),
+  ]);
+
+  // #291 — what this visit was actually shown, so the analysis can rebuild it.
+  // `urgencyDay` plus the participant's id is the whole seed: handing that
+  // string back to `urgencyDataForItems()`/`flashSaleOnDay()` reproduces every
+  // badge, note and number on this page exactly, months later, with no need to
+  // have stored any of them. `flashSale` is null for Group A, who has no
+  // urgency layer at all — the same shape `groupGatedData()` returns, so a
+  // Group A row is distinguishable from a Group B rest day.
+  after(() =>
+    logTelemetryEvent(userId, "STORE_VISIT", {
+      urgencyDay: urgencyDayKey(now),
+      flashSale: showFlashSale,
+    }),
+  );
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
   const urgencyBadges: Record<string, ReactNode> = {};
@@ -206,7 +261,9 @@ export default async function StorePage({
       if (row.showStockBadge) {
         urgencyBadges[item.id] = <StockBadge key={item.id} stock={row.stock} />;
       } else if (row.showCartActivityBadge) {
-        urgencyBadges[item.id] = <CartActivityBadge key={item.id} count={row.cartActivity} />;
+        urgencyBadges[item.id] = (
+          <CartActivityBadge key={item.id} count={row.cartActivity} />
+        );
       }
       // Footer note, below the image and above the price — everything else.
       if (row.showRecentPurchases) {
@@ -270,7 +327,9 @@ export default async function StorePage({
             <CartActivityBadge count={7} />
           </div>
         );
-        urgencyFooterNotes[item.id] = <RecentPurchasesBadge key={item.id} count={12} />;
+        urgencyFooterNotes[item.id] = (
+          <RecentPurchasesBadge key={item.id} count={12} />
+        );
       } else if (item.name === "Red collar") {
         urgencyBadges[item.id] = <BuyOneGetOneBadge key={item.id} />;
       } else if (item.name === "Hearts") {
@@ -278,7 +337,9 @@ export default async function StorePage({
         // addendum's own curated art for this specific card — see
         // `CurrencyUrgencyBadge`'s doc comment.
         urgencyBadges[item.id] = <CurrencyUrgencyBadge key={item.id} overlay />;
-        urgencyFooterNotes[item.id] = <RecentPurchasesBadge key={item.id} count={4} />;
+        urgencyFooterNotes[item.id] = (
+          <RecentPurchasesBadge key={item.id} count={4} />
+        );
       }
     }
   }
@@ -286,7 +347,17 @@ export default async function StorePage({
   return (
     <CartCountProvider initialCount={cartCount}>
       <AppShell
-        header={<PersistentHeader title="Store" action={<CartLink />} />}
+        header={
+          <PersistentHeader
+            title="Store"
+            action={
+              <>
+                <MyBoxesLink count={unopenedBoxes} />
+                <CartLink />
+              </>
+            }
+          />
+        }
         nav={<BottomNav />}
         // `desk:overflow-hidden`: from the rail width up, the category column,
         // the item grid and the cart each own their own scroll, so `main`
@@ -314,19 +385,26 @@ export default async function StorePage({
             // moment anything on the page re-renders on the client. Latent
             // until INF-22, which put a stateful cart rail on this page and
             // made adding to the cart refresh it. Bisected, not guessed.
-            flashSaleBanner={showFlashSale ? <FlashSaleBanner key="flash-sale" /> : null}
+            flashSaleBanner={
+              showFlashSale ? <FlashSaleBanner key="flash-sale" /> : null
+            }
             urgencyBadges={urgencyBadges}
             urgencyFooterNotes={urgencyFooterNotes}
             pricing={pricing}
             bundleQuantities={bundleQuantities}
             level={level}
             initialCategory={initialCategory}
-            luckyBoxPrice={LUCKY_BOX_COST_COINS}
+            unopenedBoxes={unopenedBoxes}
+            coins={economy?.coins ?? 0}
+            buyXpCost={BUY_XP_COST_COINS}
+            buyXpGain={BUY_XP_GAIN_XP}
             luckyBoxUrgency={
               luckyBoxUrgencyRow ? (
                 <>
                   <LuckyBoxOddsBoostBanner />
-                  <LuckyBoxRecentPullsNote count={luckyBoxUrgencyRow.recentPulls} />
+                  <LuckyBoxRecentPullsNote
+                    count={luckyBoxUrgencyRow.recentPulls}
+                  />
                 </>
               ) : null
             }
@@ -339,7 +417,11 @@ export default async function StorePage({
             <p className="flex-none border-b border-border-track px-[18px] py-[15px] font-display text-[16px] font-semibold">
               Your cart
             </p>
-            <CartPanel initialCart={cart} coins={economy?.coins ?? 0} variant="rail" />
+            <CartPanel
+              initialCart={cart}
+              coins={economy?.coins ?? 0}
+              variant="rail"
+            />
           </aside>
         </div>
       </AppShell>

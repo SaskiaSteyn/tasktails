@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useRef, useState } from "react";
 
 import { useCartCount } from "@/components/store/cart-count-context";
+import { RarityChip } from "@/components/store/rarity-chip";
+import { rarityTokens } from "@/lib/rarity";
 import { ItemWell, itemSubtitle } from "@/components/store/item-visual";
 import { Coin } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
@@ -150,6 +152,9 @@ export function StoreItemCard({
   // within `FEEDBACK_MS` would have the first click's stale timeout reset
   // the second click's still-fresh "added"/"error" state back to idle early.
   const revertTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  // #274 — where the fly-to-cart mark starts from. The button, not the art:
+  // it is what was actually pressed, so the mark leaves from under the finger.
+  const addButtonRef = useRef<HTMLButtonElement>(null);
   const cart = useCartCount();
   const router = useRouter();
 
@@ -170,6 +175,10 @@ export function StoreItemCard({
       setStatus(response.ok ? "added" : "error");
       if (response.ok) {
         cart?.increment();
+        // #274 — the green tick below is easy to miss on a grid of cards, and
+        // says nothing about where the item went. This is the other half:
+        // a toast under the cart icon and a mark that travels to it.
+        cart?.announceAdded(addLabel, addButtonRef.current);
         router.refresh();
       }
     } catch {
@@ -179,8 +188,22 @@ export function StoreItemCard({
     }
   }
 
+  // #276 — the tier this card is drawn in. A locked card is deliberately
+  // *not* tiered: it keeps the muted treatment and shows no chip and no
+  // effects, because advertising a Legendary nobody can buy reads as a taunt
+  // (UPDATE-01 §7 rule 5, the same call the urgency badges already made).
+  const tier = rarityTokens(item.rarity);
+  const tiered = !locked;
+
   const cardClassName = cn(
-    "relative flex w-full flex-col overflow-hidden rounded-card border border-border-track",
+    // `h-full`: fills the grid cell `StoreBrowser` sizes to the tallest
+    // card, so every card is the same height (#271).
+    "relative flex h-full w-full flex-col overflow-hidden rounded-card",
+    // 1.5px at every tier, not Tailwind's 1px `border` — the handoff's frame
+    // width is part of what separates the tiers at a glance, and Common's
+    // frame colour *is* `border-track`, so an untiered card is what shipped
+    // plus half a pixel.
+    tiered ? cn("border-[1.5px]", tier.frame, tier.shadow) : "border border-border-track",
     // `bg-surface` (white), not the old `bg-warm` cream tint the pre-addendum
     // card used for its whole body — per the addendum's card art, the card
     // itself is plain white and only the art tile inside it carries a pale
@@ -188,14 +211,103 @@ export function StoreItemCard({
     locked ? "bg-[#F2EEE7] text-left transition-colors duration-120 hover:border-checkbox" : "bg-surface",
   );
 
+  /**
+   * Epic and Legendary only. Sizes and offsets are UPDATE-01 §2's rescale of
+   * the reference's 170px figures onto this card's 82px tile.
+   *
+   * The rotation rides in `--spark-rotate` rather than a `rotate-45` class:
+   * `twinkle` animates `transform`, and an animated transform replaces a
+   * class-set one outright rather than composing with it.
+   */
+  const sparkles = tier.sparks ? (
+    <span aria-hidden className="pointer-events-none absolute inset-0">
+      <span
+        style={{ ["--spark-rotate" as string]: "45deg" }}
+        className="absolute top-[9px] left-[12px] size-[6px] rounded-[2px] bg-white animate-twinkle"
+      />
+      <span
+        style={{ ["--spark-rotate" as string]: "45deg", animationDelay: "0.8s" }}
+        className="absolute right-[14px] bottom-[10px] size-[5px] rounded-[2px] bg-white animate-twinkle"
+      />
+      <span
+        style={{ animationDelay: "1.5s" }}
+        className="absolute top-[24px] right-[10px] size-[4px] rounded-full bg-[#FFF3D6] animate-twinkle"
+      />
+    </span>
+  ) : null;
+
   const content = (
     <>
-      {/* Header — title + subtitle above the art, per the addendum's card
-          structure ("header → art tile → footer"). The pre-addendum card had
-          these below the well; the addendum's own mock cards lead with the
-          name, and the art tile now spans the card's full width rather than
-          sitting inset above the text. */}
-      <div className="px-[11px] pt-[10px] pb-[9px]">
+      {/* Art region — leads the card (#271). `design_handoff_rarity`'s own
+          card is drawn art-first: the tile spans the card's full width at
+          the top with the tier chip floating in it, and the name, category
+          and price read underneath. UPDATE-01 §2 had re-cut the rarity
+          treatment onto the older header → art → footer order instead; the
+          rarity reference's anatomy is what ships, so the header block that
+          used to sit above this is now the name block below it.
+
+          Full-bleed: no card padding around it and no corner radius of its
+          own — the card's `overflow-hidden` clips it against the rounded
+          corners. */}
+      <div className="relative">
+        {/* #276 — the tier chip, at the tile's **bottom**-left.
+
+            It was top-left, opposite the urgency badges' top-right corner,
+            which is what UPDATE-01 §2 warned about and what shipping it
+            proved: opposite corners is not the same as clear of each other.
+            A Group B card is ~139px wide in the two-up phone grid, and
+            "COMMON" (~72px) beside "Only 3 left!" (~74px) plus two 8px
+            insets needs 162px. `CurrencyUrgencyBadge overlay`'s "Double XP
+            this hour only!" is ~134px on its own and covered the chip
+            outright. Group A has no badges, so the top-left chip looked
+            correct on every screen that has one.
+
+            Bottom-left is UPDATE-01 §4's own fallback for the crowded case,
+            promoted to the only case: the badges keep the whole top edge,
+            rarity keeps the bottom, and no width of badge copy can reach it.
+            The Epic/Legendary sparkles sit bottom-*right*, so they don't
+            meet it either. */}
+        {tiered ? (
+          <div className="absolute bottom-2 left-2 z-10">
+            <RarityChip rarity={item.rarity} />
+          </div>
+        ) : null}
+
+        {badge && (
+          <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1">
+            {badge}
+          </div>
+        )}
+        <ItemWell
+          item={item}
+          locked={locked}
+          // 120, not the 96 this shipped at (#271, reported live): the chip
+          // floats at `top-2` and is ~17px tall, so on a 96px tile a centred
+          // 62px piece of art started 17px down and the chip sat on top of
+          // it — plainly wrong on the Moustache and the Penguin, whose
+          // ink reaches the top of their own boxes. At 120 the art starts
+          // 29px down, four clear pixels under the chip, with no change to
+          // the art's own size or centring.
+          size={120}
+          iconSize={locked ? 44 : 36}
+          animalIconSize={62}
+          rounded="rounded-none"
+          fullWidth
+          bgClassNameOverride={tiered ? tier.field : undefined}
+          fieldFx={tiered ? tier.fieldFx : null}
+          overlay={sparkles}
+        />
+      </div>
+
+      {/* Name + category. The hairline that used to close the art tile from
+          below (the old footer's `border-t`) is this block's `border-t` now —
+          the same line in the same place, still directly under the tile. */}
+      <div
+        className={cn(
+          "border-t px-[11px] pt-[9px]",
+          tiered ? tier.frame : "border-border-track",
+        )}
+      >
         <p
           className={cn(
             "truncate text-[12.5px] font-extrabold",
@@ -209,56 +321,25 @@ export function StoreItemCard({
         </p>
       </div>
 
-      {/* Art region — full-bleed (no card padding around it, no corner
-          radius of its own): the addendum draws it edge-to-edge between the
-          header and the footer, so its own fill is what separates the two
-          rather than a drawn border. `overflow-hidden` on the card clips it
-          against the card's rounded corners; it never touches them anyway
-          with a header above and a footer below.
-
-          No `mt-auto` here (removed — it used to push this region down to
-          meet the footer at the bottom of the card). `StoreBrowser`'s grid
-          stretches every card in a row to match its tallest neighbour
-          (Grid's default `align-items: stretch`), and a card whose footer
-          has a `footerNote` line (URG-04/05/06/07) is taller than a
-          row-mate without one; `mt-auto` absorbed exactly that difference as
-          blank margin *above* this region — a visible gap between the title
-          and the art with no drawn cause, reported live. `StoreBrowser`'s
-          `items-start` on the grid is the real fix (each card now sizes to
-          its own content instead of stretching at all); this class was the
-          other half of the same hack and is dead weight without it. */}
-      <div className="relative">
-        {badge && (
-          <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1">
-            {badge}
-          </div>
-        )}
-        <ItemWell
-          item={item}
-          locked={locked}
-          size={82}
-          iconSize={locked ? 40 : 32}
-          animalIconSize={54}
-          rounded="rounded-none"
-          fullWidth
-        />
-      </div>
-
-      <div className="border-t border-border-track px-[11px] py-[10px]">
+      {/* `mt-auto`: the card is stretched to the tallest card in the grid
+          (#271), and this pins the footer note and the price row to the
+          bottom so the extra height opens *above* them. Price rows and "+"
+          buttons line up across every card; the note stays directly on top of
+          the price it belongs to rather than floating under the subtitle. */}
+      <div className="mt-auto px-[11px] pt-[8px] pb-[10px]">
         {footerNote}
 
         {locked ? (
           /* Plain centred line, not the pre-addendum lock-icon pill — the
-             addendum's locked card puts the padlock in the art region above
-             and leaves the footer as bare text ("Unlocks at level 7").
+             padlock reads once, large, in the art region above, and the
+             footer is bare text ("Unlocks at level 7").
 
              `min-h-[28px]`: the unlocked footer's height is set by its 28px
-             "+" button, and a bare text line left the locked card ~14px
-             shorter than its row-mates (the grid is `items-start`, so nothing
-             was stretching it back). Matching the button's height here makes
-             the two cards the same height by construction rather than by
-             pinning a card height that the title or a `footerNote` could
-             later change. */
+             "+" button, and a bare text line sat ~14px lower. The grid now
+             stretches every card to one height (#271), so this no longer
+             decides the card's height — it keeps this line vertically centred
+             on the same band the price row and "+" occupy on the unlocked
+             card beside it. */
           <p className="flex min-h-[28px] items-center justify-center text-center text-[11px] font-extrabold text-ink-soft">
             Unlocks at level {item.levelRequired}
           </p>
@@ -285,6 +366,7 @@ export function StoreItemCard({
             </span>
 
             <button
+              ref={addButtonRef}
               type="button"
               onClick={handleAddToCart}
               disabled={status === "pending"}
@@ -326,6 +408,21 @@ export function StoreItemCard({
   return (
     <div className={cardClassName}>
       {content}
+
+      {/* #276 — Legendary only. Above the whole card, not just the art tile,
+          so the glint crosses the header and footer too. `overflow-hidden`
+          on this wrapper (not the band) is what stops it painting outside
+          the card's rounded corners; the band is deliberately taller than
+          the card so a skewed edge never shows a horizontal seam. */}
+      {tiered && tier.sheen ? (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 overflow-hidden rounded-card"
+        >
+          <span className="absolute top-[-20%] bottom-[-20%] w-[64px] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.72)_50%,transparent)] animate-sheen" />
+        </span>
+      ) : null}
+
       {locked ? (
         // The whole card is still the tap target (SHR-06) — it just isn't the
         // element wrapping the layout any more (#260). `rounded-card` so the

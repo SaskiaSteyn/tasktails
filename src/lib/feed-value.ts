@@ -56,3 +56,20 @@ export const FEED_EFFECT: Record<FoodRarity, FeedEffect> = {
 export function feedEffectOf(rarity: FoodRarity | null | undefined): FeedEffect {
   return FEED_EFFECT[rarity ?? "COMMON"];
 }
+
+/**
+ * #277 — how a food's hunger effect reads to a participant: "less 18
+ * hunger", not "-18 hunger".
+ *
+ * `hunger` is stored negative because it is subtracted from the pet's
+ * stat, and printing that number raw made the card say "-18 hunger", which
+ * scans as *more* hungry by eighteen rather than less. The minus sign is
+ * arithmetic leaking into copy.
+ *
+ * Here rather than at each call site so the two places that show it — the
+ * store card's subtitle and the feed sheet's rows — cannot word it
+ * differently, which is exactly how they drifted into needing this fix.
+ */
+export function hungerLabel(rarity: FoodRarity | null | undefined): string {
+  return `less ${Math.abs(feedEffectOf(rarity).hunger)} hunger`;
+}

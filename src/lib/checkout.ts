@@ -167,8 +167,12 @@ export async function checkout(userId: string): Promise<CheckoutResult> {
       ),
     );
 
-    const animalLines = cart.filter((line) => line.storeItem.category === "ANIMALS");
-    const goodsLines = cart.filter((line) => line.storeItem.category !== "ANIMALS");
+    const animalLines = cart.filter(
+      (line) => line.storeItem.category === "ANIMALS",
+    );
+    const goodsLines = cart.filter(
+      (line) => line.storeItem.category !== "ANIMALS",
+    );
 
     const inventoryUpdates: Promise<InventoryItem>[] = goodsLines.map(
       async (line) => {
@@ -186,7 +190,11 @@ export async function checkout(userId: string): Promise<CheckoutResult> {
               data: { quantity: { increment: line.quantity } },
             })
           : tx.inventoryItem.create({
-              data: { userId, storeItemId: line.storeItemId, quantity: line.quantity },
+              data: {
+                userId,
+                storeItemId: line.storeItemId,
+                quantity: line.quantity,
+              },
             });
       },
     );

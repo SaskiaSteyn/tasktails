@@ -137,7 +137,7 @@ export function BackHeaderSkeleton({
   titleHeight?: string;
 }) {
   return (
-    <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] py-[14px]">
+    <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-[14px]">
       <Skeleton className="size-[22px] flex-none rounded-chip" />
       <Skeleton className={`rounded-chip ${titleHeight} ${titleWidth}`} />
     </header>

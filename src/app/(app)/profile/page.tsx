@@ -8,19 +8,17 @@ import { achievementsForUser } from "@/lib/achievements";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { XpCard } from "@/components/economy/xp-card";
+import { Podium } from "@/components/leaderboard/podium";
 import { AchievementsGrid } from "@/components/profile/achievements-grid";
-import { BuyXpCard } from "@/components/profile/buy-xp-card";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { RankButton } from "@/components/profile/rank-button";
 import { StatsGrid } from "@/components/profile/stats-grid";
-import { UsernameCard } from "@/components/profile/username-card";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { currentEconomy } from "@/lib/economy";
 import { allTimeLeaderboard } from "@/lib/leaderboard";
-import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
 import { lifetimeStatsFor } from "@/lib/stats";
-import { displayNameFor, displayNameFromEmail, findUserByEmail } from "@/lib/users";
+import { displayNameFor, findUserByEmail } from "@/lib/users";
 
 export const metadata: Metadata = {
   title: "Profile · TaskTails",
@@ -64,6 +62,13 @@ export default async function ProfilePage() {
   // any width shows.
   const achievementsPreview = achievements.slice(0, 12);
 
+  // #271 — the top three, for the podium on this screen. Empty while nobody
+  // has earned anything (LEAD-14): `allTimeLeaderboard()` still ranks
+  // everyone in that state, so the entries exist and are all zero.
+  const podiumEntries = board.entries.some((entry) => entry.score > 0)
+    ? board.entries.slice(0, 3)
+    : [];
+
   return (
     <AppShell
       // INF-22 — full width, as the handoff draws it: the page padding grows
@@ -72,7 +77,7 @@ export default async function ProfilePage() {
       className="px-4 pt-4 pb-[14px] desk:px-[34px] desk:py-7"
       nav={<BottomNav />}
       header={
-        <header className="flex flex-none flex-col gap-3 border-b border-border-track bg-warm px-[18px] pt-[14px] pb-4">
+        <header className="flex flex-none flex-col gap-3 border-b border-border-track bg-warm px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-4">
           <div className="flex items-center gap-[13px]">
             <ProfileHeader
               name={displayNameFor(record)}
@@ -126,8 +131,6 @@ export default async function ProfilePage() {
         {economy ? <XpCard economy={economy} /> : null}
       </div>
 
-      <UsernameCard username={record.username} suggestion={displayNameFromEmail(record.email)} />
-
       <div className="mt-4">
         <StatsGrid stats={stats} />
       </div>
@@ -146,27 +149,47 @@ export default async function ProfilePage() {
           two. Hidden rather than shown empty when this account somehow isn't ranked:
           a card that says "Your rank" with nothing in it is worse than no card,
           and `you` is only ever null for a non-participant, who is redirected
-          away above. */}
+          away above.
+
+          #271 — the podium now sits above the rank row, so the top three read
+          from Profile without a tap. Deliberately *only* the podium and your
+          own standing: the ranked list of everyone else stays on
+          `/profile/leaderboard`, which the rank row still opens. Moving both
+          screens' content onto Profile would just be the leaderboard twice.
+
+          Both halves are the components the leaderboard screen itself uses —
+          the same `Podium` and the same `RankButton` — so there is no second
+          drawing of a podium to drift out of step with the first. */}
       {board.you ? (
-        <div className="mt-4">
-          <RankButton
-            rank={board.you.rank}
-            participantCount={board.participantCount}
-            scored={board.you.score > 0}
-          />
-        </div>
+        <section className="mt-4 rounded-card border border-border-track bg-warm pt-[11px] pb-[11px]">
+          <p className="text-overline px-[13px] text-ink-faint">All time</p>
+
+          {/* LEAD-14 — a podium of three zeroes reads as a bug, and every
+              deployment starts there. The rank row below stays either way:
+              it has its own "no coins earned yet" copy. */}
+          {podiumEntries.length > 0 ? (
+            <Podium entries={podiumEntries} />
+          ) : (
+            <p className="px-[13px] pt-[10px] pb-[11px] text-[11.5px] leading-[1.4] font-bold text-ink-soft">
+              Nobody&rsquo;s on the board yet — complete a task to earn your
+              first coins and take the top spot.
+            </p>
+          )}
+
+          <div className="px-[13px]">
+            <RankButton
+              rank={board.you.rank}
+              participantCount={board.participantCount}
+              scored={board.you.score > 0}
+            />
+          </div>
+        </section>
       ) : null}
 
-      {/* #256 moved the "Sell items" card out of here and into the store,
-          beside the Lucky Box — participants were looking for selling where
-          they buy. `/profile/sell` itself is unchanged. */}
-      <div className="mt-4">
-        <BuyXpCard
-          costCoins={BUY_XP_COST_COINS}
-          gainXp={BUY_XP_GAIN_XP}
-          coins={economy?.coins ?? 0}
-        />
-      </div>
+      {/* #256 moved the "Sell items" card into the store, and #280 moved
+          "Buy XP" after it — both now live on the store's Sell tab, where
+          coins come back rather than go out. Profile keeps the stats and
+          the achievements; `/profile/sell` itself is unchanged. */}
 
       <div className="min-h-2 flex-1" />
     </AppShell>

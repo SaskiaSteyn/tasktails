@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { fakeDiscountPricing, urgencyDataForItems } from "@/lib/urgency";
+import {
+  fakeDiscountPricing,
+  flashSaleOnDay,
+  urgencyDataForItems,
+  urgencyDayKey,
+} from "@/lib/urgency";
 
 /**
  * A fixed UTC day, passed explicitly wherever a test asserts two calls agree
@@ -254,5 +259,61 @@ describe("fakeDiscountPricing", () => {
 
   it("defaults to a single unit", () => {
     expect(fakeDiscountPricing(50)).toEqual(fakeDiscountPricing(50, 1));
+  });
+});
+
+/**
+ * #291 — the discount layer rests one UTC day in three, seeded the same way
+ * every other stimulus is. The properties that matter for the study are that
+ * it holds steady within a day (no flicker mid-session), that it genuinely
+ * varies across days and across participants, and that a given day is
+ * reproducible from the date alone months later.
+ */
+describe("flashSaleOnDay", () => {
+  const day = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+
+  it("holds steady all day, whatever the clock time", () => {
+    for (const hour of ["00:00:00", "09:13:44", "23:59:59"]) {
+      expect(flashSaleOnDay("user-1", new Date(`2026-09-13T${hour}.000Z`))).toBe(
+        flashSaleOnDay("user-1", day("2026-09-13")),
+      );
+    }
+  });
+
+  it("rests exactly one day in every three, and never twice in a row", () => {
+    for (const userId of ["user-1", "user-2", "user-3", "user-4"]) {
+      const run = Array.from({ length: 300 }, (_, i) =>
+        flashSaleOnDay(userId, new Date(Date.UTC(2026, 0, 1 + i))),
+      );
+      // Exactly one rest in every window of three — the property a per-day
+      // coin flip does not have, and the reason this is a cycle.
+      for (let i = 0; i + 3 <= run.length; i += 1) {
+        expect(run.slice(i, i + 3).filter((on) => !on)).toHaveLength(1);
+      }
+      expect(run.some((on, i) => !on && !run[i + 1])).toBe(false);
+    }
+  });
+
+  it("staggers rest days across participants rather than resting the cohort at once", () => {
+    const forUser = (userId: string) =>
+      Array.from({ length: 30 }, (_, i) =>
+        flashSaleOnDay(userId, new Date(Date.UTC(2026, 0, 1 + i))),
+      ).join("");
+    // Not "any two users differ" — there are only three offsets, so a third of
+    // any pair legitimately shares a schedule. What must not happen is every
+    // participant resting on the same day, which would make the off-day look
+    // like the store being broken rather than the sale being over for a day.
+    const schedules = new Set(
+      ["user-1", "user-2", "user-3", "user-4", "user-5", "user-6"].map(forUser),
+    );
+    expect(schedules.size).toBeGreaterThan(1);
+  });
+
+  it("reproduces a past day exactly from its urgencyDayKey", () => {
+    const then = new Date("2026-05-04T17:22:09.000Z");
+    expect(urgencyDayKey(then)).toBe("2026-05-04");
+    expect(flashSaleOnDay("user-1", new Date(urgencyDayKey(then)))).toBe(
+      flashSaleOnDay("user-1", then),
+    );
   });
 });

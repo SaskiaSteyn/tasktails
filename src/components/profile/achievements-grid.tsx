@@ -78,7 +78,11 @@ export function AchievementsGrid({
                 "flex aspect-square flex-1 flex-col items-center justify-center gap-[6px] rounded-[14px] border p-2",
                 // Four tiles on a phone, eight from `desk:`, twelve from
                 // `xl:` — see the note above.
-                index >= 8 ? "hidden xl:flex" : index >= 4 ? "hidden desk:flex" : null,
+                index >= 8
+                  ? "hidden xl:flex"
+                  : index >= 4
+                    ? "hidden desk:flex"
+                    : null,
                 unlocked
                   ? cn(style?.bg, style?.border)
                   : "border-dashed border-checkbox bg-input",
@@ -95,7 +99,7 @@ export function AchievementsGrid({
                 <Lock
                   size={18}
                   strokeWidth={2.2}
-                  className="flex-none text-ink-disabled"
+                  className="flex-none text-ink-faint"
                   aria-hidden
                 />
               )}
@@ -104,12 +108,11 @@ export function AchievementsGrid({
                 aria-hidden
                 className={cn(
                   "line-clamp-2 text-center text-[9px] leading-[1.2] font-bold text-balance desk:text-[10.5px]",
-                  unlocked ? "text-ink" : "text-ink-disabled",
+                  unlocked ? "text-ink" : "text-ink-soft",
                 )}
               >
                 {achievement.name}
               </span>
-
             </div>
           );
         })}

@@ -276,6 +276,14 @@
   --shadow-btn-danger: 0 6px 14px rgb(219 76 63 / 0.35);
   --shadow-btn-sage: 0 5px 12px rgb(95 169 126 / 0.32);
   --shadow-btn-sage-hover: 0 8px 16px rgb(95 169 126 / 0.42);
+  /* #276 — the rarity tiers' card shadows. Offsets and blur are the
+     handoff's; the colour is this repo's own accent for each tier, spelled
+     out the way every shadow token above already spells its own (compare
+     `--shadow-btn-sage`, which is `--color-sage` written as rgb). Common
+     has no shadow at all. */
+  --shadow-rarity-rare: 0 10px 22px rgb(95 169 126 / 0.16);
+  --shadow-rarity-epic: 0 14px 30px rgb(132 120 196 / 0.22);
+  --shadow-rarity-legendary: 0 16px 34px rgb(229 169 60 / 0.3);
   --shadow-nav-idle: 0 4px 12px rgb(46 42 38 / 0.1);
   --shadow-nav-active: 0 6px 14px rgb(226 122 84 / 0.4);
   --shadow-fab: 0 8px 18px rgb(226 122 84 / 0.4);
@@ -522,6 +530,163 @@
   }
 }
 
+/* #274 — the add-to-cart flourish. A single mark travels from the "+" that
+   was pressed to the cart icon in the header, so the item visibly goes
+   somewhere rather than the button just flashing a tick in place.
+
+   `--cart-fly-x` / `--cart-fly-y` are per-element custom properties set
+   inline by `CartAddOverlay`, which measures both ends for real — the
+   distance is different for every card in the grid and different again at
+   each breakpoint, so a keyframe (one shared set of rules) cannot know it.
+   Same reasoning `pet-heart-float` documents for its own drift.
+
+   The shrink is what sells the travel as "into the cart" rather than a mark
+   sliding across the screen, and the late fade keeps it visible for most of
+   the trip instead of ghosting out halfway. */
+/* #276 — the rarity treatments, timings quoted from
+   `design_handoff_rarity/README.md` §"Interactions & Behavior". All three are
+   decorative and infinite, carry no state, and are neutralised by the
+   reduce-motion rules further down — the tier's colour is what actually
+   carries the distinction (UPDATE-01 §7 rule 4). */
+
+/* The band sweeps the whole card, not just the art tile. The gap between
+   sweeps is intentional: the keyframe finishes travelling at 55% and holds
+   off-screen for the rest, which is what makes it a periodic glint rather
+   than a strobe. */
+@keyframes sheen {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  55%,
+  100% {
+    transform: translateX(240%) skewX(-18deg);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: rotate(var(--spark-rotate, 0deg)) scale(0.4);
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(var(--spark-rotate, 0deg)) scale(1);
+  }
+}
+
+/* Shiny art only. `--spark-rotate` is not wanted here, so this one composes
+   nothing and can translate plainly. */
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Lucky boxes (`design_handoff_lucky_boxes` 1e/1g). The opening beat is four
+   loops on one 1.4s clock — the well pops, the lid lifts, the glow breathes
+   and two rings ray out — and `card-present` is the flip a card makes as it
+   lifts over the reveal scrim. All neutralised by the reduce-motion rules
+   below, which is the handoff's "stops dead". */
+@keyframes box-pop {
+  0%,
+  12% {
+    transform: scale(1) rotate(0deg);
+  }
+  34% {
+    transform: scale(0.9) rotate(-7deg);
+  }
+  52% {
+    transform: scale(1.12) rotate(6deg);
+  }
+  68% {
+    transform: scale(1.02) rotate(-2deg);
+  }
+  84%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes lid-lift {
+  0%,
+  30% {
+    transform: translateY(0) rotate(0deg);
+  }
+  58% {
+    transform: translateY(-26px) rotate(-14deg);
+  }
+  86%,
+  100% {
+    transform: translateY(-4px) rotate(-3deg);
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.86);
+    opacity: 0.5;
+  }
+  55% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes ray-out {
+  0%,
+  20% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes card-present {
+  from {
+    transform: perspective(900px) rotateY(90deg) scale(0.7);
+  }
+}
+
+@keyframes cart-fly {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(0, 0) scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%)
+      translate(var(--cart-fly-x, 0px), var(--cart-fly-y, 0px)) scale(0.35);
+  }
+}
+
+/* The toast that lands under the cart icon. Drops in from behind the header
+   rather than fading in place, so the eye is led to the cart. */
+@keyframes cart-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes medallion-pop {
   from {
     opacity: 0;
@@ -544,6 +709,44 @@
     both;
   --animate-medallion-pop: medallion-pop 420ms cubic-bezier(0.2, 0.8, 0.3, 1.1)
     both;
+  /* Eased out hard: the mark leaves the button quickly and settles into the
+     cart, which reads as "put away" where a linear travel reads as "passing
+     through". Duration must match `CART_FLY_MS` in `cart-add-overlay.tsx`,
+     which is what unmounts the element afterwards. */
+  --animate-cart-fly: cart-fly 620ms cubic-bezier(0.32, 0.72, 0.3, 1) both;
+  --animate-cart-toast-in: cart-toast-in 180ms cubic-bezier(0.2, 0.8, 0.3, 1)
+    both;
+  /* #276. The sparkle's own rotation is carried in `--spark-rotate` rather
+     than a `rotate-45` utility, because an animated `transform` replaces a
+     class-set one outright — the same trap `task-reward-float` documents for
+     its centring. */
+  --animate-sheen: sheen 3600ms ease-in-out infinite;
+  --animate-twinkle: twinkle 2400ms ease-in-out infinite;
+  --animate-floaty: floaty 4500ms ease-in-out infinite;
+  --animate-box-pop: box-pop 1400ms ease-in-out infinite;
+  --animate-lid-lift: lid-lift 1400ms ease-in-out infinite;
+  --animate-glow-pulse: glow-pulse 1400ms ease-in-out infinite;
+  --animate-ray-out: ray-out 1400ms ease-out infinite;
+  --animate-card-present: card-present 280ms ease-out;
+  /* #276 §4 — Shiny. The frame gradient and the wash that tints the field
+     behind the art. Kept as raw gradients rather than tokens: these four
+     stops are the Shiny identity itself, not a reuse of any app accent,
+     and nothing else in the system refers to them. */
+  --gradient-shiny-frame: linear-gradient(
+    135deg,
+    #8fd3e8,
+    #c9a7ec 34%,
+    #f5b0c6 62%,
+    #fbd98a
+  );
+  --gradient-shiny-wash: linear-gradient(
+    135deg,
+    rgb(143 211 232 / 0.3),
+    rgb(201 167 236 / 0.26) 40%,
+    rgb(245 176 198 / 0.24) 70%,
+    rgb(251 217 138 / 0.28)
+  );
+  --shadow-shiny: 0 14px 30px rgb(140 110 190 / 0.22);
 }
 
 /* Respect the OS reduce-motion setting. */
