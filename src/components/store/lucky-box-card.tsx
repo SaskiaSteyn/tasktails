@@ -5,11 +5,12 @@ import { Coin } from "@/components/ui/coin";
 
 /**
  * #256 reshaped this from a full-width row into one half of the store's
- * top row: the "Sell items" card moved off Profile to sit beside it
- * ("put the card next to lucky box card, there should be enough space"),
- * so both are now the same compact portrait card — well, name, price,
- * action — sized to the same footprint a `StoreItemCard` already occupies
- * in the two-column phone grid. The horizontal row it used to be does not
+ * top row, beside "Sell items" ("put the card next to lucky box card, there
+ * should be enough space"). **#280 undid the pairing**: selling moved to the
+ * store's own Sell tab, so this is a full-width card again and is the only
+ * thing in that row — which is why the equal-height machinery the pair
+ * needed (`h-full` here, `mt-auto` on the button) is gone; see the note on
+ * the button below. The horizontal row it used to be does not
  * survive being halved: the 52px well plus a trailing button leaves no
  * width for the name in a 300px frame.
  *
@@ -57,7 +58,7 @@ import { Coin } from "@/components/ui/coin";
  */
 export function LuckyBoxCard({ price }: { price: number }) {
   return (
-    <div className="flex h-full flex-col rounded-card border border-border-track bg-warm p-[11px]">
+    <div className="flex flex-col rounded-card border border-border-track bg-warm p-[11px]">
       <div className="flex size-[44px] flex-none items-center justify-center rounded-[11px] bg-amber-tint">
         <Gift size={22} strokeWidth={2} className="text-amber-text" aria-hidden />
       </div>
@@ -71,12 +72,16 @@ export function LuckyBoxCard({ price }: { price: number }) {
         </span>
       </span>
 
-      {/* `mt-auto`: the two cards in this row stretch to a shared height, and
-          their buttons line up with each other rather than each floating
-          under its own copy. */}
+      {/* Plain flow, not `mt-auto` on a `h-full` card. Both existed so this
+          card and "Sell items" beside it could stretch to a shared height
+          with their buttons on one line; #280 moved selling to its own tab
+          and left this card alone and full-width, where the only thing
+          `h-full` + `mt-auto` can do is open a gap between the price and the
+          button (reported live: the card drew roughly 380px tall with ~145px
+          of nothing in the middle). */}
       <Link
         href="/store/lucky-box"
-        className="mt-auto flex h-[32px] items-center justify-center rounded-[10px] bg-terracotta font-display text-[12.5px] font-semibold text-white hover:bg-terracotta-hover"
+        className="flex h-[32px] items-center justify-center rounded-[10px] bg-terracotta font-display text-[12.5px] font-semibold text-white hover:bg-terracotta-hover"
       >
         Open
       </Link>

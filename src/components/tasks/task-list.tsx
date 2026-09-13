@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, PartyPopper, TimerReset } from "lucide-react";
+import { Check, ChevronDown, PartyPopper } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 
@@ -150,8 +150,6 @@ export function TaskList({
     setSyncedCooldown(earningCooldownUntil);
     setCooldownUntil(earningCooldownUntil);
   }
-  // Distinguishes the "just hit 3" moment (warmer copy) from an ongoing pause.
-  const [cooldownJustStarted, setCooldownJustStarted] = useState(false);
   // #285 — the "what this means" disclosure under the cooldown banner.
   const [cooldownHelpOpen, setCooldownHelpOpen] = useState(false);
   const cooldownHelpId = useId();
@@ -243,7 +241,6 @@ export function TaskList({
           xp: body.reward.granted.xp,
         });
         setCooldownUntil(body.reward.cooldownUntil);
-        setCooldownJustStarted(body.reward.cooldownStarted);
       }
       celebrate(body.levelUp);
       celebrateAchievements(body.achievementsUnlocked);
@@ -300,7 +297,6 @@ export function TaskList({
           xp: body.reward.granted.xp,
         });
         setCooldownUntil(body.reward.cooldownUntil);
-        setCooldownJustStarted(body.reward.cooldownStarted);
       }
       celebrate(body.levelUp);
       celebrateAchievements(body.achievementsUnlocked);
@@ -415,55 +411,45 @@ export function TaskList({
       {cooldownUntil ? (
         <div className="mb-3 flex flex-none flex-col rounded-card border border-violet/30 bg-violet-tint px-3 py-[10px] text-[12.5px] font-bold text-violet-text motion-safe:animate-medallion-pop">
           <div className="flex items-center gap-2">
-            <TimerReset size={16} className="flex-none" aria-hidden />
-            {/* `role="status"` sits on the message alone, not on the whole
-                banner: a live region announces anything added inside it, so
-                wrapping the disclosure below would have re-read the banner
-                every time someone opened it. */}
-            <span role="status" className="flex-1">
-              {cooldownJustStarted
-                ? "Nice — that’s 3. Coin & XP earning is on a break."
-                : "Earning paused — coins & XP resume soon."}
-            </span>
+            {/* `role="status"` sits on the sentence alone, not on the whole
+                banner and not on the "Learn more" toggle beside it: a live
+                region announces anything added inside it, so including the
+                disclosure would have re-read the banner every time someone
+                opened it. */}
+            <p className="flex-1">
+              <span role="status">Coin and XP earning are on a break.</span>{" "}
+              {/* #285 — "Earning paused" read as "the app is paused", and
+                  participants were not sure whether to keep going at all.
+                  The banner has no room to say what is and is not affected,
+                  so it says it one tap down. Inline after the sentence
+                  rather than on its own line below (#271): the banner is one
+                  line of copy, and a second stacked control made it read as
+                  two. Every line it reveals is checked against what the code
+                  actually does: `grantEarnings()` withholds coins and XP
+                  outright while a cooldown runs, `recordStreakDay()` runs
+                  before that gate so the streak still counts, and
+                  `grantAchievementReward()` deliberately bypasses the
+                  cooldown because a one-off milestone is not what the pacing
+                  mechanic is aimed at. */}
+              <button
+                type="button"
+                aria-expanded={cooldownHelpOpen}
+                aria-controls={cooldownHelpId}
+                onClick={() => setCooldownHelpOpen((isOpen) => !isOpen)}
+                className="font-bold underline underline-offset-2"
+              >
+                {cooldownHelpOpen ? "Show less" : "Learn more"}
+              </button>
+            </p>
             <CooldownCountdown
               until={cooldownUntil}
               onExpire={() => {
                 setCooldownUntil(null);
-                setCooldownJustStarted(false);
                 router.refresh();
               }}
               className="flex-none font-display text-[14px] font-semibold tabular-nums"
             />
           </div>
-
-          {/* #285 — "Earning paused" reads as "the app is paused", and
-              participants were not sure whether to keep going at all. The
-              banner has no room to say what is and is not affected, so it
-              says it one tap down. Every line below is checked against what
-              the code actually does: `grantEarnings()` withholds coins and
-              XP outright while a cooldown runs, `recordStreakDay()` runs
-              before that gate so the streak still counts, and
-              `grantAchievementReward()` deliberately bypasses the cooldown
-              because a one-off milestone is not what the pacing mechanic is
-              aimed at. */}
-          <button
-            type="button"
-            aria-expanded={cooldownHelpOpen}
-            aria-controls={cooldownHelpId}
-            onClick={() => setCooldownHelpOpen((isOpen) => !isOpen)}
-            className="mt-[7px] flex items-center gap-1 self-start text-[11.5px] font-bold underline underline-offset-2"
-          >
-            {cooldownHelpOpen ? "Show less" : "What this means"}
-            <ChevronDown
-              size={13}
-              strokeWidth={2.4}
-              aria-hidden
-              className={cn(
-                "transition-transform duration-120",
-                cooldownHelpOpen && "rotate-180",
-              )}
-            />
-          </button>
 
           {cooldownHelpOpen ? (
             <ul

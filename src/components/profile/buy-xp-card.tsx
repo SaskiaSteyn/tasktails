@@ -19,9 +19,21 @@ import { cn } from "@/lib/cn";
  * economy the same way, so there's no reason to round-trip for a fixed price.
  * ECO-06's `GET` stays for whatever non-server-rendered consumer needs it.
  *
- * No border, unlike the mock's `#E1D8F0` — `study-overview-card.tsx`'s violet
- * callout already established a borderless `bg-violet-tint` treatment for
- * this app, and that hex has no token to reach for instead.
+ * **Reshaped onto the shared card recipe (#271).** #280 moved this off
+ * Profile into the store's Sell tab, where it sits beside `SellItemsCard` in
+ * the same two-column grid — but it kept its old Profile shape (a wide
+ * borderless violet-tint band with the button on the right), so the two
+ * cards in that row agreed on nothing. It is now the same portrait recipe
+ * `SellItemsCard`/`LuckyBoxCard` use: `border-border-track`/`bg-warm` shell,
+ * 44px tinted well, name, sub-line, full-width action at `mt-auto`.
+ *
+ * The violet survives as the well tint, the icon and the button fill rather
+ * than as the whole card's background — same way sage and amber tell that
+ * other pair apart. The button stays *filled* where `SellItemsCard`'s is
+ * outlined: it is the only control here with a real disabled state (you can
+ * be short of coins), and the disabled treatment is a colour change rather
+ * than `opacity-50`, which on an outline would have had nothing much to
+ * change.
  *
  * A level-up crossing goes straight to ECO-07's `useLevelUp().celebrate()`,
  * same as every other XP-granting action (TASK-05, SUB-05).
@@ -38,10 +50,11 @@ import { cn } from "@/lib/cn";
  * anything behind on the card.
  *
  * The message slot is still used for the two things neither of those can say —
- * a failure, and how many coins short the account is. Convert is `disabled`
- * whenever it can't be afforded (and while one is in flight); the disabled
- * treatment is a real colour change rather than `opacity-50`, which on the
- * violet tint read as "greyed out but probably still tappable".
+ * a failure, and how many coins short the account is. It sits between the
+ * sub-line and the button; `mt-auto` on the button keeps it pinned to the
+ * card's foot either way, so a card carrying a message is no taller than its
+ * row-mate. Convert is `disabled` whenever it can't be afforded (and while
+ * one is in flight).
  */
 export function BuyXpCard({
   costCoins,
@@ -106,33 +119,38 @@ export function BuyXpCard({
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[14px] bg-violet-tint px-[14px] py-[13px]">
-      <div className="min-w-0">
-        <p className="text-[13px] font-extrabold text-violet-text">
-          Buy XP with coins
-        </p>
-        <p className="text-[11px] font-bold text-violet">
-          {costCoins} coins → {gainXp} XP
-        </p>
-        {error ? (
-          <p role="alert" className="mt-1 text-[10px] leading-[1.3] text-urgency-text">
-            {error}
-          </p>
-        ) : !canAfford ? (
-          <p className="mt-1 text-[10px] leading-[1.3] text-ink-faint">
-            Not enough coins — {shortfall.toLocaleString("en-US")} more needed
-          </p>
-        ) : null}
+    <div className="flex h-full flex-col rounded-card border border-border-track bg-warm p-[11px]">
+      <div className="flex size-[44px] flex-none items-center justify-center rounded-[11px] bg-violet-tint">
+        <Sparkles size={22} strokeWidth={2} className="text-violet-text" aria-hidden />
       </div>
 
-      <span className="relative flex-none">
+      <p className="mt-[9px] text-[13px] font-extrabold">Buy XP with coins</p>
+      <p className="mt-[3px] mb-[11px] text-[11px] font-bold text-ink-soft">
+        {costCoins} coins &rarr; {gainXp} XP
+      </p>
+
+      {error ? (
+        <p role="alert" className="mb-[9px] text-[10px] leading-[1.3] text-urgency-text">
+          {error}
+        </p>
+      ) : !canAfford ? (
+        <p className="mb-[9px] text-[10px] leading-[1.3] text-ink-faint">
+          Not enough coins — {shortfall.toLocaleString("en-US")} more needed
+        </p>
+      ) : null}
+
+      {/* `mt-auto`: the two cards in this row stretch to a shared height, and
+          their buttons line up with each other rather than each floating
+          under its own copy — same as `SellItemsCard`/`LuckyBoxCard`. The
+          wrapper is `relative` for the reward pop below. */}
+      <span className="relative mt-auto block">
         <button
           type="button"
           onClick={() => setConfirming(true)}
           disabled={pending || !canAfford}
           className={cn(
-            "flex h-[34px] flex-none items-center justify-center rounded-[10px] bg-violet px-[15px]",
-            "font-display text-[13px] font-semibold text-white transition-colors duration-120 ease-out",
+            "flex h-[32px] w-full items-center justify-center rounded-[10px] bg-violet",
+            "font-display text-[12.5px] font-semibold text-white transition-colors duration-120 ease-out",
             "hover:not-disabled:bg-violet/90",
             "disabled:cursor-not-allowed disabled:bg-violet/40 disabled:text-white/70",
           )}

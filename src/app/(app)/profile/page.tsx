@@ -8,6 +8,7 @@ import { achievementsForUser } from "@/lib/achievements";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { XpCard } from "@/components/economy/xp-card";
+import { Podium } from "@/components/leaderboard/podium";
 import { AchievementsGrid } from "@/components/profile/achievements-grid";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { RankButton } from "@/components/profile/rank-button";
@@ -60,6 +61,13 @@ export default async function ProfilePage() {
   // because the server cannot know the viewport — twelve is simply the most
   // any width shows.
   const achievementsPreview = achievements.slice(0, 12);
+
+  // #271 — the top three, for the podium on this screen. Empty while nobody
+  // has earned anything (LEAD-14): `allTimeLeaderboard()` still ranks
+  // everyone in that state, so the entries exist and are all zero.
+  const podiumEntries = board.entries.some((entry) => entry.score > 0)
+    ? board.entries.slice(0, 3)
+    : [];
 
   return (
     <AppShell
@@ -141,15 +149,41 @@ export default async function ProfilePage() {
           two. Hidden rather than shown empty when this account somehow isn't ranked:
           a card that says "Your rank" with nothing in it is worse than no card,
           and `you` is only ever null for a non-participant, who is redirected
-          away above. */}
+          away above.
+
+          #271 — the podium now sits above the rank row, so the top three read
+          from Profile without a tap. Deliberately *only* the podium and your
+          own standing: the ranked list of everyone else stays on
+          `/profile/leaderboard`, which the rank row still opens. Moving both
+          screens' content onto Profile would just be the leaderboard twice.
+
+          Both halves are the components the leaderboard screen itself uses —
+          the same `Podium` and the same `RankButton` — so there is no second
+          drawing of a podium to drift out of step with the first. */}
       {board.you ? (
-        <div className="mt-4">
-          <RankButton
-            rank={board.you.rank}
-            participantCount={board.participantCount}
-            scored={board.you.score > 0}
-          />
-        </div>
+        <section className="mt-4 rounded-card border border-border-track bg-warm pt-[11px] pb-[11px]">
+          <p className="text-overline px-[13px] text-ink-faint">All time</p>
+
+          {/* LEAD-14 — a podium of three zeroes reads as a bug, and every
+              deployment starts there. The rank row below stays either way:
+              it has its own "no coins earned yet" copy. */}
+          {podiumEntries.length > 0 ? (
+            <Podium entries={podiumEntries} />
+          ) : (
+            <p className="px-[13px] pt-[10px] pb-[11px] text-[11.5px] leading-[1.4] font-bold text-ink-soft">
+              Nobody&rsquo;s on the board yet — complete a task to earn your
+              first coins and take the top spot.
+            </p>
+          )}
+
+          <div className="px-[13px]">
+            <RankButton
+              rank={board.you.rank}
+              participantCount={board.participantCount}
+              scored={board.you.score > 0}
+            />
+          </div>
+        </section>
       ) : null}
 
       {/* #256 moved the "Sell items" card into the store, and #280 moved

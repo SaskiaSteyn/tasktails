@@ -236,54 +236,41 @@ export function StoreItemCard({
 
   const content = (
     <>
-      {/* Header — title + subtitle above the art, per the addendum's card
-          structure ("header → art tile → footer"). The pre-addendum card had
-          these below the well; the addendum's own mock cards lead with the
-          name, and the art tile now spans the card's full width rather than
-          sitting inset above the text. */}
-      <div className="px-[11px] pt-[10px] pb-[9px]">
-        <div className="flex items-start justify-between gap-2">
-          <p
-            className={cn(
-              "min-w-0 flex-1 truncate text-[12.5px] font-extrabold",
-              locked && "text-ink-disabled",
-            )}
-          >
-            {item.name}
-          </p>
+      {/* Art region — leads the card (#271). `design_handoff_rarity`'s own
+          card is drawn art-first: the tile spans the card's full width at
+          the top with the tier chip floating in it, and the name, category
+          and price read underneath. UPDATE-01 §2 had re-cut the rarity
+          treatment onto the older header → art → footer order instead; the
+          rarity reference's anatomy is what ships, so the header block that
+          used to sit above this is now the name block below it.
 
-          {/* #276 — the tier chip lives in the header, not floating in the
-              art tile as the rarity reference draws it. That tile's
-              `top-2 right-2` slot already belongs to the urgency badges
-              (`StockBadge`, `CartActivityBadge`, …) and rarity must not
-              stack with them — UPDATE-01 §2 makes that the one placement
-              change from the reference. */}
-          {tiered ? <RarityChip rarity={item.rarity} /> : null}
-        </div>
-        <p className={cn("text-[10px]", locked ? "text-ink-disabled" : "text-ink-faint")}>
-          {itemSubtitle(item)}
-        </p>
-      </div>
-
-      {/* Art region — full-bleed (no card padding around it, no corner
-          radius of its own): the addendum draws it edge-to-edge between the
-          header and the footer, so its own fill is what separates the two
-          rather than a drawn border. `overflow-hidden` on the card clips it
-          against the card's rounded corners; it never touches them anyway
-          with a header above and a footer below.
-
-          No `mt-auto` here (removed — it used to push this region down to
-          meet the footer at the bottom of the card). `StoreBrowser`'s grid
-          stretches every card in a row to match its tallest neighbour
-          (Grid's default `align-items: stretch`), and a card whose footer
-          has a `footerNote` line (URG-04/05/06/07) is taller than a
-          row-mate without one; `mt-auto` absorbed exactly that difference as
-          blank margin *above* this region — a visible gap between the title
-          and the art with no drawn cause, reported live. `StoreBrowser`'s
-          `items-start` on the grid is the real fix (each card now sizes to
-          its own content instead of stretching at all); this class was the
-          other half of the same hack and is dead weight without it. */}
+          Full-bleed: no card padding around it and no corner radius of its
+          own — the card's `overflow-hidden` clips it against the rounded
+          corners. */}
       <div className="relative">
+        {/* #276 — the tier chip, at the tile's **bottom**-left.
+
+            It was top-left, opposite the urgency badges' top-right corner,
+            which is what UPDATE-01 §2 warned about and what shipping it
+            proved: opposite corners is not the same as clear of each other.
+            A Group B card is ~139px wide in the two-up phone grid, and
+            "COMMON" (~72px) beside "Only 3 left!" (~74px) plus two 8px
+            insets needs 162px. `CurrencyUrgencyBadge overlay`'s "Double XP
+            this hour only!" is ~134px on its own and covered the chip
+            outright. Group A has no badges, so the top-left chip looked
+            correct on every screen that has one.
+
+            Bottom-left is UPDATE-01 §4's own fallback for the crowded case,
+            promoted to the only case: the badges keep the whole top edge,
+            rarity keeps the bottom, and no width of badge copy can reach it.
+            The Epic/Legendary sparkles sit bottom-*right*, so they don't
+            meet it either. */}
+        {tiered ? (
+          <div className="absolute bottom-2 left-2 z-10">
+            <RarityChip rarity={item.rarity} />
+          </div>
+        ) : null}
+
         {badge && (
           <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-1">
             {badge}
@@ -292,9 +279,16 @@ export function StoreItemCard({
         <ItemWell
           item={item}
           locked={locked}
-          size={82}
-          iconSize={locked ? 40 : 32}
-          animalIconSize={54}
+          // 120, not the 96 this shipped at (#271, reported live): the chip
+          // floats at `top-2` and is ~17px tall, so on a 96px tile a centred
+          // 62px piece of art started 17px down and the chip sat on top of
+          // it — plainly wrong on the Moustache and the Penguin kit, whose
+          // ink reaches the top of their own boxes. At 120 the art starts
+          // 29px down, four clear pixels under the chip, with no change to
+          // the art's own size or centring.
+          size={120}
+          iconSize={locked ? 44 : 36}
+          animalIconSize={62}
           rounded="rounded-none"
           fullWidth
           bgClassNameOverride={tiered ? tier.field : undefined}
@@ -303,21 +297,43 @@ export function StoreItemCard({
         />
       </div>
 
-      <div className={cn("border-t px-[11px] py-[10px]", tiered ? tier.frame : "border-border-track")}>
+      {/* Name + category. The hairline that used to close the art tile from
+          below (the old footer's `border-t`) is this block's `border-t` now —
+          the same line in the same place, still directly under the tile. */}
+      <div
+        className={cn(
+          "border-t px-[11px] pt-[9px]",
+          tiered ? tier.frame : "border-border-track",
+        )}
+      >
+        <p
+          className={cn(
+            "truncate text-[12.5px] font-extrabold",
+            locked && "text-ink-disabled",
+          )}
+        >
+          {item.name}
+        </p>
+        <p className={cn("text-[10px]", locked ? "text-ink-disabled" : "text-ink-faint")}>
+          {itemSubtitle(item)}
+        </p>
+      </div>
+
+      <div className="px-[11px] pt-[8px] pb-[10px]">
         {footerNote}
 
         {locked ? (
           /* Plain centred line, not the pre-addendum lock-icon pill — the
-             addendum's locked card puts the padlock in the art region above
-             and leaves the footer as bare text ("Unlocks at level 7").
+             padlock reads once, large, in the art region above, and the
+             footer is bare text ("Unlocks at level 7").
 
              `min-h-[28px]`: the unlocked footer's height is set by its 28px
              "+" button, and a bare text line left the locked card ~14px
-             shorter than its row-mates (the grid is `items-start`, so nothing
-             was stretching it back). Matching the button's height here makes
-             the two cards the same height by construction rather than by
-             pinning a card height that the title or a `footerNote` could
-             later change. */
+             shorter than its row-mates (the grid is `items-start`, so
+             nothing was stretching it back). Matching the button's height
+             here makes the two cards the same height by construction rather
+             than by pinning a card height that the title or a `footerNote`
+             could later change. */
           <p className="flex min-h-[28px] items-center justify-center text-center text-[11px] font-extrabold text-ink-soft">
             Unlocks at level {item.levelRequired}
           </p>

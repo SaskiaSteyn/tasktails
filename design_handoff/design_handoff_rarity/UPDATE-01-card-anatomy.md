@@ -1,9 +1,28 @@
 # Update 01 — one card anatomy everywhere
 
 **Amends:** `design_handoff_rarity/README.md` §"Screens / Views" 1–3
-**Status:** supersedes the card *layout* in that README. The rarity **colour system** (tier tokens,
-shiny gradient, effects, product rules) is unchanged except for the tier-list correction in §3 below.
-**Fidelity:** high — sizes, colours and placements here are final.
+**Status:** the **tier list** (§3) and the **colour system** (tier tokens, shiny gradient, effects,
+product rules) stand and are what ships. §2's *card anatomy* does **not** — see the note directly
+below.
+**Fidelity:** high — sizes, colours and placements here are final, §2's ordering excepted.
+
+> **Reversed 2026-09-12 (#271).** §1–2 below argue for keeping the shipped
+> header → art → footer order and re-cutting the rarity treatment onto it. That call was
+> overturned: **the rarity reference's art-first anatomy is what ships.** The store card now reads
+> tile → name/category → price, with the tier chip floating in the tile's **bottom-left** corner —
+> the urgency badges keep the entire top edge, which was §2's one genuinely load-bearing point (a
+> first attempt put the chip at top-left and the two collided at phone width: see §4's own fallback,
+> now the only case). Everything
+> else in this document — the tier table, the field effects, the sheen, the sparkles, the row recipe
+> in §5, the rules in §7 — is unaffected and still authoritative.
+>
+> Shipped metrics on the phone card: tile `size={120}` full-width and square-cornered; name block
+> `border-t <tier.frame>` `px-[11px] pt-[9px]`, name `text-[12.5px] font-extrabold truncate`,
+> subtitle `text-[10px] text-ink-faint`; price row `px-[11px] pt-[8px] pb-[10px]`, unchanged
+> contents. The tile grew from §2's 82px so the chip clears the art: at 96px (the first attempt) a
+> centred 62px piece of art started 17px down and the floating chip covered its top edge, so it is
+> 120px — art starts 29px down, four clear pixels under the chip.
+> See `src/components/store/store-item-card.tsx` and `src/app/(app)/store/loading.tsx`.
 
 ---
 
@@ -21,8 +40,10 @@ footer   price + "+"              ← separated by a hairline
 ```
 
 Two anatomies for the same object is the actual defect: the store grid, the cart rail, the Lucky Box
-cards and the rarity mocks all draw a "card" and none of them agree on where the name sits. **The
-shipped header → art → footer anatomy wins.** It is already in production, it survives a long name
+cards and the rarity mocks all draw a "card" and none of them agree on where the name sits.
+~~**The shipped header → art → footer anatomy wins.**~~ *(Reversed — see the note at the top. The
+art-first anatomy wins; the paragraph below is kept for the reasoning it records, not as the
+decision.)* It is already in production, it survives a long name
 (the header truncates rather than shoving the art down), it keeps the price row a fixed height across
 locked/unlocked/discounted variants, and it is the layout the two-up phone grid was tuned for.
 
@@ -45,7 +66,7 @@ the same card at the same metrics; do **not** widen the card to fill a wide colu
   `border-track`, so an untiered/Common card is visually identical to today apart from the .5px.
 - Shadow: `<tier.shadow>` (§3). No shadow on Common.
 
-**Header** — `px-[11px] pt-[10px] pb-[9px]`
+**Header** *(reversed — the name block sits under the art tile now, see the note at the top)* — `px-[11px] pt-[10px] pb-[9px]`
 - Name `text-[12.5px] font-extrabold`, `truncate`.
 - Subtitle `text-[10px] text-ink-faint` — `itemSubtitle(item)`, unchanged.
 - **Tier chip** sits here, right-aligned on the name's row (`flex items-start justify-between gap-2`):
@@ -54,6 +75,12 @@ the same card at the same metrics; do **not** widen the card to fill a wide colu
   *This is the one placement change from the reference:* the badge moves out of the art tile so the
   tile's `top-2 right-2` slot stays free for the urgency badges (`StockBadge`,
   `CartActivityBadge`, …), which already own that corner and must not stack with rarity.
+  **As shipped (#271):** the chip is back in the tile as the reference draws it, but at
+  `bottom-2 left-2`, not the reference's top-left. Opposite *corners* was not enough at phone
+  width — a ~139px card cannot hold "COMMON" (~72px) beside "Only 3 left!" (~74px), and
+  `CurrencyUrgencyBadge overlay` is ~134px on its own and covered the chip outright. The badges own
+  the whole top edge; rarity owns the bottom. This paragraph's concern was right; only its remedy
+  changed.
 
 **Art tile** — `ItemWell`, `size={82}`, `fullWidth`, `rounded="rounded-none"` (unchanged geometry)
 - Fill: **`<tier.field>`** instead of the category tint. `ItemWell` gains a `field` override; when

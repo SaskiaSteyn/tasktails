@@ -9,8 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
  *
  * Mirrors `StoreBrowser`: the 38px search field, the scrolling category chip
  * row, then the 2-column `gap-[11px]` grid of `StoreItemCard`s. The card
- * copies that component's three real regions — title block, 82px `ItemWell`,
- * bordered price footer — so the grid's row height is right rather than
+ * copies that component's three real regions — 120px `ItemWell`, the
+ * bordered name block under it, price row — so the grid's row height is right rather than
  * guessed, and the real cards drop straight into the same boxes.
  *
  * The header takes `action` because this screen's header carries the cart icon
@@ -56,13 +56,13 @@ export default function Loading() {
             key={i}
             className="flex w-full flex-col overflow-hidden rounded-card border border-border-track bg-surface"
           >
-            <div className="px-[11px] pt-[10px] pb-[9px]">
+            {/* `ItemWell` at `size={120}`, full width and square-cornered. */}
+            <Skeleton className="h-[120px] w-full flex-none rounded-none" />
+            <div className="border-t border-border-track px-[11px] pt-[9px]">
               <Skeleton className={`h-[13px] rounded-chip ${width}`} />
               <Skeleton className="mt-[5px] h-[10px] w-[48%] rounded-chip" />
             </div>
-            {/* `ItemWell` at `size={82}`, full width and square-cornered. */}
-            <Skeleton className="h-[82px] w-full flex-none rounded-none" />
-            <div className="border-t border-border-track px-[11px] py-[10px]">
+            <div className="px-[11px] pt-[8px] pb-[10px]">
               <div className="flex items-center justify-between gap-2">
                 <Skeleton className="h-[14px] w-[44px] rounded-chip" />
                 <Skeleton className="size-7 flex-none rounded-full" />
