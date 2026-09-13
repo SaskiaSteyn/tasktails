@@ -40,6 +40,8 @@ function petRow(overrides: Partial<PetWithItem> = {}): PetWithItem {
     happiness: 60,
     hunger: 40,
     lastInteractedAt: at(12),
+    shiny: false,
+    equippedItems: [],
     storeItem: {
       id: "item-1",
       name: "Koala",
@@ -193,6 +195,21 @@ describe("recordPetInteraction", () => {
 
     expect(prismaMock.pet.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ happiness: 100 }) }),
+    );
+  });
+
+  it("gives a shiny pet in a shiny item 30% more happiness", async () => {
+    // #289 — the pet and one of its two items are shiny: two sources.
+    const pet = petRow({ shiny: true, equippedItems: [{ shiny: true }, { shiny: false }] } as never);
+    prismaMock.pet.findFirst.mockResolvedValue(pet);
+    prismaMock.pet.update.mockImplementation(
+      (args) => Promise.resolve({ ...pet, ...(args.data as object) }) as never,
+    );
+
+    await recordPetInteraction("user-1", "pet-1", at(12));
+    // 60 + round(7 × 1.3) = 69.
+    expect(prismaMock.pet.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ happiness: 69 }) }),
     );
   });
 

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { ShinyPill } from "@/components/store/shiny";
 import { cn } from "@/lib/cn";
+import { SHINY_HAPPINESS_BONUS } from "@/lib/feed-value";
 import { rarityTokens } from "@/lib/rarity";
 // Type-only: erased at compile time, so this doesn't pull `src/lib/inventory.ts`
 // or `src/lib/pets.ts`'s Prisma imports into the client bundle.
@@ -105,8 +106,11 @@ export function AnimalCard({
   foodItems,
   backgroundUrl,
   accessoryUrls,
+  shinySources = 0,
 }: {
   pet: PetWithItem;
+  /** #289 — the pet itself and each shiny item it has on; each adds to its happiness gains. */
+  shinySources?: number;
   /** The user's owned food (PET-04) — per-user, not per-animal, so `/zoo/[id]` fetches it once and passes the same list to every card. */
   foodItems: InventoryItemWithStoreItem[];
   /** This pet's equipped decoration art, if any (`equippedBackgroundForPet()` in `src/lib/inventory.ts`) — replaces the stage's flat gradient outright when present. */
@@ -390,6 +394,12 @@ export function AnimalCard({
                 <Heart size={13} strokeWidth={2.2} />
                 HAPPINESS
               </span>
+              {shinySources > 0 ? (
+                <ShinyPill
+                  className="ml-auto"
+                  label={`+${Math.round(SHINY_HAPPINESS_BONUS * shinySources * 100)}% mood`}
+                />
+              ) : null}
             </div>
             <ProgressBar
               tone={happinessTone}
@@ -508,6 +518,7 @@ export function AnimalCard({
         petId={pet.id}
         petName={name}
         foodItems={foodItems}
+        shinySources={shinySources}
       />
     </div>
   );

@@ -10,7 +10,7 @@ import {
   type InventoryItemWithStoreItem,
   unequipCustomization,
 } from "@/lib/inventory";
-import { feedEffectOf } from "@/lib/feed-value";
+import { feedEffectOf, shinySourcesOf, withShinyBonus } from "@/lib/feed-value";
 import { decayedStateFor } from "@/lib/pet-decay";
 import { prisma } from "@/lib/prisma";
 import { logTelemetryEvent } from "@/lib/telemetry";
@@ -37,7 +37,8 @@ export type PetWithItem = Pet & { storeItem: StoreItem };
 function findPetRaw(userId: string, petId: string) {
   return prisma.pet.findFirst({
     where: { id: petId, userId },
-    include: { storeItem: true },
+    // #289 — only the shiny flag of what it has on, for `shinySourcesOf()`.
+    include: { storeItem: true, equippedItems: { select: { shiny: true } } },
   });
 }
 
@@ -92,9 +93,16 @@ export async function petForUser(
   userId: string,
   petId: string,
   now: Date = new Date(),
-): Promise<PetWithItem | null> {
+): Promise<(PetWithItem & { shinySources: number }) | null> {
   const pet = await findPetRaw(userId, petId);
-  return pet ? { ...pet, ...decayedStateFor(pet, now) } : null;
+  return pet
+    ? {
+        ...pet,
+        ...decayedStateFor(pet, now),
+        // #289 — so the Sanctuary can show the bonus it is getting.
+        shinySources: shinySourcesOf(pet),
+      }
+    : null;
 }
 
 /** PET-03's happiness boost from a single "Pet" interaction (README's mock: "Pet +7 happiness"). */
@@ -143,7 +151,11 @@ export async function recordPetInteraction(
   if (!pet) return null;
 
   const decayed = decayedStateFor(pet, now);
-  const happiness = Math.min(100, decayed.happiness + PET_HAPPINESS_BOOST);
+  const happiness = Math.min(
+    100,
+    decayed.happiness +
+      withShinyBonus(PET_HAPPINESS_BOOST, shinySourcesOf(pet)),
+  );
 
   return prisma.$transaction(async (tx) => {
     await incrementPetInteractionCount(tx, userId);
@@ -232,7 +244,10 @@ export async function recordFeedInteraction(
     // without a second read.
     const effect = feedEffectOf(item.storeItem.rarity);
     const hunger = Math.max(0, decayed.hunger + effect.hunger);
-    const happiness = Math.min(100, decayed.happiness + effect.happiness);
+    const happiness = Math.min(
+      100,
+      decayed.happiness + withShinyBonus(effect.happiness, shinySourcesOf(pet)),
+    );
 
     const updatedPet = await tx.pet.update({
       where: { id: petId },
