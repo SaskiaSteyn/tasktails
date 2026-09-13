@@ -32,7 +32,12 @@ import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
 import { levelOf, storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
 import { logTelemetryEvent } from "@/lib/telemetry";
-import { fakeDiscountPricing, urgencyDataForItems } from "@/lib/urgency";
+import {
+  fakeDiscountPricing,
+  flashSaleOnDay,
+  urgencyDataForItems,
+  urgencyDayKey,
+} from "@/lib/urgency";
 
 export const metadata: Metadata = {
   title: "Store · TaskTails",
@@ -75,12 +80,24 @@ export const metadata: Metadata = {
  * per keystroke, since STOR-02 asks for real-time filtering and every item's
  * `locked` state is already resolved for this user in the one server read.
  *
- * `showFlashSale` (URG-01) goes through `groupGatedData()` — `true` for Group
- * B, `null` for Group A/signed-out — rather than `currentStudyGroup()`
- * directly, both to reuse the one enforcement point INF-17 built for exactly
- * this and to keep the group value itself from ever reaching a client
- * component: only the pre-decided `<FlashSaleBanner />` element (or `null`)
- * crosses into `StoreBrowser`, never a boolean the client could branch on.
+ * `showFlashSale` (URG-01) goes through `groupGatedData()` — `null` for Group
+ * A/signed-out — rather than `currentStudyGroup()` directly, both to reuse the
+ * one enforcement point INF-17 built for exactly this and to keep the group
+ * value itself from ever reaching a client component: only the pre-decided
+ * `<FlashSaleBanner />` element (or `null`) crosses into `StoreBrowser`, never
+ * a boolean the client could branch on.
+ *
+ * **#291 — it is no longer `true` on every Group B day.** `flashSaleOnDay()`
+ * rests the discount layer one UTC day in three, seeded per participant, for
+ * the same habituation reason #187 already rotates the per-item badges: this
+ * was the one Group B stimulus that never varied, and a store that is always
+ * 20% off is not having a sale. It gates three things together, deliberately —
+ * the banner, the inflated list prices and the three curated cards below. A
+ * rest day still shows Group B's per-item badges and footer notes
+ * (`urgencyRows` is seeded separately); it is a break from the *discount*, not
+ * from the condition. On a rest day the three curated names fall back to their
+ * own seeded treatment like every other item, rather than showing curated copy
+ * with no sale behind it.
  *
  * `urgencyBadges` (URG-02/URG-03) follows the same `groupGatedData()`
  * pattern, one level deeper: `urgencyDataForItems()` (URG-08) needs the
@@ -183,22 +200,42 @@ export default async function StorePage({
   // The `/api/telemetry/*` routes keep awaiting theirs: writing the row *is*
   // their response, and `session-end`'s `sendBeacon` would lose the event if
   // the handler returned first.
-  after(() => logTelemetryEvent(userId, "STORE_VISIT", {}));
+  // #291 — one instant for the whole render. Every fabricated stimulus used to
+  // call `new Date()` for itself, so a request that crossed 00:00 UTC could
+  // seed the badges from one day and the flash sale from the next; more to the
+  // point, nothing recorded *which* day a participant was shown. Threaded from
+  // here, and logged with the visit below.
+  const now = new Date();
 
   const [cart, economy, showFlashSale, urgencyRows, level, luckyBoxUrgencyRow] =
     await Promise.all([
       cartForUser(userId),
       currentEconomy(),
-      groupGatedData(() => true),
+      groupGatedData(() => flashSaleOnDay(userId, now)),
       groupGatedData(() =>
         urgencyDataForItems(
           userId,
           items.map((item) => item.id),
+          now,
         ),
       ),
       levelOf(userId),
-      groupGatedData(() => luckyBoxUrgencyForUser(userId)),
+      groupGatedData(() => luckyBoxUrgencyForUser(userId, now)),
     ]);
+
+  // #291 — what this visit was actually shown, so the analysis can rebuild it.
+  // `urgencyDay` plus the participant's id is the whole seed: handing that
+  // string back to `urgencyDataForItems()`/`flashSaleOnDay()` reproduces every
+  // badge, note and number on this page exactly, months later, with no need to
+  // have stored any of them. `flashSale` is null for Group A, who has no
+  // urgency layer at all — the same shape `groupGatedData()` returns, so a
+  // Group A row is distinguishable from a Group B rest day.
+  after(() =>
+    logTelemetryEvent(userId, "STORE_VISIT", {
+      urgencyDay: urgencyDayKey(now),
+      flashSale: showFlashSale,
+    }),
+  );
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
 
   const urgencyBadges: Record<string, ReactNode> = {};

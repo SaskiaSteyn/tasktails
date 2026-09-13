@@ -280,8 +280,12 @@ export type LuckyBoxUrgencyData = {
  * gets, so the Lucky Box's "N opened in the last hour" isn't left as the one
  * frozen stimulus.
  */
-export function luckyBoxUrgencyForUser(userId: string): LuckyBoxUrgencyData {
+export function luckyBoxUrgencyForUser(
+  userId: string,
+  /** #291 — passed in by `StorePage` so every stimulus on one render shares one instant, rather than each calling `new Date()` and risking a straddled UTC midnight. */
+  date: Date = new Date(),
+): LuckyBoxUrgencyData {
   return {
-    recentPulls: seededInt(userId, "lucky-box", "recentPurchases", 15, 30),
+    recentPulls: seededInt(userId, "lucky-box", "recentPurchases", 15, 30, date),
   };
 }
