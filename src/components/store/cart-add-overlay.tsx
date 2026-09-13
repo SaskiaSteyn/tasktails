@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ShoppingCart } from "lucide-react";
+import { Check, Gift, ShoppingCart } from "lucide-react";
 import { useEffect } from "react";
 
 import { cn } from "@/lib/cn";
@@ -43,11 +43,15 @@ export const CART_TOAST_MS = 2200;
 /** A measured rectangle, flattened to what this needs — `DOMRect` itself is not plain state. */
 export type Point = { x: number; y: number };
 
+/** Where an add flies to: the cart, or My boxes for a bought Lucky Box. */
+export type AddTarget = "cart" | "boxes";
+
 export type CartAdd = {
   /** Bumped per add, so re-adding the same item restarts both animations. */
   id: number;
   /** "2 Sunflower seeds" or "Sunflower seeds" — whatever the card called it. */
   label: string;
+  target: AddTarget;
   /** Centre of the cart icon. Null when no cart icon is on screen (the `xl:` layout shows the rail instead). */
   cart: Point | null;
   /** Centre of the pressed "+". Null when it could not be measured; the flight is skipped, the toast is not. */
@@ -75,7 +79,11 @@ export function CartAddOverlay({
 
   const flight =
     add.origin && add.cart
-      ? { from: add.origin, dx: add.cart.x - add.origin.x, dy: add.cart.y - add.origin.y }
+      ? {
+          from: add.origin,
+          dx: add.cart.x - add.origin.x,
+          dy: add.cart.y - add.origin.y,
+        }
       : null;
 
   return (
@@ -110,7 +118,10 @@ export function CartAddOverlay({
             ? // Under the icon and right-aligned to it, clamped away from the
               // viewport edge so a cart icon near the corner does not push the
               // toast off screen.
-              { top: add.cart.y + 24, right: Math.max(12, window.innerWidth - add.cart.x - 20) }
+              {
+                top: add.cart.y + 24,
+                right: Math.max(12, window.innerWidth - add.cart.x - 20),
+              }
             : // No cart icon on screen: centre it at the top rather than
               // anchoring to nothing.
               { top: 16, left: "50%", transform: "translateX(-50%)" }
@@ -122,11 +133,17 @@ export function CartAddOverlay({
         )}
       >
         <span className="flex size-[22px] flex-none items-center justify-center rounded-full bg-sage text-white">
-          <ShoppingCart size={12} strokeWidth={2.4} />
+          {add.target === "boxes" ? (
+            <Gift size={12} strokeWidth={2.4} />
+          ) : (
+            <ShoppingCart size={12} strokeWidth={2.4} />
+          )}
         </span>
         <span className="min-w-0 text-[12px] leading-tight font-bold text-ink">
           <span className="block truncate">{add.label}</span>
-          <span className="block text-[11px] font-semibold text-ink-soft">Added to cart</span>
+          <span className="block text-[11px] font-semibold text-ink-soft">
+            {add.target === "boxes" ? "Added to My boxes" : "Added to cart"}
+          </span>
         </span>
       </div>
     </div>

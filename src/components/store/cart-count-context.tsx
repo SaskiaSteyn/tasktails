@@ -1,8 +1,20 @@
 "use client";
 
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
-import { CartAddOverlay, type CartAdd, type Point } from "@/components/store/cart-add-overlay";
+import {
+  CartAddOverlay,
+  type AddTarget,
+  type CartAdd,
+  type Point,
+} from "@/components/store/cart-add-overlay";
 
 /**
  * Shares the store's cart state between the header badge (`CartLink`)
@@ -31,15 +43,22 @@ type CartCountValue = {
   /**
    * Raise the add-to-cart flourish (#274). `origin` is the element that was
    * pressed, used as the flight's starting point — pass null and the toast
-   * still shows, just without the travel.
+   * still shows, just without the travel. `target` "boxes" flies a bought
+   * Lucky Box to the My boxes button instead of the cart.
    */
-  announceAdded: (label: string, origin: HTMLElement | null) => void;
+  announceAdded: (
+    label: string,
+    origin: HTMLElement | null,
+    target?: AddTarget,
+  ) => void;
   /**
    * Registers a cart icon as the flourish's target. A callback ref: React
    * calls it with the node on mount and with null on unmount, so the set
    * below stays honest as breakpoints swap one `CartLink` for another.
    */
   registerCartAnchor: (node: HTMLElement | null) => void;
+  /** The same, for `MyBoxesLink` — a bought Lucky Box's target. */
+  registerBoxesAnchor: (node: HTMLElement | null) => void;
 };
 
 const CartCountContext = createContext<CartCountValue | null>(null);
@@ -66,29 +85,46 @@ export function CartCountProvider({
   // query. Only the one actually laid out is a sensible target, which is
   // what the `offsetParent` check below picks out. At `xl:` neither shows
   // (the cart rail replaces them) and there is simply no target.
-  const anchors = useRef(new Set<HTMLElement>());
+  const anchors = useRef<Record<AddTarget, Set<HTMLElement>>>({
+    cart: new Set(),
+    boxes: new Set(),
+  });
   const nextId = useRef(0);
 
   const registerCartAnchor = useCallback((node: HTMLElement | null) => {
     if (!node) return;
-    anchors.current.add(node);
+    anchors.current.cart.add(node);
     return () => {
-      anchors.current.delete(node);
+      anchors.current.cart.delete(node);
     };
   }, []);
 
-  const announceAdded = useCallback((label: string, origin: HTMLElement | null) => {
-    // `offsetParent` is null for a `display: none` element, which is exactly
-    // what the hidden-at-this-width `CartLink` is.
-    const visible = [...anchors.current].find((node) => node.offsetParent !== null);
-
-    setAdd({
-      id: (nextId.current += 1),
-      label,
-      cart: visible ? centreOf(visible) : null,
-      origin: origin ? centreOf(origin) : null,
-    });
+  const registerBoxesAnchor = useCallback((node: HTMLElement | null) => {
+    if (!node) return;
+    anchors.current.boxes.add(node);
+    return () => {
+      anchors.current.boxes.delete(node);
+    };
   }, []);
+
+  const announceAdded = useCallback(
+    (label: string, origin: HTMLElement | null, target: AddTarget = "cart") => {
+      // `offsetParent` is null for a `display: none` element, which is exactly
+      // what the hidden-at-this-width `CartLink` is.
+      const visible = [...anchors.current[target]].find(
+        (node) => node.offsetParent !== null,
+      );
+
+      setAdd({
+        id: (nextId.current += 1),
+        label,
+        target,
+        cart: visible ? centreOf(visible) : null,
+        origin: origin ? centreOf(origin) : null,
+      });
+    },
+    [],
+  );
 
   const dismiss = useCallback(() => setAdd(null), []);
 
@@ -99,6 +135,7 @@ export function CartCountProvider({
         increment: () => setCount((c) => c + 1),
         announceAdded,
         registerCartAnchor,
+        registerBoxesAnchor,
       }}
     >
       {children}

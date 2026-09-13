@@ -19,6 +19,7 @@ function add(overrides: Partial<CartAdd> = {}): CartAdd {
   return {
     id: 1,
     label: "Sunflower seeds",
+    target: "cart",
     origin: { x: 100, y: 400 },
     cart: { x: 280, y: 60 },
     ...overrides,

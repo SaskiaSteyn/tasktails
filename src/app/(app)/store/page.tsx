@@ -18,16 +18,20 @@ import { CurrencyUrgencyBadge } from "@/components/store/currency-urgency-badge"
 import { FlashSaleBanner } from "@/components/store/flash-sale-banner";
 import { LuckyBoxOddsBoostBanner } from "@/components/store/lucky-box-odds-boost-banner";
 import { LuckyBoxRecentPullsNote } from "@/components/store/lucky-box-recent-pulls-note";
+import { MyBoxesLink } from "@/components/store/my-boxes-link";
 import { RecentPurchasesBadge } from "@/components/store/recent-purchases-badge";
 import { StockBadge } from "@/components/store/stock-badge";
-import { StoreBrowser } from "@/components/store/store-browser";
+import {
+  StoreBrowser,
+  type StoreFilter,
+} from "@/components/store/store-browser";
 import { UrgencyLanguageNote } from "@/components/store/urgency-language-note";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
 import { cartForUser } from "@/lib/cart";
 import { currentEconomy } from "@/lib/economy";
-import { LUCKY_BOX_COST_COINS, luckyBoxUrgencyForUser } from "@/lib/gacha";
+import { luckyBoxUrgencyForUser, waitingLuckyBoxCount } from "@/lib/gacha";
 import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
 import { levelOf, storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
@@ -157,9 +161,8 @@ export const metadata: Metadata = {
  * level" state's progress bar/levels-to-go label without a second fetch
  * when a locked card is tapped.
  *
- * `luckyBoxPrice` (`GACHA-10`) is `gacha.ts`'s `LUCKY_BOX_COST_COINS`,
- * passed down as a plain number rather than importing it into the client
- * `StoreBrowser` directly — see `LuckyBoxCard`'s own doc comment for why.
+ * `unopenedBoxes` is the My boxes badge (`design_handoff_lucky_boxes` §2),
+ * drawn in the phone header here and beside the search from `desk:` up.
  *
  * `luckyBoxUrgency` (`GACHA-11`) is the same `groupGatedData()` pattern as
  * `showFlashSale`, one level deeper like `urgencyRows`: `null` for Group A,
@@ -167,8 +170,9 @@ export const metadata: Metadata = {
  * .../></>` pair — the entire decided subtree, not a boolean, per
  * `StoreBrowser`'s own `luckyBoxUrgency` doc comment.
  */
-/** The four real `StoreItemCategory` values `?category=` may deep-link to — anything else falls back to "ALL", same as never passing the param at all. */
+/** The `?category=` values that deep-link to a chip — the four real `StoreItemCategory` values plus "BOXES" (My boxes' empty state). Anything else falls back to "ALL", same as never passing the param at all. */
 const DEEP_LINKABLE_CATEGORIES = [
+  "BOXES",
   "FOOD",
   "ACCESSORIES",
   "ANIMALS",
@@ -187,7 +191,7 @@ export default async function StorePage({
 
   const { category } = await searchParams;
   const initialCategory = DEEP_LINKABLE_CATEGORIES.includes(category ?? "")
-    ? (category as "FOOD" | "ACCESSORIES" | "ANIMALS" | "DECORATIONS")
+    ? (category as StoreFilter)
     : "ALL";
 
   const items = await storeItemsForUser(userId);
@@ -207,21 +211,29 @@ export default async function StorePage({
   // here, and logged with the visit below.
   const now = new Date();
 
-  const [cart, economy, showFlashSale, urgencyRows, level, luckyBoxUrgencyRow] =
-    await Promise.all([
-      cartForUser(userId),
-      currentEconomy(),
-      groupGatedData(() => flashSaleOnDay(userId, now)),
-      groupGatedData(() =>
-        urgencyDataForItems(
-          userId,
-          items.map((item) => item.id),
-          now,
-        ),
+  const [
+    cart,
+    economy,
+    showFlashSale,
+    urgencyRows,
+    level,
+    luckyBoxUrgencyRow,
+    unopenedBoxes,
+  ] = await Promise.all([
+    cartForUser(userId),
+    currentEconomy(),
+    groupGatedData(() => flashSaleOnDay(userId, now)),
+    groupGatedData(() =>
+      urgencyDataForItems(
+        userId,
+        items.map((item) => item.id),
+        now,
       ),
-      levelOf(userId),
-      groupGatedData(() => luckyBoxUrgencyForUser(userId, now)),
-    ]);
+    ),
+    levelOf(userId),
+    groupGatedData(() => luckyBoxUrgencyForUser(userId, now)),
+    waitingLuckyBoxCount(userId),
+  ]);
 
   // #291 — what this visit was actually shown, so the analysis can rebuild it.
   // `urgencyDay` plus the participant's id is the whole seed: handing that
@@ -335,7 +347,17 @@ export default async function StorePage({
   return (
     <CartCountProvider initialCount={cartCount}>
       <AppShell
-        header={<PersistentHeader title="Store" action={<CartLink />} />}
+        header={
+          <PersistentHeader
+            title="Store"
+            action={
+              <>
+                <MyBoxesLink count={unopenedBoxes} />
+                <CartLink />
+              </>
+            }
+          />
+        }
         nav={<BottomNav />}
         // `desk:overflow-hidden`: from the rail width up, the category column,
         // the item grid and the cart each own their own scroll, so `main`
@@ -372,7 +394,7 @@ export default async function StorePage({
             bundleQuantities={bundleQuantities}
             level={level}
             initialCategory={initialCategory}
-            luckyBoxPrice={LUCKY_BOX_COST_COINS}
+            unopenedBoxes={unopenedBoxes}
             coins={economy?.coins ?? 0}
             buyXpCost={BUY_XP_COST_COINS}
             buyXpGain={BUY_XP_GAIN_XP}

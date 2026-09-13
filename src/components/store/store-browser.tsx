@@ -12,12 +12,14 @@ import {
 
 import { CartLink } from "@/components/store/cart-link";
 import { LockedByLevelState } from "@/components/store/locked-by-level-state";
-import { LuckyBoxCard } from "@/components/store/lucky-box-card";
+import { LuckyBoxesGroup } from "@/components/store/lucky-boxes-group";
+import { MyBoxesLink } from "@/components/store/my-boxes-link";
 import { SellItemsCard } from "@/components/store/sell-items-card";
 import { BuyXpCard } from "@/components/profile/buy-xp-card";
 import { StoreItemCard } from "@/components/store/store-item-card";
 import type { StoreItemCategory } from "@/generated/prisma/client";
 import { cn } from "@/lib/cn";
+import { LUCKY_BOXES } from "@/lib/lucky-boxes";
 import type { StoreItemWithLock } from "@/lib/store";
 
 /**
@@ -37,8 +39,12 @@ import type { StoreItemWithLock } from "@/lib/store";
  */
 const PAGE_SIZE = 24;
 
-const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
+/** "BOXES" is the Lucky boxes group on its own — boxes are not a `StoreItemCategory`. */
+export type StoreFilter = StoreItemCategory | "ALL" | "BOXES";
+
+const CATEGORY_CHIPS: { label: string; value: StoreFilter }[] = [
   { label: "All", value: "ALL" },
+  { label: "Boxes", value: "BOXES" },
   { label: "Food", value: "FOOD" },
   { label: "Accessories", value: "ACCESSORIES" },
   { label: "Animals", value: "ANIMALS" },
@@ -104,18 +110,16 @@ const CATEGORY_CHIPS: { label: string; value: StoreItemCategory | "ALL" }[] = [
  * content, keep the chrome" pattern `CartPanel`'s empty/confirmation states
  * use, rather than a modal stacked on top.
  *
- * `luckyBoxPrice` (`GACHA-10`) renders `<LuckyBoxCard />` above the grid,
- * per the approved gacha design board — a plain number since it isn't
- * study-group-gated. #256 put `<SellItemsCard />` beside it as the row's
- * second half; that one takes no props at all, so it is rendered here
- * rather than threaded down from `StorePage`.
+ * The Lucky boxes group (`design_handoff_lucky_boxes` 1a) leads the
+ * unfiltered store and is the whole of the "Boxes" chip; any other category
+ * hides it (user's direction, 2026-09-13). A search narrows it by name like
+ * everything else. `unopenedBoxes` is the My boxes badge count.
  *
- * `luckyBoxUrgency` (`GACHA-11`) is study-group-gated, though — the Group B
- * odds-boost banner plus recent-pulls line, rendered unexamined below that
- * row (it used to go inside `LuckyBoxCard`'s own `extra` slot; see that
- * component for why halving the card evicted it), same `ReactNode`-slot
- * reasoning `flashSaleBanner` already established: this component never
- * branches on it, just draws whatever `StorePage` decided.
+ * `luckyBoxUrgency` (`GACHA-11`) is study-group-gated — the Group B
+ * odds-boost banner plus recent-pulls line, handed to the group unexamined,
+ * same `ReactNode`-slot reasoning `flashSaleBanner` already established:
+ * this component never branches on it, just draws whatever `StorePage`
+ * decided.
  */
 /** #280 — the two store modes, in the order they are arrowed through. */
 const TABS = [
@@ -133,7 +137,7 @@ export function StoreBrowser({
   pricing,
   bundleQuantities,
   level,
-  luckyBoxPrice,
+  unopenedBoxes,
   luckyBoxUrgency,
   coins,
   buyXpCost,
@@ -148,10 +152,10 @@ export function StoreBrowser({
   /** #185 — per-item add-to-cart quantity for "Buy 2 get 1" bundle items (`2`); absent elsewhere. */
   bundleQuantities?: Record<string, number>;
   level: number;
-  luckyBoxPrice: number;
+  unopenedBoxes: number;
   luckyBoxUrgency?: ReactNode;
   /** Pre-selects a category chip on load — `StorePage`'s own `?category=` deep link (e.g. `PetCustomizer`'s "Add accessory"/"Add decoration" tile), read once and otherwise behaving exactly like tapping the chip by hand. */
-  initialCategory?: StoreItemCategory | "ALL";
+  initialCategory?: StoreFilter;
   /** #280 — for `BuyXpCard`, which now lives on the Sell tab rather than on Profile. */
   coins: number;
   buyXpCost: number;
@@ -195,20 +199,26 @@ export function StoreBrowser({
     tabRefs.current[value]?.focus();
   }
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<StoreItemCategory | "ALL">(
-    initialCategory,
-  );
+  const [category, setCategory] = useState<StoreFilter>(initialCategory);
   const [selectedLocked, setSelectedLocked] =
     useState<StoreItemWithLock | null>(null);
 
   const visible = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
+    if (category === "BOXES") return [];
     return items.filter((item) => {
       if (category !== "ALL" && item.category !== category) return false;
       if (trimmed && !item.name.toLowerCase().includes(trimmed)) return false;
       return true;
     });
   }, [items, query, category]);
+
+  const visibleBoxes =
+    category === "ALL" || category === "BOXES"
+      ? LUCKY_BOXES.filter((box) =>
+          box.name.toLowerCase().includes(query.trim().toLowerCase()),
+        )
+      : [];
 
   // #232 — the grid renders `visible.slice(0, shown)`; the sentinel below it
   // bumps `shown` as it scrolls into range. Filtering still runs over the full
@@ -251,7 +261,10 @@ export function StoreBrowser({
   // selecting the category actually shows — including the level-locked cards,
   // which are drawn (locked) rather than hidden.
   const counts = useMemo(() => {
-    const byCategory = new Map<string, number>([["ALL", items.length]]);
+    const byCategory = new Map<string, number>([
+      ["ALL", items.length + LUCKY_BOXES.length],
+      ["BOXES", LUCKY_BOXES.length],
+    ]);
     for (const item of items) {
       byCategory.set(item.category, (byCategory.get(item.category) ?? 0) + 1);
     }
@@ -374,6 +387,8 @@ export function StoreBrowser({
             `xl:`. Without this, the 900–1279px band would have no way to
             reach the cart at all. */}
             <CartLink className="hidden desk:flex xl:hidden" />
+            {/* The phone header's box button, for the same reason. */}
+            <MyBoxesLink count={unopenedBoxes} className="hidden desk:flex" />
           </div>
 
           {flashSaleBanner}
@@ -440,29 +455,27 @@ export function StoreBrowser({
           Level-locked cards are buttons, so the outermost column of them is
           exactly where that shows. */}
           <div className="flex min-w-0 flex-col desk:min-h-0 desk:flex-1 desk:overflow-y-auto desk:px-1">
-            {/* The store's top row. #256 paired the Lucky Box here with
-                "Sell items"; #280 moved selling to its own tab, leaving the
-                box alone — so it spans the full width rather than sitting in
-                half a two-column grid with a hole beside it (user's
-                direction). */}
-            <div className="mb-[11px] desk:mb-4">
-              <LuckyBoxCard price={luckyBoxPrice} />
-              {luckyBoxUrgency ? (
-                <div className="mt-[9px]">{luckyBoxUrgency}</div>
-              ) : null}
-            </div>
+            {visibleBoxes.length > 0 ? (
+              <LuckyBoxesGroup
+                boxes={visibleBoxes}
+                coins={coins}
+                urgency={luckyBoxUrgency}
+              />
+            ) : null}
 
-            {visible.length === 0 ? (
-              <p className="py-10 text-center text-[13px] text-ink-soft">
-                {query.trim() ? (
-                  <>
-                    No items match &ldquo;{query.trim()}&rdquo;
-                    {category === "ALL" ? "" : ` in ${activeLabel}`}.
-                  </>
-                ) : (
-                  <>No items in {activeLabel}.</>
-                )}
-              </p>
+            {category === "BOXES" ? null : visible.length === 0 ? (
+              visibleBoxes.length > 0 ? null : (
+                <p className="py-10 text-center text-[13px] text-ink-soft">
+                  {query.trim() ? (
+                    <>
+                      No items match &ldquo;{query.trim()}&rdquo;
+                      {category === "ALL" ? "" : ` in ${activeLabel}`}.
+                    </>
+                  ) : (
+                    <>No items in {activeLabel}.</>
+                  )}
+                </p>
+              )
             ) : (
               // Every card the same height, across the whole grid (#271, "no
               // matter what"). `auto-rows-[1fr]` makes every row as tall as the

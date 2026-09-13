@@ -1,90 +1,97 @@
-import { Gift } from "lucide-react";
-import Link from "next/link";
+import Image from "next/image";
 
 import { Coin } from "@/components/ui/coin";
+import { cn } from "@/lib/cn";
+import { itemCountLabel, type LuckyBoxDefinition } from "@/lib/lucky-boxes";
 
 /**
- * #256 reshaped this from a full-width row into one half of the store's
- * top row, beside "Sell items" ("put the card next to lucky box card, there
- * should be enough space"). **#280 undid the pairing**: selling moved to the
- * store's own Sell tab, so this is a full-width card again and is the only
- * thing in that row — which is why the equal-height machinery the pair
- * needed (`h-full` here, `mt-auto` on the button) is gone; see the note on
- * the button below. The horizontal row it used to be does not
- * survive being halved: the 52px well plus a trailing button leaves no
- * width for the name in a 300px frame.
- *
- * GACHA-10 — the Lucky Box's entry point on the Store screen, per the
- * approved design board (`Beta/Planning/TaskTails Screens - Gacha.html`
- * §1, rev.3) rather than `design_handoff/TaskTails Screens.dc.html` (which
- * predates the gacha feature entirely). Full-width, above `StoreBrowser`'s
- * item grid, using the exact same card recipe every other `StoreItemCard`
- * uses (`rounded-card`/`border-border-track`/`bg-warm`) rather than a
- * one-off look — the design board's own "simplified to price, icon, buy
- * button, label" note is what trimmed this down from an earlier draft that
- * also carried a subtitle.
- *
- * The Group B urgency content (`GACHA-11`) used to render inside this card
- * via an `extra` slot; #256 moved it out to `StoreBrowser`, full width
- * directly beneath the two-card row. At half width the odds-boost banner's
- * headline and its countdown badge no longer fit on one line, and a
- * stimulus that has to wrap to three lines is a weaker stimulus than one
- * that spans the screen. Both study groups get the identical two-card row
- * either way — only the banner below it differs, which is the point.
- *
- * `price` arrives as a plain prop rather than importing `LUCKY_BOX_COST_
- * COINS` from `@/lib/gacha` here — this component is reachable from
- * `StoreBrowser`, a `"use client"` component, and `gacha.ts` imports Prisma
- * at module scope, which would break the browser build exactly the way
- * `item-visual.tsx`'s own doc comment describes for the same class of
- * mistake (STOR-02's Prisma-enum-import bug). `StorePage` (server) reads
- * the constant and passes it down as a number, same as it does for `level`.
- *
- * The well reuses `item-visual.tsx`'s `CATEGORY_WELL.FOOD` amber tokens
- * rather than going through `ItemWell` itself — `ItemWell` expects a real
- * `StoreItem`-shaped `{ category, imageUrl }`, and the Lucky Box isn't a
- * `StoreItem` row at all (`GACHA-03`'s seed deliberately never creates one
- * for it), so faking that shape just to borrow the styling would be more
- * indirection than the two reused class names below.
- *
- * The "Open" pill is the card's one interactive element — same "the button
- * is the tap target, not the whole row" pattern `StoreItemCard`'s own "+"
- * uses, not a wrapper `Link` around the entire card. Originally shipped
- * inert ("render the control, wire it up later", same as `STOR-01`'s own
- * then-unbuilt search/chips/cart button) because `GACHA-12` (the Lucky Box
- * home screen this opens) hadn't shipped yet; wired to `/store/lucky-box`
- * once it had — found live, 2026-08-08, still pointing nowhere after
- * `GACHA-12` existed.
+ * The box artwork (`design_handoff_lucky_boxes` UPDATE-02 §1), sized by
+ * height. Art, not an icon — below ~26px it stops reading, so the header
+ * button keeps lucide's `Gift`.
  */
-export function LuckyBoxCard({ price }: { price: number }) {
+export function BoxArt({
+  open = false,
+  height,
+  className,
+}: {
+  open?: boolean;
+  height: number;
+  className?: string;
+}) {
   return (
-    <div className="flex flex-col rounded-card border border-border-track bg-warm p-[11px]">
-      <div className="flex size-[44px] flex-none items-center justify-center rounded-[11px] bg-amber-tint">
-        <Gift size={22} strokeWidth={2} className="text-amber-text" aria-hidden />
+    <Image
+      src={open ? "/lucky-box-open.svg" : "/lucky-box-closed.svg"}
+      alt=""
+      aria-hidden
+      // The SVGs' own viewBox proportions.
+      width={open ? 715 : 720}
+      height={open ? 1060 : 840}
+      style={{ height, width: "auto" }}
+      className={cn("block", className)}
+    />
+  );
+}
+
+/**
+ * A box in the store's Lucky boxes group (1a). The shipped `StoreItemCard`'s
+ * anatomy — art tile first, name and sub, price row — rather than the
+ * board's header-first card, because the shipped card is the source of truth
+ * and the two sit in the same column. Not `StoreItemCard` itself: that card
+ * is a catalogue row with a cart button, and a box is neither.
+ *
+ * Untiered (README §2): plain `border-track` frame, no chip, no effects. The
+ * box's contents are tiered; the box is not.
+ *
+ * The whole card opens the buy sheet, so the tap target is an `inset-0`
+ * button (the pattern the locked store card uses, #260) and the "+" is
+ * drawn, not a second button that does the same thing.
+ */
+export function LuckyBoxCard({
+  box,
+  onSelect,
+}: {
+  box: LuckyBoxDefinition;
+  onSelect: () => void;
+}) {
+  return (
+    <div className="group relative flex h-full w-full flex-col overflow-hidden rounded-card border-[1.5px] border-border-track bg-surface">
+      <div className="relative flex h-[120px] items-center justify-center bg-input">
+        <BoxArt height={62} />
+        {/* The item count is what tells the four apart at a glance, so it is
+            drawn on the art, not only in the sub line. */}
+        <span className="absolute top-2 right-2 rounded-pill bg-amber-tint px-[7px] py-[2px] text-[10px] font-extrabold text-amber-text">
+          ×{box.itemCount}
+        </span>
       </div>
 
-      <p className="mt-[9px] text-[13px] font-extrabold">Lucky Box</p>
-      <span className="mt-[3px] mb-[11px] flex items-center gap-[3px]">
-        <Coin size={12} />
-        <span className="text-[12px] font-extrabold text-amber-text">
-          {/* Locale pinned explicitly — see `coin.tsx`'s `CoinPill` for the hydration mismatch this avoids. */}
-          {price.toLocaleString("en-US")}
-        </span>
-      </span>
+      <div className="border-t border-border-track px-[11px] pt-[9px]">
+        <p className="truncate text-[12.5px] font-extrabold">{box.name}</p>
+        <p className="text-[10px] text-ink-faint">
+          {itemCountLabel(box.itemCount)} · shiny 1 in {box.shinyOneIn}
+        </p>
+      </div>
 
-      {/* Plain flow, not `mt-auto` on a `h-full` card. Both existed so this
-          card and "Sell items" beside it could stretch to a shared height
-          with their buttons on one line; #280 moved selling to its own tab
-          and left this card alone and full-width, where the only thing
-          `h-full` + `mt-auto` can do is open a gap between the price and the
-          button (reported live: the card drew roughly 380px tall with ~145px
-          of nothing in the middle). */}
-      <Link
-        href="/store/lucky-box"
-        className="flex h-[32px] items-center justify-center rounded-[10px] bg-terracotta font-display text-[12.5px] font-semibold text-white hover:bg-terracotta-hover"
-      >
-        Open
-      </Link>
+      <div className="mt-auto flex items-center justify-between gap-2 px-[11px] pt-[8px] pb-[10px]">
+        <span className="flex items-center gap-[4px]">
+          <Coin size={12} />
+          <span className="text-[12px] font-extrabold text-amber-text">
+            {box.coinPrice.toLocaleString("en-US")}
+          </span>
+        </span>
+        <span
+          aria-hidden
+          className="flex size-[28px] flex-none items-center justify-center rounded-[9px] bg-terracotta text-[16px] leading-none text-white transition-colors duration-120 group-hover:bg-terracotta-hover"
+        >
+          +
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-label={`${box.name}, ${itemCountLabel(box.itemCount)}, ${box.coinPrice} coins`}
+        className="absolute inset-0 rounded-card"
+      />
     </div>
   );
 }

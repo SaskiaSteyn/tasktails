@@ -3,13 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/auth";
 import { AbGroup, type User } from "@/generated/prisma/client";
 import {
+  buyLuckyBox,
   HARD_PITY_THRESHOLD,
-  LUCKY_BOX_COST_COINS,
   luckyBoxUrgencyForUser,
-  pullLuckyBox,
+  openLuckyBox,
   rollRarity,
   UNLOCK_LEVEL_BUFFER,
 } from "@/lib/gacha";
+import { luckyBox } from "@/lib/lucky-boxes";
 import { groupGatedData } from "@/lib/study-group";
 import { prismaMock } from "@/test/prisma-mock";
 
@@ -18,16 +19,17 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 const mockedAuth = vi.mocked(auth);
 
-const storeItem = (overrides: Partial<Record<string, unknown>> = {}) => ({
-  id: "item-1",
-  name: "Test item",
-  category: "FOOD",
-  levelRequired: 1,
-  coinPrice: 40,
-  imageUrl: "wheat",
-  rarity: "COMMON",
-  ...overrides,
-}) as never;
+const storeItem = (overrides: Partial<Record<string, unknown>> = {}) =>
+  ({
+    id: "item-1",
+    name: "Test item",
+    category: "FOOD",
+    levelRequired: 1,
+    coinPrice: 40,
+    imageUrl: "wheat",
+    rarity: "COMMON",
+    ...overrides,
+  }) as never;
 
 /** `$queryRaw`'s locked-row shape, with a sensible default `pullsSinceLegendary` so tests that don't care about pity don't have to think about it. */
 const account = (overrides: Partial<Record<string, unknown>> = {}) => [
@@ -60,13 +62,95 @@ describe("rollRarity", () => {
   });
 });
 
-describe("pullLuckyBox", () => {
+describe("buyLuckyBox", () => {
   beforeEach(() => {
     prismaMock.$transaction.mockImplementation(
       (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
     );
+    prismaMock.ownedLuckyBox.create.mockResolvedValue({ id: "box-1" } as never);
     prismaMock.userEconomy.update.mockResolvedValue({ coins: 0 } as never);
-    prismaMock.storeItem.findMany.mockResolvedValue([storeItem()]);
+  });
+
+  it("debits the box's own price and shelves it unopened, rolling nothing", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ coins: 500 }]);
+
+    const result = await buyLuckyBox("user-1", "HAUL");
+
+    expect(result).toMatchObject({ ok: true, boxId: "box-1" });
+    expect(prismaMock.ownedLuckyBox.create).toHaveBeenCalledWith({
+      data: { userId: "user-1", boxKey: "HAUL", coinSpent: 200 },
+    });
+    // The purchase is tracked, in the same transaction as the buy.
+    expect(prismaMock.telemetryEvent.create).toHaveBeenCalledWith({
+      data: {
+        userId: "user-1",
+        eventType: "LUCKY_BOX_PURCHASED",
+        payload: {
+          boxId: "box-1",
+          boxKey: "HAUL",
+          name: "Lucky Haul",
+          itemCount: 5,
+          coinSpent: 200,
+        },
+      },
+    });
+    expect(prismaMock.userEconomy.update).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      data: { coins: { decrement: luckyBox("HAUL").coinPrice } },
+    });
+    expect(prismaMock.storeItem.findMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects a buy without enough coins, and shelves nothing", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([{ coins: 100 }]);
+
+    const result = await buyLuckyBox("user-1", "TROVE");
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "insufficient-coins",
+      coins: 100,
+      shortfall: luckyBox("TROVE").coinPrice - 100,
+    });
+    expect(prismaMock.ownedLuckyBox.create).not.toHaveBeenCalled();
+    expect(prismaMock.telemetryEvent.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a buy with no account", async () => {
+    prismaMock.$queryRaw.mockResolvedValue([]);
+
+    expect(await buyLuckyBox("user-1", "PARCEL")).toEqual({
+      ok: false,
+      reason: "no-account",
+    });
+  });
+});
+
+describe("openLuckyBox", () => {
+  /** The two locked reads, in order: the box row, then the account row. */
+  function rows(
+    box: Partial<Record<string, unknown>> | null,
+    economy: Partial<Record<string, unknown>> = {},
+  ) {
+    prismaMock.$queryRaw
+      .mockResolvedValueOnce(
+        box
+          ? [{ boxKey: "PARCEL", openedAt: null, results: null, ...box }]
+          : [],
+      )
+      .mockResolvedValueOnce(account(economy));
+  }
+
+  beforeEach(() => {
+    prismaMock.$transaction.mockImplementation(
+      (fn: (tx: typeof prismaMock) => unknown) => fn(prismaMock) as never,
+    );
+    prismaMock.storeItem.findMany.mockResolvedValue([
+      storeItem({ id: "common", rarity: "COMMON" }),
+      storeItem({ id: "rare", rarity: "RARE" }),
+      storeItem({ id: "epic", rarity: "EPIC" }),
+      storeItem({ id: "legendary", rarity: "LEGENDARY" }),
+    ]);
     prismaMock.inventoryItem.findFirst.mockResolvedValue(null);
   });
 
@@ -74,248 +158,154 @@ describe("pullLuckyBox", () => {
     vi.restoreAllMocks();
   });
 
-  it("rejects a pull with no account", async () => {
-    prismaMock.$queryRaw.mockResolvedValue([]);
+  it("rejects someone else's (or a missing) box", async () => {
+    rows(null);
 
-    const result = await pullLuckyBox("user-1");
-
-    expect(result).toEqual({ ok: false, reason: "no-account" });
-  });
-
-  it("rejects a pull without enough coins", async () => {
-    prismaMock.$queryRaw.mockResolvedValue(account({ coins: 100 }));
-
-    const result = await pullLuckyBox("user-1");
-
-    expect(result).toEqual({
+    expect(await openLuckyBox("user-1", "box-1")).toEqual({
       ok: false,
-      reason: "insufficient-coins",
-      coins: 100,
-      shortfall: LUCKY_BOX_COST_COINS - 100,
+      reason: "not-found",
     });
-    expect(prismaMock.storeItem.findMany).not.toHaveBeenCalled();
   });
 
-  it("creates a new InventoryItem row for a first-time goods pull", async () => {
-    prismaMock.$queryRaw.mockResolvedValue(account());
-    prismaMock.storeItem.findMany.mockResolvedValue([
-      storeItem({ id: "collar", name: "Red collar", category: "ACCESSORIES" }),
-    ]);
+  it("rolls one item per card, grants each, and stamps the box opened with the results", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5); // Common, not shiny
+    rows({ boxKey: "HAUL" });
 
-    const result = await pullLuckyBox("user-1");
+    const result = await openLuckyBox("user-1", "box-1");
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.item.id).toBe("collar");
-    expect(result.item.locked).toBe(false);
-    expect(result.pet).toBeNull();
-    expect(result.spent).toBe(LUCKY_BOX_COST_COINS);
-    expect(prismaMock.inventoryItem.create).toHaveBeenCalledWith({
-      // `shiny: false` is part of the row, not incidental — it is what
-      // keeps a plain pull out of a shiny stack and vice versa (#276).
-      data: { userId: "user-1", storeItemId: "collar", quantity: 1, shiny: false },
-    });
-    expect(prismaMock.inventoryItem.update).not.toHaveBeenCalled();
-  });
-
-  /**
-   * #276 — Shiny rides on any tier and comes only from a box. The risk
-   * worth a test is the stack: `quantity` merges identical instances, and
-   * a shiny is not identical to a plain one, so a shiny pull merged into
-   * an existing plain stack would be destroyed on the way in.
-   */
-  describe("shiny", () => {
-    it("looks for an existing stack of the same shininess, not just the same item", async () => {
-      prismaMock.$queryRaw.mockResolvedValue(account());
-      prismaMock.storeItem.findMany.mockResolvedValue([
-        storeItem({ id: "collar", name: "Red collar", category: "ACCESSORIES" }),
-      ]);
-      // 0 rolls Common, and 0 < SHINY_PULL_CHANCE, so this pull is shiny.
-      vi.spyOn(Math, "random").mockReturnValue(0);
-
-      const result = await pullLuckyBox("user-1");
-
-      expect(result.ok && result.item.shiny).toBe(true);
-      expect(prismaMock.inventoryItem.findFirst).toHaveBeenCalledWith({
-        where: {
-          userId: "user-1",
-          storeItemId: "collar",
-          equippedToPetId: null,
-          shiny: true,
-        },
-      });
-      expect(prismaMock.inventoryItem.create).toHaveBeenCalledWith({
-        data: { userId: "user-1", storeItemId: "collar", quantity: 1, shiny: true },
-      });
-    });
-
-    it("is not shiny when the roll misses", async () => {
-      prismaMock.$queryRaw.mockResolvedValue(account());
-      // 0.99 is above the 10% chance — and rolls Legendary, showing the two
-      // rolls are independent: a Legendary is not automatically shiny.
-      vi.spyOn(Math, "random").mockReturnValue(0.99);
-
-      const result = await pullLuckyBox("user-1");
-
-      expect(result.ok && result.item.shiny).toBe(false);
+    expect(result.items).toHaveLength(5);
+    // One grant per card (the mocked lookup never sees the earlier creates).
+    expect(prismaMock.inventoryItem.create).toHaveBeenCalledTimes(5);
+    expect(prismaMock.ownedLuckyBox.update).toHaveBeenCalledWith({
+      where: { id: "box-1" },
+      data: {
+        openedAt: expect.any(Date),
+        results: Array(5).fill({
+          storeItemId: "common",
+          shiny: false,
+          locked: false,
+        }),
+      },
     });
   });
 
-  it("increments quantity instead of duplicating when the goods item is already owned", async () => {
-    prismaMock.$queryRaw.mockResolvedValue(account());
-    prismaMock.storeItem.findMany.mockResolvedValue([storeItem({ id: "collar" })]);
-    prismaMock.inventoryItem.findFirst.mockResolvedValue({ id: "inv-1" } as never);
+  it("is idempotent — an opened box returns its stored results and grants nothing", async () => {
+    prismaMock.$queryRaw.mockResolvedValueOnce([
+      {
+        boxKey: "PARCEL",
+        openedAt: new Date(),
+        results: [{ storeItemId: "epic", shiny: true, locked: false }],
+      },
+    ]);
 
-    const result = await pullLuckyBox("user-1");
+    const result = await openLuckyBox("user-1", "box-1");
 
-    expect(result.ok).toBe(true);
-    expect(prismaMock.inventoryItem.update).toHaveBeenCalledWith({
-      where: { id: "inv-1" },
-      data: { quantity: { increment: 1 } },
-    });
+    expect(result.ok && result.items).toMatchObject([
+      { id: "epic", shiny: true },
+    ]);
     expect(prismaMock.inventoryItem.create).not.toHaveBeenCalled();
+    expect(prismaMock.pet.create).not.toHaveBeenCalled();
+    expect(prismaMock.ownedLuckyBox.update).not.toHaveBeenCalled();
+    expect(prismaMock.userEconomy.update).not.toHaveBeenCalled();
   });
 
-  it("adopts a new Pet, not an InventoryItem row, for an animal pull", async () => {
-    prismaMock.$queryRaw.mockResolvedValue(account({ level: 10 }));
+  it("rolls shiny at the box's own odds, and keeps shinies out of plain stacks", async () => {
+    // Just under 1 in 60 — shiny for a Parcel.
+    vi.spyOn(Math, "random").mockReturnValue(1 / 60 - 0.001);
+    rows({ boxKey: "PARCEL" });
+
+    const result = await openLuckyBox("user-1", "box-1");
+
+    expect(result.ok && result.items[0].shiny).toBe(true);
+    expect(prismaMock.inventoryItem.findFirst).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        storeItemId: "common",
+        equippedToPetId: null,
+        shiny: true,
+      },
+    });
+  });
+
+  it("adopts a Pet for an animal", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
     prismaMock.storeItem.findMany.mockResolvedValue([
-      storeItem({ id: "fox", name: "Fox kit", category: "ANIMALS", rarity: "EPIC" }),
+      storeItem({ id: "fox", category: "ANIMALS", rarity: "COMMON" }),
     ]);
-    prismaMock.pet.create.mockResolvedValue({
-      id: "pet-1",
-      storeItem: storeItem({ id: "fox", category: "ANIMALS" }),
-    } as never);
+    rows({ boxKey: "PARCEL" });
 
-    const result = await pullLuckyBox("user-1");
+    await openLuckyBox("user-1", "box-1");
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.pet?.id).toBe("pet-1");
     expect(prismaMock.pet.create).toHaveBeenCalled();
     expect(prismaMock.inventoryItem.create).not.toHaveBeenCalled();
-    expect(prismaMock.inventoryItem.findFirst).not.toHaveBeenCalled();
   });
 
-  it("draws from the full catalogue for the rarity, with no level filter at all", async () => {
-    prismaMock.$queryRaw.mockResolvedValue(account({ level: 1 }));
+  it("locks an item more than UNLOCK_LEVEL_BUFFER levels above the account", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
     prismaMock.storeItem.findMany.mockResolvedValue([
-      storeItem({ id: "crown", name: "Crown", category: "ACCESSORIES", levelRequired: 20, rarity: "LEGENDARY" }),
+      storeItem({ id: "far", levelRequired: 5 + UNLOCK_LEVEL_BUFFER + 1 }),
+      storeItem({
+        id: "near",
+        levelRequired: 5 + UNLOCK_LEVEL_BUFFER,
+        rarity: "RARE",
+      }),
     ]);
+    rows({ boxKey: "PARCEL" }, { level: 5 });
 
-    const result = await pullLuckyBox("user-1");
+    const result = await openLuckyBox("user-1", "box-1");
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.item.id).toBe("crown");
-    // The one and only storeItem query is rarity-only — no levelRequired
-    // clause of any kind, confirming the pool isn't capped or split.
-    expect(prismaMock.storeItem.findMany).toHaveBeenCalledTimes(1);
-    expect(prismaMock.storeItem.findMany.mock.calls[0][0]).not.toHaveProperty(
-      "where.levelRequired",
-    );
+    expect(result.ok && result.items[0]).toMatchObject({
+      id: "far",
+      locked: true,
+    });
   });
 
-  it("unlocks immediately when the pull is exactly one level above the account (UNLOCK_LEVEL_BUFFER)", async () => {
-    prismaMock.$queryRaw.mockResolvedValue(account({ level: 5 }));
-    prismaMock.storeItem.findMany.mockResolvedValue([
-      storeItem({ id: "next-tier", levelRequired: 5 + UNLOCK_LEVEL_BUFFER }),
-    ]);
-
-    const result = await pullLuckyBox("user-1");
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.item.locked).toBe(false);
-  });
-
-  it("stays locked when the pull is more than UNLOCK_LEVEL_BUFFER levels above the account", async () => {
-    prismaMock.$queryRaw.mockResolvedValue(account({ level: 5 }));
-    prismaMock.storeItem.findMany.mockResolvedValue([
-      storeItem({ id: "far-tier", levelRequired: 5 + UNLOCK_LEVEL_BUFFER + 1 }),
-    ]);
-
-    const result = await pullLuckyBox("user-1");
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.item.locked).toBe(true);
-  });
-
-  it("reports empty-catalogue rather than crashing when the rarity has nothing in the catalogue", async () => {
-    prismaMock.$queryRaw.mockResolvedValue(account());
+  it("grants nothing when a rolled rarity has no items", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
     prismaMock.storeItem.findMany.mockResolvedValue([]);
+    rows({ boxKey: "HAUL" });
 
-    const result = await pullLuckyBox("user-1");
+    const result = await openLuckyBox("user-1", "box-1");
 
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.reason).toBe("empty-catalogue");
+    expect(result).toMatchObject({ ok: false, reason: "empty-catalogue" });
+    expect(prismaMock.inventoryItem.create).not.toHaveBeenCalled();
+    expect(prismaMock.ownedLuckyBox.update).not.toHaveBeenCalled();
   });
 
   describe("hard pity (GACHA-05)", () => {
-    it("increments pullsSinceLegendary on a non-Legendary pull", async () => {
-      vi.spyOn(Math, "random").mockReturnValue(0); // rolls Common, well under pity
-      prismaMock.$queryRaw.mockResolvedValue(account({ pullsSinceLegendary: 5 }));
+    it("counts every card as a pull", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0); // Common every time
+      rows({ boxKey: "HAUL" }, { pullsSinceLegendary: 5 });
 
-      const result = await pullLuckyBox("user-1");
+      await openLuckyBox("user-1", "box-1");
 
-      expect(result.ok).toBe(true);
       expect(prismaMock.userEconomy.update).toHaveBeenCalledWith({
         where: { userId: "user-1" },
-        data: { coins: { decrement: LUCKY_BOX_COST_COINS }, pullsSinceLegendary: 6 },
+        data: { pullsSinceLegendary: 10 },
       });
     });
 
-    it("resets pullsSinceLegendary to 0 on a natural Legendary pull", async () => {
-      vi.spyOn(Math, "random").mockReturnValue(0.99); // rolls Legendary on its own merits
-      prismaMock.$queryRaw.mockResolvedValue(account({ pullsSinceLegendary: 12 }));
-      prismaMock.storeItem.findMany.mockResolvedValue([storeItem({ rarity: "LEGENDARY" })]);
-
-      const result = await pullLuckyBox("user-1");
-
-      expect(result.ok).toBe(true);
-      expect(prismaMock.userEconomy.update).toHaveBeenCalledWith({
-        where: { userId: "user-1" },
-        data: { coins: { decrement: LUCKY_BOX_COST_COINS }, pullsSinceLegendary: 0 },
-      });
-    });
-
-    it("forces Legendary once the threshold is reached, regardless of the roll", async () => {
-      // A roll of 0 would naturally be Common — the force has to override it.
-      vi.spyOn(Math, "random").mockReturnValue(0);
-      prismaMock.$queryRaw.mockResolvedValue(
-        account({ pullsSinceLegendary: HARD_PITY_THRESHOLD - 1 }),
+    it("forces Legendary on the card that reaches the threshold, mid-box, and resets the count", async () => {
+      vi.spyOn(Math, "random").mockReturnValue(0); // would be Common
+      rows(
+        { boxKey: "BUNDLE" },
+        { pullsSinceLegendary: HARD_PITY_THRESHOLD - 2 },
       );
-      prismaMock.storeItem.findMany.mockResolvedValue([storeItem({ rarity: "LEGENDARY" })]);
 
-      const result = await pullLuckyBox("user-1");
+      const result = await openLuckyBox("user-1", "box-1");
 
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      expect(result.item.rarity).toBe("LEGENDARY");
-      expect(prismaMock.storeItem.findMany.mock.calls[0][0]).toMatchObject({
-        where: { rarity: "LEGENDARY" },
-      });
-      // Forced or natural, the API-facing result carries no trace of pity —
-      // no counter, no threshold, no "wasForced" flag.
+      expect(result.ok && result.items.map((item) => item.rarity)).toEqual([
+        "COMMON",
+        "LEGENDARY",
+        "COMMON",
+      ]);
+      // Nothing about pity reaches the result.
       expect(result).not.toHaveProperty("pullsSinceLegendary");
       expect(prismaMock.userEconomy.update).toHaveBeenCalledWith({
         where: { userId: "user-1" },
-        data: { coins: { decrement: LUCKY_BOX_COST_COINS }, pullsSinceLegendary: 0 },
-      });
-    });
-
-    it("does not force below the threshold", async () => {
-      vi.spyOn(Math, "random").mockReturnValue(0); // Common
-      prismaMock.$queryRaw.mockResolvedValue(
-        account({ pullsSinceLegendary: HARD_PITY_THRESHOLD - 2 }),
-      );
-
-      const result = await pullLuckyBox("user-1");
-
-      expect(result.ok).toBe(true);
-      expect(prismaMock.storeItem.findMany.mock.calls[0][0]).toMatchObject({
-        where: { rarity: "COMMON" },
+        data: { pullsSinceLegendary: 1 },
       });
     });
   });
@@ -347,17 +337,27 @@ describe("luckyBoxUrgencyForUser", () => {
 
   it("integrates with groupGatedData exactly like urgencyDataForItems does: null for Group A, data for Group B", async () => {
     function userRow(abGroup: AbGroup): User {
-      return { id: "user-1", email: "participant@example.com", abGroup } as User;
+      return {
+        id: "user-1",
+        email: "participant@example.com",
+        abGroup,
+      } as User;
     }
 
-    mockedAuth.mockResolvedValue({ user: { email: "participant@example.com" } } as never);
+    mockedAuth.mockResolvedValue({
+      user: { email: "participant@example.com" },
+    } as never);
 
     prismaMock.user.findUnique.mockResolvedValue(userRow(AbGroup.A));
-    const forGroupA = await groupGatedData(() => luckyBoxUrgencyForUser("user-1"));
+    const forGroupA = await groupGatedData(() =>
+      luckyBoxUrgencyForUser("user-1"),
+    );
     expect(forGroupA).toBeNull();
 
     prismaMock.user.findUnique.mockResolvedValue(userRow(AbGroup.B));
-    const forGroupB = await groupGatedData(() => luckyBoxUrgencyForUser("user-1"));
+    const forGroupB = await groupGatedData(() =>
+      luckyBoxUrgencyForUser("user-1"),
+    );
     expect(forGroupB).not.toBeNull();
     expect(forGroupB?.recentPulls).toBeGreaterThanOrEqual(15);
   });

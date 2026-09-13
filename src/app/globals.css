@@ -587,6 +587,78 @@
   }
 }
 
+/* Lucky boxes (`design_handoff_lucky_boxes` 1e/1g). The opening beat is four
+   loops on one 1.4s clock — the well pops, the lid lifts, the glow breathes
+   and two rings ray out — and `card-present` is the flip a card makes as it
+   lifts over the reveal scrim. All neutralised by the reduce-motion rules
+   below, which is the handoff's "stops dead". */
+@keyframes box-pop {
+  0%,
+  12% {
+    transform: scale(1) rotate(0deg);
+  }
+  34% {
+    transform: scale(0.9) rotate(-7deg);
+  }
+  52% {
+    transform: scale(1.12) rotate(6deg);
+  }
+  68% {
+    transform: scale(1.02) rotate(-2deg);
+  }
+  84%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes lid-lift {
+  0%,
+  30% {
+    transform: translateY(0) rotate(0deg);
+  }
+  58% {
+    transform: translateY(-26px) rotate(-14deg);
+  }
+  86%,
+  100% {
+    transform: translateY(-4px) rotate(-3deg);
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.86);
+    opacity: 0.5;
+  }
+  55% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes ray-out {
+  0%,
+  20% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes card-present {
+  from {
+    transform: perspective(900px) rotateY(90deg) scale(0.7);
+  }
+}
+
 @keyframes cart-fly {
   from {
     opacity: 1;
@@ -651,6 +723,11 @@
   --animate-sheen: sheen 3600ms ease-in-out infinite;
   --animate-twinkle: twinkle 2400ms ease-in-out infinite;
   --animate-floaty: floaty 4500ms ease-in-out infinite;
+  --animate-box-pop: box-pop 1400ms ease-in-out infinite;
+  --animate-lid-lift: lid-lift 1400ms ease-in-out infinite;
+  --animate-glow-pulse: glow-pulse 1400ms ease-in-out infinite;
+  --animate-ray-out: ray-out 1400ms ease-out infinite;
+  --animate-card-present: card-present 280ms ease-out;
   /* #276 §4 — Shiny. The frame gradient and the wash that tints the field
      behind the art. Kept as raw gradients rather than tokens: these four
      stops are the Shiny identity itself, not a reuse of any app accent,

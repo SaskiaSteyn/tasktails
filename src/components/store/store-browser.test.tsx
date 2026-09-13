@@ -19,8 +19,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/components/store/store-item-card", () => ({
   StoreItemCard: () => <li data-card />,
 }));
-vi.mock("@/components/store/lucky-box-card", () => ({
-  LuckyBoxCard: () => null,
+vi.mock("@/components/store/lucky-boxes-group", () => ({
+  LuckyBoxesGroup: () => <div data-boxes />,
 }));
 // #280 put the Sell tab's cards in this component; neither is what these
 // tests are about, and `BuyXpCard` pulls `next/navigation` besides.
@@ -55,7 +55,7 @@ function cardCount(markup: string): number {
 /** The props every case shares — only `items` varies. */
 const base = {
   level: 1,
-  luckyBoxPrice: 100,
+  unopenedBoxes: 0,
   coins: 0,
   buyXpCost: 100,
   buyXpGain: 40,
@@ -74,6 +74,35 @@ describe("StoreBrowser", () => {
       <StoreBrowser {...base} items={items.slice(0, 5)} />,
     );
     expect(cardCount(markup)).toBe(5);
+  });
+});
+
+/** The Lucky boxes group leads "All", is the whole of "Boxes", and is absent from every other category. */
+describe("StoreBrowser boxes", () => {
+  it("leads the unfiltered store, above the catalogue", () => {
+    const markup = renderToStaticMarkup(
+      <StoreBrowser {...base} items={items} />,
+    );
+    expect(markup.indexOf("data-boxes")).toBeGreaterThan(-1);
+    expect(markup.indexOf("data-boxes")).toBeLessThan(
+      markup.indexOf("data-card"),
+    );
+  });
+
+  it("is all the Boxes filter shows", () => {
+    const markup = renderToStaticMarkup(
+      <StoreBrowser {...base} items={items} initialCategory="BOXES" />,
+    );
+    expect(markup).toContain("data-boxes");
+    expect(cardCount(markup)).toBe(0);
+    expect(markup).not.toContain("No items");
+  });
+
+  it("is hidden under any other category", () => {
+    const markup = renderToStaticMarkup(
+      <StoreBrowser {...base} items={items} initialCategory="FOOD" />,
+    );
+    expect(markup).not.toContain("data-boxes");
   });
 });
 

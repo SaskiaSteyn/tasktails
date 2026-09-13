@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
+import { BoxArt } from "@/components/store/lucky-box-card";
 import { RarityChip, rarityThumbFill } from "@/components/store/rarity-chip";
 import { buttonClasses } from "@/components/ui/button";
 import {
@@ -14,6 +15,8 @@ import {
 } from "@/lib/checkout";
 import { cn } from "@/lib/cn";
 import { calendarDaysBetween, isSameDay } from "@/lib/day";
+import { luckyBoxPurchasesForUser } from "@/lib/gacha";
+import { luckyBox } from "@/lib/lucky-boxes";
 import { spendByDay, spendByWeek } from "@/lib/spend-breakdown";
 
 export const metadata: Metadata = {
@@ -47,13 +50,28 @@ export const metadata: Metadata = {
  * price changes after the fact (this app has already repriced an item once
  * — see `prisma/seed.ts`'s note on the Koala kit) — not a risk worth taking
  * for a cosmetic suffix.
+ *
+ * Lucky Box buys are listed alongside, one row per box, read from
+ * `OwnedLuckyBox` (a box is not a `StoreItem`, so it has no `Transaction`).
+ * Each carries the price it was bought at, so the totals stay true if the
+ * box prices change.
  */
+type HistoryEntry = { id: string; purchasedAt: Date; coinSpent: number } & (
+  { storeItem: TransactionWithStoreItem["storeItem"] } | { boxName: string }
+);
 export default async function PurchaseHistoryPage() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
 
-  const transactions = await transactionsForUser(userId);
+  const [items, boxes] = await Promise.all([
+    transactionsForUser(userId),
+    luckyBoxPurchasesForUser(userId),
+  ]);
+  const transactions: HistoryEntry[] = [
+    ...items,
+    ...boxes.map((box) => ({ ...box, boxName: luckyBox(box.boxKey).name })),
+  ].sort((a, b) => b.purchasedAt.getTime() - a.purchasedAt.getTime());
   const now = new Date();
 
   const groups = groupByDay(transactions, now);
@@ -178,27 +196,38 @@ export default async function PurchaseHistoryPage() {
                         {rowTimestamp(entry.purchasedAt, now)}
                       </p>
                       <div className="flex min-w-0 flex-1 items-center gap-[11px] desk:flex-none">
-                        <ItemWell
-                          bgClassNameOverride={rarityThumbFill(
-                            entry.storeItem.rarity,
-                          )}
-                          item={entry.storeItem}
-                          size={38}
-                          iconSize={16}
-                          animalIconSize={26}
-                          rounded="rounded-[10px]"
-                        />
+                        {"storeItem" in entry ? (
+                          <ItemWell
+                            bgClassNameOverride={rarityThumbFill(
+                              entry.storeItem.rarity,
+                            )}
+                            item={entry.storeItem}
+                            size={38}
+                            iconSize={16}
+                            animalIconSize={26}
+                            rounded="rounded-[10px]"
+                          />
+                        ) : (
+                          <span className="flex size-[38px] flex-none items-center justify-center rounded-[10px] bg-amber-tint">
+                            <BoxArt height={24} />
+                          </span>
+                        )}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <p className="truncate text-[13px] font-bold">
-                              {entry.storeItem.name}
+                              {"storeItem" in entry
+                                ? entry.storeItem.name
+                                : entry.boxName}
                             </p>
                             {/* #276 §5 — the tier, with no effects: this is a
-                                dense historical list, not a shop window. */}
-                            <RarityChip
-                              rarity={entry.storeItem.rarity}
-                              size="row"
-                            />
+                                dense historical list, not a shop window. A box
+                                is untiered, so it has none. */}
+                            {"storeItem" in entry ? (
+                              <RarityChip
+                                rarity={entry.storeItem.rarity}
+                                size="row"
+                              />
+                            ) : null}
                           </div>
                           <p className="text-[11px] text-ink-faint desk:hidden">
                             {rowTimestamp(entry.purchasedAt, now)}
@@ -206,7 +235,9 @@ export default async function PurchaseHistoryPage() {
                         </div>
                       </div>
                       <p className="hidden text-[12.5px] font-bold text-ink-soft desk:block">
-                        {CATEGORY_LABEL[entry.storeItem.category]}
+                        {"storeItem" in entry
+                          ? CATEGORY_LABEL[entry.storeItem.category]
+                          : "Lucky box"}
                       </p>
                       <p className="flex-none text-[13px] font-extrabold text-terracotta desk:text-right">
                         −{entry.coinSpent.toLocaleString("en-US")}
@@ -294,13 +325,10 @@ function SpendSection({
   );
 }
 
-type DayGroup = { label: string; entries: TransactionWithStoreItem[] };
+type DayGroup = { label: string; entries: HistoryEntry[] };
 
 /** Groups already-newest-first transactions (STOR-17) into day buckets without re-sorting. */
-function groupByDay(
-  transactions: TransactionWithStoreItem[],
-  now: Date,
-): DayGroup[] {
+function groupByDay(transactions: HistoryEntry[], now: Date): DayGroup[] {
   const groups: DayGroup[] = [];
   for (const entry of transactions) {
     const label = dayLabel(entry.purchasedAt, now);

@@ -64,6 +64,7 @@ model User {
   economy         UserEconomy?
   settings        UserSettings?
   achievements    UserAchievement[]
+  luckyBoxes      OwnedLuckyBox[]
 }
 
 /// INF-02.
@@ -270,6 +271,53 @@ model TelemetryEvent {
   /// `createdAt` range scan rides the `userId` prefix instead of getting its
   /// own index; it is admin-only and runs rarely.
   @@index([userId, eventType])
+}
+
+/// The four Lucky Boxes (`design_handoff_lucky_boxes`). Name, size, price and
+/// shiny odds live in `src/lib/lucky-boxes.ts`, keyed by this — a box is not a
+/// `StoreItem`, so it has no catalogue row to hold them.
+enum LuckyBoxKey {
+  PARCEL
+  BUNDLE
+  HAUL
+  TROVE
+}
+
+/// A bought Lucky Box. Buying and opening are separate transactions: the buy
+/// debits coins and inserts this row unopened; the open rolls the items,
+/// grants them, and writes `results` + `openedAt` together. Rolling at buy
+/// time would let the results be read before the reveal.
+model OwnedLuckyBox {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  boxKey      LuckyBoxKey
+  purchasedAt DateTime    @default(now())
+
+  /// What the buy cost, recorded at purchase — the price table in
+  /// `lucky-boxes.ts` can change, and purchase history must not. Box buys
+  /// never write a `Transaction` (a box is not a `StoreItem`), so this row is
+  /// the purchase record. `@default(0)` only so the migration is safe.
+  coinSpent Int @default(0)
+
+  /// Null while it waits in My boxes.
+  openedAt DateTime?
+
+  /// Set once every card has been turned. Between `openedAt` and this, the
+  /// items are already owned but the reveal is unfinished, and My boxes offers
+  /// to continue it from `results` (user's direction, 2026-09-13 — replacing
+  /// the handoff's "never re-show a half-flipped fan").
+  revealedAt DateTime?
+
+  /// `{ storeItemId, shiny, locked }[]`, in deal order. Stored so a second
+  /// open request (double tap, refresh mid-animation) returns the same haul
+  /// instead of rolling again.
+  results Json?
+
+  /// My boxes lists a user's unrevealed boxes; the store header counts them;
+  /// purchase history lists them all by `userId`.
+  @@index([userId, revealedAt])
 }
 
 /// INF-10. One record per user (AUTH-04 initialises it at 0 coins, 0 XP,
