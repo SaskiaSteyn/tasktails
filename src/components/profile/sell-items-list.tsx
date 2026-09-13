@@ -10,7 +10,7 @@ import {
   rarityRowFrame,
   rarityThumbFill,
 } from "@/components/store/rarity-chip";
-import { ShinyPill } from "@/components/store/shiny";
+import { ShinyFrame, ShinyPill } from "@/components/store/shiny";
 import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 import type { SellableItem } from "@/lib/sell";
@@ -111,74 +111,84 @@ export function SellItemsList({
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto px-4 pt-[14px]">
+      <div className="flex-1 overflow-y-auto px-4 pt-[14px] pb-[14px]">
         <div className="flex flex-col gap-[9px]">
           {items.map((item) => (
-            <div
+            <ShinyFrame
               key={item.id}
-              // #276 §5 — tier frame, tinted thumb, chip. No effects. A
-              // locked row keeps the muted treatment, so no tier on it.
-              className={cn(
-                "flex items-center gap-[11px] rounded-[14px] border-[1.5px] bg-warm p-[10px]",
-                item.locked
-                  ? "border-border-track"
-                  : rarityRowFrame(item.rarity),
-              )}
+              shiny={!item.locked && item.shiny}
+              className="rounded-[16px]"
             >
-              <ItemWell
-                item={item}
-                bgClassNameOverride={
-                  item.locked ? undefined : rarityThumbFill(item.rarity)
-                }
-                locked={item.locked}
-                size={44}
-                iconSize={20}
-                animalIconSize={32}
-                rounded="rounded-[10px]"
-              />
-
-              <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-2 truncate text-[13px] font-extrabold">
-                  {item.name}
-                  {!item.locked && (
-                    <RarityChip rarity={item.rarity} size="row" />
-                  )}
-                  {!item.locked && item.shiny ? <ShinyPill /> : null}
-                  {item.locked && (
-                    <span className="ml-[3px] rounded-[5px] bg-input px-[5px] py-px text-[9.5px] font-extrabold text-ink-soft">
-                      LOCKED · LVL {item.levelRequired}
-                    </span>
-                  )}
-                </p>
-                <p className="text-[11px] text-ink-faint">
-                  Bought for {item.coinPrice.toLocaleString("en-US")}
-                </p>
-                {errorId === item.id && (
-                  <p
-                    role="alert"
-                    className="mt-[2px] text-[10px] font-bold text-urgency-text"
-                  >
-                    Couldn&rsquo;t sell{" "}
-                    {CATEGORY_LABEL[item.category].toLowerCase()}. Try again.
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setPendingSell(item)}
-                disabled={pendingId === item.id}
+              <div
+                // #276 §5 — tier frame, tinted thumb, chip. A locked row keeps
+                // the muted treatment, so no tier on it. #293 — a shiny row
+                // swaps its border for `ShinyFrame`'s gradient, which a border
+                // of its own would paint over.
                 className={cn(
-                  "flex flex-none items-center gap-1 rounded-[10px] bg-sage px-3 py-[7px]",
-                  "font-display text-[12px] font-semibold text-white transition-colors duration-120 ease-out",
-                  "hover:not-disabled:bg-sage-hover disabled:opacity-60",
+                  "flex items-center gap-[11px] rounded-[14px] bg-warm p-[10px]",
+                  !item.locked && item.shiny
+                    ? null
+                    : item.locked
+                      ? "border-[1.5px] border-border-track"
+                      : cn("border-[1.5px]", rarityRowFrame(item.rarity)),
                 )}
               >
-                {pendingId === item.id
-                  ? "Selling…"
-                  : `Sell · +${item.sellValue.toLocaleString("en-US")}`}
-              </button>
-            </div>
+                <ItemWell
+                  item={item}
+                  bgClassNameOverride={
+                    item.locked ? undefined : rarityThumbFill(item.rarity)
+                  }
+                  locked={item.locked}
+                  size={44}
+                  iconSize={20}
+                  animalIconSize={32}
+                  rounded="rounded-[10px]"
+                />
+
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 text-[13px] font-extrabold">
+                    {/* The name gives way, never the tags — same as the feed sheet. */}
+                    <span className="min-w-0 truncate">{item.name}</span>
+                    {!item.locked && (
+                      <RarityChip rarity={item.rarity} size="row" />
+                    )}
+                    {!item.locked && item.shiny ? <ShinyPill iconOnly /> : null}
+                    {item.locked && (
+                      <span className="ml-[3px] flex-none rounded-[5px] bg-input px-[5px] py-px text-[9.5px] font-extrabold text-ink-soft">
+                        LOCKED · LVL {item.levelRequired}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-[11px] text-ink-faint">
+                    Bought for {item.coinPrice.toLocaleString("en-US")}
+                  </p>
+                  {errorId === item.id && (
+                    <p
+                      role="alert"
+                      className="mt-[2px] text-[10px] font-bold text-urgency-text"
+                    >
+                      Couldn&rsquo;t sell{" "}
+                      {CATEGORY_LABEL[item.category].toLowerCase()}. Try again.
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setPendingSell(item)}
+                  disabled={pendingId === item.id}
+                  className={cn(
+                    "flex flex-none items-center gap-1 rounded-[10px] bg-sage px-3 py-[7px]",
+                    "font-display text-[12px] font-semibold text-white transition-colors duration-120 ease-out",
+                    "hover:not-disabled:bg-sage-hover disabled:opacity-60",
+                  )}
+                >
+                  {pendingId === item.id
+                    ? "Selling…"
+                    : `Sell · +${item.sellValue.toLocaleString("en-US")}`}
+                </button>
+              </div>
+            </ShinyFrame>
           ))}
         </div>
       </div>

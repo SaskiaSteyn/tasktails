@@ -58,23 +58,34 @@ export const SHINY_WASH = "var(--gradient-shiny-wash)";
 /**
  * The `✦ Shiny` pill, sitting immediately after the tier chip. `label`
  * swaps the word for #289's happiness bonus, which wears the same pill.
+ * `iconOnly` (#293) drops the word visually for rows too tight to fit it.
  */
 export function ShinyPill({
   className,
   label = "Shiny",
+  iconOnly = false,
 }: {
   className?: string;
   label?: string;
+  iconOnly?: boolean;
 }) {
   return (
     <span
       className={cn(
-        "bg-(image:--gradient-shiny-frame) flex flex-none items-center gap-[3px] rounded-[6px] px-[6px] py-[2px] text-[9.5px] font-extrabold tracking-[.5px] text-white uppercase",
+        "bg-(image:--gradient-shiny-frame) flex flex-none items-center text-white",
+        iconOnly
+          ? // A round badge, 23px to match `RarityChip size="row"` beside it.
+            "size-[23px] justify-center rounded-full"
+          : "gap-[3px] rounded-[6px] px-[6px] py-[2px] text-[9.5px] font-extrabold tracking-[.5px] uppercase",
         className,
       )}
     >
-      <Sparkles size={9} strokeWidth={2.8} aria-hidden />
-      {label}
+      <Sparkles
+        size={iconOnly ? 12 : 9}
+        strokeWidth={iconOnly ? 2.4 : 2.8}
+        aria-hidden
+      />
+      {iconOnly ? <span className="sr-only">{label}</span> : label}
     </span>
   );
 }
