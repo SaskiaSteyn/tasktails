@@ -28,7 +28,7 @@ const PUBLIC_PATHS = new Set([
   "/", // the marketing site, or the PWA's welcome screen (MKT-01/02/03)
   "/login",
   "/register",
-  "/style-guide", // the living design reference; no participant data
+  "/style-guide", // the living design reference; no participant data. Dev only — 404s in production
   // The web app manifest (`src/app/manifest.ts`). The matcher below exempts
   // static assets by extension but has no `.webmanifest` in its list, so
   // without this the proxy answers it with a redirect to /login — and a

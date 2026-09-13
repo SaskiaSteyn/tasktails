@@ -10,6 +10,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import type { StoreItemRarity } from "@/generated/prisma/client";
+import { rarityFamily } from "@/lib/rarity";
+
 /**
  * Per-badge icon/colour, keyed on `Achievement.key` rather than stored on the
  * row — the catalogue is fixed in `prisma/seed.ts`, not user-configurable
@@ -27,12 +30,13 @@ import {
  *   Streaks      → terracotta (this app's streak accent everywhere else)
  *   Tasks        → sage
  *   Petting Zoo  → violet
- *   Items        → tinted **by rarity**, replicating `lucky-box-home.tsx`'s
- *                  local `RARITY_STYLE` map (not importable — it's a
- *                  private const there, so repeated here verbatim, same as
- *                  `odds/page.tsx` already does with its own `RARITY_ROWS`)
- *                  — an unlocked "Epic Animal" badge reads the same colour
- *                  family as an Epic item does everywhere else in the app.
+ *   Items        → tinted **by rarity**, read from `RARITY_FAMILY` in
+ *                  `src/lib/rarity.ts` via {@link tierTile} (#276 —
+ *                  previously this file and `lucky-box-home.tsx` each kept
+ *                  their own copy of the same rarity→colour map, which is
+ *                  exactly the drift UPDATE-01 is about) — an unlocked
+ *                  "Epic Animal" badge reads the same colour family as an
+ *                  Epic item does everywhere else in the app.
  *                  "Own every X" and "own everything" badges use the same
  *                  amber/Legendary tier as the hardest, rarest achievements
  *                  in this category.
@@ -45,6 +49,16 @@ import {
  * tile and the persistent header's streak numeral already make (see
  * `globals.css`'s audit block).
  */
+/**
+ * #276 — a badge's tile colours, taken from the shared rarity family rather
+ * than spelled out per badge. Identical output to the hand-written values
+ * this replaced; the point is that there is now one place to change them.
+ */
+function tierTile(rarity: StoreItemRarity) {
+  const family = rarityFamily(rarity);
+  return { bg: family.tint, border: family.border, iconColor: family.text };
+}
+
 export const ACHIEVEMENT_STYLE: Record<
   string,
   { icon: LucideIcon; bg: string; border: string; iconColor: string }
@@ -56,27 +70,27 @@ export const ACHIEVEMENT_STYLE: Record<
   streak_30_day: { icon: Flame, bg: "bg-terracotta-tint", border: "border-terracotta/30", iconColor: "text-terracotta" },
 
   // Unlocks/Items — tinted by rarity
-  unlock_common_animal: { icon: PawPrint, bg: "bg-input", border: "border-border-track", iconColor: "text-ink-soft" },
-  unlock_common_decor: { icon: HouseHeart, bg: "bg-input", border: "border-border-track", iconColor: "text-ink-soft" },
-  unlock_common_food: { icon: Drumstick, bg: "bg-input", border: "border-border-track", iconColor: "text-ink-soft" },
-  unlock_common_accessory: { icon: Shirt, bg: "bg-input", border: "border-border-track", iconColor: "text-ink-soft" },
-  unlock_rare_animal: { icon: PawPrint, bg: "bg-sage-tint", border: "border-sage/30", iconColor: "text-sage-text" },
-  unlock_rare_decor: { icon: HouseHeart, bg: "bg-sage-tint", border: "border-sage/30", iconColor: "text-sage-text" },
-  unlock_rare_food: { icon: Drumstick, bg: "bg-sage-tint", border: "border-sage/30", iconColor: "text-sage-text" },
-  unlock_rare_accessory: { icon: Shirt, bg: "bg-sage-tint", border: "border-sage/30", iconColor: "text-sage-text" },
-  unlock_epic_animal: { icon: PawPrint, bg: "bg-violet-tint", border: "border-violet/30", iconColor: "text-violet-text" },
-  unlock_epic_decor: { icon: HouseHeart, bg: "bg-violet-tint", border: "border-violet/30", iconColor: "text-violet-text" },
-  unlock_epic_food: { icon: Drumstick, bg: "bg-violet-tint", border: "border-violet/30", iconColor: "text-violet-text" },
-  unlock_epic_accessory: { icon: Shirt, bg: "bg-violet-tint", border: "border-violet/30", iconColor: "text-violet-text" },
-  unlock_legendary_animal: { icon: PawPrint, bg: "bg-amber-tint", border: "border-amber/30", iconColor: "text-amber-text" },
-  unlock_legendary_decor: { icon: HouseHeart, bg: "bg-amber-tint", border: "border-amber/30", iconColor: "text-amber-text" },
-  unlock_legendary_food: { icon: Drumstick, bg: "bg-amber-tint", border: "border-amber/30", iconColor: "text-amber-text" },
-  unlock_legendary_accessory: { icon: Shirt, bg: "bg-amber-tint", border: "border-amber/30", iconColor: "text-amber-text" },
-  unlock_all_animals: { icon: PawPrint, bg: "bg-amber-tint", border: "border-amber/30", iconColor: "text-amber-text" },
-  unlock_all_decor: { icon: HouseHeart, bg: "bg-amber-tint", border: "border-amber/30", iconColor: "text-amber-text" },
-  unlock_all_food: { icon: Drumstick, bg: "bg-amber-tint", border: "border-amber/30", iconColor: "text-amber-text" },
-  unlock_all_accessories: { icon: Shirt, bg: "bg-amber-tint", border: "border-amber/30", iconColor: "text-amber-text" },
-  unlock_everything: { icon: Trophy, bg: "bg-amber-tint", border: "border-amber/30", iconColor: "text-amber-text" },
+  unlock_common_animal: { icon: PawPrint, ...tierTile("COMMON") },
+  unlock_common_decor: { icon: HouseHeart, ...tierTile("COMMON") },
+  unlock_common_food: { icon: Drumstick, ...tierTile("COMMON") },
+  unlock_common_accessory: { icon: Shirt, ...tierTile("COMMON") },
+  unlock_rare_animal: { icon: PawPrint, ...tierTile("RARE") },
+  unlock_rare_decor: { icon: HouseHeart, ...tierTile("RARE") },
+  unlock_rare_food: { icon: Drumstick, ...tierTile("RARE") },
+  unlock_rare_accessory: { icon: Shirt, ...tierTile("RARE") },
+  unlock_epic_animal: { icon: PawPrint, ...tierTile("EPIC") },
+  unlock_epic_decor: { icon: HouseHeart, ...tierTile("EPIC") },
+  unlock_epic_food: { icon: Drumstick, ...tierTile("EPIC") },
+  unlock_epic_accessory: { icon: Shirt, ...tierTile("EPIC") },
+  unlock_legendary_animal: { icon: PawPrint, ...tierTile("LEGENDARY") },
+  unlock_legendary_decor: { icon: HouseHeart, ...tierTile("LEGENDARY") },
+  unlock_legendary_food: { icon: Drumstick, ...tierTile("LEGENDARY") },
+  unlock_legendary_accessory: { icon: Shirt, ...tierTile("LEGENDARY") },
+  unlock_all_animals: { icon: PawPrint, ...tierTile("LEGENDARY") },
+  unlock_all_decor: { icon: HouseHeart, ...tierTile("LEGENDARY") },
+  unlock_all_food: { icon: Drumstick, ...tierTile("LEGENDARY") },
+  unlock_all_accessories: { icon: Shirt, ...tierTile("LEGENDARY") },
+  unlock_everything: { icon: Trophy, ...tierTile("LEGENDARY") },
 
   // Tasks — sage
   tasks_3_in_day: { icon: SquareCheck, bg: "bg-sage-tint", border: "border-sage/30", iconColor: "text-sage-text" },

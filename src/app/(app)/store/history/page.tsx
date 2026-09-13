@@ -6,9 +6,18 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
+import { BoxArt } from "@/components/store/lucky-box-card";
+import { RarityChip, rarityThumbFill } from "@/components/store/rarity-chip";
 import { buttonClasses } from "@/components/ui/button";
-import { transactionsForUser, type TransactionWithStoreItem } from "@/lib/checkout";
+import {
+  transactionsForUser,
+  type TransactionWithStoreItem,
+} from "@/lib/checkout";
+import { cn } from "@/lib/cn";
 import { calendarDaysBetween, isSameDay } from "@/lib/day";
+import { luckyBoxPurchasesForUser } from "@/lib/gacha";
+import { luckyBox } from "@/lib/lucky-boxes";
+import { spendByDay, spendByWeek } from "@/lib/spend-breakdown";
 
 export const metadata: Metadata = {
   title: "Purchase history · TaskTails",
@@ -39,26 +48,45 @@ export const metadata: Metadata = {
  * quantity column, so a suffix could only be a *derived* guess
  * (`coinSpent / storeItem.coinPrice`) that would read wrong the moment a
  * price changes after the fact (this app has already repriced an item once
- * — see `prisma/seed.ts`'s note on the Koala kit) — not a risk worth taking
+ * — see `prisma/seed.ts`'s note on the Koala) — not a risk worth taking
  * for a cosmetic suffix.
+ *
+ * Lucky Box buys are listed alongside, one row per box, read from
+ * `OwnedLuckyBox` (a box is not a `StoreItem`, so it has no `Transaction`).
+ * Each carries the price it was bought at, so the totals stay true if the
+ * box prices change.
  */
+type HistoryEntry = { id: string; purchasedAt: Date; coinSpent: number } & (
+  { storeItem: TransactionWithStoreItem["storeItem"] } | { boxName: string }
+);
 export default async function PurchaseHistoryPage() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
 
-  const transactions = await transactionsForUser(userId);
+  const [items, boxes] = await Promise.all([
+    transactionsForUser(userId),
+    luckyBoxPurchasesForUser(userId),
+  ]);
+  const transactions: HistoryEntry[] = [
+    ...items,
+    ...boxes.map((box) => ({ ...box, boxName: luckyBox(box.boxKey).name })),
+  ].sort((a, b) => b.purchasedAt.getTime() - a.purchasedAt.getTime());
   const now = new Date();
 
   const groups = groupByDay(transactions, now);
-  const spentThisWeek = transactions
-    .filter((t) => calendarDaysBetween(t.purchasedAt, now) < 7)
-    .reduce((sum, t) => sum + t.coinSpent, 0);
+  // #278 — the footer used to show the last 7 days only, which answered a
+  // narrower question than the screen it sits on: this is the *history*,
+  // so the headline figure is everything ever spent. The week is still
+  // there, one tap down, alongside the rest of the shape.
+  const spentAllTime = transactions.reduce((sum, t) => sum + t.coinSpent, 0);
+  const weeks = spendByWeek(transactions, now);
+  const days = spendByDay(transactions, now);
 
   return (
     <AppShell
       header={
-        <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] py-[14px]">
+        <header className="flex flex-none items-center gap-2 border-b border-border-track px-[18px] pt-[calc(14px+env(safe-area-inset-top))] pb-[14px]">
           <Link
             href="/store/cart"
             aria-label="Back to cart"
@@ -81,7 +109,9 @@ export default async function PurchaseHistoryPage() {
           >
             <Receipt size={26} strokeWidth={1.8} className="text-ink-faint" />
           </div>
-          <p className="font-display text-[17px] font-semibold">No purchases yet</p>
+          <p className="font-display text-[17px] font-semibold">
+            No purchases yet
+          </p>
           <p className="mt-[6px] mb-[18px] text-[12.5px] text-ink-soft">
             Buy something and it&rsquo;ll show up here.
           </p>
@@ -146,7 +176,8 @@ export default async function PurchaseHistoryPage() {
                     {/* The day's spend, so a collapsed row still answers "what
                         did that day cost me" without opening it. */}
                     <span className="ml-auto flex-none font-display text-[12px] text-terracotta">
-                      −{group.entries
+                      −
+                      {group.entries
                         .reduce((sum, entry) => sum + entry.coinSpent, 0)
                         .toLocaleString("en-US")}
                     </span>
@@ -165,22 +196,48 @@ export default async function PurchaseHistoryPage() {
                         {rowTimestamp(entry.purchasedAt, now)}
                       </p>
                       <div className="flex min-w-0 flex-1 items-center gap-[11px] desk:flex-none">
-                        <ItemWell
-                          item={entry.storeItem}
-                          size={38}
-                          iconSize={16}
-                          animalIconSize={26}
-                          rounded="rounded-[10px]"
-                        />
+                        {"storeItem" in entry ? (
+                          <ItemWell
+                            bgClassNameOverride={rarityThumbFill(
+                              entry.storeItem.rarity,
+                            )}
+                            item={entry.storeItem}
+                            size={38}
+                            iconSize={16}
+                            animalIconSize={26}
+                            rounded="rounded-[10px]"
+                          />
+                        ) : (
+                          <span className="flex size-[38px] flex-none items-center justify-center rounded-[10px] bg-amber-tint">
+                            <BoxArt height={24} />
+                          </span>
+                        )}
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[13px] font-bold">{entry.storeItem.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-[13px] font-bold">
+                              {"storeItem" in entry
+                                ? entry.storeItem.name
+                                : entry.boxName}
+                            </p>
+                            {/* #276 §5 — the tier, with no effects: this is a
+                                dense historical list, not a shop window. A box
+                                is untiered, so it has none. */}
+                            {"storeItem" in entry ? (
+                              <RarityChip
+                                rarity={entry.storeItem.rarity}
+                                size="row"
+                              />
+                            ) : null}
+                          </div>
                           <p className="text-[11px] text-ink-faint desk:hidden">
                             {rowTimestamp(entry.purchasedAt, now)}
                           </p>
                         </div>
                       </div>
                       <p className="hidden text-[12.5px] font-bold text-ink-soft desk:block">
-                        {CATEGORY_LABEL[entry.storeItem.category]}
+                        {"storeItem" in entry
+                          ? CATEGORY_LABEL[entry.storeItem.category]
+                          : "Lucky box"}
                       </p>
                       <p className="flex-none text-[13px] font-extrabold text-terracotta desk:text-right">
                         −{entry.coinSpent.toLocaleString("en-US")}
@@ -192,22 +249,86 @@ export default async function PurchaseHistoryPage() {
             ))}
           </div>
 
-          <div className="flex flex-none items-center justify-between border-t border-border-track bg-warm px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] desk:px-[34px] desk:py-4">
-            <span className="text-[12px] text-ink-soft">Spent this week</span>
-            <span className="font-display text-[18px] font-semibold text-amber-text">
-              {spentThisWeek.toLocaleString("en-US")} coins
-            </span>
-          </div>
+          {/* A native `<details>`, like the per-day accordion above it — the
+              breakdown costs this page no client boundary and still works
+              with JavaScript off. `group` drives the chevron; `open:` is
+              what lets the summary's own border appear only once expanded. */}
+          <details className="group flex-none border-t border-border-track bg-warm">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 desk:px-[34px] desk:py-4 [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-[6px] text-[12px] text-ink-soft">
+                Total spent
+                <ChevronDown
+                  size={14}
+                  strokeWidth={2.4}
+                  aria-hidden
+                  className="transition-transform duration-120 group-open:rotate-180"
+                />
+              </span>
+              <span className="font-display text-[18px] font-semibold text-amber-text">
+                {spentAllTime.toLocaleString("en-US")} coins
+              </span>
+            </summary>
+
+            <div className="border-t border-border-track px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] desk:px-[34px] desk:pb-4">
+              <SpendSection title="By week" buckets={weeks} />
+              {/* The span is named rather than left implicit: every purchase
+                  is already listed day by day up the page, so this is the
+                  recent shape at a glance, not a second copy of the log. */}
+              <SpendSection
+                title="Last 7 days"
+                buckets={days}
+                className="mt-[14px]"
+              />
+            </div>
+          </details>
         </>
       )}
     </AppShell>
   );
 }
 
-type DayGroup = { label: string; entries: TransactionWithStoreItem[] };
+/** #278 — one labelled list of spend buckets inside the footer's breakdown. */
+function SpendSection({
+  title,
+  buckets,
+  className,
+}: {
+  title: string;
+  buckets: { label: string; coins: number }[];
+  className?: string;
+}) {
+  if (buckets.length === 0) return null;
+
+  return (
+    <div className={className}>
+      <p className="text-overline mb-[6px]">{title}</p>
+      <dl className="flex flex-col gap-[5px]">
+        {buckets.map((bucket) => (
+          <div
+            key={bucket.label}
+            className="flex items-baseline justify-between gap-3"
+          >
+            <dt className="text-[12px] text-ink-soft">{bucket.label}</dt>
+            {/* A zero day is greyed rather than hidden — see `spendByDay`. */}
+            <dd
+              className={cn(
+                "text-[12.5px] font-extrabold",
+                bucket.coins > 0 ? "text-amber-text" : "text-ink-faint",
+              )}
+            >
+              {bucket.coins.toLocaleString("en-US")}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+type DayGroup = { label: string; entries: HistoryEntry[] };
 
 /** Groups already-newest-first transactions (STOR-17) into day buckets without re-sorting. */
-function groupByDay(transactions: TransactionWithStoreItem[], now: Date): DayGroup[] {
+function groupByDay(transactions: HistoryEntry[], now: Date): DayGroup[] {
   const groups: DayGroup[] = [];
   for (const entry of transactions) {
     const label = dayLabel(entry.purchasedAt, now);

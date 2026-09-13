@@ -10,11 +10,16 @@ import {
 } from "@/components/user/username-field";
 
 /**
- * AUTH-07 — change your handle from the profile.
+ * AUTH-07 — change your handle.
  *
- * The onboarding skip modal promises this ("you can change it at any time from
- * your profile"), so it is the same field and the same availability check the
- * step uses.
+ * **#284 moved this from Profile into Settings → Account**, where the rest
+ * of the identity controls already live (email, change password). Profile
+ * is the read-only picture of how you are doing; Settings is where you
+ * change things about the account, and a handle is an account detail.
+ *
+ * The onboarding skip modal promises the handle can be changed "at any time
+ * from your profile" — the copy there now says Settings to match. It is
+ * still the same field and the same availability check that step uses.
  *
  * **#258 — `username` is the stored handle, `null` when there isn't one.** It
  * used to be `displayNameFor(record)`, which substitutes the email's local
@@ -91,7 +96,9 @@ export function UsernameCard({
       // server components rather than mirroring the new handle in local state.
       router.refresh();
     } catch {
-      setFormError("Can't reach TaskTails. Check your connection and try again.");
+      setFormError(
+        "Can't reach TaskTails. Check your connection and try again.",
+      );
     } finally {
       setPending(false);
     }

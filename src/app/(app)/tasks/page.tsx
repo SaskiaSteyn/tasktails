@@ -88,7 +88,10 @@ export default async function TasksPage() {
       <aside className="hidden flex-none flex-col gap-4 desk:flex xl:w-[400px]">
         <div className="flex items-baseline justify-between">
           <h2 className="font-display text-[15.5px] font-semibold">Your zoo</h2>
-          <Link href="/zoo" className="text-[12px] font-bold text-terracotta hover:text-terracotta-hover">
+          <Link
+            href="/zoo"
+            className="text-[12px] font-bold text-terracotta hover:text-terracotta-hover"
+          >
             See all
           </Link>
         </div>

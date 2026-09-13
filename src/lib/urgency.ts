@@ -55,10 +55,19 @@ type UrgencyKind =
   | "cartActivity"
   | "badgeSelection"
   | "recentPurchases"
-  | "noteSelection";
+  | "noteSelection"
+  | "flashSale";
 
-/** The UTC calendar day `date` falls on (`"2026-08-31"`) — the daily-rotation bucket, #187. */
-function utcDayKey(date: Date): string {
+/**
+ * The UTC calendar day `date` falls on (`"2026-08-31"`) — the daily-rotation
+ * bucket, #187.
+ *
+ * Exported (#291) because it is the key that makes a day's urgency
+ * reproducible: `STORE_VISIT` telemetry records it per visit, so the analysis
+ * can hand that same string back to `urgencyDataForItems()` /
+ * `flashSaleOnDay()` and rebuild exactly what that participant was shown.
+ */
+export function urgencyDayKey(date: Date = new Date()): string {
   return date.toISOString().slice(0, 10);
 }
 
@@ -91,7 +100,7 @@ export function seededInt(
   date: Date = new Date(),
 ): number {
   const hash = createHash("sha256")
-    .update(`${userId}:${itemId}:${kind}:${utcDayKey(date)}`)
+    .update(`${userId}:${itemId}:${kind}:${urgencyDayKey(date)}`)
     .digest();
   return min + (hash.readUInt32BE(0) % (max - min + 1));
 }
@@ -163,6 +172,64 @@ export function fakeDiscountPricing(
   const sale = basePrice * units;
   const list = Math.round(sale * 1.2);
   return { list, sale };
+}
+
+/**
+ * #291 — the flash sale's cycle length in UTC days. 3: the discount layer runs
+ * two days, rests the third.
+ *
+ * The rest day is the point ("just to make it feel a tad less overwhelming").
+ * A permanently-discounted store is not a sale, it is the price list, and a
+ * stimulus that is never absent has no contrast for a participant to notice —
+ * the same habituation argument #187 made for the per-item badges, which
+ * already rotate. This is the one Group-B stimulus that never varied.
+ */
+const FLASH_SALE_CYCLE_DAYS = 3;
+
+/**
+ * Any fixed instant. The participant's cycle *offset* is seeded once against
+ * this rather than against the day being asked about — seeding it per day
+ * would make each day an independent coin flip again, which is the thing the
+ * cycle below exists to avoid.
+ */
+const CYCLE_OFFSET_EPOCH = new Date("2026-01-01T00:00:00.000Z");
+
+/**
+ * Whether Group B's discount layer runs on `date`'s UTC day — the banner, the
+ * 20%-inflated list prices and the three curated cards, which live or rest
+ * together (`StorePage` gates all three on this).
+ *
+ * **A strict cycle, not a per-day roll.** Rolling `1-in-3` independently each
+ * day was the first cut and it produced runs — two and three rest days back to
+ * back inside the first fortnight — which does not read as "the sale is off
+ * today", it reads as the sale being over. `(dayIndex + offset) % 3` gives
+ * exactly one rest day in every three, never two adjacent, for every
+ * participant and every window you could sample.
+ *
+ * Still per-participant: `offset` is seeded from `userId`, so two people in
+ * Group B rest on different days of the week and an off-day can never be
+ * mistaken for an outage. Still reproducible from `date` alone, with no stored
+ * schedule — `flashSaleOnDay(userId, new Date("2026-05-04"))` answers for that
+ * day forever. `"flash-sale"` stands in for an item id, the same pseudo-id
+ * trick `gacha.ts` uses for the Lucky Box.
+ *
+ * Group A never reaches this — `StorePage` calls it inside `groupGatedData()`.
+ */
+export function flashSaleOnDay(userId: string, date: Date = new Date()): boolean {
+  // Whole UTC days since the epoch. Parsed back from the day key so the clock
+  // time inside the day can never shift the index.
+  const dayIndex = Math.floor(
+    Date.parse(urgencyDayKey(date)) / (24 * 60 * 60 * 1000),
+  );
+  const offset = seededInt(
+    userId,
+    "flash-sale",
+    "flashSale",
+    0,
+    FLASH_SALE_CYCLE_DAYS - 1,
+    CYCLE_OFFSET_EPOCH,
+  );
+  return (dayIndex + offset) % FLASH_SALE_CYCLE_DAYS !== 0;
 }
 
 /**

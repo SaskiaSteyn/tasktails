@@ -1,4 +1,7 @@
-import { LoadingScreen, TitleHeaderSkeleton } from "@/components/layout/loading-screen";
+import {
+  LoadingScreen,
+  TitleHeaderSkeleton,
+} from "@/components/layout/loading-screen";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -6,15 +9,22 @@ import { Skeleton } from "@/components/ui/skeleton";
  *
  * Mirrors `StoreBrowser`: the 38px search field, the scrolling category chip
  * row, then the 2-column `gap-[11px]` grid of `StoreItemCard`s. The card
- * copies that component's three real regions — title block, 82px `ItemWell`,
- * bordered price footer — so the grid's row height is right rather than
+ * copies that component's three real regions — 120px `ItemWell`, the
+ * bordered name block under it, price row — so the grid's row height is right rather than
  * guessed, and the real cards drop straight into the same boxes.
  *
  * The header takes `action` because this screen's header carries the cart icon
  * beside the coin pill.
  */
 const CHIPS = ["w-[52px]", "w-[68px]", "w-[58px]", "w-[74px]", "w-[62px]"];
-const CARDS = ["w-[78%]", "w-[62%]", "w-[85%]", "w-[54%]", "w-[70%]", "w-[80%]"];
+const CARDS = [
+  "w-[78%]",
+  "w-[62%]",
+  "w-[85%]",
+  "w-[54%]",
+  "w-[70%]",
+  "w-[80%]",
+];
 
 export default function Loading() {
   return (
@@ -33,7 +43,10 @@ export default function Loading() {
 
       <div className="no-scrollbar -mx-1 -mt-1 mb-[7px] flex flex-none gap-[6px] overflow-x-auto p-1">
         {CHIPS.map((width, i) => (
-          <Skeleton key={i} className={`h-[23px] flex-none rounded-pill ${width}`} />
+          <Skeleton
+            key={i}
+            className={`h-[23px] flex-none rounded-pill ${width}`}
+          />
         ))}
       </div>
 
@@ -43,13 +56,13 @@ export default function Loading() {
             key={i}
             className="flex w-full flex-col overflow-hidden rounded-card border border-border-track bg-surface"
           >
-            <div className="px-[11px] pt-[10px] pb-[9px]">
+            {/* `ItemWell` at `size={120}`, full width and square-cornered. */}
+            <Skeleton className="h-[120px] w-full flex-none rounded-none" />
+            <div className="border-t border-border-track px-[11px] pt-[9px]">
               <Skeleton className={`h-[13px] rounded-chip ${width}`} />
               <Skeleton className="mt-[5px] h-[10px] w-[48%] rounded-chip" />
             </div>
-            {/* `ItemWell` at `size={82}`, full width and square-cornered. */}
-            <Skeleton className="h-[82px] w-full flex-none rounded-none" />
-            <div className="border-t border-border-track px-[11px] py-[10px]">
+            <div className="px-[11px] pt-[8px] pb-[10px]">
               <div className="flex items-center justify-between gap-2">
                 <Skeleton className="h-[14px] w-[44px] rounded-chip" />
                 <Skeleton className="size-7 flex-none rounded-full" />

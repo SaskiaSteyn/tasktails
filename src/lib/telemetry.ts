@@ -25,6 +25,9 @@ export type TelemetryEventType =
   | "STORE_VISIT"
   | "ITEM_VIEWED"
   | "ITEM_PURCHASED"
+  // A Lucky Box buy — the box's own purchase event, since a box is not a
+  // `StoreItem` and never goes through the cart or `ITEM_PURCHASED`.
+  | "LUCKY_BOX_PURCHASED"
   | "ADD_TO_CART"
   | "SESSION_START"
   | "SESSION_END"

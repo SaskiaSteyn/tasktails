@@ -23,7 +23,7 @@ async function main() {
   }
 
   const koala = await prisma.storeItem.findFirstOrThrow({
-    where: { name: "Koala kit" },
+    where: { name: "Koala" },
   });
   const food = await prisma.storeItem.findFirstOrThrow({
     where: { name: "Sunflower seeds" },

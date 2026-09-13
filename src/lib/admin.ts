@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AbGroup, UserRole } from "@/generated/prisma/client";
 import { purchaseCount } from "@/lib/checkout";
+import { luckyBoxPurchaseCount } from "@/lib/gacha";
 import {
   type DailyActivity,
   dailyActivityForUser,
@@ -94,12 +95,17 @@ export type ParticipantTelemetrySummary = {
 async function summaryFor(
   participant: ParticipantSummary,
 ): Promise<ParticipantTelemetrySummary> {
-  const [session, funnel, tasksCompleted, itemsPurchased] = await Promise.all([
-    sessionMetricsForUser(participant.id),
-    storeFunnelForUser(participant.id),
-    completedTaskCount(participant.id),
-    purchaseCount(participant.id),
-  ]);
+  const [session, funnel, tasksCompleted, itemPurchases, boxPurchases] =
+    await Promise.all([
+      sessionMetricsForUser(participant.id),
+      storeFunnelForUser(participant.id),
+      completedTaskCount(participant.id),
+      purchaseCount(participant.id),
+      luckyBoxPurchaseCount(participant.id),
+    ]);
+  // A Lucky Box buy is a purchase too, one per box — it just never touches
+  // the cart or `Transaction`, so it is counted from its own table.
+  const itemsPurchased = itemPurchases + boxPurchases;
 
   return {
     id: participant.id,

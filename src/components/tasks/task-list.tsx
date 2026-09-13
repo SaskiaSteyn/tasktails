@@ -1,8 +1,8 @@
 "use client";
 
-import { Check, ChevronDown, PartyPopper, TimerReset } from "lucide-react";
+import { Check, ChevronDown, PartyPopper } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { CooldownCountdown } from "@/components/economy/cooldown-countdown";
 import {
@@ -150,8 +150,9 @@ export function TaskList({
     setSyncedCooldown(earningCooldownUntil);
     setCooldownUntil(earningCooldownUntil);
   }
-  // Distinguishes the "just hit 3" moment (warmer copy) from an ongoing pause.
-  const [cooldownJustStarted, setCooldownJustStarted] = useState(false);
+  // #285 — the "what this means" disclosure under the cooldown banner.
+  const [cooldownHelpOpen, setCooldownHelpOpen] = useState(false);
+  const cooldownHelpId = useId();
 
   const [priorOnboarding, setPriorOnboarding] = useState(onboarding);
   const [questCelebration, setQuestCelebration] = useState<string[] | null>(
@@ -240,13 +241,14 @@ export function TaskList({
           xp: body.reward.granted.xp,
         });
         setCooldownUntil(body.reward.cooldownUntil);
-        setCooldownJustStarted(body.reward.cooldownStarted);
       }
       celebrate(body.levelUp);
       celebrateAchievements(body.achievementsUnlocked);
       router.refresh();
     } catch {
-      setError("Couldn't reach TaskTails. Check your connection and try again.");
+      setError(
+        "Couldn't reach TaskTails. Check your connection and try again.",
+      );
     } finally {
       setCompletingId(null);
     }
@@ -278,7 +280,10 @@ export function TaskList({
             ...task,
             subtasks: task.subtasks.map((subtask) =>
               subtask.id === subtaskId
-                ? { ...subtask, completedAt: new Date(body.subtask.completedAt) }
+                ? {
+                    ...subtask,
+                    completedAt: new Date(body.subtask.completedAt),
+                  }
                 : subtask,
             ),
           };
@@ -292,13 +297,14 @@ export function TaskList({
           xp: body.reward.granted.xp,
         });
         setCooldownUntil(body.reward.cooldownUntil);
-        setCooldownJustStarted(body.reward.cooldownStarted);
       }
       celebrate(body.levelUp);
       celebrateAchievements(body.achievementsUnlocked);
       router.refresh();
     } catch {
-      setError("Couldn't reach TaskTails. Check your connection and try again.");
+      setError(
+        "Couldn't reach TaskTails. Check your connection and try again.",
+      );
     } finally {
       setCompletingId(null);
     }
@@ -403,25 +409,62 @@ export function TaskList({
           (seeded from the server, moved by each completion), with a live
           M:SS countdown; clears itself on 0:00. */}
       {cooldownUntil ? (
-        <div
-          role="status"
-          className="mb-3 flex flex-none items-center gap-2 rounded-card border border-violet/30 bg-violet-tint px-3 py-[10px] text-[12.5px] font-bold text-violet-text motion-safe:animate-medallion-pop"
-        >
-          <TimerReset size={16} className="flex-none" aria-hidden />
-          <span className="flex-1">
-            {cooldownJustStarted
-              ? "Nice — that’s 3. Coin & XP earning is on a break."
-              : "Earning paused — coins & XP resume soon."}
-          </span>
-          <CooldownCountdown
-            until={cooldownUntil}
-            onExpire={() => {
-              setCooldownUntil(null);
-              setCooldownJustStarted(false);
-              router.refresh();
-            }}
-            className="flex-none font-display text-[14px] font-semibold tabular-nums"
-          />
+        <div className="mb-3 flex flex-none flex-col rounded-card border border-violet/30 bg-violet-tint px-3 py-[10px] text-[12.5px] font-bold text-violet-text motion-safe:animate-medallion-pop">
+          <div className="flex items-center gap-2">
+            {/* `role="status"` sits on the sentence alone, not on the whole
+                banner and not on the "Learn more" toggle beside it: a live
+                region announces anything added inside it, so including the
+                disclosure would have re-read the banner every time someone
+                opened it. */}
+            <p className="flex-1">
+              <span role="status">Coin and XP earning are on a break.</span>{" "}
+              {/* #285 — "Earning paused" read as "the app is paused", and
+                  participants were not sure whether to keep going at all.
+                  The banner has no room to say what is and is not affected,
+                  so it says it one tap down. Inline after the sentence
+                  rather than on its own line below (#271): the banner is one
+                  line of copy, and a second stacked control made it read as
+                  two. Every line it reveals is checked against what the code
+                  actually does: `grantEarnings()` withholds coins and XP
+                  outright while a cooldown runs, `recordStreakDay()` runs
+                  before that gate so the streak still counts, and
+                  `grantAchievementReward()` deliberately bypasses the
+                  cooldown because a one-off milestone is not what the pacing
+                  mechanic is aimed at. */}
+              <button
+                type="button"
+                aria-expanded={cooldownHelpOpen}
+                aria-controls={cooldownHelpId}
+                onClick={() => setCooldownHelpOpen((isOpen) => !isOpen)}
+                className="font-bold underline underline-offset-2"
+              >
+                {cooldownHelpOpen ? "Show less" : "Learn more"}
+              </button>
+            </p>
+            <CooldownCountdown
+              until={cooldownUntil}
+              onExpire={() => {
+                setCooldownUntil(null);
+                router.refresh();
+              }}
+              className="flex-none font-display text-[14px] font-semibold tabular-nums"
+            />
+          </div>
+
+          {cooldownHelpOpen ? (
+            <ul
+              id={cooldownHelpId}
+              className="mt-[7px] flex flex-col gap-[5px] text-[11.5px] leading-[1.45] font-semibold"
+            >
+              <li>Keep going — you can still add tasks and tick them off.</li>
+              <li>
+                Those finishes just don&rsquo;t pay coins or XP until the break
+                ends. They aren&rsquo;t saved up for later.
+              </li>
+              <li>Your streak still counts.</li>
+              <li>Achievements still unlock, and still pay their XP.</li>
+            </ul>
+          ) : null}
         </div>
       ) : null}
 
@@ -522,7 +565,8 @@ function completePrompt(
     | { kind: "subtask" }
     | null,
 ): string {
-  const undo = "There's no way to undo it afterward, so make sure this one's really done.";
+  const undo =
+    "There's no way to undo it afterward, so make sure this one's really done.";
 
   if (!pending || pending.kind === "subtask" || pending.subtasks.total === 0) {
     return `You'll earn the coins and XP right away. ${undo}`;

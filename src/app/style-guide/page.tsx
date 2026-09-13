@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import { History } from "lucide-react";
 
 import { AuthBrandMark } from "@/components/auth/auth-screen";
@@ -46,7 +47,9 @@ export const metadata: Metadata = {
  * can't drift from what ships. Colour values are parsed out of `globals.css` at
  * build time and the contrast ratios are computed from them.
  *
- * Not linked from anywhere in the app. Reachable at /style-guide.
+ * Not linked from anywhere in the app. Reachable at /style-guide in development
+ * only — a production build answers it with a 404, so the deployed study app
+ * never serves it (user's direction, 2026-09-13).
  */
 
 const SURFACES = ["surface", "warm", "input", "board"] as const;
@@ -192,6 +195,7 @@ function samplePet(
     hunger,
     lastInteractedAt: new Date(),
     timesPetted: 0,
+    shiny: false,
     storeItem: {
       id: `sample-${name}-item`,
       name,
@@ -212,6 +216,7 @@ const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
     storeItemId: "sample-sunflower-seeds-item",
     equippedToPetId: null,
     quantity: 3,
+    shiny: false,
     storeItem: {
       id: "sample-sunflower-seeds-item",
       name: "Sunflower seeds",
@@ -228,6 +233,7 @@ const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
     storeItemId: "sample-treat-box-item",
     equippedToPetId: null,
     quantity: 1,
+    shiny: false,
     storeItem: {
       id: "sample-treat-box-item",
       name: "Treat box",
@@ -288,6 +294,8 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 export default function StyleGuidePage() {
+  if (process.env.NODE_ENV === "production") notFound();
+
   const t = readColorTokens();
 
   const neutrals = [
@@ -898,33 +906,33 @@ export default function StyleGuidePage() {
       >
         <Card label="Gallery card — one needs-attention, one not">
           <div className="grid w-[300px] max-w-full grid-cols-2 gap-3">
-            <ZooGalleryCard pet={samplePet("Fox kit", "/animals/happy/fox.svg", 82, 24)} />
-            <ZooGalleryCard pet={samplePet("Penguin kit", "/animals/happy/penguin.svg", 58, 66)} />
+            <ZooGalleryCard pet={samplePet("Fox", "/animals/happy/fox.svg", 82, 24)} />
+            <ZooGalleryCard pet={samplePet("Penguin", "/animals/happy/penguin.svg", 58, 66)} />
           </div>
         </Card>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="w-[300px] max-w-full">
             <AnimalCard
-              pet={samplePet("Koala kit", "/animals/happy/koala.svg", 90, 10)}
+              pet={samplePet("Koala", "/animals/happy/koala.svg", 90, 10)}
               foodItems={SAMPLE_FOOD_ITEMS}
             />
           </div>
           <div className="w-[300px] max-w-full">
             <AnimalCard
-              pet={samplePet("Fox kit", "/animals/happy/fox.svg", 50, 40)}
+              pet={samplePet("Fox", "/animals/happy/fox.svg", 50, 40)}
               foodItems={SAMPLE_FOOD_ITEMS}
             />
           </div>
           <div className="w-[300px] max-w-full">
             <AnimalCard
-              pet={samplePet("Penguin kit", "/animals/happy/penguin.svg", 60, 85)}
+              pet={samplePet("Penguin", "/animals/happy/penguin.svg", 60, 85)}
               foodItems={SAMPLE_FOOD_ITEMS}
             />
           </div>
           <div className="w-[300px] max-w-full">
             <AnimalCard
-              pet={samplePet("Koala kit", "/animals/happy/koala.svg", 15, 20)}
+              pet={samplePet("Koala", "/animals/happy/koala.svg", 15, 20)}
               foodItems={[]}
             />
           </div>

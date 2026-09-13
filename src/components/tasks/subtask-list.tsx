@@ -1,30 +1,17 @@
 "use client";
 
-import { Check, Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 
-import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
-import { useLevelUp } from "@/components/economy/level-up-provider";
 import { cn } from "@/lib/cn";
 import { previewShare } from "@/lib/rewards";
 import type { Subtask } from "@/generated/prisma/client";
 
-/** The pieces of SUB-05's response this component actually reads. */
-type CompleteResponse = {
-  reward: { granted: { coins: number; xp: number } } | null;
-  levelUp: Parameters<ReturnType<typeof useLevelUp>["celebrate"]>[0];
-  achievementsUnlocked: Parameters<
-    ReturnType<typeof useAchievementUnlock>["celebrate"]
-  >[0];
-  error?: string;
-};
-
 /**
- * SUB-01/02/03/04/05 — subtask list on the task edit screen. Matches the
- * "Task detail / edit" frame's SUBTASKS block: `bg-warm` rows, 18px
- * completion circle, strikethrough title once done, coin share on the
- * right, "Add" above.
+ * SUB-01/02/04 — subtask list on the task edit screen. Matches the
+ * "Task detail / edit" frame's SUBTASKS block: `bg-warm` rows,
+ * strikethrough title once done, coin share on the right, "Add" above.
  *
  * The list has no fixed height and simply grows with `subtasks.length`,
  * which is what the ticket's "expandable" means here — the mock has no
@@ -37,15 +24,18 @@ type CompleteResponse = {
  * is how the new row shows up; the input closes rather than staying open,
  * since there's nothing left to fix once the add actually worked.
  *
- * Each incomplete row's checkbox (SUB-03) `POST`s SUB-05's
- * `/api/tasks/[id]/subtasks/[subId]/complete` for real, same "wired the
- * same day" convention. **Forward-only**, same rule as TASK-05/11 — a done
- * row's checkbox is disabled rather than toggling back. `router.refresh()`
- * on success updates the row's own `completedAt`/strikethrough *and* the
- * header's coins/XP/streak from the server. Ticking the last row leaves the
- * parent task open (#253) — closing it is the participant's own tap, on the
- * task itself. A level-up crossing goes straight to ECO-07's
- * `useLevelUp().celebrate()`, same as TASK-05.
+ * **A subtask cannot be completed here** (user's direction, 2026-09-10).
+ * SUB-03/05's checkbox used to live on this row; this screen is for editing
+ * a task, and completing one is doing it. The dashboard still does it —
+ * `TaskList` renders subtasks through `TaskRow` and posts SUB-05's
+ * `/api/tasks/[id]/subtasks/[subId]/complete` there — so the capability is
+ * The handoff's circle goes with it rather than staying on as a state dot
+ * — a row that cannot be completed has no use for one. A finished subtask
+ * still reads as finished from its struck-through title.
+ *
+ * That is also why this component no longer touches `useLevelUp()` or
+ * `useAchievementUnlock()`, and no longer shows a reward pop — a completion
+ * was the only thing that could have raised one.
  *
  * The add control is a plain `div`, not a nested `<form>` — this whole list
  * renders inside `EditTaskForm`'s own `<form>` (TASK-03's save/submit), and
@@ -53,6 +43,33 @@ type CompleteResponse = {
  * "Add subtask" submits to the *outer* form instead (silently saving the
  * task and losing the typed subtask title). Enter-to-submit is wired by
  * hand via `onKeyDown` instead of relying on native form submission.
+ *
+ * A row's title is editable (#273) — SUB-04 could add a subtask and SUB-05
+ * complete one, but nothing could fix a typo or drop a row that turned out
+ * not to be needed.
+ *
+ * It saves the way the parent task's title does (user's direction,
+ * 2026-09-10) — by "Save changes", not by clicking out of it. This
+ * component therefore does not `PATCH` a rename at all: the inputs are
+ * `name`d and sit inside `EditTaskForm`'s form, which reads them from
+ * `FormData` on submit. Enter and Escape are left to the browser, exactly as
+ * on the parent field.
+ *
+ * The row *is* the field: the input is bare and the row around it carries
+ * the border, fill, focus ring and error state, so the highlight lands on
+ * the whole row rather than on a box drawn inside one. Delete sits beside
+ * it as a 38px square, the same shape and column as the "Add a subtask"
+ * control's "+" button, which keeps the row back at the handoff's height.
+ * Only the text departs, at 16px rather than 12.5px, because iOS
+ * Safari/Chrome zooms the page in on a focused input below 16px.
+ *
+ * Adding and deleting stay immediate — those are actions, not fields, and
+ * neither has a "Save changes" to wait for.
+ *
+ * Delete is offered only on an *incomplete* row. Removing one that has
+ * already banked its share lets its siblings re-split the parent's full
+ * reward on a smaller count — see `deleteSubtask()` for the arithmetic. The
+ * API enforces it; this only avoids showing a button that would 409.
  *
  * The coin figure per row is a client-side preview of SUB-05's proportional
  * split — the exact `parentCoins / subtasks.length`, to two decimals, so a
@@ -67,14 +84,18 @@ export function SubtaskList({
   taskId,
   subtasks,
   parentCoins,
+  titleErrors,
+  onTitleInput,
 }: {
   taskId: string;
   subtasks: Subtask[];
   parentCoins: number;
+  /** Per-subtask "give it a title" errors, raised by `EditTaskForm`'s submit. */
+  titleErrors: Record<string, string>;
+  /** Clears this row's error as soon as it is being fixed, same as the parent title field. */
+  onTitleInput: (subtaskId: string) => void;
 }) {
   const router = useRouter();
-  const { celebrate } = useLevelUp();
-  const { celebrate: celebrateAchievements } = useAchievementUnlock();
   const inputId = useId();
   const errorId = useId();
 
@@ -84,27 +105,17 @@ export function SubtaskList({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
 
-  const [completingId, setCompletingId] = useState<string | null>(null);
-  const [celebration, setCelebration] = useState<{
-    subtaskId: string;
-    coins: number;
-    xp: number;
-  } | null>(null);
-  const [completeError, setCompleteError] = useState<string>();
+  const [rowError, setRowError] = useState<string>();
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const shareCoins = previewShare(parentCoins, subtasks.length);
 
   useEffect(() => {
-    if (!celebration) return;
-    const timer = setTimeout(() => setCelebration(null), 900);
+    if (!rowError) return;
+    const timer = setTimeout(() => setRowError(undefined), 4000);
     return () => clearTimeout(timer);
-  }, [celebration]);
-
-  useEffect(() => {
-    if (!completeError) return;
-    const timer = setTimeout(() => setCompleteError(undefined), 4000);
-    return () => clearTimeout(timer);
-  }, [completeError]);
+  }, [rowError]);
 
   function openAdd() {
     setAdding(true);
@@ -141,35 +152,29 @@ export function SubtaskList({
     }
   }
 
-  async function handleComplete(subtaskId: string) {
-    setCompletingId(subtaskId);
-    setCompleteError(undefined);
+  async function handleDelete(subtaskId: string) {
+    setDeletingId(subtaskId);
+    setRowError(undefined);
     try {
-      const response = await fetch(
-        `/api/tasks/${taskId}/subtasks/${subtaskId}/complete`,
-        { method: "POST" },
-      );
-      const body = (await response.json()) as CompleteResponse;
+      const response = await fetch(`/api/tasks/${taskId}/subtasks/${subtaskId}`, {
+        method: "DELETE",
+      });
 
       if (!response.ok) {
-        setCompleteError(body.error ?? "Couldn't complete the subtask. Try again.");
+        // 409 carries the reason the row can't go (already complete); anything
+        // else is a generic failure the participant can retry.
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        setRowError(body?.error ?? "Couldn't delete the subtask. Try again.");
         return;
       }
 
-      if (body.reward) {
-        setCelebration({
-          subtaskId,
-          coins: body.reward.granted.coins,
-          xp: body.reward.granted.xp,
-        });
-      }
-      celebrate(body.levelUp);
-      celebrateAchievements(body.achievementsUnlocked);
       router.refresh();
     } catch {
-      setCompleteError("Couldn't reach TaskTails. Check your connection and try again.");
+      setRowError("Couldn't reach TaskTails. Check your connection and try again.");
     } finally {
-      setCompletingId(null);
+      setDeletingId(null);
     }
   }
 
@@ -196,54 +201,96 @@ export function SubtaskList({
         <ul className="flex flex-col gap-[7px]">
           {subtasks.map((subtask) => {
             const done = subtask.completedAt !== null;
-            const pending = completingId === subtask.id;
-            const reward =
-              celebration?.subtaskId === subtask.id
-                ? { coins: celebration.coins, xp: celebration.xp }
-                : null;
+            const titleError = titleErrors[subtask.id];
             return (
-              <li
-                key={subtask.id}
-                className="flex items-center gap-[10px] rounded-[11px] border border-border-track bg-warm px-[11px] py-[9px]"
-              >
-                <span className="relative flex-none">
-                  <button
-                    type="button"
-                    onClick={() => handleComplete(subtask.id)}
-                    disabled={done || pending}
-                    aria-pressed={done}
-                    aria-label={
-                      done ? `"${subtask.title}" is done` : `Mark "${subtask.title}" as done`
-                    }
+              // Mirrors the "Add a subtask" control below: a 38px field with
+              // a square button beside it, not a button tucked inside the
+              // field. Back to the handoff's row height too — what made it
+              // 46px was giving the input its own box inside the row, and a
+              // field inside a field is exactly what looked wrong.
+              <li key={subtask.id} className="flex items-start gap-[7px]">
+                <div className="min-w-0 flex-1">
+                  <div
                     className={cn(
-                      "flex size-[18px] items-center justify-center rounded-full transition-colors duration-120",
-                      done
-                        ? "bg-sage"
-                        : "border-2 border-checkbox hover:border-ink-disabled",
-                      pending && "opacity-60",
+                      // The row *is* the field now: the input below is bare,
+                      // and this is what carries the border, fill and focus
+                      // ring, so the highlight lands on the whole row.
+                      "flex h-[38px] items-center gap-[10px] rounded-[11px] border px-[11px]",
+                      "transition-[background-color,border-color,box-shadow] duration-120",
+                      titleError
+                        ? "border-urgency bg-surface shadow-[0_0_0_1px_var(--color-urgency),0_0_0_5px_rgb(219_76_63/0.14)]"
+                        : cn(
+                            "border-border-track bg-warm",
+                            "focus-within:border-terracotta focus-within:bg-surface",
+                            "focus-within:shadow-[0_0_0_1px_var(--color-terracotta),0_0_0_5px_rgb(226_122_84/0.16)]",
+                          ),
                     )}
                   >
-                    {done ? (
-                      <Check size={11} strokeWidth={3} className="text-surface" />
-                    ) : null}
-                  </button>
-                </span>
-                <span
-                  className={cn(
-                    "flex-1 text-[12.5px] font-semibold",
-                    done && "text-ink-disabled line-through",
-                  )}
-                >
-                  {subtask.title}
-                </span>
-                {reward ? (
-                  <span className="text-[11px] font-extrabold whitespace-nowrap text-sage-text">
-                    +{reward.coins} · +{reward.xp} XP
-                  </span>
+                    <input
+                      // Read at submit out of `EditTaskForm`'s own <form> via
+                      // FormData, which is why this needs a name and no value
+                      // state: the parent already owns the save, so mirroring
+                      // every keystroke up into it would buy nothing.
+                      //
+                      // Keyed by title so a title changed on the server (an add
+                      // or delete elsewhere in the list refreshes this one) still
+                      // reaches an input React would otherwise leave alone.
+                      name={`subtask-title-${subtask.id}`}
+                      key={subtask.title}
+                      defaultValue={subtask.title}
+                      onChange={() => onTitleInput(subtask.id)}
+                      // The strikethrough is CSS, so with the state circle gone
+                      // this label is the only thing left telling a screen reader
+                      // the row is finished.
+                      aria-label={
+                        done
+                          ? `Subtask name: ${subtask.title} (done)`
+                          : `Subtask name: ${subtask.title}`
+                      }
+                      aria-invalid={titleError ? true : undefined}
+                      aria-describedby={titleError ? `${errorId}-${subtask.id}` : undefined}
+                      className={cn(
+                        // Bare — no border, fill or ring of its own; the row
+                        // around it owns all three. 16px, not the handoff's
+                        // 12.5px, for the same reason every other input here
+                        // is 16px: below that iOS Safari/Chrome zooms the page
+                        // in on focus. The row still measures 38px because its
+                        // height never came from the text.
+                        "min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-ink outline-none",
+                        done && !titleError && "text-ink-disabled line-through",
+                      )}
+                    />
+
+                    <span className="flex-none text-[11px] font-extrabold text-amber-text">
+                      {shareCoins}
+                    </span>
+                  </div>
+
+                  {titleError ? (
+                    <p
+                      id={`${errorId}-${subtask.id}`}
+                      role="alert"
+                      className="mt-1 text-[11px] font-bold text-urgency-text"
+                    >
+                      {titleError}
+                    </p>
+                  ) : null}
+                </div>
+
+                {done ? (
+                  // Holds the column so every row's field ends on the same
+                  // edge — a finished subtask has no delete (see below).
+                  <span className="size-[38px] flex-none" aria-hidden />
                 ) : (
-                  <span className="text-[11px] font-extrabold text-amber-text">
-                    {shareCoins}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(subtask.id)}
+                    disabled={deletingId === subtask.id}
+                    aria-label={`Delete "${subtask.title}"`}
+                    className="flex size-[38px] flex-none items-center justify-center rounded-input border border-border-input bg-surface text-urgency-text transition-colors duration-120 hover:bg-warm disabled:opacity-60"
+                  >
+                    <Trash2 size={16} strokeWidth={2.2} aria-hidden />
+                  </button>
                 )}
               </li>
             );
@@ -251,9 +298,9 @@ export function SubtaskList({
         </ul>
       )}
 
-      {completeError ? (
+      {rowError ? (
         <p role="alert" className="mt-[7px] text-[11px] font-bold text-urgency-text">
-          {completeError}
+          {rowError}
         </p>
       ) : null}
 
