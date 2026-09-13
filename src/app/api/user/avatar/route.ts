@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
-import { setAvatar } from "@/lib/users";
+import { avatarSrc, setAvatar } from "@/lib/users";
 import { MAX_AVATAR_BYTES, sniffImageType } from "@/lib/validation/avatar";
 
 /**
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
   if (file.size > MAX_AVATAR_BYTES) {
     return NextResponse.json(
-      { error: "Image must be 3 MB or smaller." },
+      { error: `Image must be ${MAX_AVATAR_BYTES / 1024} KB or smaller.` },
       { status: 400 },
     );
   }
@@ -61,5 +61,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Account not found." }, { status: 404 });
   }
 
-  return NextResponse.json({ avatarUrl: user.avatarUrl });
+  return NextResponse.json({ avatarUrl: avatarSrc(user) });
 }

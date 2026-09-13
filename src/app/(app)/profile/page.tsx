@@ -18,7 +18,7 @@ import { redirectAdminsAway } from "@/lib/admin";
 import { currentEconomy } from "@/lib/economy";
 import { allTimeLeaderboard } from "@/lib/leaderboard";
 import { lifetimeStatsFor } from "@/lib/stats";
-import { displayNameFor, findUserByEmail } from "@/lib/users";
+import { avatarSrc, displayNameFor, findUserByEmail } from "@/lib/users";
 
 export const metadata: Metadata = {
   title: "Profile · TaskTails",
@@ -84,7 +84,7 @@ export default async function ProfilePage() {
               email={record.email}
               level={economy?.level ?? 1}
               studyId={record.studyId}
-              avatarUrl={record.avatarUrl}
+              avatarUrl={avatarSrc(record)}
             />
 
             <Link
@@ -121,7 +121,7 @@ export default async function ProfilePage() {
             email={record.email}
             level={economy?.level ?? 1}
             studyId={record.studyId}
-            avatarUrl={record.avatarUrl}
+            avatarUrl={avatarSrc(record)}
           />
         </div>
 

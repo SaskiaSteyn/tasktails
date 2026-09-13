@@ -85,16 +85,17 @@ export function MonogramAvatar({
     >
       {avatarUrl ? (
         // `fill` rather than width/height: the span above is already the exact
-        // circle, and PRO-03 stores these as base64 data URLs of unknown
-        // dimensions, so there is no intrinsic size to hand next/image.
+        // circle, and uploads have unknown dimensions, so there is no intrinsic
+        // size to hand next/image.
         <Image
           src={avatarUrl}
           alt=""
           fill
           sizes={`${size}px`}
           className="object-cover"
-          // Data URLs can't be optimised by the image pipeline, and running
-          // them through it costs a round trip per row for no gain.
+          // `avatarSrc()`'s route needs the viewer's session, which the image
+          // optimiser's server-side fetch doesn't carry — and uploads are
+          // already downscaled in the browser.
           unoptimized
         />
       ) : (
