@@ -196,7 +196,9 @@ export function StoreItemCard({
   const tiered = !locked;
 
   const cardClassName = cn(
-    "relative flex w-full flex-col overflow-hidden rounded-card",
+    // `h-full`: fills the grid cell `StoreBrowser` sizes to the tallest
+    // card, so every card is the same height (#271).
+    "relative flex h-full w-full flex-col overflow-hidden rounded-card",
     // 1.5px at every tier, not Tailwind's 1px `border` — the handoff's frame
     // width is part of what separates the tiers at a glance, and Common's
     // frame colour *is* `border-track`, so an untiered card is what shipped
@@ -319,7 +321,12 @@ export function StoreItemCard({
         </p>
       </div>
 
-      <div className="px-[11px] pt-[8px] pb-[10px]">
+      {/* `mt-auto`: the card is stretched to the tallest card in the grid
+          (#271), and this pins the footer note and the price row to the
+          bottom so the extra height opens *above* them. Price rows and "+"
+          buttons line up across every card; the note stays directly on top of
+          the price it belongs to rather than floating under the subtitle. */}
+      <div className="mt-auto px-[11px] pt-[8px] pb-[10px]">
         {footerNote}
 
         {locked ? (
@@ -328,12 +335,11 @@ export function StoreItemCard({
              footer is bare text ("Unlocks at level 7").
 
              `min-h-[28px]`: the unlocked footer's height is set by its 28px
-             "+" button, and a bare text line left the locked card ~14px
-             shorter than its row-mates (the grid is `items-start`, so
-             nothing was stretching it back). Matching the button's height
-             here makes the two cards the same height by construction rather
-             than by pinning a card height that the title or a `footerNote`
-             could later change. */
+             "+" button, and a bare text line sat ~14px lower. The grid now
+             stretches every card to one height (#271), so this no longer
+             decides the card's height — it keeps this line vertically centred
+             on the same band the price row and "+" occupy on the unlocked
+             card beside it. */
           <p className="flex min-h-[28px] items-center justify-center text-center text-[11px] font-extrabold text-ink-soft">
             Unlocks at level {item.levelRequired}
           </p>

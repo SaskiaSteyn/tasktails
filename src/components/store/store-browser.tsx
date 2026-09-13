@@ -464,19 +464,33 @@ export function StoreBrowser({
                 )}
               </p>
             ) : (
-              // `items-start`, not Grid's default `stretch` — a card whose footer
-              // carries a `footerNote` line (URG-04/05/06/07) is naturally taller
-              // than a row-mate without one, and letting Grid stretch the shorter
-              // card to match used to leave a visible gap between its title and
-              // its art (see `StoreItemCard`'s own comment on the `mt-auto` this
-              // replaced) rather than just... not being exactly as tall. Reported
-              // live from a real Group B account.
+              // Every card the same height, across the whole grid (#271, "no
+              // matter what"). `auto-rows-[1fr]` makes every row as tall as the
+              // tallest row anywhere in the grid — not just the tallest card
+              // beside it — so a Group B card carrying a two-line footer note
+              // sets the height for every card, including ones in rows with no
+              // note at all. The card fills its cell (`h-full`) and pins its
+              // price row to the bottom (`mt-auto`), so the slack lands between
+              // the subtitle and the price rather than under the "+".
+              //
+              // This replaces `items-start`, which let each card size to its own
+              // content. That was the fix for a gap between the title and the
+              // art when the card still led with its header and `mt-auto` sat on
+              // the art; the art leads now, so stretching opens space below the
+              // text instead, and the price rows line up across the grid.
+              //
+              // `1fr`, not Tailwind's `auto-rows-fr` (`minmax(0, 1fr)`): a zero
+              // minimum lets a row shrink below its content if the grid is ever
+              // given a definite height, and cards would overlap. `flex-none`
+              // closes the other half of that — this grid is a flex item of a
+              // `min-h-0` column, the same trap the category chip row's comment
+              // above documents.
               //
               // `auto-fill` rather than a fixed column count from `desk:` up, per
               // the handoff's own grid spec — which is also what makes the 900px
               // "2-up" behaviour fall out of the same rule rather than needing a
               // second breakpoint.
-              <div className="grid grid-cols-2 items-start gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
+              <div className="grid flex-none auto-rows-[1fr] grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
                 {visible.slice(0, shown).map((item) => (
                   <StoreItemCard
                     key={item.id}
