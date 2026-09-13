@@ -55,8 +55,17 @@ export function ShinyFrame({
  */
 export const SHINY_WASH = "var(--gradient-shiny-wash)";
 
-/** The `✦ Shiny` pill, sitting immediately after the tier chip. */
-export function ShinyPill({ className }: { className?: string }) {
+/**
+ * The `✦ Shiny` pill, sitting immediately after the tier chip. `label`
+ * swaps the word for #289's happiness bonus, which wears the same pill.
+ */
+export function ShinyPill({
+  className,
+  label = "Shiny",
+}: {
+  className?: string;
+  label?: string;
+}) {
   return (
     <span
       className={cn(
@@ -65,7 +74,7 @@ export function ShinyPill({ className }: { className?: string }) {
       )}
     >
       <Sparkles size={9} strokeWidth={2.8} aria-hidden />
-      Shiny
+      {label}
     </span>
   );
 }

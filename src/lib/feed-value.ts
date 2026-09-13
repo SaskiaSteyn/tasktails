@@ -73,3 +73,30 @@ export function feedEffectOf(rarity: FoodRarity | null | undefined): FeedEffect 
 export function hungerLabel(rarity: FoodRarity | null | undefined): string {
   return `less ${Math.abs(feedEffectOf(rarity).hunger)} hunger`;
 }
+
+/**
+ * #289 — what a Shiny is worth. Every shiny thing about a pet — the pet
+ * itself, and each shiny accessory or background it has on — adds this much
+ * to the happiness a pet or a feed gives it. They stack: a shiny fox in a
+ * shiny hat gets +30%.
+ *
+ * On the *gain* rather than on decay or the stored stat, so the bonus is
+ * visible on the one number a participant already reads ("+5 mood") and
+ * never needs writing back or undoing when the hat comes off.
+ */
+export const SHINY_HAPPINESS_BONUS = 0.15;
+
+/** How many shiny things a pet has going for it — itself plus whatever shiny items it has equipped. */
+export function shinySourcesOf(pet: {
+  shiny: boolean;
+  equippedItems: { shiny: boolean }[];
+}): number {
+  return (
+    Number(pet.shiny) + pet.equippedItems.filter((item) => item.shiny).length
+  );
+}
+
+/** A happiness gain with the shiny bonus applied, rounded to the whole points the stat is stored in. */
+export function withShinyBonus(happiness: number, shinySources: number): number {
+  return Math.round(happiness * (1 + SHINY_HAPPINESS_BONUS * shinySources));
+}

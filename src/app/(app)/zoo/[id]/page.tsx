@@ -112,6 +112,7 @@ export default async function SanctuaryPage({
           foodItems={foodItems}
           backgroundUrl={backgroundUrl}
           accessoryUrls={accessoryUrls}
+          shinySources={pet.shinySources}
         />
       </div>
 
