@@ -89,8 +89,9 @@ import type { StoreItemWithLock } from "@/lib/store";
  *
  * `addQuantity` (#185, #300) is the one thing that isn't display-only: a
  * multibuy card passes the bundle size — `2` for "Buy 1 get 1", `3` for
- * "Buy 2 get 1" — so the "+" adds the whole bundle, and checkout gives one
- * unit of it free (`lineCost()`). Defaults to 1 for every other card.
+ * "Buy 2 get 1" — so the "+" adds the whole bundle. Only the "Buy 1 get 1"
+ * gets a unit free at checkout (`lineCost()`); a "Buy 2 get 1" pays for all
+ * three. Defaults to 1 for every other card.
  *
  * A locked card is now a real `<button>` (SHR-06): tapping it calls
  * `onLockedClick`, which `StoreBrowser` uses to show the full-screen

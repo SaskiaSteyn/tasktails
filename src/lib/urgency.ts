@@ -160,10 +160,10 @@ export const TWO_FOR_ONE_ITEM_NAME = "Red collar";
  * is now stale.)
  *
  * A display-layer fabrication, like most Group-B urgency stimuli (§4):
- * checkout charges `coinPrice` per unit, never `list`/`sale`. The multibuy
- * cards are the exception and don't use this — #300 made "Buy 1 get 1" and
- * "Buy 2 get 1" real discounts (`dealsForUser()` in `cart.ts`), priced on the
- * card as the struck worth of the bundle beside what it actually costs.
+ * checkout charges `coinPrice` per unit, never `list`/`sale`. A "Buy 2 get 1"
+ * card passes the three-unit total, so its "free" unit is in the price. The
+ * one real discount is the Red collar's "Buy 1 get 1" (#300,
+ * `dealsForUser()` in `cart.ts`), which doesn't use this.
  */
 export function fakeDiscountPricing(basePrice: number): { list: number; sale: number } {
   const sale = basePrice;

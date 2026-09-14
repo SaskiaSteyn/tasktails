@@ -7,13 +7,12 @@
  *
  * #300 — unlike every other Group-B urgency stimulus (§4), this one is real:
  * the card's "+" adds two and checkout charges one (`lineCost()`,
- * `dealsForUser()`). The cart panel reuses this pill to tag multibuy lines,
- * with `buy={2}` for a "Buy 2 get 1".
+ * `dealsForUser()`). The cart panel reuses this pill to tag the collar line.
  */
-export function BuyOneGetOneBadge({ buy = 1 }: { buy?: number }) {
+export function BuyOneGetOneBadge() {
   return (
     <span className="whitespace-nowrap rounded-pill bg-violet px-[7px] py-[2px] text-[9px] font-extrabold text-white">
-      Buy {buy} get 1
+      Buy 1 get 1
     </span>
   );
 }
