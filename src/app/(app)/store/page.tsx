@@ -151,11 +151,13 @@ export const metadata: Metadata = {
  * just the three curated ones, per its own "applied to every purchasable
  * Group-B item" wording. Issue #185 revised what that discount *is*: `sale`
  * is now exactly the Group A price with `list` inflated 20% above it (no real
- * markdown). #300 made the multibuy badges real: `deals` (`dealsForUser()`)
- * marks the Red collar's "Buy 1 get 1" (`2`) and every seeded
- * `BundleTimerBadge` "Buy 2 get 1" (`3`); those cards add that many units at
- * once (`bundleQuantities`) and show the bundle's worth struck through beside
- * what checkout charges for it.
+ * markdown). The multibuy cards add the whole bundle at once
+ * (`bundleQuantities`). #300: the Red collar's "Buy 1 get 1" is a real deal
+ * (`deals`, `dealsForUser()`) — two for one unit's price, struck beside the
+ * pair's worth. A seeded `BundleTimerBadge` "Buy 2 get 1" is not: it adds three
+ * and its price is all three units, so the "free" one is paid for, with the
+ * usual 20%-inflated figure struck beside it (the cart then fakes a discount
+ * for it — `cart-pricing.ts`).
  *
  * `level` (SHR-06) is read via `levelOf()` — the same gate check
  * `storeItemsForUser()` already runs internally to resolve each item's own
@@ -300,15 +302,14 @@ export default async function StorePage({
     for (const item of items) {
       if (item.locked) continue;
 
-      // #300 — a multibuy card adds the whole bundle and prices it as the
-      // bundle's worth struck beside what it costs (one free unit in it).
-      const freeEvery = deals[item.id];
-      if (freeEvery) {
-        pricing[item.id] = {
-          list: item.coinPrice * freeEvery,
-          sale: item.coinPrice * (freeEvery - 1),
-        };
-        bundleQuantities[item.id] = freeEvery;
+      // #300 — "Buy 1 get 1" (a real deal): two collars for one's price.
+      // "Buy 2 get 1" (not one): three units, priced as all three.
+      if (deals[item.id] === "buy1get1") {
+        pricing[item.id] = { list: item.coinPrice * 2, sale: item.coinPrice };
+        bundleQuantities[item.id] = 2;
+      } else if (deals[item.id] === "buy2get1") {
+        pricing[item.id] = fakeDiscountPricing(item.coinPrice * 3);
+        bundleQuantities[item.id] = 3;
       } else {
         pricing[item.id] = fakeDiscountPricing(item.coinPrice);
       }

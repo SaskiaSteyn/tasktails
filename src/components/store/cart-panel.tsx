@@ -80,8 +80,8 @@ type Confirmation = {
  * single DOM position that is both.
  *
  * #300 — `deals` (`dealsForUser()`, empty for Group A) marks the lines on a
- * live "Buy 1 get 1" / "Buy 2 get 1": their total is `lineCost()` with the full
- * price struck beside it, and the summary gains a discount row. "Clear cart"
+ * live "Buy 1 get 1" or "Buy 2 get 1": their total is `lineCost()` with
+ * `lineListCost()` (inflated, for a "Buy 2 get 1") struck beside it, and the summary gains a discount row. "Clear cart"
  * empties the cart in one `DELETE /api/store/cart`, no confirmation — it
  * loses nothing that one tap per item in the store can't put back.
  */
@@ -110,7 +110,7 @@ export function CartPanel({
   const [confirmation, setConfirmation] = useState<Confirmation>();
   const [clearing, setClearing] = useState(false);
 
-  const subtotal = cart.reduce((sum, line) => sum + lineListCost(line), 0);
+  const subtotal = cart.reduce((sum, line) => sum + lineListCost(line, deals), 0);
   const total = cart.reduce((sum, line) => sum + lineCost(line, deals), 0);
   const discount = subtotal - total;
   const balanceAfter = coins - total;
@@ -309,7 +309,7 @@ export function CartPanel({
         <div className={cn("flex flex-col gap-[10px]", wide && "xl:gap-0")}>
           {cart.map((line) => {
             const cost = lineCost(line, deals);
-            const listCost = lineListCost(line);
+            const listCost = lineListCost(line, deals);
             return (
             <div
               key={line.id}
@@ -339,9 +339,7 @@ export function CartPanel({
                   </div>
                   <div className="flex items-center gap-[6px]">
                     <p className="text-[11px] text-ink-faint">{CATEGORY_LABEL[line.storeItem.category]}</p>
-                    {deals[line.storeItemId] ? (
-                      <BuyOneGetOneBadge buy={deals[line.storeItemId] - 1} />
-                    ) : null}
+                    {deals[line.storeItemId] === "buy1get1" ? <BuyOneGetOneBadge /> : null}
                   </div>
                 </div>
               </div>
@@ -540,7 +538,7 @@ function Summary({
   );
 }
 
-/** A line total, with the undiscounted figure struck beside it when a #300 multibuy took something off. */
+/** A line total, with the undiscounted figure struck beside it when a #300 multibuy shows something off. */
 function StruckCost({ cost, listCost }: { cost: number; listCost: number }) {
   if (cost === listCost) return <>{cost.toLocaleString("en-US")}</>;
   return (
