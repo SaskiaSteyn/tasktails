@@ -142,6 +142,12 @@ export type ItemUrgencyData = {
   showCurrencyUrgency: boolean;
 };
 
+/** The addendum's three curated Group-B cards, whose badges are fixed copy rather than seeded (`StorePage`). */
+export const CURATED_URGENCY_ITEM_NAMES = ["Sunflower seeds", "Red collar", "Hearts"];
+
+/** #300 — the curated card carrying the "Buy 1 get 1" badge; a real deal (`dealsForUser()`). */
+export const TWO_FOR_ONE_ITEM_NAME = "Red collar";
+
 /**
  * `design_handoff/ADDENDUM-store-zoo-art.md`'s Group-B fake discount, as
  * revised by issue #185 ("inflate the price, cross it out, sell it for the
@@ -153,23 +159,14 @@ export type ItemUrgencyData = {
  * pins it to the real price instead, so the addendum's own 48/38-style table
  * is now stale.)
  *
- * `units` (#185, "Buy 2 get 1") — for a `BundleTimerBadge` item the card
- * shows the two-unit figure: `fakeDiscountPricing(coinPrice, 2)` → `sale` is
- * two units at the real price, `list` that inflated 20%. `StoreItemCard`'s
- * "+" then adds two units at once and checkout charges `coinPrice` × 2 for
- * two items — no third item is ever granted, the "get 1" is copy only.
- *
- * Still a display-layer fabrication for the per-unit price, like every other
- * Group-B urgency stimulus (§4): checkout charges `coinPrice` per unit, never
- * `list`/`sale` — nothing in `cart.ts`/`checkout` reads this. The only
- * behavioural change #185 makes is the two-unit add quantity, carried by
- * `StoreItemCard`'s `addQuantity` prop, not by this module.
+ * A display-layer fabrication, like most Group-B urgency stimuli (§4):
+ * checkout charges `coinPrice` per unit, never `list`/`sale`. The multibuy
+ * cards are the exception and don't use this — #300 made "Buy 1 get 1" and
+ * "Buy 2 get 1" real discounts (`dealsForUser()` in `cart.ts`), priced on the
+ * card as the struck worth of the bundle beside what it actually costs.
  */
-export function fakeDiscountPricing(
-  basePrice: number,
-  units: number = 1,
-): { list: number; sale: number } {
-  const sale = basePrice * units;
+export function fakeDiscountPricing(basePrice: number): { list: number; sale: number } {
+  const sale = basePrice;
   const list = Math.round(sale * 1.2);
   return { list, sale };
 }

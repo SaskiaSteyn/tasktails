@@ -97,11 +97,11 @@ const CATEGORY_CHIPS: { label: string; value: StoreFilter }[] = [
  * this component just forwards whichever of them an item has straight to
  * `StoreItemCard`'s matching slot.
  *
- * `bundleQuantities` (#185) is the same forward-only map, for the handful of
- * "Buy 2 get 1" `BundleTimerBadge` items: `StorePage` records `2` for each,
- * which becomes `StoreItemCard`'s `addQuantity` so the "+" adds two units at
- * once (its `pricing` entry already shows the two-unit figure). Absent for
- * every other card, where `addQuantity` falls back to 1.
+ * `bundleQuantities` (#185, #300) is the same forward-only map, for the
+ * multibuy cards: `StorePage` records the bundle size (`2` for "Buy 1 get 1",
+ * `3` for "Buy 2 get 1"), which becomes `StoreItemCard`'s `addQuantity` so the
+ * "+" adds the whole bundle. Absent for every other card, where `addQuantity`
+ * falls back to 1.
  *
  * `level` (SHR-06) is the signed-in user's current level, read once here so
  * tapping a locked card can show the full-screen "locked by level" state
@@ -119,7 +119,8 @@ const CATEGORY_CHIPS: { label: string; value: StoreFilter }[] = [
  * odds-boost banner plus recent-pulls line, handed to the group unexamined,
  * same `ReactNode`-slot reasoning `flashSaleBanner` already established:
  * this component never branches on it, just draws whatever `StorePage`
- * decided.
+ * decided. The per-card `urgencyBadges`/`urgencyFooterNotes`/`pricing` maps
+ * also carry the boxes' own entries, keyed by box key.
  */
 /** #280 — the two store modes, in the order they are arrowed through. */
 const TABS = [
@@ -149,7 +150,7 @@ export function StoreBrowser({
   urgencyBadges?: Record<string, ReactNode>;
   urgencyFooterNotes?: Record<string, ReactNode>;
   pricing?: Record<string, { list: number; sale: number }>;
-  /** #185 — per-item add-to-cart quantity for "Buy 2 get 1" bundle items (`2`); absent elsewhere. */
+  /** #185/#300 — per-item add-to-cart quantity for multibuy cards (the bundle size); absent elsewhere. */
   bundleQuantities?: Record<string, number>;
   level: number;
   unopenedBoxes: number;
@@ -460,6 +461,9 @@ export function StoreBrowser({
                 boxes={visibleBoxes}
                 coins={coins}
                 urgency={luckyBoxUrgency}
+                badges={urgencyBadges}
+                footerNotes={urgencyFooterNotes}
+                pricing={pricing}
               />
             ) : null}
 

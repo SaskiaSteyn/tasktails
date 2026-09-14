@@ -19,10 +19,17 @@ export function LuckyBoxesGroup({
   boxes,
   coins,
   urgency,
+  badges,
+  footerNotes,
+  pricing,
 }: {
   boxes: LuckyBoxDefinition[];
   coins: number;
   urgency?: ReactNode;
+  /** Group-B per-box corner badge, footer note and fake 20% off — keyed by box key, same maps the item cards read. */
+  badges?: Record<string, ReactNode>;
+  footerNotes?: Record<string, ReactNode>;
+  pricing?: Record<string, { list: number; sale: number }>;
 }) {
   const [selected, setSelected] = useState<LuckyBoxDefinition | null>(null);
 
@@ -35,6 +42,9 @@ export function LuckyBoxesGroup({
           <LuckyBoxCard
             key={box.key}
             box={box}
+            badge={badges?.[box.key]}
+            footerNote={footerNotes?.[box.key]}
+            pricing={pricing?.[box.key]}
             onSelect={() => setSelected(box)}
           />
         ))}
@@ -42,6 +52,7 @@ export function LuckyBoxesGroup({
 
       <LuckyBoxSheet
         box={selected}
+        pricing={pricing}
         coins={coins}
         onClose={() => setSelected(null)}
       />

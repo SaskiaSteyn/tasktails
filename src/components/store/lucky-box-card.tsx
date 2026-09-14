@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { ReactNode } from "react";
 
 import { Coin } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
@@ -49,9 +50,16 @@ export function BoxArt({
  */
 export function LuckyBoxCard({
   box,
+  badge,
+  footerNote,
+  pricing,
   onSelect,
 }: {
   box: LuckyBoxDefinition;
+  /** Group-B urgency, same slots as `StoreItemCard`'s: corner badge, note above the price, struck fake list price. */
+  badge?: ReactNode;
+  footerNote?: ReactNode;
+  pricing?: { list: number; sale: number };
   onSelect: () => void;
 }) {
   return (
@@ -60,9 +68,16 @@ export function LuckyBoxCard({
         <BoxArt height={62} />
         {/* The item count is what tells the four apart at a glance, so it is
             drawn on the art, not only in the sub line. */}
-        <span className="absolute top-2 right-2 rounded-pill bg-amber-tint px-[7px] py-[2px] text-[10px] font-extrabold text-amber-text">
+        <span className="absolute top-2 left-2 rounded-pill bg-amber-tint px-[7px] py-[2px] text-[10px] font-extrabold text-amber-text">
           ×{box.itemCount}
         </span>
+        {/* Urgency keeps the top-right corner, as on the item cards; the item
+            count moves left rather than stacking under it. */}
+        {badge ? (
+          <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
+            {badge}
+          </div>
+        ) : null}
       </div>
 
       <div className="border-t border-border-track px-[11px] pt-[9px]">
@@ -72,19 +87,29 @@ export function LuckyBoxCard({
         </p>
       </div>
 
-      <div className="mt-auto flex items-center justify-between gap-2 px-[11px] pt-[8px] pb-[10px]">
-        <span className="flex items-center gap-[4px]">
-          <Coin size={12} />
-          <span className="text-[12px] font-extrabold text-amber-text">
-            {box.coinPrice.toLocaleString("en-US")}
+      <div className="mt-auto px-[11px] pt-[8px] pb-[10px]">
+        {footerNote}
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-[4px]">
+            <Coin size={12} />
+            <span className="flex items-baseline gap-[5px]">
+              {pricing ? (
+                <span className="text-[10px] font-bold text-ink-disabled line-through">
+                  {pricing.list.toLocaleString("en-US")}
+                </span>
+              ) : null}
+              <span className="text-[12px] font-extrabold text-amber-text">
+                {box.coinPrice.toLocaleString("en-US")}
+              </span>
+            </span>
           </span>
-        </span>
-        <span
-          aria-hidden
-          className="flex size-[28px] flex-none items-center justify-center rounded-[9px] bg-terracotta text-[16px] leading-none text-white transition-colors duration-120 group-hover:bg-terracotta-hover"
-        >
-          +
-        </span>
+          <span
+            aria-hidden
+            className="flex size-[28px] flex-none items-center justify-center rounded-[9px] bg-terracotta text-[16px] leading-none text-white transition-colors duration-120 group-hover:bg-terracotta-hover"
+          >
+            +
+          </span>
+        </div>
       </div>
 
       <button
