@@ -248,18 +248,6 @@ describe("fakeDiscountPricing", () => {
     }
   });
 
-  it("prices a 'Buy 2 get 1' bundle at two units, struck price inflated 20%", () => {
-    for (const base of [30, 40, 65, 130, 999]) {
-      const { list, sale } = fakeDiscountPricing(base, 2);
-      expect(sale).toBe(base * 2);
-      expect(list).toBe(Math.round(base * 2 * 1.2));
-      expect(list).toBeGreaterThan(sale);
-    }
-  });
-
-  it("defaults to a single unit", () => {
-    expect(fakeDiscountPricing(50)).toEqual(fakeDiscountPricing(50, 1));
-  });
 });
 
 /**

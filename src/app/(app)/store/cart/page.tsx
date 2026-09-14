@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { CartPanel } from "@/components/store/cart-panel";
-import { cartForUser } from "@/lib/cart";
+import { cartForUser, dealsForUser } from "@/lib/cart";
 import { currentEconomy } from "@/lib/economy";
 
 export const metadata: Metadata = {
@@ -40,9 +40,10 @@ export default async function CartPage() {
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
 
-  const [cart, economy] = await Promise.all([
+  const [cart, economy, deals] = await Promise.all([
     cartForUser(userId),
     currentEconomy(),
+    dealsForUser(userId),
   ]);
 
   return (
@@ -63,7 +64,11 @@ export default async function CartPage() {
       }
       className="bg-warm desk:mx-auto desk:w-full desk:max-w-[720px] desk:bg-surface xl:max-w-none"
     >
-      <CartPanel initialCart={cart} coins={economy?.coins ?? 0} />
+      <CartPanel
+        initialCart={cart}
+        coins={economy?.coins ?? 0}
+        deals={deals}
+      />
     </AppShell>
   );
 }

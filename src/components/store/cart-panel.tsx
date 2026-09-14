@@ -1,18 +1,20 @@
 "use client";
 
-import { Check, History, Minus, Plus, ShoppingBag } from "lucide-react";
+import { Check, History, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { useAchievementUnlock } from "@/components/economy/achievement-unlock-provider";
 import { useLevelUp } from "@/components/economy/level-up-provider";
+import { BuyOneGetOneBadge } from "@/components/store/buy-one-get-one-badge";
 import { CATEGORY_LABEL, ItemWell } from "@/components/store/item-visual";
 import { RarityChip, rarityRowFrame, rarityThumbFill } from "@/components/store/rarity-chip";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Coin, RollingCoins } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
 import type { CartItemWithStoreItem } from "@/lib/cart";
+import { lineCost, lineListCost, type Deals } from "@/lib/cart-pricing";
 import type { PurchasedLine } from "@/lib/checkout";
 
 /** What a successful `POST /api/store/checkout` leaves this screen holding. */
@@ -76,14 +78,23 @@ type Confirmation = {
  * with the list exactly as the mobile frame draws it, and on desktop it is
  * pinned in the side panel exactly as the desktop frame draws it. There is no
  * single DOM position that is both.
+ *
+ * #300 — `deals` (`dealsForUser()`, empty for Group A) marks the lines on a
+ * live "Buy 1 get 1" / "Buy 2 get 1": their total is `lineCost()` with the full
+ * price struck beside it, and the summary gains a discount row. "Clear cart"
+ * empties the cart in one `DELETE /api/store/cart`, no confirmation — it
+ * loses nothing that one tap per item in the store can't put back.
  */
 export function CartPanel({
   initialCart,
   coins,
+  deals = {},
   variant = "page",
 }: {
   initialCart: CartItemWithStoreItem[];
   coins: number;
+  /** #300 — store item id → every how many units one is free today. */
+  deals?: Deals;
   /** `"rail"` keeps the narrow single-column layout at every width. */
   variant?: "page" | "rail";
 }) {
@@ -97,12 +108,12 @@ export function CartPanel({
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string>();
   const [confirmation, setConfirmation] = useState<Confirmation>();
+  const [clearing, setClearing] = useState(false);
 
-  const subtotal = cart.reduce(
-    (sum, line) => sum + line.storeItem.coinPrice * line.quantity,
-    0,
-  );
-  const balanceAfter = coins - subtotal;
+  const subtotal = cart.reduce((sum, line) => sum + lineListCost(line), 0);
+  const total = cart.reduce((sum, line) => sum + lineCost(line, deals), 0);
+  const discount = subtotal - total;
+  const balanceAfter = coins - total;
   // Only the full-page mount widens; see the `variant` note above.
   const wide = variant === "page";
 
@@ -139,6 +150,20 @@ export function CartPanel({
       setCheckoutError("Couldn't reach TaskTails. Check your connection and try again.");
     } finally {
       setCheckingOut(false);
+    }
+  }
+
+  async function handleClear() {
+    if (clearing) return;
+    setClearing(true);
+    try {
+      const response = await fetch("/api/store/cart", { method: "DELETE" });
+      if (response.ok) {
+        setCart([]);
+        router.refresh();
+      }
+    } finally {
+      setClearing(false);
     }
   }
 
@@ -256,6 +281,18 @@ export function CartPanel({
           wide && "xl:min-w-0 xl:px-0 xl:pt-0",
         )}
       >
+        <div className="mb-2 flex justify-end">
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={clearing || pendingId !== null}
+            className="flex items-center gap-[5px] text-[12px] font-bold text-urgency-text transition-opacity duration-120 hover:opacity-80 disabled:opacity-50"
+          >
+            <Trash2 size={14} strokeWidth={2} aria-hidden />
+            {clearing ? "Clearing…" : "Clear cart"}
+          </button>
+        </div>
+
         {/* Column headings, desktop only. The narrow rows (phone cart + the
             `/store` rail) carry a single line-total to the right of the
             stepper instead (#209) — one value, not a labelled Unit/Total
@@ -270,7 +307,10 @@ export function CartPanel({
         ) : null}
 
         <div className={cn("flex flex-col gap-[10px]", wide && "xl:gap-0")}>
-          {cart.map((line) => (
+          {cart.map((line) => {
+            const cost = lineCost(line, deals);
+            const listCost = lineListCost(line);
+            return (
             <div
               key={line.id}
               className={cn(
@@ -297,7 +337,12 @@ export function CartPanel({
                     <p className="truncate text-[13px] font-extrabold">{line.storeItem.name}</p>
                     <RarityChip rarity={line.storeItem.rarity} size="row" />
                   </div>
-                  <p className="text-[11px] text-ink-faint">{CATEGORY_LABEL[line.storeItem.category]}</p>
+                  <div className="flex items-center gap-[6px]">
+                    <p className="text-[11px] text-ink-faint">{CATEGORY_LABEL[line.storeItem.category]}</p>
+                    {deals[line.storeItemId] ? (
+                      <BuyOneGetOneBadge buy={deals[line.storeItemId] - 1} />
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
@@ -344,24 +389,26 @@ export function CartPanel({
                   `p-[14px]`, and both span the same width, so this closes the
                   4px gap. */}
               <span
-                aria-label={`${(line.storeItem.coinPrice * line.quantity).toLocaleString("en-US")} coins`}
+                aria-label={`${cost.toLocaleString("en-US")} coins`}
                 className="flex flex-none items-center gap-1 pr-[4px] text-[13px] font-extrabold text-amber-text xl:hidden"
               >
                 <Coin size={12} />
-                {(line.storeItem.coinPrice * line.quantity).toLocaleString("en-US")}
+                <StruckCost cost={cost} listCost={listCost} />
               </span>
 
               {wide ? (
                 <span className="hidden items-center justify-end gap-1 font-display text-[15px] font-semibold text-amber-text xl:flex">
                   <Coin size={13} />
-                  {(line.storeItem.coinPrice * line.quantity).toLocaleString("en-US")}
+                  <StruckCost cost={cost} listCost={listCost} />
                 </span>
               ) : null}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <Summary
+          discount={discount}
           subtotal={subtotal}
           coins={coins}
           balanceAfter={balanceAfter}
@@ -378,6 +425,7 @@ export function CartPanel({
       >
         {wide ? (
           <Summary
+            discount={discount}
             subtotal={subtotal}
             coins={coins}
             balanceAfter={balanceAfter}
@@ -400,7 +448,7 @@ export function CartPanel({
             <>
               Check out ·
               <Coin size={14} />
-              {subtotal.toLocaleString("en-US")}
+              {total.toLocaleString("en-US")}
             </>
           )}
         </Button>
@@ -436,11 +484,14 @@ function PurchaseHistoryLink({ className }: { className?: string }) {
  */
 function Summary({
   subtotal,
+  discount,
   coins,
   balanceAfter,
   className,
 }: {
   subtotal: number;
+  /** #300 — coins the multibuy lines take off `subtotal`; the row only shows when there is one. */
+  discount: number;
   coins: number;
   balanceAfter: number;
   className?: string;
@@ -459,6 +510,16 @@ function Summary({
           {subtotal.toLocaleString("en-US")}
         </span>
       </div>
+      {discount > 0 ? (
+        <div className="mb-2 flex justify-between text-[13px]">
+          <span className="text-ink-soft">Bundle discount</span>
+          <span className="flex items-center gap-1 font-extrabold text-sage">
+            &minus;
+            <Coin size={12} />
+            {discount.toLocaleString("en-US")}
+          </span>
+        </div>
+      ) : null}
       <div className="mb-2 flex justify-between text-[13px]">
         <span className="text-ink-soft">Balance now</span>
         <span className="font-bold">{coins.toLocaleString("en-US")}</span>
@@ -476,5 +537,18 @@ function Summary({
         </span>
       </div>
     </div>
+  );
+}
+
+/** A line total, with the undiscounted figure struck beside it when a #300 multibuy took something off. */
+function StruckCost({ cost, listCost }: { cost: number; listCost: number }) {
+  if (cost === listCost) return <>{cost.toLocaleString("en-US")}</>;
+  return (
+    <span className="flex flex-col items-end leading-none">
+      <span className="text-[10px] font-bold text-ink-disabled line-through">
+        {listCost.toLocaleString("en-US")}
+      </span>
+      {cost.toLocaleString("en-US")}
+    </span>
   );
 }

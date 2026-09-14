@@ -39,10 +39,13 @@ const TIER_INK: Record<StoreItemRarity, string> = {
  */
 export function LuckyBoxSheet({
   box,
+  pricing,
   coins,
   onClose,
 }: {
   box: LuckyBoxDefinition | null;
+  /** Group B's fake struck "was" prices by box key (`fakeDiscountPricing()`); the box still costs `coinPrice`. */
+  pricing?: Record<string, { list: number; sale: number }>;
   coins: number;
   onClose: () => void;
 }) {
@@ -73,6 +76,7 @@ export function LuckyBoxSheet({
   }, [box]);
 
   const shortfall = shown ? shown.coinPrice - coins : 0;
+  const listPrice = shown ? pricing?.[shown.key]?.list : undefined;
 
   /** `origin` is the pressed button — where the fly-to-My-boxes mark leaves from. */
   async function buy(origin: HTMLElement) {
@@ -225,6 +229,11 @@ export function LuckyBoxSheet({
                 ) : (
                   <>
                     Buy · <Coin size={15} />
+                    {listPrice ? (
+                      <span className="text-[13px] font-bold text-white/70 line-through">
+                        {listPrice.toLocaleString("en-US")}
+                      </span>
+                    ) : null}
                     {shown.coinPrice.toLocaleString("en-US")}
                   </>
                 )}
