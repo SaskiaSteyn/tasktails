@@ -165,16 +165,17 @@ export async function clearCart(userId: string): Promise<number> {
 }
 
 /**
- * #300 — the Group-B multibuy deals live for `userId` on `date`'s UTC day, as
+ * #300 — the Group-B deals live for `userId` on `date`'s UTC day, as
  * `lineCost()` (`cart-pricing.ts`) reads them: store item id → every how many
- * units one is free. The Red collar's "Buy 1 get 1" is `2`; every item whose
- * seeded footer note is a `BundleTimerBadge` "Buy 2 get 1" is `3`. Only on a
- * flash-sale day, and never a curated card — the exact conditions `StorePage`
- * draws those offers under, so the card, the cart and `checkout()` agree.
+ * units one is free. The Red collar's "Buy 1 get 1" (`"buy1get1"`) and every
+ * non-curated item whose seeded footer note is a `BundleTimerBadge` "Buy 2 get
+ * 1" (`"buy2get1"`), only on a flash-sale day — the conditions `StorePage`
+ * draws those offers under, so the card, the cart and `checkout()` agree. See
+ * `cart-pricing.ts` for what each does to the price.
  *
  * Decided at read time, not stored on the cart row: a bundle left in the cart
- * past the sale's rest day (or past 00:00 UTC, when the badges reseed) goes
- * back to full price, as the badge itself does.
+ * past the sale's rest day (or 00:00 UTC, when the badges reseed) loses its
+ * offer, as the badge itself does.
  */
 export async function dealsForUser(
   userId: string,
@@ -188,9 +189,9 @@ export async function dealsForUser(
 
   const deals: Deals = {};
   items.forEach((item, i) => {
-    if (item.name === TWO_FOR_ONE_ITEM_NAME) deals[item.id] = 2;
+    if (item.name === TWO_FOR_ONE_ITEM_NAME) deals[item.id] = "buy1get1";
     else if (rows[i].showBundleTimer && !CURATED_URGENCY_ITEM_NAMES.includes(item.name)) {
-      deals[item.id] = 3;
+      deals[item.id] = "buy2get1";
     }
   });
   return deals;

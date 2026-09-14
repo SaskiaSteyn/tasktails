@@ -3,28 +3,30 @@ import { describe, expect, it } from "vitest";
 import { lineCost, lineListCost } from "@/lib/cart-pricing";
 
 const line = (quantity: number) => ({
-  storeItemId: "collar",
+  storeItemId: "item",
   quantity,
-  storeItem: { coinPrice: 40 },
+  storeItem: { coinPrice: 5 },
 });
 
-describe("lineCost", () => {
-  it("charges every unit when the item has no deal", () => {
-    expect(lineCost(line(2), {})).toBe(80);
-    expect(lineCost(line(2), { other: 2 })).toBe(80);
+describe("cart pricing", () => {
+  it("prices a line with no deal per unit, with no discount", () => {
+    expect(lineCost(line(3), {})).toBe(15);
+    expect(lineListCost(line(3), {})).toBe(15);
+    expect(lineCost(line(3), { other: "buy1get1" })).toBe(15);
   });
 
-  it("charges one unit per pair on a Buy 1 get 1 item", () => {
-    expect(lineCost(line(1), { collar: 2 })).toBe(40);
-    expect(lineCost(line(2), { collar: 2 })).toBe(40);
-    expect(lineCost(line(3), { collar: 2 })).toBe(80);
-    expect(lineListCost(line(3))).toBe(120);
+  it("gives every second unit free on Buy 1 get 1", () => {
+    expect(lineCost(line(2), { item: "buy1get1" })).toBe(5);
+    expect(lineCost(line(3), { item: "buy1get1" })).toBe(10);
+    expect(lineListCost(line(3), { item: "buy1get1" })).toBe(15);
   });
 
-  it("charges two units per three on a Buy 2 get 1 item", () => {
-    expect(lineCost(line(2), { collar: 3 })).toBe(80);
-    expect(lineCost(line(3), { collar: 3 })).toBe(80);
-    expect(lineCost(line(4), { collar: 3 })).toBe(120);
-    expect(lineCost(line(6), { collar: 3 })).toBe(160);
+  it("charges every unit on Buy 2 get 1, but shows a discount off an inflated subtotal", () => {
+    const deals = { item: "buy2get1" } as const;
+    expect(lineCost(line(3), deals)).toBe(15);
+    expect(lineListCost(line(3), deals)).toBe(20);
+    expect(lineCost(line(2), deals)).toBe(10);
+    expect(lineListCost(line(2), deals)).toBe(10);
+    expect(lineListCost(line(6), deals)).toBe(40);
   });
 });
