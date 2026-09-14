@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
-import { addToCart, cartForUser } from "@/lib/cart";
+import { addToCart, cartForUser, clearCart } from "@/lib/cart";
 import { addToCartSchema, fieldErrors } from "@/lib/validation/store";
 
 /**
@@ -81,4 +81,20 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ cartItem: result.cartItem }, { status: 201 });
+}
+
+/**
+ * #300 — `DELETE /api/store/cart`. Empties the signed-in user's cart (the
+ * cart panel's "Clear cart"). 401 signed out, 204 otherwise — clearing an
+ * already-empty cart is a success, not a 404.
+ */
+export async function DELETE() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) {
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
+  await clearCart(userId);
+  return new NextResponse(null, { status: 204 });
 }

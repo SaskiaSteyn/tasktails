@@ -4,6 +4,8 @@ import type {
   Transaction,
   UserEconomy,
 } from "@/generated/prisma/client";
+import { dealsForUser } from "@/lib/cart";
+import { lineCost } from "@/lib/cart-pricing";
 import { createPetForTransaction, type PetWithItem } from "@/lib/pets";
 import { prisma } from "@/lib/prisma";
 import { logTelemetryEvent } from "@/lib/telemetry";
@@ -103,11 +105,18 @@ export type CheckoutResult =
  * `STORE_VISIT`/`ITEM_VIEWED` are page-view events with nothing to do with
  * a transaction).
  *
+ * #300 — a line's charge is `lineCost()`, not `coinPrice * quantity`: Group
+ * B's "Buy 1 get 1" / "Buy 2 get 1" badges are real discounts. Which items
+ * qualify is read before the transaction opens — it is a
+ * study-group and calendar question, not a row this transaction locks.
+ *
  * The cart is cleared unconditionally on success — a partial checkout that
  * leaves some lines behind isn't a case any bullet describes, and clearing
  * everything is what "purchase the cart" means.
  */
 export async function checkout(userId: string): Promise<CheckoutResult> {
+  const deals = await dealsForUser(userId);
+
   return prisma.$transaction(async (tx) => {
     const cart = await tx.cartItem.findMany({
       where: { userId },
@@ -140,7 +149,7 @@ export async function checkout(userId: string): Promise<CheckoutResult> {
     }
 
     const total = cart.reduce(
-      (sum, line) => sum + line.storeItem.coinPrice * line.quantity,
+      (sum, line) => sum + lineCost(line, deals),
       0,
     );
     if (account.coins < total) {
@@ -160,7 +169,7 @@ export async function checkout(userId: string): Promise<CheckoutResult> {
           data: {
             userId,
             storeItemId: line.storeItemId,
-            coinSpent: line.storeItem.coinPrice * line.quantity,
+            coinSpent: lineCost(line, deals),
             purchasedAt,
           },
         }),
@@ -228,7 +237,7 @@ export async function checkout(userId: string): Promise<CheckoutResult> {
             storeItemId: line.storeItemId,
             name: line.storeItem.name,
             quantity: line.quantity,
-            coinSpent: line.storeItem.coinPrice * line.quantity,
+            coinSpent: lineCost(line, deals),
           },
           tx,
         ),
@@ -242,7 +251,7 @@ export async function checkout(userId: string): Promise<CheckoutResult> {
         storeItemId: line.storeItemId,
         name: line.storeItem.name,
         quantity: line.quantity,
-        coinSpent: line.storeItem.coinPrice * line.quantity,
+        coinSpent: lineCost(line, deals),
       })),
       transactions,
       pets,

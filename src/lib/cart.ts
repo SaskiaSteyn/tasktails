@@ -1,7 +1,15 @@
 import type { CartItem, StoreItem } from "@/generated/prisma/client";
+import type { Deals } from "@/lib/cart-pricing";
 import { prisma } from "@/lib/prisma";
 import { levelOf } from "@/lib/store";
+import { groupGatedData } from "@/lib/study-group";
 import { logTelemetryEvent } from "@/lib/telemetry";
+import {
+  CURATED_URGENCY_ITEM_NAMES,
+  flashSaleOnDay,
+  TWO_FOR_ONE_ITEM_NAME,
+  urgencyDataForItems,
+} from "@/lib/urgency";
 
 /**
  * Every read and write of a cart (STOR-12..15).
@@ -145,4 +153,45 @@ export async function removeFromCart(
     where: { id: cartItemId, userId },
   });
   return count > 0;
+}
+
+/**
+ * #300 — empties `userId`'s cart (the cart panel's "Clear cart"). Returns
+ * how many rows went; 0 on an already-empty cart is not an error.
+ */
+export async function clearCart(userId: string): Promise<number> {
+  const { count } = await prisma.cartItem.deleteMany({ where: { userId } });
+  return count;
+}
+
+/**
+ * #300 — the Group-B multibuy deals live for `userId` on `date`'s UTC day, as
+ * `lineCost()` (`cart-pricing.ts`) reads them: store item id → every how many
+ * units one is free. The Red collar's "Buy 1 get 1" is `2`; every item whose
+ * seeded footer note is a `BundleTimerBadge` "Buy 2 get 1" is `3`. Only on a
+ * flash-sale day, and never a curated card — the exact conditions `StorePage`
+ * draws those offers under, so the card, the cart and `checkout()` agree.
+ *
+ * Decided at read time, not stored on the cart row: a bundle left in the cart
+ * past the sale's rest day (or past 00:00 UTC, when the badges reseed) goes
+ * back to full price, as the badge itself does.
+ */
+export async function dealsForUser(
+  userId: string,
+  date: Date = new Date(),
+): Promise<Deals> {
+  const live = await groupGatedData(() => flashSaleOnDay(userId, date));
+  if (!live) return {};
+
+  const items = await prisma.storeItem.findMany({ select: { id: true, name: true } });
+  const rows = urgencyDataForItems(userId, items.map((item) => item.id), date);
+
+  const deals: Deals = {};
+  items.forEach((item, i) => {
+    if (item.name === TWO_FOR_ONE_ITEM_NAME) deals[item.id] = 2;
+    else if (rows[i].showBundleTimer && !CURATED_URGENCY_ITEM_NAMES.includes(item.name)) {
+      deals[item.id] = 3;
+    }
+  });
+  return deals;
 }

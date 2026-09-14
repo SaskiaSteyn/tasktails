@@ -29,14 +29,16 @@ import { UrgencyLanguageNote } from "@/components/store/urgency-language-note";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
 import { StoreTimeTracker } from "@/components/telemetry/store-time-tracker";
 import { redirectAdminsAway } from "@/lib/admin";
-import { cartForUser } from "@/lib/cart";
+import { cartForUser, dealsForUser } from "@/lib/cart";
 import { currentEconomy } from "@/lib/economy";
 import { luckyBoxUrgencyForUser, waitingLuckyBoxCount } from "@/lib/gacha";
+import { LUCKY_BOXES } from "@/lib/lucky-boxes";
 import { BUY_XP_COST_COINS, BUY_XP_GAIN_XP } from "@/lib/rewards";
 import { levelOf, storeItemsForUser } from "@/lib/store";
 import { groupGatedData } from "@/lib/study-group";
 import { logTelemetryEvent } from "@/lib/telemetry";
 import {
+  CURATED_URGENCY_ITEM_NAMES,
   fakeDiscountPricing,
   flashSaleOnDay,
   urgencyDataForItems,
@@ -149,11 +151,11 @@ export const metadata: Metadata = {
  * just the three curated ones, per its own "applied to every purchasable
  * Group-B item" wording. Issue #185 revised what that discount *is*: `sale`
  * is now exactly the Group A price with `list` inflated 20% above it (no real
- * markdown), and a `BundleTimerBadge` "Buy 2 get 1" item gets the two-unit
- * figure — `fakeDiscountPricing(coinPrice, 2)` — plus a `bundleQuantities`
- * entry of `2` so `StoreItemCard`'s "+" adds two units at once. The curated
- * trio never take the bundle path (their footer note is deleted below), so
- * they stay single-unit.
+ * markdown). #300 made the multibuy badges real: `deals` (`dealsForUser()`)
+ * marks the Red collar's "Buy 1 get 1" (`2`) and every seeded
+ * `BundleTimerBadge` "Buy 2 get 1" (`3`); those cards add that many units at
+ * once (`bundleQuantities`) and show the bundle's worth struck through beside
+ * what checkout charges for it.
  *
  * `level` (SHR-06) is read via `levelOf()` — the same gate check
  * `storeItemsForUser()` already runs internally to resolve each item's own
@@ -219,6 +221,7 @@ export default async function StorePage({
     level,
     luckyBoxUrgencyRow,
     unopenedBoxes,
+    deals,
   ] = await Promise.all([
     cartForUser(userId),
     currentEconomy(),
@@ -226,13 +229,16 @@ export default async function StorePage({
     groupGatedData(() =>
       urgencyDataForItems(
         userId,
-        items.map((item) => item.id),
+        // Box keys ride along as pseudo item ids so the boxes get the same
+        // seeded badges; a key like "PARCEL" can never collide with a cuid.
+        [...items.map((item) => item.id), ...LUCKY_BOXES.map((box) => box.key)],
         now,
       ),
     ),
     levelOf(userId),
     groupGatedData(() => luckyBoxUrgencyForUser(userId, now)),
     waitingLuckyBoxCount(userId),
+    dealsForUser(userId, now),
   ]);
 
   // #291 — what this visit was actually shown, so the analysis can rebuild it.
@@ -253,29 +259,33 @@ export default async function StorePage({
   const urgencyBadges: Record<string, ReactNode> = {};
   const urgencyFooterNotes: Record<string, ReactNode> = {};
   if (urgencyRows) {
-    for (const item of items) {
-      if (item.locked) continue;
-      const row = urgencyRows.find((candidate) => candidate.itemId === item.id);
+    // Unlocked items, then the lucky boxes (keyed by box key — see the seed
+    // above). A box is bought outright, never in a bundle, so a box whose seed
+    // picks the "Buy 2 get 1" timer just goes without a footer note.
+    const targets = [
+      ...items.filter((item) => !item.locked).map((item) => ({ id: item.id, box: false })),
+      ...LUCKY_BOXES.map((box) => ({ id: box.key, box: true })),
+    ];
+    for (const { id, box } of targets) {
+      const row = urgencyRows.find((candidate) => candidate.itemId === id);
       if (!row) continue;
       // Corner badge, top-right on the art region — stock/cart-activity only.
       if (row.showStockBadge) {
-        urgencyBadges[item.id] = <StockBadge key={item.id} stock={row.stock} />;
+        urgencyBadges[id] = <StockBadge key={id} stock={row.stock} />;
       } else if (row.showCartActivityBadge) {
-        urgencyBadges[item.id] = (
-          <CartActivityBadge key={item.id} count={row.cartActivity} />
-        );
+        urgencyBadges[id] = <CartActivityBadge key={id} count={row.cartActivity} />;
       }
       // Footer note, below the image and above the price — everything else.
       if (row.showRecentPurchases) {
-        urgencyFooterNotes[item.id] = (
-          <RecentPurchasesBadge key={item.id} count={row.recentPurchases} />
+        urgencyFooterNotes[id] = (
+          <RecentPurchasesBadge key={id} count={row.recentPurchases} />
         );
       } else if (row.showUrgencyLanguage) {
-        urgencyFooterNotes[item.id] = <UrgencyLanguageNote key={item.id} />;
-      } else if (row.showBundleTimer) {
-        urgencyFooterNotes[item.id] = <BundleTimerBadge key={item.id} />;
+        urgencyFooterNotes[id] = <UrgencyLanguageNote key={id} />;
+      } else if (row.showBundleTimer && !box) {
+        urgencyFooterNotes[id] = <BundleTimerBadge key={id} />;
       } else if (row.showCurrencyUrgency) {
-        urgencyFooterNotes[item.id] = <CurrencyUrgencyBadge key={item.id} />;
+        urgencyFooterNotes[id] = <CurrencyUrgencyBadge key={id} />;
       }
     }
   }
@@ -283,27 +293,31 @@ export default async function StorePage({
   const pricing: Record<string, { list: number; sale: number }> = {};
   const bundleQuantities: Record<string, number> = {};
   if (showFlashSale) {
-    // Curated Group-B cards from `ADDENDUM-store-zoo-art.md` — fixed copy, and
-    // never the #185 bundle treatment: their `BundleTimerBadge` footer note is
-    // deleted below, so "Buy 2 get 1" pricing would have no badge to match.
-    const curatedNames = ["Sunflower seeds", "Red collar", "Hearts"];
+    // The lucky boxes take the same fake 20% off as every item.
+    for (const box of LUCKY_BOXES) {
+      pricing[box.key] = fakeDiscountPricing(box.coinPrice);
+    }
     for (const item of items) {
       if (item.locked) continue;
 
-      // #185 — a `BundleTimerBadge` "Buy 2 get 1" item prices and adds two
-      // units at once. `urgencyRows` is the same seed that decided the footer
-      // note; re-read it here rather than tracking a second flag.
-      const bundle =
-        !!urgencyRows?.find((row) => row.itemId === item.id)?.showBundleTimer &&
-        !curatedNames.includes(item.name);
-      pricing[item.id] = fakeDiscountPricing(item.coinPrice, bundle ? 2 : 1);
-      if (bundle) bundleQuantities[item.id] = 2;
+      // #300 — a multibuy card adds the whole bundle and prices it as the
+      // bundle's worth struck beside what it costs (one free unit in it).
+      const freeEvery = deals[item.id];
+      if (freeEvery) {
+        pricing[item.id] = {
+          list: item.coinPrice * freeEvery,
+          sale: item.coinPrice * (freeEvery - 1),
+        };
+        bundleQuantities[item.id] = freeEvery;
+      } else {
+        pricing[item.id] = fakeDiscountPricing(item.coinPrice);
+      }
 
       // The addendum's three curated cards — fixed copy, overriding
       // whatever `urgencyDataForItems()` seeded above for these three names
       // (both the corner badge and the footer note, so no random pick leaks
       // in alongside the curated one).
-      if (curatedNames.includes(item.name)) {
+      if (CURATED_URGENCY_ITEM_NAMES.includes(item.name)) {
         delete urgencyBadges[item.id];
         delete urgencyFooterNotes[item.id];
       }
@@ -420,6 +434,7 @@ export default async function StorePage({
             <CartPanel
               initialCart={cart}
               coins={economy?.coins ?? 0}
+              deals={deals}
               variant="rail"
             />
           </aside>

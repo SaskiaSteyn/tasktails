@@ -87,11 +87,10 @@ import type { StoreItemWithLock } from "@/lib/store";
  * price (`fakeDiscountPricing()` in `urgency.ts`) — display only for the
  * per-unit cost, the "+" button still charges `item.coinPrice` per unit.
  *
- * `addQuantity` (#185) is the one thing that isn't display-only: a
- * `BundleTimerBadge` "Buy 2 get 1" item passes `2`, so the "+" posts
- * `quantity: 2` and the card's `pricing` shows the two-unit figure. Defaults
- * to 1 for every other card. Checkout still charges `item.coinPrice` per
- * unit (2 × price for two items); no third item is granted.
+ * `addQuantity` (#185, #300) is the one thing that isn't display-only: a
+ * multibuy card passes the bundle size — `2` for "Buy 1 get 1", `3` for
+ * "Buy 2 get 1" — so the "+" adds the whole bundle, and checkout gives one
+ * unit of it free (`lineCost()`). Defaults to 1 for every other card.
  *
  * A locked card is now a real `<button>` (SHR-06): tapping it calls
  * `onLockedClick`, which `StoreBrowser` uses to show the full-screen
@@ -140,7 +139,7 @@ export function StoreItemCard({
   footerNote?: ReactNode;
   /** Group-B fake discount (`fakeDiscountPricing()`) — struck list price beside a bold sale price, replacing the plain `item.coinPrice` display. Display only for the per-unit cost; the "+" button still charges `item.coinPrice` per unit. */
   pricing?: { list: number; sale: number };
-  /** #185 — how many units the "+" adds at once. `2` for a "Buy 2 get 1" `BundleTimerBadge` item (its `pricing` shows the two-unit figure to match); `1` everywhere else. */
+  /** #185/#300 — how many units the "+" adds at once: the bundle size on a multibuy card, `1` everywhere else. */
   addQuantity?: number;
   /** SHR-06 — only ever called for a locked card; unlocked cards have no use for it. */
   onLockedClick?: () => void;
@@ -158,7 +157,7 @@ export function StoreItemCard({
   const cart = useCartCount();
   const router = useRouter();
 
-  // "2 Sunflower seeds" for a "Buy 2 get 1" bundle item, plain name otherwise —
+  // "3 Sunflower seeds" for a "Buy 2 get 1" bundle item, plain name otherwise —
   // used in the add-to-cart button's label and the sr-only outcome line.
   const addLabel = addQuantity > 1 ? `${addQuantity} ${item.name}` : item.name;
 
