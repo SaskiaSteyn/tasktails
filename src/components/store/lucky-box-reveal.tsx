@@ -587,7 +587,7 @@ function PresentedCard({
               {tier.sheen || item.shiny ? (
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute inset-0 overflow-hidden rounded-[17px]"
+                  className="pointer-events-none absolute inset-0 overflow-hidden rounded-[17px] [container-type:size]"
                 >
                   <span className="absolute top-[-20%] bottom-[-20%] w-[84px] animate-sheen bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.78)_50%,transparent)]" />
                 </span>

@@ -552,14 +552,20 @@
 /* The band sweeps the whole card, not just the art tile. The gap between
    sweeps is intentional: the keyframe finishes travelling at 55% and holds
    off-screen for the rest, which is what makes it a periodic glint rather
-   than a strobe. */
+   than a strobe.
+
+   Travel is in container units, not `%` (which is the band's own 64–84px and
+   stopped it mid-card): the wrapper is a size container, so `100cqw` is the
+   card's width. The band is 140% of the card's height and skewed 18deg, so
+   each end leans tan(18deg) × 70cqh ≈ 23cqh past its edge — the 23cqh margin
+   takes the whole band off the card at both ends, so the restart is unseen. */
 @keyframes sheen {
   0% {
-    transform: translateX(-140%) skewX(-18deg);
+    transform: translateX(calc(-100% - 23cqh)) skewX(-18deg);
   }
   55%,
   100% {
-    transform: translateX(240%) skewX(-18deg);
+    transform: translateX(calc(100cqw + 23cqh)) skewX(-18deg);
   }
 }
 
