@@ -161,7 +161,7 @@ the front.
 
 **Shiny pull (1g)** — *superseded by UPDATE-02 §3: this is now an overlay over the fan, not a summary screen, and closes via `✕` or the scrim.* A shiny card uses the full shiny treatment from the rarity handoff §4: 2px
 iridescent gradient frame, wash behind the art, `floaty` art, one sheen sweep, `✦ Shiny` pill beside
-the tier chip. **The animal art is never recoloured.** One line under the card reads
+the tier chip. **The animal art goes holographic.** One line under the card reads
 `Shiny · 1 in 25 from this box`. No extra confetti beat: the card *is* the moment.
 
 ---

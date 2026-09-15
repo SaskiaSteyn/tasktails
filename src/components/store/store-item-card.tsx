@@ -417,7 +417,7 @@ export function StoreItemCard({
       {tiered && tier.sheen ? (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 overflow-hidden rounded-card"
+          className="pointer-events-none absolute inset-0 overflow-hidden rounded-card [container-type:size]"
         >
           <span className="absolute top-[-20%] bottom-[-20%] w-[64px] bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.72)_50%,transparent)] animate-sheen" />
         </span>
