@@ -77,8 +77,9 @@ export function hungerLabel(rarity: FoodRarity | null | undefined): string {
 /**
  * #289 — what a Shiny is worth. Every shiny thing about a pet — the pet
  * itself, and each shiny accessory or background it has on — adds this much
- * to the happiness a pet or a feed gives it. They stack: a shiny fox in a
- * shiny hat gets +30%.
+ * to the happiness a pet or a feed gives it, and a shiny food adds it to its
+ * own feed. They stack: a shiny fox in a shiny hat gets +30%, +45% eating
+ * shiny food.
  *
  * On the *gain* rather than on decay or the stored stat, so the bonus is
  * visible on the one number a participant already reads ("+5 mood") and

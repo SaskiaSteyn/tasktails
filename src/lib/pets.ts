@@ -246,7 +246,12 @@ export async function recordFeedInteraction(
     const hunger = Math.max(0, decayed.hunger + effect.hunger);
     const happiness = Math.min(
       100,
-      decayed.happiness + withShinyBonus(effect.happiness, shinySourcesOf(pet)),
+      decayed.happiness +
+        withShinyBonus(
+          effect.happiness,
+          // A shiny food counts as one more source, for this feed only.
+          shinySourcesOf(pet) + Number(item.shiny),
+        ),
     );
 
     const updatedPet = await tx.pet.update({
