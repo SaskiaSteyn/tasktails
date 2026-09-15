@@ -130,7 +130,11 @@ export function ZooGalleryCard({
           // below should ever be shorter than that even if a future card grows
           // an extra line. It tracks `ART_REGION_HEIGHT`: the addendum's own
           // ~220px was that region at 126px plus the header and footer strips.
-          "flex min-h-[244px] flex-col overflow-hidden rounded-card-lg border-[1.5px] bg-surface text-ink shadow-[0_6px_14px_rgba(46,42,38,0.05)] transition-colors duration-120",
+          "flex min-h-[244px] flex-col overflow-hidden rounded-card-lg bg-surface text-ink shadow-[0_6px_14px_rgba(46,42,38,0.05)] transition-colors duration-120",
+          // A shiny card's edge is `ShinyFrame`'s gradient, which a border of
+          // its own would sit inside as a second, paler ring. A pet needing
+          // attention keeps its border even then, for the reason below.
+          (!pet.shiny || needsAttention) && "border-[1.5px]",
           // #276 — the tier the animal was pulled or bought at frames the
           // card, replacing this card's own `#F4D9C9` accent (UPDATE-01 §6).
           // A pet that needs attention still overrides it: that is a live
@@ -186,6 +190,7 @@ export function ZooGalleryCard({
               height={ART_REGION_HEIGHT}
               shadow="card"
               alt={name}
+              holo={pet.shiny}
             />
           ) : (
             // PRO-18 — a species with no real artwork yet (`hasRealArt()`).

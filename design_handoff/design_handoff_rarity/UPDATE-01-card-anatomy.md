@@ -195,7 +195,7 @@ Every one of these draws a card or card-like row and must end up on the recipe a
 
 1. Rarity never affects price, stats or availability — collection signal only.
 2. Tier is server-set; the client renders what it is handed; null → Common.
-3. Item/animal art is never recoloured, at any tier, shiny included.
+3. Item/animal art is never recoloured at any tier — except shiny, whose art goes holographic on full cards (not on rows or tiles).
 4. Motion only at Epic and above, and never under reduced motion.
 5. Locked cards keep the desaturated `#F2EEE7` / `#E9E3D9` treatment and the padlock in the tile —
    a locked item shows no tier chip and no effects (advertising a Legendary you cannot buy reads

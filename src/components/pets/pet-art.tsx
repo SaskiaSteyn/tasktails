@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import { HoloShine } from "@/components/store/shiny";
 import { cn } from "@/lib/cn";
 import {
   accessoryArtUrl,
@@ -42,6 +43,7 @@ export function PetArt({
   sizes,
   alt,
   className,
+  holo = false,
 }: {
   /** The species' happy art path (`StoreItem.imageUrl`). Callers gate on `hasRealArt()` first. */
   animalUrl: string;
@@ -58,6 +60,8 @@ export function PetArt({
   sizes?: string;
   alt: string;
   className?: string;
+  /** Shiny pets on full cards: the animal layer goes holographic; accessories, painted after it, keep their colours. */
+  holo?: boolean;
 }) {
   const animalSrc = moodArtUrl(animalUrl, sad);
   const accessorySrcs = inAccessoryDrawOrder(accessoryUrls).map((url) =>
@@ -80,8 +84,9 @@ export function PetArt({
             alt={alt}
             fill
             sizes={sizes}
-            className={cn("object-contain", ANIMAL_SHADOW[shadow])}
+            className={cn("object-contain", ANIMAL_SHADOW[shadow], holo && "holo-art")}
           />
+          {holo ? <HoloShine src={animalSrc} /> : null}
           {accessorySrcs.map((src) => (
             <Image
               key={src}
@@ -101,9 +106,10 @@ export function PetArt({
             alt={alt}
             width={box!.width}
             height={box!.height}
-            className={cn("block", ANIMAL_SHADOW[shadow])}
+            className={cn("block", ANIMAL_SHADOW[shadow], holo && "holo-art")}
             style={box}
           />
+          {holo ? <HoloShine src={animalSrc} /> : null}
           {accessorySrcs.map((src) => (
             <Image
               key={src}

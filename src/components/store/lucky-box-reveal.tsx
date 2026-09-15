@@ -444,6 +444,7 @@ function ArtField({
           rounded="rounded-none"
           bgClassNameOverride="bg-transparent"
           className={className}
+          holo={item.shiny}
         />
       </span>
     </>

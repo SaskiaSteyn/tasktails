@@ -365,6 +365,7 @@ export function AnimalCard({
               sizes="(min-width: 480px) 360px, 70vw"
               shadow="stage"
               alt={name}
+              holo={shiny}
             />
           ) : (
             <div className="flex size-full items-center justify-center">

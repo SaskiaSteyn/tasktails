@@ -88,7 +88,7 @@ screen; it is deleted. The fan screen is the only reveal screen, and a flip is a
 - The presented card is the full UPDATE-01 rarity card at large scale — header (name + category /
   variant line) and tier chip in the header, tier field behind the art, art `184×230px` contained,
   tier chip bottom-left of the tile. Shiny adds the iridescent 2px frame, the wash, `floaty` art, one
-  sheen sweep and the `✦ Shiny` pill in the header. **The animal art is never recoloured.**
+  sheen sweep and the `✦ Shiny` pill in the header. **The animal art goes holographic.**
 - **Dismiss, two ways, both required:** a `✕` button top-right of the overlay (`44px` circle,
   `rgba(255,255,255,.16)` fill, `1px rgba(255,255,255,.32)` border, `19px` white glyph at 2.6 stroke,
   hover `.28` fill), **and** a tap anywhere on the scrim. Both return to the fan with that card now

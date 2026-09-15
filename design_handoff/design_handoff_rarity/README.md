@@ -50,8 +50,9 @@ distinction; motion is decoration.
 1. Rarity never changes price, stats, or availability — collection signal only, so no tier is pay-to-win.
 2. One tier per item, **set server-side**. The client renders whatever tier it is handed; unknown or missing
    tiers fall back to **Common**.
-3. **Shiny is a boolean on the owned instance, not a tier.** It changes the *card only* — iridescent frame,
-   tinted field, sheen, sparkles. The animal/item art is **never recoloured**. The tier badge stays visible
+3. **Shiny is a boolean on the owned instance, not a tier.** It changes the card — iridescent frame,
+   tinted field, sheen, sparkles — and, on full cards, makes the art **holographic**
+   (greyscale art under drifting rainbow bands masked to its silhouette). Small surfaces keep the art's true colours. The tier badge stays visible
    next to the Shiny badge.
 4. Motion (sheen sweep, sparkles) appears **only at Epic and above** and must be disabled under
    `prefers-reduced-motion: reduce`.
@@ -107,8 +108,10 @@ ease-in-out infinite` with staggered delays:
 - **Iridescent wash:** `position:absolute; inset:0`,
   `linear-gradient(135deg, rgba(143,211,232,.30), rgba(201,167,236,.26) 40%, rgba(245,176,198,.24) 70%, rgba(251,217,138,.28))`.
   **Painted behind the art**, so it tints the field only — the animal keeps its true colours.
-- **Art:** `130 × 130px`, `contain`, `animation: floaty 4.5s ease-in-out infinite`. **No filter, no
-  hue-rotate — never recolour the art.**
+- **Art:** `130 × 130px`, `contain`, `animation: floaty 4.5s ease-in-out infinite`, holographic:
+  art `grayscale(1) contrast(.7) brightness(1.2)` (in that order), then masked to its silhouette a `color`-blended
+  `repeating-linear-gradient(120deg, #ff9ad5 0, #ffe98a 6%, #9dffc8 12%, #8cd8ff 18%, #c9a0ff 24%, #ff9ad5 30%)`
+  and a soft-light white glint, both `200%` and drifting `4s ease-in-out infinite alternate`.
 - **Overlay layer:** `position:absolute; inset:0; pointer-events:none` containing the sparkles
   (`10px` @ `top:26px left:30px`, `8px` @ `bottom:34px right:30px`, `6px` `#FFF6E2` circle @
   `top:64px right:24px`; `twinkle 2.1s` with `0 / .7s / 1.4s` delays). Because it is a sibling layer with
