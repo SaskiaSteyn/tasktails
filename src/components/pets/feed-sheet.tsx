@@ -312,7 +312,7 @@ export function FeedSheet({
                             +
                             {withShinyBonus(
                               feedEffectOf(item.storeItem.rarity).happiness,
-                              shinySources,
+                              shinySources + Number(item.shiny),
                             )}{" "}
                             mood
                           </span>

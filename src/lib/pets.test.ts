@@ -63,6 +63,7 @@ function foodRow(
     storeItemId: "food-1",
     equippedToPetId: null,
     quantity: 3,
+    shiny: false,
     storeItem: {
       id: "food-1",
       name: "Sunflower seeds",
@@ -316,6 +317,24 @@ describe("recordFeedInteraction", () => {
       data: { happiness: 82, hunger: 10, lastInteractedAt: now },
       include: { storeItem: true },
     });
+  });
+
+  it("counts a shiny food as a shiny source for its own feed", async () => {
+    const pet = petRow({ happiness: 60, hunger: 90 });
+    const item = foodRow({ shiny: true } as Partial<InventoryItemWithStoreItem>);
+    prismaMock.pet.findFirst.mockResolvedValue(pet);
+    prismaMock.inventoryItem.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.inventoryItem.findUniqueOrThrow.mockResolvedValue(item as never);
+    prismaMock.pet.update.mockImplementation(
+      (args) => Promise.resolve({ ...pet, ...(args.data as object) }) as never,
+    );
+
+    await recordFeedInteraction("user-1", "pet-1", "item-1", at(12));
+
+    // 60 + round(4 × 1.15) = 65 — a plain Common would have left 64.
+    expect(prismaMock.pet.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ happiness: 65 }) }),
+    );
   });
 
   it("clamps hunger at 0", async () => {

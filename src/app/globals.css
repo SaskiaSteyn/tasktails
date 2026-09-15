@@ -441,6 +441,20 @@
    but read as a single pill-shaped control, not a document pane — a visible
    scrollbar under them looks like stray chrome. Content still scrolls with
    touch/trackpad/arrow keys; this only hides the bar itself. */
+/* The base of holographic art (`HoloShine` paints the colour over it):
+   greyscale so the bands set the hue evenly whatever colour the animal was,
+   then contrast *down* before brightness *up*, which lifts dark fur to a
+   mid-tone without clipping light fur to white — `color` blending keeps the
+   base's lightness, so dark art otherwise comes out as muddy dark rainbow and
+   light art as plain white. That order is why this is a raw `filter` and not
+   Tailwind's `contrast-*`/`brightness-*`, whose composed order is fixed the
+   other way round. It re-includes `--tw-drop-shadow` so the art keeps its
+   shadow, and is `!important` so it wins over the `drop-shadow-*` utility's
+   own `filter` on the same element regardless of stylesheet order. */
+@utility holo-art {
+  filter: grayscale(1) contrast(0.7) brightness(1.2) var(--tw-drop-shadow, ) !important;
+}
+
 @utility no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -552,14 +566,20 @@
 /* The band sweeps the whole card, not just the art tile. The gap between
    sweeps is intentional: the keyframe finishes travelling at 55% and holds
    off-screen for the rest, which is what makes it a periodic glint rather
-   than a strobe. */
+   than a strobe.
+
+   Travel is in container units, not `%` (which is the band's own 64–84px and
+   stopped it mid-card): the wrapper is a size container, so `100cqw` is the
+   card's width. The band is 140% of the card's height and skewed 18deg, so
+   each end leans tan(18deg) × 70cqh ≈ 23cqh past its edge — the 23cqh margin
+   takes the whole band off the card at both ends, so the restart is unseen. */
 @keyframes sheen {
   0% {
-    transform: translateX(-140%) skewX(-18deg);
+    transform: translateX(calc(-100% - 23cqh)) skewX(-18deg);
   }
   55%,
   100% {
-    transform: translateX(240%) skewX(-18deg);
+    transform: translateX(calc(100cqw + 23cqh)) skewX(-18deg);
   }
 }
 
@@ -584,6 +604,17 @@
   }
   50% {
     transform: translateY(-6px);
+  }
+}
+
+/* Shiny art on full cards: the holographic bands drift slowly across the
+   silhouette, back and forth, so the colours shift like foil tilting. */
+@keyframes holo-drift {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 100% 100%;
   }
 }
 
@@ -723,6 +754,7 @@
   --animate-sheen: sheen 3600ms ease-in-out infinite;
   --animate-twinkle: twinkle 2400ms ease-in-out infinite;
   --animate-floaty: floaty 4500ms ease-in-out infinite;
+  --animate-holo-drift: holo-drift 4000ms ease-in-out infinite alternate;
   --animate-box-pop: box-pop 1400ms ease-in-out infinite;
   --animate-lid-lift: lid-lift 1400ms ease-in-out infinite;
   --animate-glow-pulse: glow-pulse 1400ms ease-in-out infinite;
@@ -747,6 +779,26 @@
     rgb(251 217 138 / 0.28)
   );
   --shadow-shiny: 0 14px 30px rgb(140 110 190 / 0.22);
+  /* Shiny art on full cards (`HoloShine`), both masked to the art's
+     silhouette. The bands are `color`-blended over greyscale art, so they set
+     the hue while the art keeps its own shading; tight 30% cycles so several
+     colours show at once — wider, and it reads as a single tint. The glint is
+     soft-light blended on top. Sized 200% so the drift has room to travel. */
+  --gradient-holo: repeating-linear-gradient(
+    120deg,
+    #ff9ad5 0,
+    #ffe98a 6%,
+    #9dffc8 12%,
+    #8cd8ff 18%,
+    #c9a0ff 24%,
+    #ff9ad5 30%
+  );
+  --gradient-holo-glint: linear-gradient(
+    125deg,
+    rgb(255 255 255 / 0) 25%,
+    rgb(255 255 255 / 0.8) 45%,
+    rgb(255 255 255 / 0) 60%
+  );
 }
 
 /* Respect the OS reduce-motion setting. */

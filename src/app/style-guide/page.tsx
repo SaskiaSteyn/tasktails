@@ -208,6 +208,35 @@ function samplePet(
   };
 }
 
+/**
+ * Every adoptable animal in the catalogue (`prisma/seed.ts`), each as a shiny
+ * gallery card, so the holographic art can be checked against all of the
+ * artwork at once. Hand-copied like the other samples — this page never reads
+ * the database — so a new species needs adding here too.
+ */
+const SHINY_ANIMALS: Array<[string, string, PetWithItem["storeItem"]["rarity"]]> = [
+  ["Lion", "/animals/happy/lion.svg", "EPIC"],
+  ["Bunny", "/animals/happy/bunny.svg", "COMMON"],
+  ["Jaguar", "/animals/happy/jaguar.svg", "EPIC"],
+  ["Tiger", "/animals/happy/tiger.svg", "EPIC"],
+  ["Monkey", "/animals/happy/monkey.svg", "RARE"],
+  ["Giraffe", "/animals/happy/giraffe.svg", "RARE"],
+  ["Elephant", "/animals/happy/elephant.svg", "EPIC"],
+  ["Donkey", "/animals/happy/donkey.svg", "COMMON"],
+  ["Ostrich", "/animals/happy/ostrich.svg", "RARE"],
+  ["Otter", "/animals/happy/otter.svg", "COMMON"],
+  ["Rhino", "/animals/happy/rhino.svg", "LEGENDARY"],
+  ["Panda", "/animals/happy/panda.svg", "LEGENDARY"],
+  ["Zebra", "/animals/happy/zebra.svg", "RARE"],
+  ["Flamingo", "/animals/happy/flamingo.svg", "RARE"],
+  ["Axolotl", "/animals/happy/axlotl.svg", "RARE"],
+  ["Dassie", "/animals/happy/hyrax.svg", "COMMON"],
+  ["Platypus", "/animals/happy/platypus.svg", "RARE"],
+  ["Tortoise", "/animals/happy/tortoise.svg", "COMMON"],
+  ["Capybara", "/animals/happy/cappybara.svg", "RARE"],
+  ["Hedgehog", "/animals/happy/hedgehog.svg", "RARE"],
+];
+
 /** PET-04's feed sheet needs something to list — same hand-built approach as `samplePet()`. */
 const SAMPLE_FOOD_ITEMS: InventoryItemWithStoreItem[] = [
   {
@@ -908,6 +937,20 @@ export default function StyleGuidePage() {
           <div className="grid w-[300px] max-w-full grid-cols-2 gap-3">
             <ZooGalleryCard pet={samplePet("Fox", "/animals/happy/fox.svg", 82, 24)} />
             <ZooGalleryCard pet={samplePet("Penguin", "/animals/happy/penguin.svg", 58, 66)} />
+          </div>
+        </Card>
+
+        <Card label="Shiny — every animal, holographic art">
+          <div className="grid w-full max-w-[640px] grid-cols-2 gap-3 sm:grid-cols-4">
+            {SHINY_ANIMALS.map(([name, imageUrl, rarity]) => {
+              const pet = samplePet(name, imageUrl, 82, 24);
+              return (
+                <ZooGalleryCard
+                  key={name}
+                  pet={{ ...pet, shiny: true, storeItem: { ...pet.storeItem, rarity } }}
+                />
+              );
+            })}
           </div>
         </Card>
 

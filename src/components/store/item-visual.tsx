@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 
 import type { StoreItem, StoreItemCategory } from "@/generated/prisma/client";
+import { HoloShine } from "@/components/store/shiny";
 import { cn } from "@/lib/cn";
 import { hungerLabel } from "@/lib/feed-value";
 import {
@@ -96,8 +97,10 @@ function ArtThumb({
   imageUrl,
   size,
   shadow,
+  holo = false,
 }: {
   imageUrl: string;
+  holo?: boolean;
   /** Side of the square to fit the content box into. Omit to fill the (square) parent instead. */
   size?: number;
   shadow: ArtShadowSize;
@@ -109,6 +112,14 @@ function ArtThumb({
   const contentWidth = canvas.width * focus.width;
   const contentHeight = canvas.height * focus.height;
   const wide = contentWidth >= contentHeight;
+  // The image overflows its box by the focus crop; `HoloShine` takes the
+  // same box so its mask lines up with the art.
+  const imageBox = {
+    width: `${100 / focus.width}%`,
+    height: `${100 / focus.height}%`,
+    left: `${(-focus.x / focus.width) * 100}%`,
+    top: `${(-focus.y / focus.height) * 100}%`,
+  };
 
   return (
     <div
@@ -130,14 +141,10 @@ function ArtThumb({
           alt=""
           width={canvas.width}
           height={canvas.height}
-          className={cn("absolute block max-w-none", ANIMAL_SHADOW[shadow])}
-          style={{
-            width: `${100 / focus.width}%`,
-            height: `${100 / focus.height}%`,
-            left: `${(-focus.x / focus.width) * 100}%`,
-            top: `${(-focus.y / focus.height) * 100}%`,
-          }}
+          className={cn("absolute block max-w-none", ANIMAL_SHADOW[shadow], holo && "holo-art")}
+          style={imageBox}
         />
+        {holo ? <HoloShine src={imageUrl} style={imageBox} /> : null}
       </div>
     </div>
   );
@@ -264,6 +271,7 @@ export function ItemWell({
   fieldFx,
   overlay,
   iconClassNameOverride,
+  holo = false,
 }: {
   item: Pick<StoreItem, "category" | "imageUrl">;
   locked?: boolean;
@@ -297,6 +305,8 @@ export function ItemWell({
   overlay?: React.ReactNode;
   /** Replaces the default category-tinted icon colour (goods only — animal artwork has no tint to override). */
   iconClassNameOverride?: string;
+  /** Shiny art on a full card goes holographic. Real art only; icon fallbacks are unaffected. */
+  holo?: boolean;
 }) {
   const isAnimal = item.category === "ANIMALS";
   const showArt = hasRealArt(item.imageUrl);
@@ -380,6 +390,7 @@ export function ItemWell({
           // A well big enough to want the larger lift gets it; the 26–44px
           // wells (purchase history, cart rows) would just smudge under it.
           shadow={animalIconSize >= 64 ? "card" : "thumb"}
+          holo={holo}
         />
       ) : (
         <DynamicIcon
