@@ -26,6 +26,13 @@ const nextConfig: NextConfig = {
         source: "/sw.js",
         headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }],
       },
+      // The lucky-box card back is the same file re-requested every box open
+      // (ENH-322) — `public/` gets no cache header by default, so it was
+      // re-fetched from scratch each time. It never changes, so cache it hard.
+      {
+        source: "/card-background.svg",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
     ];
   },
 };

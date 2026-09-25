@@ -690,6 +690,19 @@
   }
 }
 
+/* Fan cards, face down: a slow breathing scale on the front card so it
+   reads as tappable before anyone has touched the pile. LuckyBoxReveal
+   applies this only to the front card, and only while it is unflipped. */
+@keyframes card-invite {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
 @keyframes cart-fly {
   from {
     opacity: 1;
@@ -760,6 +773,7 @@
   --animate-glow-pulse: glow-pulse 1400ms ease-in-out infinite;
   --animate-ray-out: ray-out 1400ms ease-out infinite;
   --animate-card-present: card-present 280ms ease-out;
+  --animate-card-invite: card-invite 2000ms ease-in-out infinite;
   /* #276 §4 — Shiny. The frame gradient and the wash that tints the field
      behind the art. Kept as raw gradients rather than tokens: these four
      stops are the Shiny identity itself, not a reuse of any app accent,
