@@ -63,6 +63,14 @@ client. Add `http://localhost:3000/api/auth/callback/google` as an authorised
 redirect URI. Until both variables are set, the "Continue with Google" button
 renders disabled with a note explaining why.
 
+### Email verification
+
+Registering with email/password sends a verification link before sign-in
+works (Google accounts skip this — Google already confirmed the address).
+Locally, with no `SES_FROM_EMAIL` set, nothing is actually mailed: the link is
+printed to the `npm run dev` console instead, so registration still works
+with zero AWS setup. See DEPLOY.md's SES section for the deployed path.
+
 ### Environment variables (INF-16)
 
 [`.env.example`](.env.example) is the reference — every variable, which file it
@@ -76,6 +84,8 @@ belongs in, and connection-string recipes for AWS RDS, Neon and Vercel.
 | `AUTH_URL` | deployed | Public origin. Vercel sets it itself |
 | `AUTH_TRUST_HOST` | behind a proxy | Compose sets it for the container |
 | `APP_PORT` | no | Host port for the container only |
+| `SES_FROM_EMAIL` | no | Verification emails send only once this is set; see DEPLOY.md |
+| `AWS_REGION` | with `SES_FROM_EMAIL` | Read by the AWS SDK itself, e.g. `eu-west-1` |
 
 Which file the values go in differs by target, and the wrong one is a common
 half-hour:
