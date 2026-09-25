@@ -31,6 +31,17 @@ const ses = new SESClient({});
  * with system fallbacks for clients that skip the Google Fonts `<link>`.
  * "24 hours" here must keep matching `VERIFICATION_TOKEN_TTL_MS` in
  * `src/lib/users.ts`.
+ *
+ * The logo sits on its own white `bgcolor` chip (found live, 2026-09-25):
+ * `horizontal.svg`'s dark-ink wordmark has no background of its own, so on a
+ * client that force-renders dark mode (Gmail's app, iOS Mail) the surrounding
+ * page goes dark while the SVG's already-dark fill is untouched, and the text
+ * disappears into it. `bgcolor` is the fix rather than plain CSS
+ * `background-color` because some dark-mode engines specifically strip
+ * inline background colors and leave the attribute alone. This is a
+ * mitigation for that one failure mode, not a guarantee — `color-scheme:
+ * light only` is already set, but a client that ignores it and inverts the
+ * whole message can still do so; nothing in HTML email fully prevents that.
  */
 function verificationEmailHtml(verifyUrl: string, origin: string): string {
   return `<!DOCTYPE html>
@@ -66,9 +77,20 @@ function verificationEmailHtml(verifyUrl: string, origin: string): string {
 
         <tr>
           <td align="center" style="padding:0 0 22px;">
-            <a href="${origin}" style="text-decoration:none;">
-              <img src="${origin}/brand/horizontal.svg" width="200" height="40" alt="TaskTails" style="display:block;width:200px;height:40px;border:0;">
-            </a>
+            <!-- bgcolor (not just the style attribute) pins this to white even
+                 under a client's forced dark mode — the logo's dark ink fill
+                 has no background of its own, so without this the wordmark
+                 disappears against whatever the client turns the page behind
+                 it into. See the doc comment on verificationEmailHtml. -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" bgcolor="#FFFFFF" style="background-color:#FFFFFF;border-radius:12px;padding:10px 16px;">
+                  <a href="${origin}" style="text-decoration:none;">
+                    <img src="${origin}/brand/horizontal.svg" width="200" height="40" alt="TaskTails" style="display:block;width:200px;height:40px;border:0;">
+                  </a>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
 
