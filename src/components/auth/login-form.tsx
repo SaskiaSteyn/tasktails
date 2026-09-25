@@ -24,9 +24,12 @@ type Errors = Partial<Record<"email" | "password", string>>;
 export function LoginForm({
   googleEnabled,
   callbackUrl,
+  verified,
 }: {
   googleEnabled: boolean;
   callbackUrl: string;
+  /** The `?verified=` param `GET /api/auth/verify` redirects back with. */
+  verified?: string;
 }) {
   const router = useRouter();
 
@@ -34,6 +37,13 @@ export function LoginForm({
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // True once `authorize()` has rejected a sign-in specifically for an
+  // unverified email (`result.code`, see EmailNotVerifiedError) — distinct
+  // from `formError`, which covers the generic "don't match" case, because
+  // this one offers a resend action the generic case shouldn't.
+  const [unverified, setUnverified] = useState(false);
+  const [resent, setResent] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const update = (field: keyof typeof values) => (value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -42,7 +52,24 @@ export function LoginForm({
       current[field] ? { ...current, [field]: undefined } : current,
     );
     setFormError(null);
+    setUnverified(false);
+    setResent(false);
   };
+
+  async function handleResend() {
+    if (resending) return;
+    setResending(true);
+    try {
+      await fetch("/api/auth/verify/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.email }),
+      });
+      setResent(true);
+    } finally {
+      setResending(false);
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,6 +89,8 @@ export function LoginForm({
     setPending(true);
     setErrors({});
     setFormError(null);
+    setUnverified(false);
+    setResent(false);
 
     try {
       const result = await signIn("credentials", {
@@ -71,9 +100,14 @@ export function LoginForm({
       });
 
       if (!result || result.error) {
-        // One message for both a wrong password and an unknown address — which
-        // of the two it was is not something a sign-in form should disclose.
-        setFormError("That email and password don't match an account.");
+        if (result?.code === "email-not-verified") {
+          setUnverified(true);
+        } else {
+          // One message for both a wrong password and an unknown address —
+          // which of the two it was is not something a sign-in form should
+          // disclose.
+          setFormError("That email and password don't match an account.");
+        }
         return;
       }
 
@@ -87,6 +121,17 @@ export function LoginForm({
 
   return (
     <>
+      {verified === "1" ? (
+        <p className="mb-[14px] text-center text-[12px] font-bold text-sage-text">
+          Email verified — log in below.
+        </p>
+      ) : null}
+      {verified === "0" ? (
+        <p className="mb-[14px] text-center text-[12px] font-bold text-urgency-text">
+          That verification link is invalid or expired. Log in and resend it.
+        </p>
+      ) : null}
+
       <form noValidate onSubmit={handleSubmit} className="flex flex-col">
         <div className="flex flex-col gap-[14px]">
           <TextField
@@ -127,6 +172,28 @@ export function LoginForm({
           >
             {formError}
           </p>
+        ) : null}
+
+        {unverified ? (
+          <div role="alert" className="mt-[10px] text-center">
+            <p className="text-[11px] font-bold text-urgency-text">
+              Verify your email before logging in.
+            </p>
+            {resent ? (
+              <p className="mt-[4px] text-[11px] text-ink-soft">
+                Verification email sent — check your inbox.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending}
+                className="mt-[4px] text-[11px] font-bold text-terracotta underline disabled:text-ink-disabled"
+              >
+                {resending ? "Sending…" : "Resend verification email"}
+              </button>
+            )}
+          </div>
         ) : null}
       </form>
 

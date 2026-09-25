@@ -28,9 +28,9 @@ function safeCallbackUrl(value: string | string[] | undefined): string {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string | string[] }>;
+  searchParams: Promise<{ callbackUrl?: string | string[]; verified?: string | string[] }>;
 }) {
-  const { callbackUrl } = await searchParams;
+  const { callbackUrl, verified } = await searchParams;
 
   return (
     <AuthScreen>
@@ -46,6 +46,7 @@ export default async function LoginPage({
       <LoginForm
         googleEnabled={isGoogleEnabled}
         callbackUrl={safeCallbackUrl(callbackUrl)}
+        verified={typeof verified === "string" ? verified : undefined}
       />
     </AuthScreen>
   );

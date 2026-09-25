@@ -81,6 +81,19 @@
         "rds:DeleteDBInstance"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "SesSetup",
+      "Comment": "Verifying the domain identity (DKIM, not a mailbox — see DEPLOY.md §3d) and checking sandbox status. Sending itself is the EC2 instance role's job (ec2-ses-send-policy.json), not this user's.",
+      "Effect": "Allow",
+      "Action": [
+        "ses:CreateEmailIdentity",
+        "ses:GetEmailIdentity",
+        "ses:ListEmailIdentities",
+        "ses:GetAccount",
+        "ses:GetSendQuota"
+      ],
+      "Resource": "*"
     }
   ]
 }
