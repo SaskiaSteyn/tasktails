@@ -67,7 +67,7 @@ function verificationEmailHtml(verifyUrl: string, origin: string): string {
 </style>
 </head>
 <body class="bg" style="margin:0;padding:0;background-color:#F1E9DC;">
-<span style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#F1E9DC;opacity:0;">One tap to confirm your email and meet Mochi, your first pet. Link expires in 24 hours.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</span>
+<span style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#F1E9DC;opacity:0;">One tap to confirm your email and meet your first pet. Link expires in 24 hours.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</span>
 
 <table role="presentation" class="bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F1E9DC;">
   <tr>
@@ -110,7 +110,7 @@ function verificationEmailHtml(verifyUrl: string, origin: string): string {
                 <td class="h1 ink" align="center" style="font-family:Fredoka,'Trebuchet MS',Arial,sans-serif;font-size:28px;line-height:34px;mso-line-height-rule:exactly;font-weight:bold;color:#2E2A26;padding:0 0 12px;">Confirm your email</td>
               </tr>
               <tr>
-                <td class="soft" align="center" style="font-family:Nunito,'Segoe UI',Arial,sans-serif;font-size:15px;line-height:24px;mso-line-height-rule:exactly;color:#524C47;padding:0 0 28px;">Confirm your email to finish creating your TaskTails account. Mochi, your first pet, is waiting for you on the other side.</td>
+                <td class="soft" align="center" style="font-family:Nunito,'Segoe UI',Arial,sans-serif;font-size:15px;line-height:24px;mso-line-height-rule:exactly;color:#524C47;padding:0 0 28px;">Confirm your email to finish creating your TaskTails account. Your first pet, is waiting for you on the other side.</td>
               </tr>
               <tr>
                 <td align="center" style="padding:0;">
@@ -185,7 +185,7 @@ export async function sendVerificationEmail(
         Body: {
           Html: { Data: verificationEmailHtml(verifyUrl, origin) },
           Text: {
-            Data: `Confirm your email to finish creating your TaskTails account. Mochi, your first pet, is waiting for you on the other side.\n\n${verifyUrl}\n\nThis link expires in 24 hours. If you didn't create a TaskTails account, you can safely ignore this email — nothing will happen.`,
+            Data: `Confirm your email to finish creating your TaskTails account. Your first pet, is waiting for you on the other side.\n\n${verifyUrl}\n\nThis link expires in 24 hours. If you didn't create a TaskTails account, you can safely ignore this email — nothing will happen.`,
           },
         },
       },
