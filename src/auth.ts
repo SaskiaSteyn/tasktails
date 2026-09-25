@@ -1,9 +1,10 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import { cache } from "react";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 
 import { authConfig } from "@/auth.config";
+import { UserRole } from "@/generated/prisma/client";
 import {
   authenticate,
   displayNameFor,
@@ -13,6 +14,17 @@ import {
   upsertOAuthUser,
 } from "@/lib/users";
 import { emailSchema } from "@/lib/validation/auth";
+
+/**
+ * Thrown by `authorize` below for a credentials account whose email hasn't
+ * been confirmed yet. `code` is what survives to the client's `signIn()`
+ * result (as `result.code`) — see the CredentialsSignin doc comment on why it
+ * has to stay this generic rather than naming the account or the reason more
+ * specifically.
+ */
+export class EmailNotVerifiedError extends CredentialsSignin {
+  code = "email-not-verified";
+}
 
 /**
  * NextAuth configuration (INF-11, AUTH-05).
@@ -66,6 +78,13 @@ const nextAuth = NextAuth({
 
         const user = await authenticate(email.data, password);
         if (!user) return null;
+
+        // ADMIN is exempt: that role is hand-promoted in the database, never
+        // through registration, so there is no verification email it could
+        // have received.
+        if (!user.emailVerified && user.role !== UserRole.ADMIN) {
+          throw new EmailNotVerifiedError();
+        }
 
         // No `group` here on purpose — see the note at the top of this file.
         return { id: user.id, email: user.email };

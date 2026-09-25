@@ -20,6 +20,11 @@ export type { User };
 const normaliseEmail = (email: string) => email.trim().toLowerCase();
 const normaliseUsername = (username: string) => username.trim().toLowerCase();
 
+/** How long a verification link stays clickable before `verifyEmailToken` rejects it. */
+const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
+const generateVerificationToken = () => randomBytes(32).toString("hex");
+
 /**
  * Alternating A/B assignment — whichever arm currently has fewer participants,
  * A on a tie (#222). Random assignment left the two arms uneven, and with ~20
@@ -309,6 +314,10 @@ export class EmailInUseError extends Error {
  * transaction, so an account can never exist without the rows the rest of the
  * app assumes are there.
  *
+ * `emailVerified` is left null and a fresh `verificationToken` issued — the
+ * caller (the register route) mails it and credentials sign-in stays blocked
+ * (see `src/auth.ts`) until it comes back through `verifyEmailToken`.
+ *
  * Throws {@link EmailInUseError} on a duplicate.
  */
 export async function createUser(
@@ -321,6 +330,8 @@ export async function createUser(
         email: normaliseEmail(email),
         passwordHash: hashPassword(password),
         abGroup: await assignStudyGroup(),
+        verificationToken: generateVerificationToken(),
+        verificationTokenExpiresAt: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
         economy: { create: {} },
         // Empty on purpose — every default lives in the schema (INF-18), so the
         // row matches the Settings frame without repeating the values here.
@@ -334,9 +345,55 @@ export async function createUser(
 }
 
 /**
+ * Confirms a registration email link. Returns the verified user, or `null`
+ * for a token that doesn't exist, was already used, or expired — the caller
+ * doesn't need to (and shouldn't) tell those apart to whoever clicked it.
+ */
+export async function verifyEmailToken(token: string): Promise<User | null> {
+  const user = await prisma.user.findUnique({ where: { verificationToken: token } });
+  if (!user || !user.verificationTokenExpiresAt) return null;
+  if (user.verificationTokenExpiresAt.getTime() < Date.now()) return null;
+
+  return prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerified: new Date(),
+      verificationToken: null,
+      verificationTokenExpiresAt: null,
+    },
+  });
+}
+
+/**
+ * Issues a fresh verification token for the "resend" link — the old one (if
+ * any) stops working, same as a password reset invalidating the last one.
+ *
+ * Returns `null` for an unknown address or one that's already verified, so
+ * the route can reply with the same generic message either way and avoid
+ * confirming which accounts exist.
+ */
+export async function regenerateVerificationToken(
+  email: string,
+): Promise<User | null> {
+  const user = await findUserByEmail(email);
+  if (!user || user.emailVerified) return null;
+
+  return prisma.user.update({
+    where: { id: user.id },
+    data: {
+      verificationToken: generateVerificationToken(),
+      verificationTokenExpiresAt: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
+    },
+  });
+}
+
+/**
  * Finds or creates the account behind a Google sign-in. A first-time Google user
  * gets a study group and an economy record here, so OAuth and credentials
  * accounts are indistinguishable downstream.
+ *
+ * `emailVerified` is set immediately — Google already confirmed the address,
+ * so there is nothing for this account to click a link for.
  */
 export async function upsertOAuthUser(
   email: string,
@@ -352,6 +409,7 @@ export async function upsertOAuthUser(
     create: {
       email: key,
       displayName: name ?? null,
+      emailVerified: new Date(),
       abGroup: await assignStudyGroup(),
       economy: { create: {} },
       settings: { create: {} },

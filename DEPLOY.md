@@ -84,9 +84,10 @@ The setup below touches EC2/RDS/ECR/IAM console features whose read-only
 why `AdministratorAccess` rather than a hand-scoped policy — a scoped one
 tends to fail on exactly those calls. The permissions that *do* matter for
 participant data are already least-privilege by design: the GitHub Actions
-role (§3b) and the EC2 instance role (§3c) are both scoped to push/pull on
-one ECR repository, nothing else. If you'd rather scope your own user too,
-[`deploy/aws/setup-user-policy.json`](deploy/aws/setup-user-policy.json)
+role (§3b) is scoped to push on one ECR repository, and the EC2 instance
+role (§3c) to pulling that same repository plus sending mail from one
+address (§3d) — nothing else, either way. If you'd rather scope your own
+user too, [`deploy/aws/setup-user-policy.json`](deploy/aws/setup-user-policy.json)
 covers exactly what §2–§9 use.
 
 ```bash
@@ -231,6 +232,62 @@ aws iam add-role-to-instance-profile \
   --instance-profile-name tasktails-ec2-ecr-pull \
   --role-name tasktails-ec2-ecr-pull
 ```
+
+**§3d — let that same role send the verification email.** Registering with
+email/password now mails a confirmation link before sign-in works (Google
+accounts arrive pre-verified, so they skip it). The app sends through AWS
+SES's HTTPS API rather than SMTP — new AWS accounts throttle/block outbound
+port 25 on EC2 by default, so a `nodemailer`-style SMTP send to another
+provider fails there in a way that's easy to mistake for a code bug.
+
+This reuses `tasktails-ec2-ecr-pull` (a second role would mean re-attaching
+the instance profile in §5, for no real benefit) — it just stops being
+ECR-only, which is why §0's summary above now says "and §3d" rather than
+"nothing else".
+
+1. Pick the address the app sends *from* — something like
+   `noreply@tasktails.co.za`. It never needs to be a real, checkable inbox
+   (see step 2), so there's nothing to set up at Afrihost or wherever the
+   domain's mail is otherwise hosted.
+2. **Verify the whole domain with SES, not that one address** — an "Email
+   address" identity (SES's other option) requires receiving a confirmation
+   link at the address itself, which means running a real mailbox for
+   something nobody reads. A "Domain" identity instead proves ownership
+   through DNS, the same mechanism §6 already uses for the `A` record, and
+   once it's done every address at the domain (`noreply@`, and anything
+   else a later ticket wants to send from) is covered — not just this one.
+
+   Console → search bar → **SES** → left sidebar **Identities** → **Create
+   identity** → **Domain** → enter `tasktails.co.za` → leave **Easy DKIM**
+   on (the default) → **Create identity**. SES shows 3 CNAME records — add
+   them at your registrar/DNS host the same way §6 adds the `A` record.
+   The identity flips from *Pending* to *Verified* once DNS propagates
+   (usually minutes, sometimes longer — `dig +short <name>.tasktails.co.za
+   CNAME` against one of the three shows whether it's live yet).
+3. **Check the sandbox.** A brand-new SES account can only send *to*
+   addresses it has also verified, until you request production access —
+   fine for testing, not for real participants signing up with their own
+   inboxes. On the Identities page, a banner near the top says whether the
+   account is still in the sandbox. If it is: **Account dashboard** (left
+   sidebar) → **Request production access** → fill in the short form (use
+   case: transactional, "sending a one-time email verification link at
+   account registration for a university research study"). Approval is
+   usually same-day, sometimes instant; nothing else in this section depends
+   on it, so you can continue and check back before §9.
+4. **Grant the role permission to send from that address**, scoped the same
+   way §3c scoped ECR:
+
+   ```bash
+   sed -e "s#<SES_FROM_EMAIL>#noreply@$DOMAIN#g" \
+     deploy/aws/ec2-ses-send-policy.json > /tmp/ses-send.json
+
+   aws iam put-role-policy \
+     --role-name tasktails-ec2-ecr-pull \
+     --policy-name tasktails-ses-send \
+     --policy-document file:///tmp/ses-send.json
+   ```
+
+5. Keep the address handy — it's `SES_FROM_EMAIL` in §7's `.env`.
 
 ## §4 — RDS (the database)
 
@@ -505,6 +562,12 @@ AUTH_URL=https://tasktails.co.za
 DOMAIN=tasktails.co.za
 ECR_REGISTRY=
 
+# SES (§3d) — verification emails send only once this is set; leave blank and
+# the app logs the link instead of mailing it (fine for a quick smoke test,
+# not for real participants).
+SES_FROM_EMAIL=noreply@tasktails.co.za
+AWS_REGION=eu-west-1
+
 # Optional — leave blank to hide the Google sign-in button
 AUTH_GOOGLE_ID=
 AUTH_GOOGLE_SECRET=
@@ -589,10 +652,16 @@ Let's Encrypt certificate, so it'll take a little longer than later deploys.
 
 - `https://tasktails.co.za/login` loads over HTTPS with a valid, non-warning
   certificate.
-- Register an account, sign in, land on an authenticated page — this
-  confirms `AUTH_URL`/`AUTH_TRUST_HOST`/`src/proxy.ts`'s forwarded-header
-  handling and the RDS connection all work end to end (the same check INF-15
-  did against the local compose stack, now against the real thing).
+- Register an account with an address you can actually check — the real
+  email, not a throwaway, and one you verified with SES in §3d if the
+  account is still in the sandbox. Confirm the verification email arrives,
+  click it, and sign in — this exercises `AUTH_URL`/`AUTH_TRUST_HOST`/
+  `src/proxy.ts`'s forwarded-header handling, the RDS connection, and the
+  SES send all end to end (the same auth check INF-15 did against the local
+  compose stack, now against the real thing, plus the new email step).
+- SSH in and `docker compose -f docker-compose.prod.yml logs app | grep mailer`
+  should show nothing — that line only ever prints when `SES_FROM_EMAIL` is
+  unset, which it shouldn't be here.
 - SSH back in and run `docker compose -f docker-compose.prod.yml ps` —
   `migrate` should show `Exited (0)`, `app` and `caddy` should show healthy/
   running.

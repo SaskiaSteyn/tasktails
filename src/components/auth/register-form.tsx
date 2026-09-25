@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { Divider } from "@/components/ui/divider";
 import { GoogleMark } from "@/components/ui/google-mark";
 import { PasswordField } from "@/components/ui/password-field";
@@ -22,8 +21,6 @@ const AFTER_REGISTER = "/onboarding/username";
 type Errors = Partial<Record<"email" | "password" | "confirmPassword", string>>;
 
 export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
-  const router = useRouter();
-
   const [values, setValues] = useState({
     email: "",
     password: "",
@@ -32,6 +29,11 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // Set once the account exists — a credentials account starts unverified, so
+  // there is no session to sign into yet (see EmailNotVerifiedError). Google
+  // accounts skip this entirely; `handleSubmit` only ever sets it on the email
+  // branch.
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   const update = (field: keyof typeof values) => (value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -78,24 +80,30 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
         return;
       }
 
-      // Sign straight in so the new account has a session (AUTH-4, JWT).
-      const result = await signIn("credentials", {
-        email: parsed.data.email,
-        password: parsed.data.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setFormError("Account created, but signing in failed. Try logging in.");
-        return;
-      }
-
-      router.push(AFTER_REGISTER);
+      // The account exists but isn't verified yet, so there's nothing to sign
+      // into — a credentials `signIn()` here would just fail on
+      // EmailNotVerifiedError. Send them to check their inbox instead.
+      setAwaitingVerification(true);
     } catch {
       setFormError("Can't reach TaskTails. Check your connection and try again.");
     } finally {
       setPending(false);
     }
+  }
+
+  if (awaitingVerification) {
+    return (
+      <div className="flex flex-col items-center gap-[10px] text-center">
+        <p className="font-display text-[17px] font-semibold">Check your email</p>
+        <p className="text-[13px] leading-[1.5] text-ink-soft">
+          We sent a verification link to <strong>{values.email}</strong>. Open
+          it, then log in below.
+        </p>
+        <Link href="/login" className={buttonClasses({ className: "mt-[6px]" })}>
+          Go to log in
+        </Link>
+      </div>
+    );
   }
 
   return (
