@@ -258,17 +258,25 @@ export function LuckyBoxReveal({
                   <span
                     className={cn(
                       "relative block size-full transition-transform duration-280 transform-3d",
-                      flipped[index] && "rotate-y-180",
+                      flipped[index]
+                        ? "rotate-y-180"
+                        : // Only the front card is the obvious tap target — pulsing
+                          // the whole fan read as noise, not an invitation.
+                          index === frontIndex && "animate-card-invite",
                     )}
                   >
                     {/* The printed back, full-bleed and clipped by the card's
-                        own radius (UPDATE-02 §2). */}
+                        own radius (UPDATE-02 §2). `eager`: it's above the
+                        fold the instant the fan mounts, and Next's default
+                        `lazy` was visibly deferring the fetch (Next 16 docs,
+                        Image `loading`). */}
                     <span className="absolute inset-0 overflow-hidden rounded-[8px] border border-border-track bg-surface shadow-[0_10px_22px_rgb(46_42_38/0.12)] backface-hidden desk:rounded-[9px]">
                       <Image
                         src="/card-background.svg"
                         alt=""
                         fill
                         sizes="130px"
+                        loading="eager"
                         className="object-cover"
                       />
                     </span>
