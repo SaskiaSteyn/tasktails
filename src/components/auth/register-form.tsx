@@ -34,6 +34,8 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
   // accounts skip this entirely; `handleSubmit` only ever sets it on the email
   // branch.
   const [awaitingVerification, setAwaitingVerification] = useState(false);
+  const [resent, setResent] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const update = (field: keyof typeof values) => (value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -91,6 +93,21 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
     }
   }
 
+  async function handleResend() {
+    if (resending) return;
+    setResending(true);
+    try {
+      await fetch("/api/auth/verify/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.email }),
+      });
+      setResent(true);
+    } finally {
+      setResending(false);
+    }
+  }
+
   if (awaitingVerification) {
     return (
       <div className="flex flex-col items-center gap-[10px] text-center">
@@ -102,6 +119,20 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
         <Link href="/login" className={buttonClasses({ className: "mt-[6px]" })}>
           Go to log in
         </Link>
+        {resent ? (
+          <p className="mt-[4px] text-[12px] text-ink-soft">
+            Verification email sent — check your inbox.
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resending}
+            className="mt-[4px] text-[12px] font-bold text-terracotta underline disabled:text-ink-disabled"
+          >
+            {resending ? "Sending…" : "Didn't get the email? Resend"}
+          </button>
+        )}
       </div>
     );
   }
