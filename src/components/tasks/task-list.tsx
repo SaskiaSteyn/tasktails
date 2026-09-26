@@ -235,11 +235,18 @@ export function TaskList({
       );
 
       if (body.reward) {
-        setCelebration({
-          id: taskId,
-          coins: body.reward.granted.coins,
-          xp: body.reward.granted.xp,
-        });
+        // #224 — a completion during an active cooldown banks {0,0}. Popping
+        // "+0 · +0 XP" reads as the reward system failing, not as the cooldown
+        // banner's job being done for it; the banner alone should carry that
+        // message, so the celebration only fires when something was actually
+        // granted.
+        if (!body.reward.onCooldown) {
+          setCelebration({
+            id: taskId,
+            coins: body.reward.granted.coins,
+            xp: body.reward.granted.xp,
+          });
+        }
         setCooldownUntil(body.reward.cooldownUntil);
       }
       celebrate(body.levelUp);
@@ -291,11 +298,14 @@ export function TaskList({
       );
 
       if (body.reward) {
-        setCelebration({
-          id: subtaskId,
-          coins: body.reward.granted.coins,
-          xp: body.reward.granted.xp,
-        });
+        // #224 — see the identical guard in `handleCompleteTask`.
+        if (!body.reward.onCooldown) {
+          setCelebration({
+            id: subtaskId,
+            coins: body.reward.granted.coins,
+            xp: body.reward.granted.xp,
+          });
+        }
         setCooldownUntil(body.reward.cooldownUntil);
       }
       celebrate(body.levelUp);

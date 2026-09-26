@@ -91,6 +91,19 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+# `src/lib/day.ts`'s "local" calendar day (due-date lateness, the streak
+# boundary, the earning-cooldown reset) is deliberately the *server's* clock,
+# on the assumption the whole cohort is in one timezone and the server matches
+# it — see that file's own comment. Nothing enforced that assumption: this
+# base image defaults to UTC, so a participant in South Africa (UTC+2, no DST)
+# who marks a task due "today" and finishes it any time after ~02:00 local has
+# it priced as one day late by a server that still thinks it's "yesterday".
+# That silently docked or zeroed the coin reward (XP is unaffected — the
+# penalty is coins-only) for participants completing tasks with a due date,
+# and nudged the streak/cooldown boundaries by the same two hours. Fixing the
+# container's clock to the study's actual timezone is what that file's design
+# already assumed would be true.
+ENV TZ=Africa/Johannesburg
 
 # Never run the server as root. `node` (uid 1000) ships with the base image.
 USER node
