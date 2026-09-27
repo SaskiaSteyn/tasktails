@@ -19,6 +19,7 @@ import {
 import { onboardingStatus } from "@/lib/onboarding";
 import { petsForUser } from "@/lib/pets";
 import { tasksForUser } from "@/lib/tasks";
+import { findUserById } from "@/lib/users";
 
 export const metadata: Metadata = {
   title: "Tasks · TaskTails",
@@ -55,6 +56,14 @@ export default async function TasksPage() {
   const userId = session?.user?.id;
   if (!userId) redirect("/login");
   await redirectAdminsAway(userId);
+
+  // `/tasks` is where every sign-in lands by default, and since email
+  // verification (#313) a new credentials account reaches it through /login
+  // rather than straight from Register — so the welcome flow is caught here.
+  // A null username means ONB-04 was never answered (skipping it still sets a
+  // generated one); its page moves on to the ONB-01 checklist.
+  const record = await findUserById(userId);
+  if (!record?.username) redirect("/onboarding/username");
 
   const [tasks, onboarding, pets, backgrounds, accessories, economy] =
     await Promise.all([
