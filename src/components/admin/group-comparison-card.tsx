@@ -29,12 +29,7 @@ function MetricChart({ comparison }: { comparison: GroupComparison }) {
             formatter: (p: { data: [number, number, string] }) =>
               `${p.data[2]}<br/><b>${formatValue(p.data[0] / scale, unit)}</b>`,
           },
-          xAxis: {
-            type: "value",
-            name: unit === "duration" ? "minutes" : undefined,
-            nameLocation: "end",
-            min: 0,
-          },
+          xAxis: { type: "value", min: 0 },
           yAxis: {
             type: "value",
             min: -0.5,
@@ -74,7 +69,7 @@ function MetricChart({ comparison }: { comparison: GroupComparison }) {
             },
           ],
           title: {
-            text: label,
+            text: unit === "duration" ? `${label} (minutes)` : label,
             left: 0,
             top: 0,
             textStyle: { fontFamily: t.displayFont, fontSize: 13, fontWeight: 600, color: t.ink },

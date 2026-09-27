@@ -196,3 +196,29 @@ export function groupComparisons(participants: StudyParticipant[]): GroupCompari
   ];
 }
 
+export type EarnSpend = {
+  points: { studyId: string; group: Group; earned: number; spent: number }[];
+  /** Spent ÷ earned per participant — who spends a bigger share of their income. */
+  share: GroupComparison;
+};
+
+/**
+ * Chart 2 — earning differs a lot between participants, so raw spend partly
+ * measures how much someone worked. Share of earnings spent controls for it.
+ * Participants who have earned nothing have no share and are left out of it.
+ */
+export function earnSpend(participants: StudyParticipant[]): EarnSpend {
+  const rows = participants.map((participant) => ({ participant, metrics: metricsFor(participant) }));
+  return {
+    points: rows.map(({ participant, metrics }) => ({
+      studyId: participant.studyId,
+      group: participant.group,
+      earned: metrics.coinsEarned,
+      spent: metrics.coinsSpent,
+    })),
+    share: compare(rows, "spendShare", "Share of earnings spent", "percent", (m) =>
+      m.coinsEarned > 0 ? m.coinsSpent / m.coinsEarned : null,
+    ),
+  };
+}
+
