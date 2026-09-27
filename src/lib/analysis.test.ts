@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { dailyActivity, mannWhitney, median, signTest } from "./analysis";
+import { dailyActivity, mannWhitney, median, retention, signTest } from "./analysis";
 
 describe("mannWhitney", () => {
   it("matches the textbook value for fully separated groups", () => {
@@ -45,6 +45,16 @@ describe("dailyActivity", () => {
     coinsEarned: 0,
     events: visitDays.map((day) => ({ type: "STORE_VISIT" as const, at: at(day), coins: 0, items: 0, durationMs: 0 })),
     taskCompletions: [],
+  });
+
+  it("counts a participant as retained up to their last active day", () => {
+    const now = new Date(joined.getTime() + 3.5 * 86_400_000); // day 4
+    const chart = retention(
+      [participant("a1", "A", joined, [1, 3]), participant("a2", "A", joined, []), participant("b1", "B", joined, [4])],
+      now,
+    );
+    expect(chart.A.slice(0, 5)).toEqual([0.5, 0.5, 0.5, 0, null]);
+    expect(chart.B.slice(0, 4)).toEqual([1, 1, 1, 1]);
   });
 
   it("aligns on each participant's own day 1 and only averages over those who reached a day", () => {

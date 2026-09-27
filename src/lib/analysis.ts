@@ -416,3 +416,43 @@ export function signTest(up: number, down: number): number | null {
   }
   return Math.min(1, (2 * tail) / 2 ** n);
 }
+
+export type RetentionChart = {
+  days: number[];
+  /** Share (0…1) of each group still active on day N or later; null once nobody has reached day N. */
+  A: (number | null)[];
+  B: (number | null)[];
+  reached: { A: number[]; B: number[] };
+};
+
+/**
+ * Chart 6 — retention: of the participants who have reached study day N, the
+ * share who were active on that day or later. "Active" is any logged event or
+ * task completion. Someone still inside their study counts as retained up to
+ * their last activity, same as everyone else — the `reached` denominator is
+ * what keeps recent joiners from counting as drop-outs on days they haven't had.
+ */
+export function retention(participants: StudyParticipant[], now: Date = new Date()): RetentionChart {
+  const length = studyLength(participants, now);
+  const days = Array.from({ length }, (_, i) => i + 1);
+  const reached = { A: days.map(() => 0), B: days.map(() => 0) };
+  const retained = { A: days.map(() => 0), B: days.map(() => 0) };
+
+  for (const participant of participants) {
+    const g = participant.group;
+    const lastActive = Math.max(
+      0,
+      ...participant.events.map((event) => studyDay(participant.joinedAt, event.at)),
+      ...participant.taskCompletions.map((at) => studyDay(participant.joinedAt, at)),
+    );
+    const elapsed = Math.min(length, studyDay(participant.joinedAt, now));
+    for (let d = 0; d < elapsed; d += 1) {
+      reached[g][d] += 1;
+      if (lastActive >= d + 1) retained[g][d] += 1;
+    }
+  }
+
+  const share = (group: Group) =>
+    days.map((_, d) => (reached[group][d] ? retained[group][d] / reached[group][d] : null));
+  return { days, A: share("A"), B: share("B"), reached };
+}

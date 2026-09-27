@@ -6,6 +6,7 @@ import { DailyActivityCard } from "@/components/admin/daily-activity-card";
 import { EarnSpendCard } from "@/components/admin/earn-spend-card";
 import { FlashSaleCard } from "@/components/admin/flash-sale-card";
 import { GroupComparisonCard } from "@/components/admin/group-comparison-card";
+import { RetentionCard } from "@/components/admin/retention-card";
 import { StoreFunnelCard } from "@/components/admin/store-funnel-card";
 import { requireAdmin, studyDataset } from "@/lib/admin";
 import {
@@ -13,6 +14,7 @@ import {
   earnSpend,
   flashSaleComparison,
   groupComparisons,
+  retention,
   storeFunnel,
   type StudyParticipant,
 } from "@/lib/analysis";
@@ -40,6 +42,8 @@ function render(slug: AnalysisSlug, dataset: StudyParticipant[]) {
       return <DailyActivityCard data={dailyActivity(dataset)} />;
     case "flash-sale":
       return <FlashSaleCard data={flashSaleComparison(dataset)} />;
+    case "retention":
+      return <RetentionCard data={retention(dataset)} />;
   }
 }
 
