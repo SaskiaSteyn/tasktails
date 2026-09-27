@@ -222,3 +222,50 @@ export function earnSpend(participants: StudyParticipant[]): EarnSpend {
   };
 }
 
+
+export type StoreFunnel = {
+  groupSize: Record<Group, number>;
+  /** Share of each group (0…1) that reached each stage at least once. */
+  stages: { label: string; A: number; B: number }[];
+  /** Group totals divided by the group's store visits — null with no visits. */
+  perVisit: { label: string; A: number | null; B: number | null }[];
+};
+
+/**
+ * Chart 3 — where urgency acts: getting people into the store, into a cart,
+ * or through checkout. Counted per participant ("did they ever…") so one
+ * heavy user can't carry a stage for their whole group. Lucky Boxes skip the
+ * cart, so "Bought anything" can exceed "Added to cart".
+ */
+export function storeFunnel(participants: StudyParticipant[]): StoreFunnel {
+  const blank = () => ({ n: 0, visited: 0, carted: 0, bought: 0, visits: 0, carts: 0, items: 0 });
+  const totals = { A: blank(), B: blank() };
+  for (const participant of participants) {
+    const m = metricsFor(participant);
+    const t = totals[participant.group];
+    t.n += 1;
+    t.visited += m.storeVisits > 0 ? 1 : 0;
+    t.carted += m.addToCart > 0 ? 1 : 0;
+    t.bought += m.itemsPurchased > 0 ? 1 : 0;
+    t.visits += m.storeVisits;
+    t.carts += m.addToCart;
+    t.items += m.itemsPurchased;
+  }
+  const share = (group: Group, key: "visited" | "carted" | "bought") =>
+    totals[group].n ? totals[group][key] / totals[group].n : 0;
+  const rate = (group: Group, key: "carts" | "items") =>
+    totals[group].visits ? totals[group][key] / totals[group].visits : null;
+
+  return {
+    groupSize: { A: totals.A.n, B: totals.B.n },
+    stages: [
+      { label: "Visited the store", A: share("A", "visited"), B: share("B", "visited") },
+      { label: "Added to cart", A: share("A", "carted"), B: share("B", "carted") },
+      { label: "Bought anything", A: share("A", "bought"), B: share("B", "bought") },
+    ],
+    perVisit: [
+      { label: "Add-to-carts per visit", A: rate("A", "carts"), B: rate("B", "carts") },
+      { label: "Items bought per visit", A: rate("A", "items"), B: rate("B", "items") },
+    ],
+  };
+}

@@ -4,8 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import { ANALYSIS_PAGES, type AnalysisSlug } from "@/components/admin/analysis-pages";
 import { EarnSpendCard } from "@/components/admin/earn-spend-card";
 import { GroupComparisonCard } from "@/components/admin/group-comparison-card";
+import { StoreFunnelCard } from "@/components/admin/store-funnel-card";
 import { requireAdmin, studyDataset } from "@/lib/admin";
-import { earnSpend, groupComparisons, type StudyParticipant } from "@/lib/analysis";
+import { earnSpend, groupComparisons, storeFunnel, type StudyParticipant } from "@/lib/analysis";
 
 type Params = { params: Promise<{ chart: string }> };
 
@@ -24,6 +25,8 @@ function render(slug: AnalysisSlug, dataset: StudyParticipant[]) {
       return <GroupComparisonCard comparisons={groupComparisons(dataset)} />;
     case "earn-spend":
       return <EarnSpendCard data={earnSpend(dataset)} />;
+    case "funnel":
+      return <StoreFunnelCard data={storeFunnel(dataset)} />;
   }
 }
 

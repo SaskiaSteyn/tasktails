@@ -1,4 +1,4 @@
-import { ChartScatter, type LucideIcon, Users } from "lucide-react";
+import { ChartScatter, Filter, type LucideIcon, Users } from "lucide-react";
 
 /**
  * #329 — the analysis pages, in menu order. The side menu is built from this
@@ -8,6 +8,7 @@ import { ChartScatter, type LucideIcon, Users } from "lucide-react";
 export const ANALYSIS_PAGES = [
   { slug: "groups", label: "Group comparison", icon: Users },
   { slug: "earn-spend", label: "Earned vs spent", icon: ChartScatter },
+  { slug: "funnel", label: "Store funnel", icon: Filter },
 ] as const satisfies readonly { slug: string; label: string; icon: LucideIcon }[];
 
 export type AnalysisSlug = (typeof ANALYSIS_PAGES)[number]["slug"];
