@@ -51,7 +51,7 @@ export function AdminDashboard({
             IMY761 researcher view — click a participant for their full telemetry.
           </p>
         </div>
-        {logoutSlot}
+        <div className="flex-none">{logoutSlot}</div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_420px] xl:items-start">
