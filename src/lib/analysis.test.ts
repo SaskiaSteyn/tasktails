@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { dailyActivity, mannWhitney, median } from "./analysis";
+import { dailyActivity, mannWhitney, median, signTest } from "./analysis";
 
 describe("mannWhitney", () => {
   it("matches the textbook value for fully separated groups", () => {
@@ -63,5 +63,14 @@ describe("dailyActivity", () => {
     expect(chart.reached.A.slice(0, 4)).toEqual([3, 3, 2, 0]);
     expect(visits.A.slice(0, 4)).toEqual([2 / 3, 1 / 3, 1 / 2, null]);
     expect(visits.B[0]).toBeNull();
+  });
+});
+
+describe("signTest", () => {
+  it("matches the binomial tail", () => {
+    expect(signTest(8, 0)).toBeCloseTo(2 / 256); // 0.0078
+    expect(signTest(7, 3)).toBeCloseTo(0.34375); // 2 × 176/1024
+    expect(signTest(3, 3)).toBe(1);
+    expect(signTest(0, 0)).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import type { StudyEvent } from "@/lib/telemetry";
+import { flashSaleOnDay } from "@/lib/urgency";
 
 /**
  * #329 — the admin dashboard's analysis: everything the charts draw, computed
@@ -350,4 +351,68 @@ export function dailyActivity(
       B: mean(sums[i].B, "B"),
     })),
   };
+}
+
+export type FlashSaleComparison = {
+  /** Group B participants with at least one store visit on both kinds of day. */
+  participants: { studyId: string; rest: number; sale: number; restVisits: number; saleVisits: number }[];
+  median: { rest: number | null; sale: number | null };
+  /** Participants who bought more per visit on sale days, fewer, or the same. */
+  up: number;
+  down: number;
+  same: number;
+  /** Two-sided exact sign test over `up` vs `down`; null with no changes to test. */
+  p: number | null;
+};
+
+/**
+ * Chart 5 — items bought per store visit on flash-sale days vs normal days,
+ * within each Group B participant. Everyone is compared with themselves, so
+ * how much someone likes shopping cancels out. The other urgency cues run
+ * every day; only the flash-sale layer switches, on `flashSaleOnDay()`'s
+ * per-participant schedule, which is reproduced here from the timestamp.
+ */
+export function flashSaleComparison(participants: StudyParticipant[]): FlashSaleComparison {
+  const rows: FlashSaleComparison["participants"] = [];
+  for (const participant of participants) {
+    if (participant.group !== "B") continue;
+    const tally = { rest: { visits: 0, items: 0 }, sale: { visits: 0, items: 0 } };
+    for (const event of participant.events) {
+      const bucket = tally[flashSaleOnDay(participant.id, event.at) ? "sale" : "rest"];
+      if (event.type === "STORE_VISIT") bucket.visits += 1;
+      bucket.items += event.items;
+    }
+    if (tally.rest.visits === 0 || tally.sale.visits === 0) continue;
+    rows.push({
+      studyId: participant.studyId,
+      rest: tally.rest.items / tally.rest.visits,
+      sale: tally.sale.items / tally.sale.visits,
+      restVisits: tally.rest.visits,
+      saleVisits: tally.sale.visits,
+    });
+  }
+
+  const up = rows.filter((row) => row.sale > row.rest).length;
+  const down = rows.filter((row) => row.sale < row.rest).length;
+  return {
+    participants: rows,
+    median: { rest: median(rows.map((row) => row.rest)), sale: median(rows.map((row) => row.sale)) },
+    up,
+    down,
+    same: rows.length - up - down,
+    p: signTest(up, down),
+  };
+}
+
+/** Exact two-sided sign test: how likely a split this lopsided is if sale days made no difference. */
+export function signTest(up: number, down: number): number | null {
+  const n = up + down;
+  if (n === 0) return null;
+  let tail = 0;
+  let choose = 1; // C(n, k), built up term by term
+  for (let k = 0; k <= Math.min(up, down); k += 1) {
+    tail += choose;
+    choose = (choose * (n - k)) / (k + 1);
+  }
+  return Math.min(1, (2 * tail) / 2 ** n);
 }
