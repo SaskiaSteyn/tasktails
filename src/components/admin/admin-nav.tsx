@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard } from "lucide-react";
+import { Download, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -35,6 +35,15 @@ export function AdminNav() {
           </Link>
         </div>
       ))}
+      {/* A plain <a>, not <Link>: this is a file download from a route handler, not a page. */}
+      <a
+        href="/api/admin/export"
+        download
+        className="mt-auto flex items-center gap-2.5 rounded-[10px] border border-border-track bg-surface px-3 py-2 text-[13px] font-bold text-ink-soft hover:text-ink"
+      >
+        <Download size={16} strokeWidth={2} aria-hidden />
+        Export CSV
+      </a>
     </nav>
   );
 }

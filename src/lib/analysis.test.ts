@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { dailyActivity, mannWhitney, median, retention, signTest } from "./analysis";
+import { dailyActivity, mannWhitney, median, retention, signTest, toCsv } from "./analysis";
 
 describe("mannWhitney", () => {
   it("matches the textbook value for fully separated groups", () => {
@@ -82,5 +82,11 @@ describe("signTest", () => {
     expect(signTest(7, 3)).toBeCloseTo(0.34375); // 2 × 176/1024
     expect(signTest(3, 3)).toBe(1);
     expect(signTest(0, 0)).toBeNull();
+  });
+});
+
+describe("toCsv", () => {
+  it("writes a header and quotes only cells that need it", () => {
+    expect(toCsv([{ a: 1, b: 'say "hi", ok' }, { a: 2, b: "" }])).toBe('a,b\r\n1,"say ""hi"", ok"\r\n2,');
   });
 });

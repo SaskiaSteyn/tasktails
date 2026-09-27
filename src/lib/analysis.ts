@@ -376,12 +376,7 @@ export function flashSaleComparison(participants: StudyParticipant[]): FlashSale
   const rows: FlashSaleComparison["participants"] = [];
   for (const participant of participants) {
     if (participant.group !== "B") continue;
-    const tally = { rest: { visits: 0, items: 0 }, sale: { visits: 0, items: 0 } };
-    for (const event of participant.events) {
-      const bucket = tally[flashSaleOnDay(participant.id, event.at) ? "sale" : "rest"];
-      if (event.type === "STORE_VISIT") bucket.visits += 1;
-      bucket.items += event.items;
-    }
+    const tally = flashSaleSplit(participant);
     if (tally.rest.visits === 0 || tally.sale.visits === 0) continue;
     rows.push({
       studyId: participant.studyId,
@@ -404,6 +399,17 @@ export function flashSaleComparison(participants: StudyParticipant[]): FlashSale
   };
 }
 
+/** Store visits and items bought on this participant's flash-sale days vs their other days. */
+export function flashSaleSplit(participant: StudyParticipant) {
+  const tally = { rest: { visits: 0, items: 0 }, sale: { visits: 0, items: 0 } };
+  for (const event of participant.events) {
+    const bucket = tally[flashSaleOnDay(participant.id, event.at) ? "sale" : "rest"];
+    if (event.type === "STORE_VISIT") bucket.visits += 1;
+    bucket.items += event.items;
+  }
+  return tally;
+}
+
 /** Exact two-sided sign test: how likely a split this lopsided is if sale days made no difference. */
 export function signTest(up: number, down: number): number | null {
   const n = up + down;
@@ -415,6 +421,15 @@ export function signTest(up: number, down: number): number | null {
     choose = (choose * (n - k)) / (k + 1);
   }
   return Math.min(1, (2 * tail) / 2 ** n);
+}
+
+/** The last study day with any logged event or task completion; 0 if none. */
+export function lastActiveDay(participant: StudyParticipant): number {
+  return Math.max(
+    0,
+    ...participant.events.map((event) => studyDay(participant.joinedAt, event.at)),
+    ...participant.taskCompletions.map((at) => studyDay(participant.joinedAt, at)),
+  );
 }
 
 export type RetentionChart = {
@@ -440,11 +455,7 @@ export function retention(participants: StudyParticipant[], now: Date = new Date
 
   for (const participant of participants) {
     const g = participant.group;
-    const lastActive = Math.max(
-      0,
-      ...participant.events.map((event) => studyDay(participant.joinedAt, event.at)),
-      ...participant.taskCompletions.map((at) => studyDay(participant.joinedAt, at)),
-    );
+    const lastActive = lastActiveDay(participant);
     const elapsed = Math.min(length, studyDay(participant.joinedAt, now));
     for (let d = 0; d < elapsed; d += 1) {
       reached[g][d] += 1;
@@ -455,4 +466,54 @@ export function retention(participants: StudyParticipant[], now: Date = new Date
   const share = (group: Group) =>
     days.map((_, d) => (reached[group][d] ? retained[group][d] / reached[group][d] : null));
   return { days, A: share("A"), B: share("B"), reached };
+}
+
+/**
+ * Chart 7 — one row per participant for the CSV export, keyed by study code
+ * only (the consent form promises pseudonymised analysis data — no names or
+ * emails). Column names are snake_case so R, JASP and pandas take them as-is.
+ * The flash-sale columns are empty for Group A, who never see a flash sale.
+ */
+export function exportRows(
+  participants: StudyParticipant[],
+  now: Date = new Date(),
+): Record<string, string | number>[] {
+  return participants.map((participant) => {
+    const m = metricsFor(participant);
+    const split = participant.group === "B" ? flashSaleSplit(participant) : null;
+    return {
+      study_id: participant.studyId,
+      group: participant.group,
+      joined_at: participant.joinedAt.toISOString(),
+      days_enrolled: studyDay(participant.joinedAt, now),
+      last_active_day: lastActiveDay(participant),
+      sessions: m.sessions,
+      tasks_completed: m.tasksCompleted,
+      coins_earned: m.coinsEarned,
+      coins_spent: m.coinsSpent,
+      spend_share: m.coinsEarned > 0 ? Number((m.coinsSpent / m.coinsEarned).toFixed(4)) : "",
+      store_visits: m.storeVisits,
+      store_time_min: Number((m.storeTimeMs / 60_000).toFixed(2)),
+      add_to_cart: m.addToCart,
+      items_purchased: m.itemsPurchased,
+      lucky_boxes: m.luckyBoxes,
+      sale_day_visits: split?.sale.visits ?? "",
+      sale_day_items: split?.sale.items ?? "",
+      normal_day_visits: split?.rest.visits ?? "",
+      normal_day_items: split?.rest.items ?? "",
+    };
+  });
+}
+
+/** RFC 4180 CSV. Quotes only the cells that need it. */
+export function toCsv(rows: Record<string, string | number>[]): string {
+  if (rows.length === 0) return "";
+  const cell = (value: string | number) => {
+    const text = String(value);
+    return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  };
+  const header = Object.keys(rows[0]);
+  return [header, ...rows.map((row) => header.map((key) => row[key]))]
+    .map((line) => line.map(cell).join(","))
+    .join("\r\n");
 }
