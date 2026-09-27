@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { ANALYSIS_PAGES, type AnalysisSlug } from "@/components/admin/analysis-pages";
+import { DailyActivityCard } from "@/components/admin/daily-activity-card";
 import { EarnSpendCard } from "@/components/admin/earn-spend-card";
 import { GroupComparisonCard } from "@/components/admin/group-comparison-card";
 import { StoreFunnelCard } from "@/components/admin/store-funnel-card";
 import { requireAdmin, studyDataset } from "@/lib/admin";
-import { earnSpend, groupComparisons, storeFunnel, type StudyParticipant } from "@/lib/analysis";
+import { dailyActivity, earnSpend, groupComparisons, storeFunnel, type StudyParticipant } from "@/lib/analysis";
 
 type Params = { params: Promise<{ chart: string }> };
 
@@ -27,6 +28,8 @@ function render(slug: AnalysisSlug, dataset: StudyParticipant[]) {
       return <EarnSpendCard data={earnSpend(dataset)} />;
     case "funnel":
       return <StoreFunnelCard data={storeFunnel(dataset)} />;
+    case "daily":
+      return <DailyActivityCard data={dailyActivity(dataset)} />;
   }
 }
 

@@ -24,6 +24,8 @@ export type StudyParticipant = {
   taskCompletions: Date[];
 };
 
+type ActivityEvent = StudyParticipant["events"][number];
+
 export type ParticipantMetrics = {
   sessions: number;
   tasksCompleted: number;
@@ -267,5 +269,85 @@ export function storeFunnel(participants: StudyParticipant[]): StoreFunnel {
       { label: "Add-to-carts per visit", A: rate("A", "carts"), B: rate("B", "carts") },
       { label: "Items bought per visit", A: rate("A", "items"), B: rate("B", "items") },
     ],
+  };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** 1-based day of the study for this participant — day 1 is their first 24 hours. */
+export function studyDay(joinedAt: Date, at: Date): number {
+  return Math.floor((at.getTime() - joinedAt.getTime()) / DAY_MS) + 1;
+}
+
+/** At least the two-week study, longer if anyone has been enrolled longer. */
+function studyLength(participants: StudyParticipant[], now: Date): number {
+  return Math.max(14, ...participants.map((p) => studyDay(p.joinedAt, now)));
+}
+
+export type DailySeries = {
+  key: string;
+  label: string;
+  /** Mean per participant on each study day; null once nobody in the group has reached it. */
+  A: (number | null)[];
+  B: (number | null)[];
+};
+
+export type DailyActivityChart = {
+  days: number[];
+  /** Participants who have reached each day — the denominator behind each mean. */
+  reached: { A: number[]; B: number[] };
+  series: DailySeries[];
+};
+
+/**
+ * Chart 4 — activity by study day, per group. Aligned on each person's own
+ * day 1 rather than the calendar, since people joined on different dates.
+ * Each day's mean only counts participants who have reached that day, so
+ * recent joiners don't drag the later days down to zero.
+ */
+export function dailyActivity(
+  participants: StudyParticipant[],
+  now: Date = new Date(),
+): DailyActivityChart {
+  const length = studyLength(participants, now);
+  const days = Array.from({ length }, (_, i) => i + 1);
+  const metrics = [
+    { key: "storeVisits", label: "Store visits", of: (e: ActivityEvent) => (e.type === "STORE_VISIT" ? 1 : 0) },
+    { key: "itemsPurchased", label: "Items purchased", of: (e: ActivityEvent) => e.items },
+    { key: "coinsSpent", label: "Coins spent", of: (e: ActivityEvent) => e.coins },
+    { key: "sessions", label: "Sessions", of: (e: ActivityEvent) => (e.type === "SESSION_START" ? 1 : 0) },
+  ];
+
+  const reached = { A: days.map(() => 0), B: days.map(() => 0) };
+  // sums[metric][group][dayIndex]; tasks are the last metric.
+  const sums = [...metrics, null].map(() => ({ A: days.map(() => 0), B: days.map(() => 0) }));
+
+  for (const participant of participants) {
+    const g = participant.group;
+    const elapsed = Math.min(length, studyDay(participant.joinedAt, now));
+    for (let d = 0; d < elapsed; d += 1) reached[g][d] += 1;
+    for (const event of participant.events) {
+      const d = studyDay(participant.joinedAt, event.at) - 1;
+      if (d < 0 || d >= length) continue;
+      metrics.forEach((metric, i) => (sums[i][g][d] += metric.of(event)));
+    }
+    for (const completedAt of participant.taskCompletions) {
+      const d = studyDay(participant.joinedAt, completedAt) - 1;
+      if (d >= 0 && d < length) sums[metrics.length][g][d] += 1;
+    }
+  }
+
+  const mean = (sum: number[], group: Group) =>
+    sum.map((value, d) => (reached[group][d] ? value / reached[group][d] : null));
+
+  return {
+    days,
+    reached,
+    series: [...metrics, { key: "tasksCompleted", label: "Tasks completed" }].map((metric, i) => ({
+      key: metric.key,
+      label: metric.label,
+      A: mean(sums[i].A, "A"),
+      B: mean(sums[i].B, "B"),
+    })),
   };
 }
