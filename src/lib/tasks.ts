@@ -88,6 +88,18 @@ export async function completedTaskFactsForUser(
   }));
 }
 
+/** #329 — when each participant completed each task, for the admin charts' per-day series. One query for everyone. */
+export async function completionTimesFor(
+  userIds: string[],
+): Promise<{ userId: string; completedAt: Date }[]> {
+  if (userIds.length === 0) return [];
+  const rows = await prisma.task.findMany({
+    where: { userId: { in: userIds }, completedAt: { not: null } },
+    select: { userId: true, completedAt: true },
+  });
+  return rows.map((row) => ({ userId: row.userId, completedAt: row.completedAt as Date }));
+}
+
 /**
  * A single task, scoped to its owner (TASK-03). Returns null both when the
  * id doesn't exist and when it belongs to someone else — the caller can't

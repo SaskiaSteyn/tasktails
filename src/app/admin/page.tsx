@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { participantSummaries, requireAdmin, studyAggregate } from "@/lib/admin";
+import { allTimeLeaderboard } from "@/lib/leaderboard";
 
 export const metadata: Metadata = {
   title: "Admin · TaskTails",
@@ -32,24 +33,18 @@ export default async function AdminPage() {
     redirect(gate.status === 401 ? "/login" : "/tasks");
   }
 
-  const [participants, aggregate] = await Promise.all([
+  const [participants, aggregate, board] = await Promise.all([
     participantSummaries(),
     studyAggregate(),
+    allTimeLeaderboard(null),
   ]);
 
   return (
-    // `h-full overflow-y-auto`, not `min-h-full`: the root layout pins `body`
-    // to exactly the viewport height with `overflow-hidden` (see its own
-    // comment) for the phone-frame screens' benefit, so this page — the one
-    // screen with no `AppShell` to own its own scroll area — has to supply
-    // that scroll container itself or content taller than the viewport would
-    // just be clipped.
-    <div className="h-full overflow-y-auto bg-board">
-      <AdminDashboard
-        participants={participants}
-        aggregate={aggregate}
-        logoutSlot={<LogoutButton fullWidth={false} />}
-      />
-    </div>
+    <AdminDashboard
+      participants={participants}
+      aggregate={aggregate}
+      leaderboard={board.entries}
+      logoutSlot={<LogoutButton fullWidth={false} />}
+    />
   );
 }

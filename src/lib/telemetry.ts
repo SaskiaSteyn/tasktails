@@ -326,3 +326,59 @@ export async function earningCooldownMetrics(
     midCooldownByGroup,
   };
 }
+
+/** #329 — one event as the study charts need it: what, who, when, and the few payload numbers that matter. */
+export type StudyEvent = {
+  userId: string;
+  type: TelemetryEventType;
+  at: Date;
+  /** Coins a purchase cost (`ITEM_PURCHASED`/`LUCKY_BOX_PURCHASED`), else 0. */
+  coins: number;
+  /** Units a purchase bought — the line's quantity, or 1 for a Lucky Box — else 0. */
+  items: number;
+  /** `STORE_TIME_ON_PAGE`'s duration, else 0. */
+  durationMs: number;
+};
+
+const STUDY_EVENT_TYPES: TelemetryEventType[] = [
+  "SESSION_START",
+  "STORE_VISIT",
+  "ADD_TO_CART",
+  "ITEM_PURCHASED",
+  "LUCKY_BOX_PURCHASED",
+  "STORE_TIME_ON_PAGE",
+];
+
+/**
+ * #329 — every event the admin charts read, for every participant, in one
+ * query rather than one per participant per metric.
+ *
+ * Purchases are read from the event log here, not `Transaction`, because the
+ * charts need *when* each one happened and what it cost including Lucky Boxes,
+ * which never touch `Transaction`. `ITEM_PURCHASED` is written inside the
+ * checkout transaction, so the two cannot disagree.
+ */
+export async function studyEventsFor(userIds: string[]): Promise<StudyEvent[]> {
+  if (userIds.length === 0) return [];
+
+  const rows = await prisma.telemetryEvent.findMany({
+    where: { userId: { in: userIds }, eventType: { in: STUDY_EVENT_TYPES } },
+    select: { userId: true, eventType: true, payload: true, createdAt: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return rows.map((row) => {
+    const payload = (row.payload ?? {}) as Record<string, unknown>;
+    const num = (key: string) => (typeof payload[key] === "number" ? (payload[key] as number) : 0);
+    const type = row.eventType as TelemetryEventType;
+    return {
+      userId: row.userId,
+      type,
+      at: row.createdAt,
+      coins: num("coinSpent"),
+      items:
+        type === "ITEM_PURCHASED" ? num("quantity") : type === "LUCKY_BOX_PURCHASED" ? 1 : 0,
+      durationMs: num("durationMs"),
+    };
+  });
+}
