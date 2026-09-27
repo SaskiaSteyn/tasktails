@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 
 import type { ParticipantTelemetrySummary, StudyAggregate } from "@/lib/admin";
+import type { LeaderboardEntry } from "@/lib/leaderboard";
 
 import { EarningCooldownCard } from "./earning-cooldown-card";
 import { EngagementTable } from "./engagement-table";
+import { LeaderboardTable } from "./leaderboard-table";
 import { ParticipantDetailPanel } from "./participant-detail-panel";
 import { StoreTable } from "./store-table";
 import { StudyOverviewCard } from "./study-overview-card";
@@ -28,10 +30,12 @@ import { StudyOverviewCard } from "./study-overview-card";
 export function AdminDashboard({
   participants,
   aggregate,
+  leaderboard,
   logoutSlot,
 }: {
   participants: ParticipantTelemetrySummary[];
   aggregate: StudyAggregate;
+  leaderboard: LeaderboardEntry[];
   logoutSlot: ReactNode;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -47,7 +51,7 @@ export function AdminDashboard({
             IMY761 researcher view — click a participant for their full telemetry.
           </p>
         </div>
-        {logoutSlot}
+        <div className="flex-none">{logoutSlot}</div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_420px] xl:items-start">
@@ -60,6 +64,12 @@ export function AdminDashboard({
             onSelect={setSelectedId}
           />
           <StoreTable
+            participants={participants}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+          <LeaderboardTable
+            entries={leaderboard}
             participants={participants}
             selectedId={selectedId}
             onSelect={setSelectedId}

@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import type { StudyParticipant } from "@/lib/analysis";
 import { AbGroup, UserRole } from "@/generated/prisma/client";
 import { purchaseCount } from "@/lib/checkout";
+import { lifetimeEarningsFor } from "@/lib/economy";
 import { luckyBoxPurchaseCount } from "@/lib/gacha";
 import {
   type DailyActivity,
@@ -11,9 +13,10 @@ import {
   type EarningCooldownMetrics,
   sessionMetricsForUser,
   storeFunnelForUser,
+  studyEventsFor,
   totalTelemetryEventCount,
 } from "@/lib/telemetry";
-import { completedTaskCount } from "@/lib/tasks";
+import { completedTaskCount, completionTimesFor } from "@/lib/tasks";
 import {
   displayNameFor,
   findUserById,
@@ -227,4 +230,38 @@ export async function studyAggregate(): Promise<StudyAggregate> {
       totalCompletionsByGroup,
     },
   };
+}
+
+/**
+ * #329 — every participant with their raw activity, for `analysis.ts` to
+ * chart. Three batched reads for the whole study rather than per-participant
+ * queries, since the charts need every event's timestamp anyway.
+ */
+export async function studyDataset(): Promise<StudyParticipant[]> {
+  const participants = await listParticipants();
+  const ids = participants.map((participant) => participant.id);
+  const [events, completions, earnings] = await Promise.all([
+    studyEventsFor(ids),
+    completionTimesFor(ids),
+    lifetimeEarningsFor(ids),
+  ]);
+
+  const byId = new Map<string, StudyParticipant>(
+    participants.map((participant) => [
+      participant.id,
+      {
+        id: participant.id,
+        studyId: participant.studyId,
+        group: participant.abGroup === AbGroup.A ? "A" : "B",
+        joinedAt: participant.createdAt,
+        coinsEarned: earnings.get(participant.id) ?? 0,
+        events: [],
+        taskCompletions: [],
+      },
+    ]),
+  );
+  for (const { userId, ...event } of events) byId.get(userId)?.events.push(event);
+  for (const { userId, completedAt } of completions) byId.get(userId)?.taskCompletions.push(completedAt);
+
+  return [...byId.values()];
 }
