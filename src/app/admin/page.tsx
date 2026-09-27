@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { participantSummaries, requireAdmin, studyAggregate } from "@/lib/admin";
+import { participantSummaries, requireAdmin, studyAggregate, studyDataset } from "@/lib/admin";
+import { studyCharts } from "@/lib/analysis";
 import { allTimeLeaderboard } from "@/lib/leaderboard";
 
 export const metadata: Metadata = {
@@ -33,10 +34,11 @@ export default async function AdminPage() {
     redirect(gate.status === 401 ? "/login" : "/tasks");
   }
 
-  const [participants, aggregate, board] = await Promise.all([
+  const [participants, aggregate, board, dataset] = await Promise.all([
     participantSummaries(),
     studyAggregate(),
     allTimeLeaderboard(null),
+    studyDataset(),
   ]);
 
   return (
@@ -51,6 +53,7 @@ export default async function AdminPage() {
         participants={participants}
         aggregate={aggregate}
         leaderboard={board.entries}
+        charts={studyCharts(dataset)}
         logoutSlot={<LogoutButton fullWidth={false} />}
       />
     </div>
