@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { participantSummaries, requireAdmin, studyAggregate } from "@/lib/admin";
+import { allTimeLeaderboard } from "@/lib/leaderboard";
 
 export const metadata: Metadata = {
   title: "Admin · TaskTails",
@@ -32,9 +33,10 @@ export default async function AdminPage() {
     redirect(gate.status === 401 ? "/login" : "/tasks");
   }
 
-  const [participants, aggregate] = await Promise.all([
+  const [participants, aggregate, board] = await Promise.all([
     participantSummaries(),
     studyAggregate(),
+    allTimeLeaderboard(null),
   ]);
 
   return (
@@ -48,6 +50,7 @@ export default async function AdminPage() {
       <AdminDashboard
         participants={participants}
         aggregate={aggregate}
+        leaderboard={board.entries}
         logoutSlot={<LogoutButton fullWidth={false} />}
       />
     </div>

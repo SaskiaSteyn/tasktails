@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 
 import type { ParticipantTelemetrySummary, StudyAggregate } from "@/lib/admin";
+import type { LeaderboardEntry } from "@/lib/leaderboard";
 
 import { EarningCooldownCard } from "./earning-cooldown-card";
 import { EngagementTable } from "./engagement-table";
+import { LeaderboardTable } from "./leaderboard-table";
 import { ParticipantDetailPanel } from "./participant-detail-panel";
 import { StoreTable } from "./store-table";
 import { StudyOverviewCard } from "./study-overview-card";
@@ -28,10 +30,12 @@ import { StudyOverviewCard } from "./study-overview-card";
 export function AdminDashboard({
   participants,
   aggregate,
+  leaderboard,
   logoutSlot,
 }: {
   participants: ParticipantTelemetrySummary[];
   aggregate: StudyAggregate;
+  leaderboard: LeaderboardEntry[];
   logoutSlot: ReactNode;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -60,6 +64,12 @@ export function AdminDashboard({
             onSelect={setSelectedId}
           />
           <StoreTable
+            participants={participants}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+          <LeaderboardTable
+            entries={leaderboard}
             participants={participants}
             selectedId={selectedId}
             onSelect={setSelectedId}
