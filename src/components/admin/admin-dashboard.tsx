@@ -4,12 +4,10 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 
 import type { ParticipantTelemetrySummary, StudyAggregate } from "@/lib/admin";
-import type { StudyCharts } from "@/lib/analysis";
 import type { LeaderboardEntry } from "@/lib/leaderboard";
 
 import { EarningCooldownCard } from "./earning-cooldown-card";
 import { EngagementTable } from "./engagement-table";
-import { GroupComparisonCard } from "./group-comparison-card";
 import { LeaderboardTable } from "./leaderboard-table";
 import { ParticipantDetailPanel } from "./participant-detail-panel";
 import { StoreTable } from "./store-table";
@@ -33,13 +31,11 @@ export function AdminDashboard({
   participants,
   aggregate,
   leaderboard,
-  charts,
   logoutSlot,
 }: {
   participants: ParticipantTelemetrySummary[];
   aggregate: StudyAggregate;
   leaderboard: LeaderboardEntry[];
-  charts: StudyCharts;
   logoutSlot: ReactNode;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -61,7 +57,6 @@ export function AdminDashboard({
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_420px] xl:items-start">
         <div className="flex flex-col gap-6">
           <StudyOverviewCard aggregate={aggregate} />
-          <GroupComparisonCard comparisons={charts.comparisons} />
           <EarningCooldownCard metrics={aggregate.earningCooldown} />
           <EngagementTable
             participants={participants}

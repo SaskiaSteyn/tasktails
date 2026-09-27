@@ -196,13 +196,3 @@ export function groupComparisons(participants: StudyParticipant[]): GroupCompari
   ];
 }
 
-/** Everything the dashboard's analysis cards draw, computed once on the server. */
-export type StudyCharts = {
-  comparisons: GroupComparison[];
-};
-
-export function studyCharts(participants: StudyParticipant[]): StudyCharts {
-  return {
-    comparisons: groupComparisons(participants),
-  };
-}
