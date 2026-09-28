@@ -50,7 +50,7 @@ export function StudyOverviewCard({ aggregate }: { aggregate: StudyAggregate }) 
       </header>
 
       <div className="p-5">
-        <div className="grid grid-cols-4 gap-[11px]">
+        <div className="grid grid-cols-2 gap-[11px] md:grid-cols-4">
           <StatTile label="Participants" value={String(aggregate.participantCount)} />
           <StatTile
             label="Telemetry events"

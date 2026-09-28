@@ -70,7 +70,7 @@ export function EarningCooldownCard({
       </header>
 
       <div className="p-5">
-        <div className="grid grid-cols-4 gap-[11px]">
+        <div className="grid grid-cols-2 gap-[11px] md:grid-cols-4">
           <StatTile label="Cooldowns triggered" value={cooldownsTriggered.toLocaleString("en-US")} />
           <StatTile label="Avg cooldown length" value={minutes(avgCooldownMinutes)} />
           <StatTile label="Avg wait to next task" value={minutes(avgWaitToNextTaskMinutes)} />

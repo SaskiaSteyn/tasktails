@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft, Trophy } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { AppShell } from "@/components/layout/app-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { EmptyBoard } from "@/components/leaderboard/empty-board";
 import { Podium } from "@/components/leaderboard/podium";
 import { RankedList } from "@/components/leaderboard/ranked-list";
 import { SessionTracker } from "@/components/telemetry/session-tracker";
@@ -86,17 +87,7 @@ export default async function LeaderboardPage({
       </p>
 
       {board.entries.length === 0 || nobodyScored ? (
-        <div className="flex flex-1 flex-col items-center justify-center px-8 pb-10 text-center">
-          <span className="flex size-[52px] items-center justify-center rounded-full bg-amber-tint text-amber">
-            <Trophy size={24} strokeWidth={2} aria-hidden />
-          </span>
-          <p className="mt-3 text-[13px] font-extrabold text-ink">
-            Nobody&rsquo;s on the board yet
-          </p>
-          <p className="mt-1 text-[11.5px] leading-[1.4] font-bold text-ink-soft">
-            Complete a task to earn your first coins and take the top spot.
-          </p>
-        </div>
+        <EmptyBoard />
       ) : (
         <>
           <Podium entries={board.entries} />
