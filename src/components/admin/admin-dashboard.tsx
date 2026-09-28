@@ -1,14 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { ParticipantTelemetrySummary, StudyAggregate } from "@/lib/admin";
-import type { LeaderboardEntry } from "@/lib/leaderboard";
 
 import { EarningCooldownCard } from "./earning-cooldown-card";
 import { EngagementTable } from "./engagement-table";
-import { LeaderboardTable } from "./leaderboard-table";
 import { ParticipantDetailPanel } from "./participant-detail-panel";
 import { StoreTable } from "./store-table";
 import { StudyOverviewCard } from "./study-overview-card";
@@ -30,21 +28,29 @@ import { StudyOverviewCard } from "./study-overview-card";
 export function AdminDashboard({
   participants,
   aggregate,
-  leaderboard,
   logoutSlot,
 }: {
   participants: ParticipantTelemetrySummary[];
   aggregate: StudyAggregate;
-  leaderboard: LeaderboardEntry[];
   logoutSlot: ReactNode;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const panel = useRef<HTMLDivElement>(null);
+
+  // Below `xl` the detail panel stacks under both tables, out of sight of the
+  // row that was just tapped — bring it into view so the tap visibly did something.
+  function select(id: string) {
+    setSelectedId(id);
+    if (!window.matchMedia("(min-width: 80rem)").matches) {
+      requestAnimationFrame(() => panel.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  }
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-6 p-8">
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-4 p-4 md:gap-6 md:p-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-[24px] font-semibold text-ink">
+          <h1 className="font-display text-[20px] font-semibold text-ink md:text-[24px]">
             Admin dashboard
           </h1>
           <p className="mt-1 text-[13px] text-ink-faint">
@@ -61,22 +67,16 @@ export function AdminDashboard({
           <EngagementTable
             participants={participants}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={select}
           />
           <StoreTable
             participants={participants}
             selectedId={selectedId}
-            onSelect={setSelectedId}
-          />
-          <LeaderboardTable
-            entries={leaderboard}
-            participants={participants}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={select}
           />
         </div>
 
-        <div className="xl:sticky xl:top-8">
+        <div ref={panel} className="scroll-mt-4 xl:sticky xl:top-8">
           {selectedId ? (
             <ParticipantDetailPanel participantId={selectedId} />
           ) : (

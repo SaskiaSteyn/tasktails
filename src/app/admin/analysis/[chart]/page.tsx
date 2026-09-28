@@ -56,8 +56,8 @@ export default async function AnalysisPage({ params }: Params) {
   if (!page) notFound();
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-6 p-8">
-      <h1 className="font-display text-[24px] font-semibold text-ink">{page.label}</h1>
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-4 p-4 md:gap-6 md:p-8">
+      <h1 className="font-display text-[20px] font-semibold text-ink md:text-[24px]">{page.label}</h1>
       {render(page.slug, await studyDataset())}
     </div>
   );
