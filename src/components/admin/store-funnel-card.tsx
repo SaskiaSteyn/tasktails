@@ -21,7 +21,13 @@ export function StoreFunnelCard({ data }: { data: StoreFunnel }) {
           .join("; ")}
         build={(t) => ({
           tooltip: { trigger: "axis", valueFormatter: (v: number) => `${Math.round(v * 100)}%` },
-          xAxis: { type: "category", data: stages.map((s) => s.label), splitLine: { show: false } },
+          xAxis: {
+            type: "category",
+            data: stages.map((s) => s.label),
+            splitLine: { show: false },
+            // Wrap rather than let ECharts drop labels that collide on a phone.
+            axisLabel: { color: t.inkFaint, interval: 0, width: 80, overflow: "break" },
+          },
           yAxis: {
             type: "value",
             min: 0,
