@@ -15,11 +15,15 @@ import { useEffect, useRef, useState } from "react";
  * real state. Held in a ref so an inline `onExpire` doesn't restart the
  * interval every render.
  */
-function format(remainingMs: number): string {
+/** `M:SS`, or `H:MM:SS` from an hour up — #336's due-soon banner runs to 24h. */
+export function format(remainingMs: number): string {
   const totalSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}`
+    : `${minutes}:${seconds}`;
 }
 
 export function CooldownCountdown({

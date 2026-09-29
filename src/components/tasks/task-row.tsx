@@ -3,8 +3,10 @@
 import { Check } from "lucide-react";
 import Link from "next/link";
 
+import { DueCountdown } from "@/components/tasks/due-soon-banner";
 import { Coin } from "@/components/ui/coin";
 import { cn } from "@/lib/cn";
+import { hasDueTime } from "@/lib/day";
 import { taskTier, type TaskTier } from "@/lib/task-tiers";
 
 /**
@@ -50,6 +52,12 @@ const TIER_CLASSES: Record<TaskTier["color"], string> = {
 const DUE_DATE_FORMAT = new Intl.DateTimeFormat("en-ZA", {
   month: "short",
   day: "numeric",
+});
+const DUE_TIME_FORMAT = new Intl.DateTimeFormat("en-ZA", {
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
 });
 
 export function TaskRow({
@@ -159,9 +167,11 @@ export function TaskRow({
               ) : null}
               {dueDate ? (
                 <span className="text-[11px] text-ink-disabled">
-                  {DUE_DATE_FORMAT.format(dueDate)}
+                  {(hasDueTime(dueDate) ? DUE_TIME_FORMAT : DUE_DATE_FORMAT).format(dueDate)}
                 </span>
               ) : null}
+              {/* #336 — only while open; a finished task has nothing left to beat. */}
+              {done ? null : <DueCountdown dueDate={dueDate} />}
             </span>
           ) : null}
         </span>
