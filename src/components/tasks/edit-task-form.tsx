@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
+import { DueSoonBanner } from "@/components/tasks/due-soon-banner";
 import { DatePicker } from "@/components/tasks/date-picker";
 import { SubtaskList } from "@/components/tasks/subtask-list";
 import { TierSelect } from "@/components/tasks/tier-select";
@@ -166,6 +167,9 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
           // invisible against the page's own 34px gutter.
           className="flex flex-1 flex-col overflow-y-auto px-[18px] pt-[18px] pb-2 desk:px-1 desk:pt-0"
         >
+          {/* #336 — the saved deadline, not the one being edited: an unsaved
+              time change hasn't moved the task's real due time yet. */}
+          {task.completedAt ? null : <DueSoonBanner dueDate={task.dueDate} className="mb-4" />}
           <div className="mb-4">
             <label
               htmlFor={titleFieldId}

@@ -43,3 +43,20 @@ export function calendarDaysBetween(from: Date, to: Date): number {
     (startOfDay(to).getTime() - startOfDay(from).getTime()) / DAY_MS,
   );
 }
+
+/**
+ * #336 — whether a due date carries a time of day. The picker stores a
+ * date-only deadline as local midnight (every task created before due times
+ * existed is one), so midnight reads as "no time set".
+ *
+ * ponytail: a deadline of exactly 00:00 is indistinguishable from none; add
+ * a `dueTimeSet` column if anyone ever needs a midnight deadline.
+ */
+export function hasDueTime(dueDate: Date): boolean {
+  return dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0;
+}
+
+/** The instant a task is actually late: its time, or the end of a date-only day. */
+export function deadlineOf(dueDate: Date): Date {
+  return hasDueTime(dueDate) ? dueDate : startOfNextDay(dueDate);
+}
