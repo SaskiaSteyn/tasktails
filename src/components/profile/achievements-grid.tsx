@@ -19,7 +19,7 @@ import type { AchievementWithState } from "@/lib/achievements";
  * what the handoff draws:
  *
  *  1. **The strip fills the width.** The phone frame keeps its four tiles;
- *     `desk:` shows eight and `xl:` twelve, so the row is full at every width
+ *     `split:` shows eight and `xl:` twelve, so the row is full at every width
  *     instead of four tiles stretched across a desktop. Extra tiles are
  *     `hidden` rather than sliced per breakpoint — one list, one DOM, no
  *     server-side guess at the viewport.
@@ -76,12 +76,12 @@ export function AchievementsGrid({
               }
               className={cn(
                 "flex aspect-square flex-1 flex-col items-center justify-center gap-[6px] rounded-[14px] border p-2",
-                // Four tiles on a phone, eight from `desk:`, twelve from
+                // Four tiles on a phone, eight from `split:`, twelve from
                 // `xl:` — see the note above.
                 index >= 8
                   ? "hidden xl:flex"
                   : index >= 4
-                    ? "hidden desk:flex"
+                    ? "hidden split:flex"
                     : null,
                 unlocked
                   ? cn(style?.bg, style?.border)

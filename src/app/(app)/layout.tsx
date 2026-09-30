@@ -7,7 +7,7 @@ import { NewTaskProvider } from "@/components/tasks/new-task-provider";
 /**
  * The desktop shell (INF-22) — a persistent left rail and one universal
  * header wrapped around every signed-in screen, replacing the phone frame's
- * bottom nav and per-screen headers from `desk:` (900px) up.
+ * bottom nav and per-screen headers from `desk:` (600px) up.
  *
  * A route-group layout rather than a branch inside `AppShell`, for one
  * concrete reason: the rail and the header both read from the database (the

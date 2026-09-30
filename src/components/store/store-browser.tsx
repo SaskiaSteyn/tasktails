@@ -349,7 +349,7 @@ export function StoreBrowser({
           aria-labelledby={tabId("sell")}
           className="desk:min-h-0 desk:flex-1 desk:overflow-y-auto desk:px-1"
         >
-          <div className="grid grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
+          <div className="grid grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(min(240px,calc(50%_-_8px)),1fr))] desk:gap-4">
             <SellItemsCard />
             {/* #280 — moved off Profile. Buying XP is a conversion out of
                 coins rather than a purchase of an item, which is what puts
@@ -506,8 +506,11 @@ export function StoreBrowser({
               // `auto-fill` rather than a fixed column count from `desk:` up, per
               // the handoff's own grid spec — which is also what makes the 900px
               // "2-up" behaviour fall out of the same rule rather than needing a
-              // second breakpoint.
-              <div className="grid flex-none auto-rows-[1fr] grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
+              // second breakpoint. The `min()` caps the 240px at half a row
+              // (less half the gap) so the narrowest `desk:` widths — an
+              // unfolded Fold (#339) — stay 2-up rather than dropping to one
+              // oversized card; wherever two 240px columns fit it changes nothing.
+              <div className="grid flex-none auto-rows-[1fr] grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(min(240px,calc(50%_-_8px)),1fr))] desk:gap-4">
                 {visible.slice(0, shown).map((item) => (
                   <StoreItemCard
                     key={item.id}

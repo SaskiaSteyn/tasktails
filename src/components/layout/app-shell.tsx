@@ -27,7 +27,7 @@ import { cn } from "@/lib/cn";
  * own padding and the insets resolve to zero, so the same markup is correct
  * at both ends.
  *
- * From `desk:` (900px) up the frame gives way to the desktop shell: the card
+ * From `desk:` (600px) up the frame gives way to the desktop shell: the card
  * becomes the full viewport, and `header`/`nav` are hidden because the `(app)`
  * route-group layout is already drawing the universal header and the
  * persistent left rail around this (INF-22). Both slots stay in the DOM rather

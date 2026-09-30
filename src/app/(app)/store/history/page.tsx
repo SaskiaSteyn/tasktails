@@ -137,7 +137,7 @@ export default async function PurchaseHistoryPage() {
                 has no quantity — a checkout writes one row per unit — so the
                 column would be a hard-coded "1" on every row. Raised rather
                 than invented, per the handoff's own rule 4. */}
-            <div className="mb-1 hidden grid-cols-[120px_1fr_160px_120px] gap-[18px] border-b border-border-track px-[22px] pb-3 text-overline desk:grid">
+            <div className="mb-1 hidden grid-cols-[120px_1fr_160px_120px] gap-[18px] border-b border-border-track px-[22px] pb-3 text-overline split:grid">
               <span>When</span>
               <span>Item</span>
               <span>Category</span>
@@ -155,7 +155,7 @@ export default async function PurchaseHistoryPage() {
               <details
                 key={group.label}
                 open={index === 0}
-                className="group/day mb-2 desk:mb-0"
+                className="group/day mb-2 split:mb-0"
               >
                 {/* The summary keeps its default `display: list-item` and
                     lays its contents out in a `<div>` instead: Safari has a
@@ -163,7 +163,7 @@ export default async function PurchaseHistoryPage() {
                     anything else stops toggling reliably, and the study runs
                     on iPhones. `list-none` plus the WebKit marker rule hides
                     the triangle without touching `display`. */}
-                <summary className="cursor-pointer list-none py-[7px] desk:mt-2 desk:px-[22px] [&::-webkit-details-marker]:hidden">
+                <summary className="cursor-pointer list-none py-[7px] split:mt-2 split:px-[22px] [&::-webkit-details-marker]:hidden">
                   <div className="flex items-center gap-[6px] text-[11px] font-extrabold tracking-[0.4px] text-ink-soft">
                     <ChevronDown
                       size={14}
@@ -183,19 +183,19 @@ export default async function PurchaseHistoryPage() {
                     </span>
                   </div>
                 </summary>
-                <div className="flex flex-col gap-[9px] pb-2 desk:gap-0 desk:pb-0">
+                <div className="flex flex-col gap-[9px] pb-2 split:gap-0 split:pb-0">
                   {group.entries.map((entry) => (
                     <div
                       key={entry.id}
-                      className="flex items-center gap-[11px] py-[2px] desk:grid desk:grid-cols-[120px_1fr_160px_120px] desk:items-center desk:gap-[18px] desk:border-b desk:border-border-track/70 desk:px-[22px] desk:py-[13px] desk:hover:bg-warm"
+                      className="flex items-center gap-[11px] py-[2px] split:grid split:grid-cols-[120px_1fr_160px_120px] split:items-center split:gap-[18px] split:border-b split:border-border-track/70 split:px-[22px] split:py-[13px] split:hover:bg-warm"
                     >
                       {/* Drawn twice, hidden at the other width: on a phone the
                           timestamp sits under the name, on desktop it is the
                           first column. No DOM position is both. */}
-                      <p className="hidden text-[12.5px] font-bold text-ink-soft desk:block">
+                      <p className="hidden text-[12.5px] font-bold text-ink-soft split:block">
                         {rowTimestamp(entry.purchasedAt, now)}
                       </p>
-                      <div className="flex min-w-0 flex-1 items-center gap-[11px] desk:flex-none">
+                      <div className="flex min-w-0 flex-1 items-center gap-[11px] split:flex-none">
                         {"storeItem" in entry ? (
                           <ItemWell
                             bgClassNameOverride={rarityThumbFill(
@@ -229,17 +229,17 @@ export default async function PurchaseHistoryPage() {
                               />
                             ) : null}
                           </div>
-                          <p className="text-[11px] text-ink-faint desk:hidden">
+                          <p className="text-[11px] text-ink-faint split:hidden">
                             {rowTimestamp(entry.purchasedAt, now)}
                           </p>
                         </div>
                       </div>
-                      <p className="hidden text-[12.5px] font-bold text-ink-soft desk:block">
+                      <p className="hidden text-[12.5px] font-bold text-ink-soft split:block">
                         {"storeItem" in entry
                           ? CATEGORY_LABEL[entry.storeItem.category]
                           : "Lucky box"}
                       </p>
-                      <p className="flex-none text-[13px] font-extrabold text-terracotta desk:text-right">
+                      <p className="flex-none text-[13px] font-extrabold text-terracotta split:text-right">
                         −{entry.coinSpent.toLocaleString("en-US")}
                       </p>
                     </div>

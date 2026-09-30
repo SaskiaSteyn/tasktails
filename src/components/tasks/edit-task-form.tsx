@@ -155,7 +155,7 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
     // width, driven by the same `dueDate` state — the phone frame puts it
     // between the title and the complexity ramp, the desktop frame puts it in
     // the side column, and no single DOM position is both.
-    <div className="flex min-h-0 flex-1 flex-col desk:flex-row desk:gap-7 desk:px-[34px] desk:py-[30px]">
+    <div className="flex min-h-0 flex-1 flex-col split:flex-row desk:gap-7 desk:px-[34px] desk:py-[30px]">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <form
           id={formId}
@@ -208,7 +208,7 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
             ) : null}
           </div>
 
-          <div className="mb-4 desk:hidden">
+          <div className="mb-4 split:hidden">
             <DatePicker value={dueDate} onChange={setDueDate} label="DUE DATE" />
           </div>
 
@@ -283,7 +283,7 @@ export function EditTaskForm({ task }: { task: TaskWithSubtasks }) {
         </div>
       </div>
 
-      <aside className="hidden flex-none desk:block desk:w-[376px]">
+      <aside className="hidden flex-none split:block split:w-[376px]">
         <DatePicker value={dueDate} onChange={setDueDate} label="DUE DATE" />
       </aside>
 

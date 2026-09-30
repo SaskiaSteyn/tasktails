@@ -37,7 +37,7 @@ export function LuckyBoxesGroup({
     <section className="mb-[11px] flex-none desk:mb-4">
       {urgency ? <div className="mb-[9px]">{urgency}</div> : null}
 
-      <div className="grid auto-rows-[1fr] grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
+      <div className="grid auto-rows-[1fr] grid-cols-2 gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(min(240px,calc(50%_-_8px)),1fr))] desk:gap-4">
         {boxes.map((box) => (
           <LuckyBoxCard
             key={box.key}

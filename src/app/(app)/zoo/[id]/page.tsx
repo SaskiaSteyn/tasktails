@@ -104,7 +104,7 @@ export default async function SanctuaryPage({
         </header>
       }
       nav={<BottomNav />}
-      className="gap-3 px-4 pt-4 pb-4 desk:flex-row desk:gap-[26px] desk:px-8 desk:py-[26px]"
+      className="gap-3 px-4 pt-4 pb-4 split:flex-row desk:gap-[26px] desk:px-8 desk:py-[26px]"
     >
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <AnimalCard
@@ -121,7 +121,7 @@ export default async function SanctuaryPage({
           rule 1 puts the shipped component ahead of the mock's rendering of
           it. What the panel adds is the part the phone frame has nowhere to
           put: the rest of the zoo, one click away from the stage. */}
-      <aside className="hidden flex-none flex-col gap-4 overflow-y-auto desk:flex desk:w-[420px]">
+      <aside className="hidden flex-none flex-col gap-4 overflow-y-auto split:flex split:w-[420px]">
         <div className="flex items-baseline justify-between">
           <h2 className="font-display text-[15.5px] font-semibold">
             Your other friends

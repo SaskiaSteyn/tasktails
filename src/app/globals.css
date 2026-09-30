@@ -114,12 +114,25 @@
      desktop" pair), so it is the width at which the rail-based composition is
      first known to work rather than a guessed round number.
 
+     Moved down to 600px for #339: an unfolded Samsung Fold is 670-880px wide,
+     which put it in the `frame` band — a 400×640 card floating on a phone,
+     clipped outright in landscape because the body doesn't scroll. 600px is
+     Android's own "medium" window class, where foldables and tablets start,
+     and the handoff's 900px tablet treatment was checked down to it.
+
      Between `desk` and `xl` the handoff's tablet treatment applies — the rail
      collapses to 76px of icons, the header shrinks to 66px, right-hand panels
      drop below the primary column and grids go 2-up. Tailwind's own `xl`
      (1280px) is the full-width desktop step; no new token for it, since the
      default scale already had one in the right place. */
-  --breakpoint-desk: 56.25rem; /* 900px — bottom nav becomes the side rail */
+  --breakpoint-desk: 37.5rem; /* 600px — bottom nav becomes the side rail */
+
+  /* #339 — the 900px `desk` used to be, kept for the few layouts that need
+     more room than the rail leaves at 600px: side panes (task detail's 376px
+     date column, the pet page's 420px friends panel, settings' 280px section
+     list), purchase history's four-column table and the profile's eight-tile
+     achievement row. Below it they fall back to what the phone frame does. */
+  --breakpoint-split: 56.25rem; /* 900px — side panes fit beside the content */
 
   /* The frame's own width, matching the design's proportions at 400px. */
   --container-app: 25rem; /* 400px — `max-w-app` */
