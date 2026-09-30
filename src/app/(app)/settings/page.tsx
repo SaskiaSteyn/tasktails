@@ -70,7 +70,7 @@ export default async function SettingsPage() {
           and it keeps working with JavaScript off. */}
       <nav
         aria-label="Settings sections"
-        className="hidden w-[280px] flex-none flex-col gap-[5px] border-r border-border-track px-[18px] py-6 desk:flex"
+        className="hidden w-[280px] flex-none flex-col gap-[5px] border-r border-border-track px-[18px] py-6 split:flex"
       >
         {[
           ["Account", "#account"],

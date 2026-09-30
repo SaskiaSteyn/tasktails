@@ -24,7 +24,7 @@ export default function Loading() {
   return (
     <LoadingScreen
       header={<BackHeaderSkeleton titleWidth="w-[92px]" />}
-      className="gap-3 px-4 pt-4 pb-4 desk:flex-row desk:gap-[26px] desk:px-8 desk:py-[26px]"
+      className="gap-3 px-4 pt-4 pb-4 split:flex-row desk:gap-[26px] desk:px-8 desk:py-[26px]"
     >
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="relative flex min-h-fit flex-1 flex-col overflow-hidden rounded-card-lg border border-border-track bg-surface">
