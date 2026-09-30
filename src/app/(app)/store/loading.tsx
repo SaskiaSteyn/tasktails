@@ -50,7 +50,7 @@ export default function Loading() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 items-start gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] desk:gap-4">
+      <div className="grid grid-cols-2 items-start gap-[11px] desk:grid-cols-[repeat(auto-fill,minmax(min(240px,calc(50%_-_8px)),1fr))] desk:gap-4">
         {CARDS.map((width, i) => (
           <div
             key={i}
