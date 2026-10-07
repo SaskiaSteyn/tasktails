@@ -75,6 +75,13 @@ A rolling **earning window** of `EARNING_WINDOW_TASKS = 3` *rewarded* task
 completions. Each completion that banks a reward advances the window by one
 and records that task's `complexityTier`.
 
+- **Slots expire after `EARNING_WINDOW_MINUTES = 60`** (amended 2026-10-07).
+  As first built, the window never emptied on its own, so three tasks done
+  over a whole day (or several days) still started a cooldown — a participant
+  reported it hitting on a task added in the morning and finished that evening.
+  Each slot now records when it was filled, and the cooldown only starts when
+  three completions land within an hour of each other.
+
 - **Whole tasks only** (O2). A subtask completion pays its `1/n` share but
   does **not** advance the window; the parent task's own completion (which
   may be SUB-4's auto-complete once the last subtask is done) is the slot.

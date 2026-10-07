@@ -114,6 +114,29 @@ export const FULL_REWARD_REPEATS_PER_DAY = 3;
 export const EARNING_WINDOW_TASKS = 3;
 export const COOLDOWN_MIN_MINUTES = 20;
 export const COOLDOWN_MAX_MINUTES = 60;
+/**
+ * How long a window slot lasts. The cooldown exists to pace *rapid*
+ * completions, so three tasks only start one when they land within this span
+ * of each other — a task done this morning no longer counts toward tonight's.
+ */
+export const EARNING_WINDOW_MINUTES = 60;
+
+/**
+ * The window's slots still inside `EARNING_WINDOW_MINUTES` of `now`. `tiers`
+ * and `times` are parallel; a tier with no time (rows written before slots
+ * carried one) counts as expired.
+ */
+export function liveWindow(
+  tiers: number[],
+  times: Date[],
+  now: Date,
+): { tiers: number[]; times: Date[] } {
+  const cutoff = now.getTime() - EARNING_WINDOW_MINUTES * 60_000;
+  const keep = tiers
+    .map((tier, i) => ({ tier, at: times[i] }))
+    .filter((slot) => slot.at !== undefined && slot.at.getTime() > cutoff);
+  return { tiers: keep.map((s) => s.tier), times: keep.map((s) => s.at) };
+}
 
 /**
  * `round5(20 + (avgTier − 1) / 4 · 40)` minutes, clamped to

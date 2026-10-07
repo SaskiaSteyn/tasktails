@@ -16,6 +16,7 @@ import {
   cooldownMinutesFor,
   EARNING_WINDOW_TASKS,
   FULL_REWARD_REPEATS_PER_DAY,
+  liveWindow,
   streakBonusFor,
   type Reward,
 } from "@/lib/rewards";
@@ -49,7 +50,7 @@ export type EarningStatus = {
 /** The `UserEconomy` columns `earningStatusOf` needs. */
 type EarningColumns = Pick<
   UserEconomy,
-  "earningWindowTiers" | "earningCooldownUntil"
+  "earningWindowTiers" | "earningWindowTimes" | "earningCooldownUntil"
 >;
 
 /** Reads `EarningStatus` off a row, resolving an expired cooldown to "open". */
@@ -60,7 +61,10 @@ export function earningStatusOf(
   const until = row.earningCooldownUntil;
   const onCooldown = until !== null && until.getTime() > now.getTime();
   return {
-    windowUsed: onCooldown ? EARNING_WINDOW_TASKS : row.earningWindowTiers.length,
+    windowUsed: onCooldown
+      ? EARNING_WINDOW_TASKS
+      : liveWindow(row.earningWindowTiers, row.earningWindowTimes, now).tiers
+          .length,
     windowSize: EARNING_WINDOW_TASKS,
     cooldownUntil: onCooldown ? until.toISOString() : null,
   };
@@ -125,7 +129,12 @@ export async function lifetimeEarningsFor(
 export function snapshotOf(
   economy: Pick<
     UserEconomy,
-    "coins" | "xp" | "streak" | "earningWindowTiers" | "earningCooldownUntil"
+    | "coins"
+    | "xp"
+    | "streak"
+    | "earningWindowTiers"
+    | "earningWindowTimes"
+    | "earningCooldownUntil"
   >,
 ): EconomySnapshot {
   return {
@@ -142,6 +151,7 @@ export const EMPTY_ECONOMY: EconomySnapshot = snapshotOf({
   xp: 0,
   streak: 0,
   earningWindowTiers: [],
+  earningWindowTimes: [],
   earningCooldownUntil: null,
 });
 
@@ -426,8 +436,8 @@ function mixKeyOf(tiers: number[]): string {
  * both withheld — but still returns a result so the caller can mark the task
  * done and record the streak. Otherwise the full priced reward is banked
  * (there is no cap), and a whole-task completion appends its tier to
- * `earningWindowTiers`; the 3rd one starts a cooldown whose length is
- * `cooldownMinutesFor()` of those three tiers.
+ * `earningWindowTiers`; the 3rd one within `EARNING_WINDOW_MINUTES` starts a
+ * cooldown whose length is `cooldownMinutesFor()` of those three tiers.
  *
  * The read is `SELECT … FOR UPDATE` inside a transaction, same as before: two
  * completions submitted together must not both slip past a full window, and
@@ -450,9 +460,14 @@ export async function grantEarnings(
 ): Promise<EarningsGrant | null> {
   return prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<
-      { xp: number; earningWindowTiers: number[]; earningCooldownUntil: Date | null }[]
+      {
+        xp: number;
+        earningWindowTiers: number[];
+        earningWindowTimes: Date[];
+        earningCooldownUntil: Date | null;
+      }[]
     >`
-      SELECT "xp", "earningWindowTiers", "earningCooldownUntil"
+      SELECT "xp", "earningWindowTiers", "earningWindowTimes", "earningCooldownUntil"
       FROM "UserEconomy"
       WHERE "userId" = ${userId}
       FOR UPDATE`;
@@ -513,8 +528,13 @@ export async function grantEarnings(
       );
     }
 
-    const tiersBefore = justExpired ? [] : row.earningWindowTiers;
-    const newTiers = ctx.advancesWindow ? [...tiersBefore, ctx.tier] : tiersBefore;
+    // Slots older than EARNING_WINDOW_MINUTES drop out here, so only
+    // completions close together fill the window.
+    const before = justExpired
+      ? { tiers: [], times: [] }
+      : liveWindow(row.earningWindowTiers, row.earningWindowTimes, now);
+    const newTiers = ctx.advancesWindow ? [...before.tiers, ctx.tier] : before.tiers;
+    const newTimes = ctx.advancesWindow ? [...before.times, now] : before.times;
     const triggersCooldown =
       ctx.advancesWindow && newTiers.length >= EARNING_WINDOW_TASKS;
 
@@ -537,6 +557,7 @@ export async function grantEarnings(
         // Reset on cooldown start; otherwise carry the (possibly just-cleared)
         // window forward with this completion's tier appended.
         earningWindowTiers: triggersCooldown ? [] : newTiers,
+        earningWindowTimes: triggersCooldown ? [] : newTimes,
         earningCooldownUntil: triggersCooldown
           ? newCooldownUntil
           : justExpired
