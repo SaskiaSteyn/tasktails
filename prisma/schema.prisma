@@ -365,7 +365,11 @@ model UserEconomy {
   /// absolute moment earning resumes — null or in the past means earning is
   /// open, and the next completion lazily clears the window. No calendar-day
   /// coupling: the window/cooldown persist across midnight untouched.
-  earningWindowTiers   Int[]     @default([])
+  /// `earningWindowTimes` is parallel to the tiers: when each slot was filled.
+  /// A slot older than `EARNING_WINDOW_MINUTES` drops out, so only completions
+  /// close together start a cooldown — not three spread over days.
+  earningWindowTiers   Int[]      @default([])
+  earningWindowTimes   DateTime[] @default([])
   earningCooldownUntil DateTime?
 
   /// Lucky Box hidden hard pity (GACHA-02, GACHA-05). Counts pulls since the

@@ -13,6 +13,7 @@ import {
   xpWrite,
 } from "@/lib/economy";
 import { levelForXp } from "@/lib/levels";
+import { EARNING_WINDOW_MINUTES } from "@/lib/rewards";
 import { prismaMock } from "@/test/prisma-mock";
 
 /**
@@ -217,19 +218,36 @@ describe("reduceForRepeats", () => {
  */
 describe("earningStatusOf", () => {
   const now = new Date(2026, 6, 20, 14, 0);
+  const ago = (minutes: number) => new Date(now.getTime() - minutes * 60_000);
 
   it("reports the window progress while earning is open", () => {
     const status = earningStatusOf(
-      { earningWindowTiers: [3, 2], earningCooldownUntil: null },
+      {
+        earningWindowTiers: [3, 2],
+        earningWindowTimes: [ago(30), ago(5)],
+        earningCooldownUntil: null,
+      },
       now,
     );
     expect(status).toEqual({ windowUsed: 2, windowSize: 3, cooldownUntil: null });
   });
 
+  it("does not count slots older than the window span", () => {
+    const status = earningStatusOf(
+      {
+        earningWindowTiers: [3, 2],
+        earningWindowTimes: [ago(EARNING_WINDOW_MINUTES + 1), ago(5)],
+        earningCooldownUntil: null,
+      },
+      now,
+    );
+    expect(status.windowUsed).toBe(1);
+  });
+
   it("reads a future cooldown as full window + a resume time", () => {
     const until = new Date(now.getTime() + 15 * 60_000);
     const status = earningStatusOf(
-      { earningWindowTiers: [], earningCooldownUntil: until },
+      { earningWindowTiers: [], earningWindowTimes: [], earningCooldownUntil: until },
       now,
     );
     expect(status.windowUsed).toBe(3);
@@ -240,6 +258,7 @@ describe("earningStatusOf", () => {
     const status = earningStatusOf(
       {
         earningWindowTiers: [5, 5, 5],
+        earningWindowTimes: [ago(3), ago(2), ago(1)],
         earningCooldownUntil: new Date(now.getTime() - 60_000),
       },
       now,
@@ -259,17 +278,22 @@ describe("earningStatusOf", () => {
 describe("grantEarnings", () => {
   const now = new Date(2026, 6, 20, 14, 0);
   const taskCtx = { taskId: "task-1", tier: 3, advancesWindow: true } as const;
+  const ago = (minutes: number) => new Date(now.getTime() - minutes * 60_000);
 
   /** Stands the locked row up and the writes the transaction makes. */
   function lockedRow(row: {
     xp?: number;
     earningWindowTiers?: number[];
+    earningWindowTimes?: Date[];
     earningCooldownUntil?: Date | null;
   }) {
     const full = {
       xp: row.xp ?? 0,
       coins: 0,
       earningWindowTiers: row.earningWindowTiers ?? [],
+      // Slots default to "just now" so they count unless a test says otherwise.
+      earningWindowTimes:
+        row.earningWindowTimes ?? (row.earningWindowTiers ?? []).map(() => ago(1)),
       earningCooldownUntil: row.earningCooldownUntil ?? null,
     };
     prismaMock.$queryRaw.mockResolvedValue([full]);
@@ -306,6 +330,32 @@ describe("grantEarnings", () => {
     expect(data.coins).toEqual({ increment: 150 });
     expect(data.lifetimeCoinsEarned).toEqual({ increment: 150 });
     expect(data.earningWindowTiers).toEqual([3]);
+  });
+
+  it("drops slots older than the window span, so spread-out tasks never start a cooldown", async () => {
+    // Two tasks this morning, the third tonight — the reported bug.
+    lockedRow({ earningWindowTiers: [3, 3], earningWindowTimes: [ago(600), ago(30)] });
+
+    const grant = await grantEarnings("user-1", { coins: 35, xp: 45 }, taskCtx, now);
+
+    expect(grant?.cooldownStarted).toBe(false);
+    expect(grant?.windowRemaining).toBe(1);
+    const data = prismaMock.userEconomy.update.mock.calls[0][0].data as never as {
+      earningWindowTiers: number[];
+      earningWindowTimes: Date[];
+    };
+    expect(data.earningWindowTiers).toEqual([3, 3]);
+    expect(data.earningWindowTimes).toEqual([ago(30), now]);
+  });
+
+  it("treats tiers with no recorded time as expired", async () => {
+    // Rows written before slots carried a time.
+    lockedRow({ earningWindowTiers: [3, 3], earningWindowTimes: [] });
+
+    const grant = await grantEarnings("user-1", { coins: 35, xp: 45 }, taskCtx, now);
+
+    expect(grant?.cooldownStarted).toBe(false);
+    expect(grant?.windowRemaining).toBe(2);
   });
 
   it("appends the tier for a whole-task completion but not for a subtask", async () => {
