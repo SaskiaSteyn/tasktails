@@ -86,6 +86,69 @@ export function median(values: number[]): number | null {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+/** Linear-interpolated quantile (R's default, Excel's QUARTILE.INC). `sorted` must be ascending and non-empty. */
+function quantile(sorted: number[], q: number): number {
+  const pos = (sorted.length - 1) * q;
+  const lo = Math.floor(pos);
+  return sorted[lo] + (sorted[Math.min(lo + 1, sorted.length - 1)] - sorted[lo]) * (pos - lo);
+}
+
+/** The dependent variables an outlier is judged on — the same four the group comparison draws. */
+const OUTLIER_METRICS = [
+  ["coinsSpent", "coins spent"],
+  ["itemsPurchased", "items purchased"],
+  ["storeVisits", "store visits"],
+  ["storeTimeMs", "time in store"],
+] as const satisfies readonly (readonly [keyof ParticipantMetrics, string])[];
+
+export type Outlier = { studyId: string; group: Group; on: string[] };
+
+/**
+ * Splits off participants outside Tukey's fences (Q1 − 1.5·IQR, Q3 + 1.5·IQR)
+ * on any dependent variable, judged within their own group so Group B's
+ * urgency effect can't make a Group B spender look like an outlier. Whole
+ * participants are dropped, so every chart and test sees the same people.
+ *
+ * ponytail: a metric whose IQR is 0 flags no one. With zero-inflated data
+ * (most of a group never bought anything) Q1 = Q3 = 0 and the fences would
+ * otherwise throw out every buyer. Swap to a log-scale or MAD rule if that
+ * hides a real outlier.
+ */
+export function withoutOutliers(participants: StudyParticipant[]): {
+  kept: StudyParticipant[];
+  outliers: Outlier[];
+} {
+  const rows = participants.map((participant) => ({ participant, metrics: metricsFor(participant) }));
+  const flagged = new Map<StudyParticipant, string[]>();
+
+  for (const group of ["A", "B"] as const) {
+    const members = rows.filter((row) => row.participant.group === group);
+    if (members.length === 0) continue;
+    for (const [key, label] of OUTLIER_METRICS) {
+      const sorted = members.map((row) => row.metrics[key]).sort((a, b) => a - b);
+      const q1 = quantile(sorted, 0.25);
+      const q3 = quantile(sorted, 0.75);
+      const iqr = q3 - q1;
+      if (iqr === 0) continue;
+      for (const { participant, metrics } of members) {
+        const value = metrics[key];
+        if (value < q1 - 1.5 * iqr || value > q3 + 1.5 * iqr) {
+          flagged.set(participant, [...(flagged.get(participant) ?? []), label]);
+        }
+      }
+    }
+  }
+
+  return {
+    kept: participants.filter((participant) => !flagged.has(participant)),
+    outliers: [...flagged].map(([participant, on]) => ({
+      studyId: participant.studyId,
+      group: participant.group,
+      on,
+    })),
+  };
+}
+
 export type MannWhitney = {
   /** U for Group B: pairs where B beat A, ties counting half. */
   u: number;
