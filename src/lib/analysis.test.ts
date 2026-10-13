@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { dailyActivity, mannWhitney, median, retention, signTest, toCsv } from "./analysis";
+import {
+  dailyActivity,
+  mannWhitney,
+  median,
+  retention,
+  signTest,
+  toCsv,
+  withoutOutliers,
+  type StudyParticipant,
+} from "./analysis";
 
 describe("mannWhitney", () => {
   it("matches the textbook value for fully separated groups", () => {
@@ -88,5 +97,36 @@ describe("signTest", () => {
 describe("toCsv", () => {
   it("writes a header and quotes only cells that need it", () => {
     expect(toCsv([{ a: 1, b: 'say "hi", ok' }, { a: 2, b: "" }])).toBe('a,b\r\n1,"say ""hi"", ok"\r\n2,');
+  });
+});
+
+describe("withoutOutliers", () => {
+  const spender = (studyId: string, group: "A" | "B", coins: number, visits = 1): StudyParticipant => ({
+    id: studyId,
+    studyId,
+    group,
+    joinedAt: new Date("2026-09-01T00:00:00Z"),
+    coinsEarned: 0,
+    taskCompletions: [],
+    events: [
+      ...Array.from({ length: visits }, () => ({ type: "STORE_VISIT", at: new Date(), coins: 0, items: 0, durationMs: 0 })),
+      { type: "ITEM_PURCHASED", at: new Date(), coins, items: 1, durationMs: 0 },
+    ] as StudyParticipant["events"],
+  });
+
+  it("drops a participant past Q3 + 1.5·IQR within their own group", () => {
+    // A: 10, 20, 30, 40, 1000 → Q1 20, Q3 40, upper fence 70.
+    const a = [10, 20, 30, 40, 1000].map((c, i) => spender(`A${i}`, "A", c));
+    // B spends far more across the board — judged on its own, nobody stands out.
+    const b = [900, 1000, 1100, 1200].map((c, i) => spender(`B${i}`, "B", c));
+    const { kept, outliers } = withoutOutliers([...a, ...b]);
+    expect(outliers).toEqual([{ studyId: "A4", group: "A", on: ["coins spent"] }]);
+    expect(kept).toHaveLength(8);
+  });
+
+  it("flags no one on a metric whose IQR is 0", () => {
+    // Every item count is 1 and every visit count 1; only coins vary and stay in range.
+    const all = [5, 5, 5, 5, 6].map((c, i) => spender(`P${i}`, "A", c));
+    expect(withoutOutliers(all).outliers).toEqual([]);
   });
 });
