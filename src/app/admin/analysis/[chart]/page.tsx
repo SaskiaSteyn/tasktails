@@ -28,11 +28,20 @@ type Params = { params: Promise<{ chart: string }> };
 /** Remembers the "Remove outliers" toggle across analysis pages and reloads. */
 const OUTLIER_COOKIE = "admin-exclude-outliers";
 
-async function toggleOutliers() {
+/**
+ * Read by value, not `has()`: the page re-render that answers this action
+ * still sees a just-deleted cookie, with an empty value.
+ */
+async function excludingOutliers() {
+  return (await cookies()).get(OUTLIER_COOKIE)?.value === "1";
+}
+
+/** Sets the state the button asked for rather than flipping, so a double-click or a stale tab can't invert it. */
+async function setOutliers(form: FormData) {
   "use server";
   const jar = await cookies();
-  if (jar.has(OUTLIER_COOKIE)) jar.delete(OUTLIER_COOKIE);
-  else jar.set(OUTLIER_COOKIE, "1", { httpOnly: true, sameSite: "lax" });
+  if (form.get("exclude") === "1") jar.set(OUTLIER_COOKIE, "1", { httpOnly: true, sameSite: "lax" });
+  else jar.delete(OUTLIER_COOKIE);
 }
 
 function pageFor(slug: string) {
@@ -76,7 +85,7 @@ export default async function AnalysisPage({ params }: Params) {
   const page = pageFor((await params).chart);
   if (!page) notFound();
 
-  const excluding = (await cookies()).has(OUTLIER_COOKIE);
+  const excluding = await excludingOutliers();
   const dataset = await studyDataset();
   const { kept, outliers } = excluding ? withoutOutliers(dataset) : { kept: dataset, outliers: [] };
 
@@ -84,9 +93,11 @@ export default async function AnalysisPage({ params }: Params) {
     <div className="mx-auto flex max-w-[1180px] flex-col gap-4 p-4 md:gap-6 md:p-8">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="font-display text-[20px] font-semibold text-ink md:text-[24px]">{page.label}</h1>
-        <form action={toggleOutliers} className="ml-auto">
+        <form action={setOutliers} className="ml-auto">
           <button
             type="submit"
+            name="exclude"
+            value={excluding ? "0" : "1"}
             aria-pressed={excluding}
             className={cn(
               "flex cursor-pointer items-center gap-2 rounded-[10px] border px-3 py-2 text-[13px] font-bold",
