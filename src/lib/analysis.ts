@@ -149,6 +149,27 @@ export function withoutOutliers(participants: StudyParticipant[]): {
   };
 }
 
+/**
+ * Only the activity in `[from, to)` — events and task completions outside it
+ * are dropped, and so is anyone who joined on or after `to`, since they have
+ * no data in it. Either end may be null for an open range. `coinsEarned` is
+ * a lifetime total with no timestamps behind it, so it is left as is.
+ */
+export function withinDates(
+  participants: StudyParticipant[],
+  from: Date | null,
+  to: Date | null,
+): StudyParticipant[] {
+  const inRange = (at: Date) => (!from || at >= from) && (!to || at < to);
+  return participants
+    .filter((participant) => !to || participant.joinedAt < to)
+    .map((participant) => ({
+      ...participant,
+      events: participant.events.filter((event) => inRange(event.at)),
+      taskCompletions: participant.taskCompletions.filter(inRange),
+    }));
+}
+
 export type MannWhitney = {
   /** U for Group B: pairs where B beat A, ties counting half. */
   u: number;

@@ -7,6 +7,7 @@ import {
   retention,
   signTest,
   toCsv,
+  withinDates,
   withoutOutliers,
   type StudyParticipant,
 } from "./analysis";
@@ -128,5 +129,31 @@ describe("withoutOutliers", () => {
     // Every item count is 1 and every visit count 1; only coins vary and stay in range.
     const all = [5, 5, 5, 5, 6].map((c, i) => spender(`P${i}`, "A", c));
     expect(withoutOutliers(all).outliers).toEqual([]);
+  });
+});
+
+describe("withinDates", () => {
+  const day = (d: number) => new Date(`2026-09-${String(d).padStart(2, "0")}T12:00:00Z`);
+  const person = (joined: number, active: number[]): StudyParticipant => ({
+    id: `P${joined}`,
+    studyId: `P${joined}`,
+    group: "A",
+    joinedAt: day(joined),
+    coinsEarned: 50,
+    taskCompletions: active.map(day),
+    events: active.map((d) => ({ type: "STORE_VISIT", at: day(d), coins: 0, items: 0, durationMs: 0 })) as StudyParticipant["events"],
+  });
+
+  it("keeps only activity in [from, to) and drops anyone who joined after it", () => {
+    const [kept, ...rest] = withinDates([person(1, [1, 3, 5, 7]), person(9, [9])], day(3), day(7));
+    expect(rest).toEqual([]);
+    expect(kept.events.map((e) => e.at)).toEqual([day(3), day(5)]);
+    expect(kept.taskCompletions).toEqual([day(3), day(5)]);
+    expect(kept.coinsEarned).toBe(50);
+  });
+
+  it("treats a null end as open", () => {
+    expect(withinDates([person(1, [1, 3])], null, null)[0].events).toHaveLength(2);
+    expect(withinDates([person(1, [1, 3])], day(2), null)[0].events).toHaveLength(1);
   });
 });
